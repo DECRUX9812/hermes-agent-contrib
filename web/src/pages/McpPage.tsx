@@ -29,6 +29,7 @@ import {
 } from "@/lib/mcp-server-create";
 import { completeMcpDashboardOAuth } from "@/lib/mcp-dashboard-oauth";
 import { errorMessage } from "@/lib/api-error";
+import { DashboardModalPortal } from "@/components/DashboardModalPortal";
 
 function isHttpUrl(value: string): boolean {
   return /^https?:\/\//i.test(value.trim());
@@ -342,250 +343,254 @@ export default function McpPage() {
 
       {/* Add server modal */}
       {createModalOpen && (
-        <div
-          ref={createModalRef}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
-          onClick={(e) => e.target === e.currentTarget && closeCreateModal()}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="create-mcp-title"
-        >
+        <DashboardModalPortal>
           <div
-            className={cn(
-              themedBody,
-              "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col",
-            )}
+            ref={createModalRef}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
+            onClick={(e) => e.target === e.currentTarget && closeCreateModal()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-mcp-title"
           >
-            <Button
-              ghost
-              size="icon"
-              onClick={closeCreateModal}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
-            >
-              <X />
-            </Button>
-
-            <header className="p-5 pb-3 border-b border-border">
-              <h2
-                id="create-mcp-title"
-                className="font-mondwest text-display text-base tracking-wider"
-              >
-                Add MCP server
-              </h2>
-            </header>
-
-            <div className="p-5 grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="mcp-name">Name</Label>
-                <Input
-                  id="mcp-name"
-                  autoFocus
-                  placeholder="my-server"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                />
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="mcp-transport">Transport</Label>
-                <Select
-                  id="mcp-transport"
-                  value={transport}
-                  onValueChange={(value) => {
-                    const nextTransport = value as McpTransport;
-                    setTransport(nextTransport);
-                    if (nextTransport === "stdio") setBearerToken("");
-                  }}
-                >
-                  <SelectOption value="http">HTTP/SSE</SelectOption>
-                  <SelectOption value="stdio">stdio</SelectOption>
-                </Select>
-              </div>
-
-              {transport === "http" ? (
-                <>
-                  <div className="grid gap-2">
-                    <Label htmlFor="mcp-url">URL</Label>
-                    <Input
-                      id="mcp-url"
-                      placeholder="https://example.com/mcp"
-                      value={url}
-                      onChange={(e) => setUrl(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="mcp-auth">Authentication</Label>
-                    <Select
-                      id="mcp-auth"
-                      value={httpAuth}
-                      onValueChange={(value) => {
-                        const nextAuth = value as McpHttpAuth;
-                        setHttpAuth(nextAuth);
-                        if (nextAuth !== "header") setBearerToken("");
-                      }}
-                    >
-                      <SelectOption value="none">None</SelectOption>
-                      <SelectOption value="header">Bearer token</SelectOption>
-                      <SelectOption value="oauth">OAuth</SelectOption>
-                    </Select>
-                  </div>
-                  {httpAuth === "header" && (
-                    <div className="grid gap-2">
-                      <Label htmlFor="mcp-bearer-token">Bearer token</Label>
-                      <Input
-                        id="mcp-bearer-token"
-                        type="password"
-                        autoComplete="new-password"
-                        placeholder="Token or Bearer token"
-                        value={bearerToken}
-                        onChange={(e) => setBearerToken(e.target.value)}
-                      />
-                      <p className="text-xs text-muted-foreground">
-                        Stored in this profile&apos;s .env; config.yaml keeps
-                        only an environment-variable reference.
-                      </p>
-                    </div>
-                  )}
-                  {httpAuth === "oauth" && (
-                    <p className="text-xs text-muted-foreground">
-                      Add the server, then use Authenticate. Hermes opens the
-                      OAuth browser on the machine running the Dashboard
-                      backend.
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <div className="grid gap-2">
-                    <Label htmlFor="mcp-command">Command</Label>
-                    <Input
-                      id="mcp-command"
-                      placeholder="npx"
-                      value={command}
-                      onChange={(e) => setCommand(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="mcp-args">Args</Label>
-                    <Input
-                      id="mcp-args"
-                      placeholder="-y @modelcontextprotocol/server-foo"
-                      value={args}
-                      onChange={(e) => setArgs(e.target.value)}
-                    />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="mcp-env">
-                      Environment (KEY=VALUE per line)
-                    </Label>
-                    <textarea
-                      id="mcp-env"
-                      className="flex min-h-[80px] w-full border border-border bg-background/40 px-3 py-2 text-sm font-courier shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/30 focus-visible:border-foreground/25"
-                      placeholder={"API_KEY=secret\nDEBUG=1"}
-                      value={env}
-                      onChange={(e) => setEnv(e.target.value)}
-                    />
-                  </div>
-                </>
+            <div
+              className={cn(
+                themedBody,
+                "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col",
               )}
+            >
+              <Button
+                ghost
+                size="icon"
+                onClick={closeCreateModal}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
+              >
+                <X />
+              </Button>
 
-              <div className="flex justify-end">
-                <Button
-                  className="uppercase"
-                  size="sm"
-                  onClick={handleCreate}
-                  disabled={creating}
-                  prefix={creating ? <Spinner /> : undefined}
+              <header className="p-5 pb-3 border-b border-border">
+                <h2
+                  id="create-mcp-title"
+                  className="font-mondwest text-display text-base tracking-wider"
                 >
-                  {creating ? "Adding..." : "Add"}
-                </Button>
+                  Add MCP server
+                </h2>
+              </header>
+
+              <div className="p-5 grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="mcp-name">Name</Label>
+                  <Input
+                    id="mcp-name"
+                    autoFocus
+                    placeholder="my-server"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="mcp-transport">Transport</Label>
+                  <Select
+                    id="mcp-transport"
+                    value={transport}
+                    onValueChange={(value) => {
+                      const nextTransport = value as McpTransport;
+                      setTransport(nextTransport);
+                      if (nextTransport === "stdio") setBearerToken("");
+                    }}
+                  >
+                    <SelectOption value="http">HTTP/SSE</SelectOption>
+                    <SelectOption value="stdio">stdio</SelectOption>
+                  </Select>
+                </div>
+
+                {transport === "http" ? (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="mcp-url">URL</Label>
+                      <Input
+                        id="mcp-url"
+                        placeholder="https://example.com/mcp"
+                        value={url}
+                        onChange={(e) => setUrl(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="mcp-auth">Authentication</Label>
+                      <Select
+                        id="mcp-auth"
+                        value={httpAuth}
+                        onValueChange={(value) => {
+                          const nextAuth = value as McpHttpAuth;
+                          setHttpAuth(nextAuth);
+                          if (nextAuth !== "header") setBearerToken("");
+                        }}
+                      >
+                        <SelectOption value="none">None</SelectOption>
+                        <SelectOption value="header">Bearer token</SelectOption>
+                        <SelectOption value="oauth">OAuth</SelectOption>
+                      </Select>
+                    </div>
+                    {httpAuth === "header" && (
+                      <div className="grid gap-2">
+                        <Label htmlFor="mcp-bearer-token">Bearer token</Label>
+                        <Input
+                          id="mcp-bearer-token"
+                          type="password"
+                          autoComplete="new-password"
+                          placeholder="Token or Bearer token"
+                          value={bearerToken}
+                          onChange={(e) => setBearerToken(e.target.value)}
+                        />
+                        <p className="text-xs text-muted-foreground">
+                          Stored in this profile&apos;s .env; config.yaml keeps
+                          only an environment-variable reference.
+                        </p>
+                      </div>
+                    )}
+                    {httpAuth === "oauth" && (
+                      <p className="text-xs text-muted-foreground">
+                        Add the server, then use Authenticate. Hermes opens the
+                        OAuth browser on the machine running the Dashboard
+                        backend.
+                      </p>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    <div className="grid gap-2">
+                      <Label htmlFor="mcp-command">Command</Label>
+                      <Input
+                        id="mcp-command"
+                        placeholder="npx"
+                        value={command}
+                        onChange={(e) => setCommand(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="mcp-args">Args</Label>
+                      <Input
+                        id="mcp-args"
+                        placeholder="-y @modelcontextprotocol/server-foo"
+                        value={args}
+                        onChange={(e) => setArgs(e.target.value)}
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label htmlFor="mcp-env">
+                        Environment (KEY=VALUE per line)
+                      </Label>
+                      <textarea
+                        id="mcp-env"
+                        className="flex min-h-[80px] w-full border border-border bg-background/40 px-3 py-2 text-sm font-courier shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-foreground/30 focus-visible:border-foreground/25"
+                        placeholder={"API_KEY=secret\nDEBUG=1"}
+                        value={env}
+                        onChange={(e) => setEnv(e.target.value)}
+                      />
+                    </div>
+                  </>
+                )}
+
+                <div className="flex justify-end">
+                  <Button
+                    className="uppercase"
+                    size="sm"
+                    onClick={handleCreate}
+                    disabled={creating}
+                    prefix={creating ? <Spinner /> : undefined}
+                  >
+                    {creating ? "Adding..." : "Add"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </DashboardModalPortal>
       )}
 
       {/* Catalog install modal (required env vars) */}
       {installEntry && (
-        <div
-          ref={installModalRef}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
-          onClick={(e) => e.target === e.currentTarget && setInstallEntry(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="install-mcp-title"
-        >
+        <DashboardModalPortal>
           <div
-            className={cn(
-              themedBody,
-              "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col",
-            )}
+            ref={installModalRef}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
+            onClick={(e) => e.target === e.currentTarget && setInstallEntry(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="install-mcp-title"
           >
-            <Button
-              ghost
-              size="icon"
-              onClick={() => setInstallEntry(null)}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
+            <div
+              className={cn(
+                themedBody,
+                "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col",
+              )}
             >
-              <X />
-            </Button>
-
-            <header className="p-5 pb-3 border-b border-border">
-              <h2
-                id="install-mcp-title"
-                className="font-mondwest text-display text-base tracking-wider"
+              <Button
+                ghost
+                size="icon"
+                onClick={() => setInstallEntry(null)}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
-                Install {installEntry.name}
-              </h2>
-            </header>
+                <X />
+              </Button>
 
-            <div className="p-5 grid gap-4">
-              <p className="text-xs text-muted-foreground">
-                This MCP requires the following values to be configured.
-              </p>
-              {installEntry.required_env.map((item) => (
-                <div className="grid gap-2" key={item.name}>
-                  <Label htmlFor={`install-env-${item.name}`}>
-                    {item.prompt}
-                    {item.required ? " *" : ""}
-                  </Label>
-                  <Input
-                    id={`install-env-${item.name}`}
-                    type="password"
-                    placeholder={item.name}
-                    value={installEnv[item.name] ?? ""}
-                    onChange={(e) =>
-                      setInstallEnv((prev) => ({
-                        ...prev,
-                        [item.name]: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-              ))}
-
-              <div className="flex justify-end">
-                <Button
-                  className="uppercase"
-                  size="sm"
-                  onClick={handleInstallSubmit}
-                  disabled={installingName === installEntry.name}
-                  prefix={
-                    installingName === installEntry.name ? (
-                      <Spinner />
-                    ) : undefined
-                  }
+              <header className="p-5 pb-3 border-b border-border">
+                <h2
+                  id="install-mcp-title"
+                  className="font-mondwest text-display text-base tracking-wider"
                 >
-                  {installingName === installEntry.name
-                    ? "Installing..."
-                    : "Install"}
-                </Button>
+                  Install {installEntry.name}
+                </h2>
+              </header>
+
+              <div className="p-5 grid gap-4">
+                <p className="text-xs text-muted-foreground">
+                  This MCP requires the following values to be configured.
+                </p>
+                {installEntry.required_env.map((item) => (
+                  <div className="grid gap-2" key={item.name}>
+                    <Label htmlFor={`install-env-${item.name}`}>
+                      {item.prompt}
+                      {item.required ? " *" : ""}
+                    </Label>
+                    <Input
+                      id={`install-env-${item.name}`}
+                      type="password"
+                      placeholder={item.name}
+                      value={installEnv[item.name] ?? ""}
+                      onChange={(e) =>
+                        setInstallEnv((prev) => ({
+                          ...prev,
+                          [item.name]: e.target.value,
+                        }))
+                      }
+                    />
+                  </div>
+                ))}
+
+                <div className="flex justify-end">
+                  <Button
+                    className="uppercase"
+                    size="sm"
+                    onClick={handleInstallSubmit}
+                    disabled={installingName === installEntry.name}
+                    prefix={
+                      installingName === installEntry.name ? (
+                        <Spinner />
+                      ) : undefined
+                    }
+                  >
+                    {installingName === installEntry.name
+                      ? "Installing..."
+                      : "Install"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </DashboardModalPortal>
       )}
 
       {/* ── Your MCP servers ── */}

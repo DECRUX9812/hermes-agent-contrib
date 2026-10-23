@@ -9,6 +9,7 @@ import { Input } from "@nous-research/ui/ui/components/input";
 import { useI18n } from "@/i18n";
 import { cn, themedBody } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
+import { DashboardModalPortal } from "@/components/DashboardModalPortal";
 
 interface Props {
   provider: OAuthProvider;
@@ -219,210 +220,212 @@ export function OAuthLoginModal({ provider, onClose, onSuccess }: Props) {
     start?.flow === "device_code" ? start.verification_url : "";
 
   return (
-    <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
-      onClick={handleBackdrop}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="oauth-modal-title"
-    >
-      <div className={cn(themedBody, "relative w-full max-w-md border border-border bg-card shadow-2xl")}>
-        <Button
-          ghost
-          size="icon"
-          onClick={handleClose}
-          className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-          aria-label={t.common.close}
-        >
-          <X />
-        </Button>
-        <div className="p-6 flex flex-col gap-4">
-          <div>
-            <H2
-              id="oauth-modal-title"
-              variant="sm"
-              mondwest
-              className="tracking-wider uppercase"
-            >
-              {t.oauth.connect} {provider.name}
-            </H2>
-            {secondsLeft !== null &&
-              phase !== "approved" &&
-              phase !== "error" && (
-                <p className="text-xs text-muted-foreground mt-1">
-                  {t.oauth.sessionExpires.replace(
-                    "{time}",
-                    fmtTime(secondsLeft),
-                  )}
-                </p>
-              )}
-          </div>
-
-          {phase === "starting" && (
-            <div className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
-              <Spinner />
-              {t.oauth.initiatingLogin}
+    <DashboardModalPortal>
+      <div
+        className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
+        onClick={handleBackdrop}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oauth-modal-title"
+      >
+        <div className={cn(themedBody, "relative w-full max-w-md border border-border bg-card shadow-2xl")}>
+          <Button
+            ghost
+            size="icon"
+            onClick={handleClose}
+            className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+            aria-label={t.common.close}
+          >
+            <X />
+          </Button>
+          <div className="p-6 flex flex-col gap-4">
+            <div>
+              <H2
+                id="oauth-modal-title"
+                variant="sm"
+                mondwest
+                className="tracking-wider uppercase"
+              >
+                {t.oauth.connect} {provider.name}
+              </H2>
+              {secondsLeft !== null &&
+                phase !== "approved" &&
+                phase !== "error" && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {t.oauth.sessionExpires.replace(
+                      "{time}",
+                      fmtTime(secondsLeft),
+                    )}
+                  </p>
+                )}
             </div>
-          )}
 
-          {start?.flow === "pkce" && phase === "awaiting_user" && (
-            <>
-              <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
-                <li>{t.oauth.pkceStep1}</li>
-                <li>{t.oauth.pkceStep2}</li>
-                <li>{t.oauth.pkceStep3}</li>
-              </ol>
-              <div className="flex flex-col gap-2">
-                <Input
-                  value={pkceCode}
-                  onChange={(e) => setPkceCode(e.target.value)}
-                  placeholder={t.oauth.pasteCode}
-                  onKeyDown={(e) => e.key === "Enter" && handleSubmitPkceCode()}
-                  autoFocus
-                />
-                <div className="flex items-center gap-2 justify-between">
-                  <a
-                    href={
-                      (start as Extract<OAuthStartResponse, { flow: "pkce" }>)
-                        .auth_url
-                    }
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-                  >
-                    <ExternalLink className="h-3 w-3" />
-                    {t.oauth.reOpenAuth}
-                  </a>
+            {phase === "starting" && (
+              <div className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
+                <Spinner />
+                {t.oauth.initiatingLogin}
+              </div>
+            )}
+
+            {start?.flow === "pkce" && phase === "awaiting_user" && (
+              <>
+                <ol className="text-sm space-y-2 list-decimal list-inside text-muted-foreground">
+                  <li>{t.oauth.pkceStep1}</li>
+                  <li>{t.oauth.pkceStep2}</li>
+                  <li>{t.oauth.pkceStep3}</li>
+                </ol>
+                <div className="flex flex-col gap-2">
+                  <Input
+                    value={pkceCode}
+                    onChange={(e) => setPkceCode(e.target.value)}
+                    placeholder={t.oauth.pasteCode}
+                    onKeyDown={(e) => e.key === "Enter" && handleSubmitPkceCode()}
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2 justify-between">
+                    <a
+                      href={
+                        (start as Extract<OAuthStartResponse, { flow: "pkce" }>)
+                          .auth_url
+                      }
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {t.oauth.reOpenAuth}
+                    </a>
+                    <Button
+                      onClick={handleSubmitPkceCode}
+                      disabled={!pkceCode.trim()}
+                    >
+                      {t.oauth.submitCode}
+                    </Button>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {phase === "submitting" && (
+              <div className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
+                <Spinner />
+                {t.oauth.exchangingCode}
+              </div>
+            )}
+
+            {start?.flow === "device_code" && phase === "polling" && (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  {t.oauth.enterCodePrompt}
+                </p>
+                <div className="flex items-center justify-between gap-2 border border-border bg-secondary/30 p-4">
+                  <code className="font-mono-ui text-2xl tracking-widest text-foreground">
+                    {deviceCode}
+                  </code>
                   <Button
-                    onClick={handleSubmitPkceCode}
-                    disabled={!pkceCode.trim()}
+                    size="sm"
+                    outlined
+                    className="shrink-0 uppercase"
+                    onClick={() => void handleCopyDeviceCode(deviceCode)}
+                    prefix={
+                      copyStatus === "copied" ? (
+                        <Check className="h-4 w-4" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )
+                    }
+                    aria-label={t.oauth.copyCode}
                   >
-                    {t.oauth.submitCode}
+                    {copyStatus === "copied" ? t.oauth.copied : t.oauth.copyCode}
                   </Button>
                 </div>
-              </div>
-            </>
-          )}
-
-          {phase === "submitting" && (
-            <div className="flex items-center gap-3 py-6 text-sm text-muted-foreground">
-              <Spinner />
-              {t.oauth.exchangingCode}
-            </div>
-          )}
-
-          {start?.flow === "device_code" && phase === "polling" && (
-            <>
-              <p className="text-sm text-muted-foreground">
-                {t.oauth.enterCodePrompt}
-              </p>
-              <div className="flex items-center justify-between gap-2 border border-border bg-secondary/30 p-4">
-                <code className="font-mono-ui text-2xl tracking-widest text-foreground">
-                  {deviceCode}
-                </code>
-                <Button
-                  size="sm"
-                  outlined
-                  className="shrink-0 uppercase"
-                  onClick={() => void handleCopyDeviceCode(deviceCode)}
-                  prefix={
-                    copyStatus === "copied" ? (
-                      <Check className="h-4 w-4" />
-                    ) : (
-                      <Copy className="h-4 w-4" />
-                    )
-                  }
-                  aria-label={t.oauth.copyCode}
+                {copyStatus === "failed" && (
+                  <p className="text-xs text-destructive">
+                    {t.oauth.copyFailed}
+                  </p>
+                )}
+                <a
+                  href={verificationUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
                 >
-                  {copyStatus === "copied" ? t.oauth.copied : t.oauth.copyCode}
-                </Button>
-              </div>
-              {copyStatus === "failed" && (
-                <p className="text-xs text-destructive">
-                  {t.oauth.copyFailed}
-                </p>
-              )}
-              <a
-                href={verificationUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1"
-              >
-                <ExternalLink className="h-3 w-3" />
-                {t.oauth.reOpenVerification}
-              </a>
-              <div className="flex items-center gap-2 text-xs text-muted-foreground border-t border-border pt-3">
-                <Spinner className="text-xs" />
-                {t.oauth.waitingAuth}
-              </div>
-            </>
-          )}
+                  <ExternalLink className="h-3 w-3" />
+                  {t.oauth.reOpenVerification}
+                </a>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground border-t border-border pt-3">
+                  <Spinner className="text-xs" />
+                  {t.oauth.waitingAuth}
+                </div>
+              </>
+            )}
 
-          {phase === "approved" && (
-            <div className="flex items-center gap-3 py-6 text-sm text-success">
-              <Check className="h-5 w-5" />
-              {t.oauth.connectedClosing}
-            </div>
-          )}
+            {phase === "approved" && (
+              <div className="flex items-center gap-3 py-6 text-sm text-success">
+                <Check className="h-5 w-5" />
+                {t.oauth.connectedClosing}
+              </div>
+            )}
 
-          {phase === "error" && (
-            <>
-              <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
-                {errorMsg || t.oauth.loginFailed}
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button outlined onClick={handleClose}>
-                  {t.common.close}
-                </Button>
-                <Button
-                  onClick={() => {
-                    if (start?.session_id) {
-                      api.cancelOAuthSession(start.session_id).catch(() => {});
-                    }
-                    setErrorMsg(null);
-                    setStart(null);
-                    setPkceCode("");
-                    setSecondsLeft(null);
-                    setPhase("starting");
-                    api
-                      .startOAuthLogin(provider.id)
-                      .then((resp) => {
-                        if (!isMounted.current) return;
-                        setStart(resp);
-                        setSecondsLeft(resp.expires_in);
-                        setPhase(
-                          resp.flow === "device_code"
-                            ? "polling"
-                            : "awaiting_user",
-                        );
-                        if (resp.flow === "pkce") {
-                          window.open(
-                            resp.auth_url,
-                            "_blank",
-                            "noopener,noreferrer",
+            {phase === "error" && (
+              <>
+                <div className="border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive">
+                  {errorMsg || t.oauth.loginFailed}
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button outlined onClick={handleClose}>
+                    {t.common.close}
+                  </Button>
+                  <Button
+                    onClick={() => {
+                      if (start?.session_id) {
+                        api.cancelOAuthSession(start.session_id).catch(() => {});
+                      }
+                      setErrorMsg(null);
+                      setStart(null);
+                      setPkceCode("");
+                      setSecondsLeft(null);
+                      setPhase("starting");
+                      api
+                        .startOAuthLogin(provider.id)
+                        .then((resp) => {
+                          if (!isMounted.current) return;
+                          setStart(resp);
+                          setSecondsLeft(resp.expires_in);
+                          setPhase(
+                            resp.flow === "device_code"
+                              ? "polling"
+                              : "awaiting_user",
                           );
-                        } else {
-                          window.open(
-                            resp.verification_url,
-                            "_blank",
-                            "noopener,noreferrer",
-                          );
-                        }
-                      })
-                      .catch((e) => {
-                        if (!isMounted.current) return;
-                        setPhase("error");
-                        setErrorMsg(`${t.common.retry} failed: ${errorMessage(e)}`);
-                      });
-                  }}
-                >
-                  {t.common.retry}
-                </Button>
-              </div>
-            </>
-          )}
+                          if (resp.flow === "pkce") {
+                            window.open(
+                              resp.auth_url,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
+                          } else {
+                            window.open(
+                              resp.verification_url,
+                              "_blank",
+                              "noopener,noreferrer",
+                            );
+                          }
+                        })
+                        .catch((e) => {
+                          if (!isMounted.current) return;
+                          setPhase("error");
+                          setErrorMsg(`${t.common.retry} failed: ${errorMessage(e)}`);
+                        });
+                    }}
+                  >
+                    {t.common.retry}
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
-    </div>
+    </DashboardModalPortal>
   );
 }

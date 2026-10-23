@@ -58,6 +58,7 @@ import { Segmented } from "@nous-research/ui/ui/components/segmented";
 import { AutomationBlueprints } from "@/components/AutomationBlueprints";
 import { cn, themedBody } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
+import { DashboardModalPortal } from "@/components/DashboardModalPortal";
 
 function formatTime(iso?: string | null): string {
   if (!iso) return "—";
@@ -945,140 +946,144 @@ export default function CronPage() {
 
       {/* Create job modal */}
       {createModalOpen && (
-        <div
-          ref={createModalRef}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
-          onClick={(e) => e.target === e.currentTarget && setCreateModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="create-cron-title"
-        >
-          <div className={cn(themedBody, "relative w-full max-w-3xl max-h-[90vh] border border-border bg-card shadow-2xl flex flex-col")}>
-            <Button
-              ghost
-              size="icon"
-              onClick={() => setCreateModalOpen(false)}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
-            >
-              <X />
-            </Button>
-
-            <header className="p-5 pb-3 border-b border-border">
-              <h2
-                id="create-cron-title"
-                className="font-mondwest text-display text-base tracking-wider"
+        <DashboardModalPortal>
+          <div
+            ref={createModalRef}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
+            onClick={(e) => e.target === e.currentTarget && setCreateModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-cron-title"
+          >
+            <div className={cn(themedBody, "relative w-full max-w-3xl max-h-[90vh] border border-border bg-card shadow-2xl flex flex-col")}>
+              <Button
+                ghost
+                size="icon"
+                onClick={() => setCreateModalOpen(false)}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
-                {t.cron.newJob}
-              </h2>
-            </header>
+                <X />
+              </Button>
 
-            <div className="min-h-0 overflow-y-auto p-5 grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="cron-profile">Profile</Label>
-                <Select
-                  id="cron-profile"
-                  value={createProfile}
-                  onValueChange={(v) => setCreateProfile(v)}
+              <header className="p-5 pb-3 border-b border-border">
+                <h2
+                  id="create-cron-title"
+                  className="font-mondwest text-display text-base tracking-wider"
                 >
-                  {profiles.map((profile) => (
-                    <SelectOption key={profile.name} value={profile.name}>
-                      {profileLabel(profile.name)}
-                    </SelectOption>
-                  ))}
-                </Select>
-              </div>
+                  {t.cron.newJob}
+                </h2>
+              </header>
 
-              <CronJobFormFields
-                idPrefix="cron"
-                autoFocus
-                form={createForm}
-                onChange={setCreateForm}
-                resources={{
-                  availableSkills,
-                  availableToolsets,
-                  modelOptions,
-                  deliveryTargets,
-                }}
-              />
+              <div className="min-h-0 overflow-y-auto p-5 grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="cron-profile">Profile</Label>
+                  <Select
+                    id="cron-profile"
+                    value={createProfile}
+                    onValueChange={(v) => setCreateProfile(v)}
+                  >
+                    {profiles.map((profile) => (
+                      <SelectOption key={profile.name} value={profile.name}>
+                        {profileLabel(profile.name)}
+                      </SelectOption>
+                    ))}
+                  </Select>
+                </div>
 
-              <div className="flex justify-end">
-                <Button
-                  className="uppercase"
-                  size="sm"
-                  onClick={handleCreate}
-                  disabled={creating}
-                  prefix={creating ? <Spinner /> : undefined}
-                >
-                  {creating ? t.common.creating : t.common.create}
-                </Button>
+                <CronJobFormFields
+                  idPrefix="cron"
+                  autoFocus
+                  form={createForm}
+                  onChange={setCreateForm}
+                  resources={{
+                    availableSkills,
+                    availableToolsets,
+                    modelOptions,
+                    deliveryTargets,
+                  }}
+                />
+
+                <div className="flex justify-end">
+                  <Button
+                    className="uppercase"
+                    size="sm"
+                    onClick={handleCreate}
+                    disabled={creating}
+                    prefix={creating ? <Spinner /> : undefined}
+                  >
+                    {creating ? t.common.creating : t.common.create}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </DashboardModalPortal>
       )}
 
       {/* Edit job modal */}
       {editJob && (
-        <div
-          ref={editModalRef}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
-          onClick={(e) => e.target === e.currentTarget && setEditJob(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="edit-cron-title"
-        >
-          <div className={cn(themedBody, "relative w-full max-w-3xl max-h-[90vh] border border-border bg-card shadow-2xl flex flex-col")}>
-            <Button
-              ghost
-              size="icon"
-              onClick={() => setEditJob(null)}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
-            >
-              <X />
-            </Button>
-
-            <header className="p-5 pb-3 border-b border-border">
-              <h2
-                id="edit-cron-title"
-                className="font-mondwest text-display text-base tracking-wider"
+        <DashboardModalPortal>
+          <div
+            ref={editModalRef}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
+            onClick={(e) => e.target === e.currentTarget && setEditJob(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-cron-title"
+          >
+            <div className={cn(themedBody, "relative w-full max-w-3xl max-h-[90vh] border border-border bg-card shadow-2xl flex flex-col")}>
+              <Button
+                ghost
+                size="icon"
+                onClick={() => setEditJob(null)}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
-                Edit job
-              </h2>
-            </header>
+                <X />
+              </Button>
 
-            <div className="min-h-0 overflow-y-auto p-5 grid gap-4">
-              <CronJobFormFields
-                idPrefix="edit-cron"
-                autoFocus
-                form={editForm}
-                onChange={setEditForm}
-                resources={{
-                  availableSkills,
-                  availableToolsets,
-                  modelOptions,
-                  deliveryTargets,
-                }}
-              />
-
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground font-mono-ui truncate pr-4">
-                  {editJob.id}
-                </span>
-                <Button
-                  className="uppercase"
-                  size="sm"
-                  onClick={handleEdit}
-                  disabled={saving}
-                  prefix={saving ? <Spinner /> : undefined}
+              <header className="p-5 pb-3 border-b border-border">
+                <h2
+                  id="edit-cron-title"
+                  className="font-mondwest text-display text-base tracking-wider"
                 >
-                  {saving ? t.common.loading : "Save changes"}
-                </Button>
+                  Edit job
+                </h2>
+              </header>
+
+              <div className="min-h-0 overflow-y-auto p-5 grid gap-4">
+                <CronJobFormFields
+                  idPrefix="edit-cron"
+                  autoFocus
+                  form={editForm}
+                  onChange={setEditForm}
+                  resources={{
+                    availableSkills,
+                    availableToolsets,
+                    modelOptions,
+                    deliveryTargets,
+                  }}
+                />
+
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground font-mono-ui truncate pr-4">
+                    {editJob.id}
+                  </span>
+                  <Button
+                    className="uppercase"
+                    size="sm"
+                    onClick={handleEdit}
+                    disabled={saving}
+                    prefix={saving ? <Spinner /> : undefined}
+                  >
+                    {saving ? t.common.loading : "Save changes"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </DashboardModalPortal>
       )}
 
       {view === "jobs" && (

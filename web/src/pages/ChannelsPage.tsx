@@ -39,6 +39,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn, themedBody } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
+import { DashboardModalPortal } from "@/components/DashboardModalPortal";
 
 // State → badge mapping. The backend emits a small, fixed vocabulary plus
 // whatever the live gateway runtime reports (connected/disconnected/fatal).
@@ -375,133 +376,157 @@ export default function ChannelsPage() {
 
       {/* Config modal */}
       {editing && (
-        <div
-          ref={editModalRef}
-          className={cn(
-            "fixed inset-0 z-[100] flex min-h-dvh items-start justify-center overflow-y-auto bg-background/85 px-4",
-            "pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]",
-            "sm:items-center sm:p-4",
-          )}
-          onClick={(e) => e.target === e.currentTarget && setEditing(null)}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="channel-config-title"
-        >
+        <DashboardModalPortal>
           <div
+            ref={editModalRef}
             className={cn(
-              themedBody,
-              "relative flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col border border-border bg-card shadow-2xl sm:max-h-[90dvh]",
+              "fixed inset-0 z-[100] flex min-h-dvh items-start justify-center overflow-y-auto bg-background/85 px-4",
+              "pb-[calc(1rem+env(safe-area-inset-bottom))] pt-[calc(1rem+env(safe-area-inset-top))]",
+              "sm:items-center sm:p-4",
             )}
+            onClick={(e) => e.target === e.currentTarget && setEditing(null)}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="channel-config-title"
           >
-            <Button
-              ghost
-              size="icon"
-              onClick={() => setEditing(null)}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
+            <div
+              className={cn(
+                themedBody,
+                "relative flex max-h-[calc(100dvh-2rem)] w-full max-w-lg flex-col border border-border bg-card shadow-2xl sm:max-h-[90dvh]",
+              )}
             >
-              <X />
-            </Button>
-
-            <header className="p-5 pb-3 border-b border-border">
-              <h2
-                id="channel-config-title"
-                className="font-mondwest text-display text-base tracking-wider"
+              <Button
+                ghost
+                size="icon"
+                onClick={() => setEditing(null)}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
-                {editing.id === "telegram"
-                  ? "Use your own Telegram bot"
-                  : `Configure ${editing.name}`}
-              </h2>
-              {editing.docs_url && (
-                <a
-                  href={editing.docs_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
-                >
-                  {editing.id === "telegram" ? "BotFather guide" : "Setup guide"}
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              )}
-            </header>
+                <X />
+              </Button>
 
-            <div className="grid gap-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
-              {editing.id === "telegram" && (
-                <div className="grid gap-3 text-sm text-muted-foreground">
-                  <p>
-                    Connect a bot you already own, or create one in Telegram before
-                    filling in this form.
-                  </p>
-                  <ol className="grid list-decimal gap-1.5 pl-5">
-                    <li>
-                      Open <span className="text-foreground">@BotFather</span>, send
-                      <code className="mx-1 font-courier text-xs">/newbot</code>, and
-                      follow its prompts.
-                    </li>
-                    <li>Copy the complete bot token BotFather gives you.</li>
-                    <li>
-                      Message <span className="text-foreground">@userinfobot</span> to
-                      find your numeric Telegram user ID, then add it below for
-                      immediate access.
-                    </li>
-                  </ol>
-                  <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
-                    <a
-                      href="https://t.me/BotFather"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-primary hover:underline"
-                    >
-                      Open @BotFather <ExternalLink className="h-3 w-3" />
-                    </a>
-                    <a
-                      href="https://t.me/userinfobot"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-primary hover:underline"
-                    >
-                      Find my user ID <ExternalLink className="h-3 w-3" />
-                    </a>
-                  </div>
-                  <p className="text-xs">
-                    You can leave allowed users blank. Hermes will then send new DM
-                    users a code that you approve from the Pairing page.
-                  </p>
-                </div>
-              )}
-              <p className="text-xs text-muted-foreground">
-                {editing.description}
-              </p>
-              {editing.env_vars.map((field: MessagingPlatformEnvVar) => (
-                <div className="grid gap-1.5" key={field.key}>
-                  <div className="flex items-center gap-1.5">
-                    <Label htmlFor={`field-${field.key}`}>
-                      {field.prompt || field.key}
-                      {field.required ? " *" : ""}
-                    </Label>
-                    {field.help && (
-                      <span
-                        aria-label={field.help}
-                        className="inline-flex text-muted-foreground hover:text-foreground"
-                        role="img"
-                        title={field.help}
+              <header className="p-5 pb-3 border-b border-border">
+                <h2
+                  id="channel-config-title"
+                  className="font-mondwest text-display text-base tracking-wider"
+                >
+                  {editing.id === "telegram"
+                    ? "Use your own Telegram bot"
+                    : `Configure ${editing.name}`}
+                </h2>
+                {editing.docs_url && (
+                  <a
+                    href={editing.docs_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-1 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    {editing.id === "telegram" ? "BotFather guide" : "Setup guide"}
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                )}
+              </header>
+
+              <div className="grid gap-4 overflow-y-auto overscroll-contain p-4 sm:p-5">
+                {editing.id === "telegram" && (
+                  <div className="grid gap-3 text-sm text-muted-foreground">
+                    <p>
+                      Connect a bot you already own, or create one in Telegram before
+                      filling in this form.
+                    </p>
+                    <ol className="grid list-decimal gap-1.5 pl-5">
+                      <li>
+                        Open <span className="text-foreground">@BotFather</span>, send
+                        <code className="mx-1 font-courier text-xs">/newbot</code>, and
+                        follow its prompts.
+                      </li>
+                      <li>Copy the complete bot token BotFather gives you.</li>
+                      <li>
+                        Message <span className="text-foreground">@userinfobot</span> to
+                        find your numeric Telegram user ID, then add it below for
+                        immediate access.
+                      </li>
+                    </ol>
+                    <div className="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+                      <a
+                        href="https://t.me/BotFather"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
                       >
-                        <Info className="h-3.5 w-3.5" />
+                        Open @BotFather <ExternalLink className="h-3 w-3" />
+                      </a>
+                      <a
+                        href="https://t.me/userinfobot"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-primary hover:underline"
+                      >
+                        Find my user ID <ExternalLink className="h-3 w-3" />
+                      </a>
+                    </div>
+                    <p className="text-xs">
+                      You can leave allowed users blank. Hermes will then send new DM
+                      users a code that you approve from the Pairing page.
+                    </p>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  {editing.description}
+                </p>
+                {editing.env_vars.map((field: MessagingPlatformEnvVar) => (
+                  <div className="grid gap-1.5" key={field.key}>
+                    <div className="flex items-center gap-1.5">
+                      <Label htmlFor={`field-${field.key}`}>
+                        {field.prompt || field.key}
+                        {field.required ? " *" : ""}
+                      </Label>
+                      {field.help && (
+                        <span
+                          aria-label={field.help}
+                          className="inline-flex text-muted-foreground hover:text-foreground"
+                          role="img"
+                          title={field.help}
+                        >
+                          <Info className="h-3.5 w-3.5" />
+                        </span>
+                      )}
+                    </div>
+                    {field.description && (
+                      <span className="text-xs text-muted-foreground">
+                        {field.description}
                       </span>
                     )}
-                  </div>
-                  {field.description && (
-                    <span className="text-xs text-muted-foreground">
-                      {field.description}
-                    </span>
-                  )}
-                  {field.is_list ? (
-                    <AllowlistInput
+                    {field.is_list ? (
+                      <AllowlistInput
+                        id={`field-${field.key}`}
+                        label={field.prompt || field.key}
+                        value={draftEnv[field.key] ?? ""}
+                        invalid={Boolean(fieldErrors[field.key])}
+                        onChange={(nextValue) => {
+                          setDraftEnv((prev) => ({ ...prev, [field.key]: nextValue }));
+                          setFieldErrors((prev) => {
+                            if (!prev[field.key]) return prev;
+                            const next = { ...prev };
+                            delete next[field.key];
+                            return next;
+                          });
+                        }}
+                      />
+                    ) : (
+                    <Input
                       id={`field-${field.key}`}
-                      label={field.prompt || field.key}
+                      type={field.is_password ? "password" : "text"}
+                      className="text-base leading-6 sm:text-xs sm:leading-4"
+                      placeholder={
+                        field.is_set
+                          ? field.redacted_value || "•••••• (set — leave blank to keep)"
+                          : field.key
+                      }
                       value={draftEnv[field.key] ?? ""}
-                      invalid={Boolean(fieldErrors[field.key])}
-                      onChange={(nextValue) => {
+                      aria-invalid={Boolean(fieldErrors[field.key])}
+                      onChange={(e) => {
+                        const nextValue = e.target.value;
                         setDraftEnv((prev) => ({ ...prev, [field.key]: nextValue }));
                         setFieldErrors((prev) => {
                           if (!prev[field.key]) return prev;
@@ -511,60 +536,38 @@ export default function ChannelsPage() {
                         });
                       }}
                     />
-                  ) : (
-                  <Input
-                    id={`field-${field.key}`}
-                    type={field.is_password ? "password" : "text"}
-                    className="text-base leading-6 sm:text-xs sm:leading-4"
-                    placeholder={
-                      field.is_set
-                        ? field.redacted_value || "•••••• (set — leave blank to keep)"
-                        : field.key
-                    }
-                    value={draftEnv[field.key] ?? ""}
-                    aria-invalid={Boolean(fieldErrors[field.key])}
-                    onChange={(e) => {
-                      const nextValue = e.target.value;
-                      setDraftEnv((prev) => ({ ...prev, [field.key]: nextValue }));
-                      setFieldErrors((prev) => {
-                        if (!prev[field.key]) return prev;
-                        const next = { ...prev };
-                        delete next[field.key];
-                        return next;
-                      });
-                    }}
-                  />
-                  )}
-                  {fieldErrors[field.key] && (
-                    <span className="text-xs text-destructive">
-                      {fieldErrors[field.key]}
-                    </span>
-                  )}
-                </div>
-              ))}
+                    )}
+                    {fieldErrors[field.key] && (
+                      <span className="text-xs text-destructive">
+                        {fieldErrors[field.key]}
+                      </span>
+                    )}
+                  </div>
+                ))}
 
-              <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
-                <Button
-                  ghost
-                  size="sm"
-                  className="w-full sm:w-auto"
-                  onClick={() => setEditing(null)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  className="w-full uppercase sm:w-auto"
-                  size="sm"
-                  onClick={handleSave}
-                  disabled={saving}
-                  prefix={saving ? <Spinner /> : undefined}
-                >
-                  {saving ? "Saving…" : "Save & enable"}
-                </Button>
+                <div className="flex flex-col-reverse gap-2 pt-1 sm:flex-row sm:justify-end">
+                  <Button
+                    ghost
+                    size="sm"
+                    className="w-full sm:w-auto"
+                    onClick={() => setEditing(null)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    className="w-full uppercase sm:w-auto"
+                    size="sm"
+                    onClick={handleSave}
+                    disabled={saving}
+                    prefix={saving ? <Spinner /> : undefined}
+                  >
+                    {saving ? "Saving…" : "Save & enable"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </DashboardModalPortal>
       )}
 
       {/* Platform list */}

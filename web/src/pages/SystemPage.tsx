@@ -71,6 +71,7 @@ import type {
   GatewayMigratePlan,
 } from "@/lib/api";
 import { apiErrorFromResponse, errorMessage } from "@/lib/api-error";
+import { DashboardModalPortal } from "@/components/DashboardModalPortal";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -795,106 +796,108 @@ export default function SystemPage() {
 
       {/* Create-hook modal */}
       {hookModalOpen && (
-        <div
-          ref={hookModalRef}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
-          onClick={(e) => e.target === e.currentTarget && setHookModalOpen(false)}
-          role="dialog"
-          aria-modal="true"
-        >
-          <div className={cn(themedBody, "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col")}>
-            <Button
-              ghost
-              size="icon"
-              onClick={() => setHookModalOpen(false)}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
-            >
-              <X />
-            </Button>
-            <header className="p-5 pb-3 border-b border-border">
-              <h2 className="font-mondwest text-display text-base tracking-wider">
-                New shell hook
-              </h2>
-            </header>
-            <div className="p-5 grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="hook-event">Event</Label>
-                <Select
-                  id="hook-event"
-                  value={hookEvent}
-                  onValueChange={(v) => setHookEvent(v)}
-                >
-                  {validEvents.map((ev) => (
-                    <SelectOption key={ev} value={ev}>
-                      {ev}
-                    </SelectOption>
-                  ))}
-                </Select>
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="hook-command">Command (absolute path)</Label>
-                <Input
-                  id="hook-command"
-                  autoFocus
-                  placeholder="/usr/local/bin/my-hook.sh"
-                  value={hookCommand}
-                  onChange={(e) => setHookCommand(e.target.value)}
-                />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+        <DashboardModalPortal>
+          <div
+            ref={hookModalRef}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
+            onClick={(e) => e.target === e.currentTarget && setHookModalOpen(false)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <div className={cn(themedBody, "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col")}>
+              <Button
+                ghost
+                size="icon"
+                onClick={() => setHookModalOpen(false)}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
+              >
+                <X />
+              </Button>
+              <header className="p-5 pb-3 border-b border-border">
+                <h2 className="font-mondwest text-display text-base tracking-wider">
+                  New shell hook
+                </h2>
+              </header>
+              <div className="p-5 grid gap-4">
                 <div className="grid gap-2">
-                  <Label htmlFor="hook-matcher">Matcher (optional)</Label>
-                  <Input
-                    id="hook-matcher"
-                    placeholder="e.g. terminal"
-                    value={hookMatcher}
-                    onChange={(e) => setHookMatcher(e.target.value)}
-                  />
+                  <Label htmlFor="hook-event">Event</Label>
+                  <Select
+                    id="hook-event"
+                    value={hookEvent}
+                    onValueChange={(v) => setHookEvent(v)}
+                  >
+                    {validEvents.map((ev) => (
+                      <SelectOption key={ev} value={ev}>
+                        {ev}
+                      </SelectOption>
+                    ))}
+                  </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label htmlFor="hook-timeout">Timeout (s)</Label>
+                  <Label htmlFor="hook-command">Command (absolute path)</Label>
                   <Input
-                    id="hook-timeout"
-                    placeholder="10"
-                    value={hookTimeout}
-                    onChange={(e) => setHookTimeout(e.target.value)}
+                    id="hook-command"
+                    autoFocus
+                    placeholder="/usr/local/bin/my-hook.sh"
+                    value={hookCommand}
+                    onChange={(e) => setHookCommand(e.target.value)}
                   />
                 </div>
-              </div>
-              <div className="flex items-center gap-2.5">
-                <Checkbox
-                  checked={hookApprove}
-                  id="hook-approve"
-                  onCheckedChange={(checked) => setHookApprove(checked === true)}
-                />
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label htmlFor="hook-matcher">Matcher (optional)</Label>
+                    <Input
+                      id="hook-matcher"
+                      placeholder="e.g. terminal"
+                      value={hookMatcher}
+                      onChange={(e) => setHookMatcher(e.target.value)}
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="hook-timeout">Timeout (s)</Label>
+                    <Input
+                      id="hook-timeout"
+                      placeholder="10"
+                      value={hookTimeout}
+                      onChange={(e) => setHookTimeout(e.target.value)}
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-2.5">
+                  <Checkbox
+                    checked={hookApprove}
+                    id="hook-approve"
+                    onCheckedChange={(checked) => setHookApprove(checked === true)}
+                  />
 
-                <Label
-                  className="cursor-pointer text-sm font-normal normal-case tracking-normal text-muted-foreground"
-                  htmlFor="hook-approve"
-                >
-                  Approve now (grant consent so it fires; otherwise it stays
-                  configured but inactive)
-                </Label>
-              </div>
-              <p className="text-xs text-warning">
-                Shell hooks run arbitrary commands on this host. Only add scripts
-                you trust. Takes effect on the next gateway/session restart.
-              </p>
-              <div className="flex justify-end">
-                <Button
-                  className="uppercase"
-                  size="sm"
-                  onClick={createHook}
-                  disabled={creatingHook}
-                  prefix={creatingHook ? <Spinner /> : undefined}
-                >
-                  {creatingHook ? "Creating" : "Create hook"}
-                </Button>
+                  <Label
+                    className="cursor-pointer text-sm font-normal normal-case tracking-normal text-muted-foreground"
+                    htmlFor="hook-approve"
+                  >
+                    Approve now (grant consent so it fires; otherwise it stays
+                    configured but inactive)
+                  </Label>
+                </div>
+                <p className="text-xs text-warning">
+                  Shell hooks run arbitrary commands on this host. Only add scripts
+                  you trust. Takes effect on the next gateway/session restart.
+                </p>
+                <div className="flex justify-end">
+                  <Button
+                    className="uppercase"
+                    size="sm"
+                    onClick={createHook}
+                    disabled={creatingHook}
+                    prefix={creatingHook ? <Spinner /> : undefined}
+                  >
+                    {creatingHook ? "Creating" : "Create hook"}
+                  </Button>
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        </DashboardModalPortal>
       )}
 
       {/* Live action log */}

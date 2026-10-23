@@ -46,6 +46,7 @@ import { useI18n } from "@/i18n";
 import { usePageHeader } from "@/contexts/usePageHeader";
 import { cn, themedBody } from "@/lib/utils";
 import { errorMessage } from "@/lib/api-error";
+import { DashboardModalPortal } from "@/components/DashboardModalPortal";
 
 // Mirrors hermes_cli/profiles.py::_PROFILE_ID_RE so we can reject obviously
 // invalid names (uppercase, spaces, …) before round-tripping a doomed POST.
@@ -803,184 +804,186 @@ export default function ProfilesPage() {
 
       {/* Create profile modal */}
       {createModalOpen && (
-        <div
-          ref={createModalRef}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
-          onClick={(e) =>
-            e.target === e.currentTarget && setCreateModalOpen(false)
-          }
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="create-profile-title"
-        >
+        <DashboardModalPortal>
           <div
-            className={cn(
-              themedBody,
-              "relative w-full max-w-md border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]",
-            )}
+            ref={createModalRef}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
+            onClick={(e) =>
+              e.target === e.currentTarget && setCreateModalOpen(false)
+            }
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-profile-title"
           >
-            <Button
-              ghost
-              size="icon"
-              onClick={() => setCreateModalOpen(false)}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
+            <div
+              className={cn(
+                themedBody,
+                "relative w-full max-w-md border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]",
+              )}
             >
-              <X />
-            </Button>
-
-            <header className="p-5 pb-3 border-b border-border">
-              <h2
-                id="create-profile-title"
-                className="font-mondwest text-display text-base tracking-wider"
+              <Button
+                ghost
+                size="icon"
+                onClick={() => setCreateModalOpen(false)}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
               >
-                {t.profiles.newProfile}
-              </h2>
-            </header>
+                <X />
+              </Button>
 
-            <div className="min-h-0 overflow-y-auto p-5 grid gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="profile-name">{t.profiles.name}</Label>
-
-                <Input
-                  id="profile-name"
-                  autoFocus
-                  placeholder={t.profiles.namePlaceholder}
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") handleCreate();
-                  }}
-                  aria-invalid={
-                    newName.trim() !== "" &&
-                    !PROFILE_NAME_RE.test(newName.trim())
-                  }
-                />
-
-                <p className="text-xs text-muted-foreground">
-                  {t.profiles.nameRule}
-                </p>
-              </div>
-
-              <div className="grid gap-2">
-                <Label htmlFor="clone-from">{t.profiles.cloneFrom}</Label>
-                <Select
-                  id="clone-from"
-                  value={cloneFrom ?? ""}
-                  onValueChange={(v) => {
-                    const next = v || null;
-                    setCloneFrom(next);
-                    if (next === null) setCloneAll(false);
-                  }}
+              <header className="p-5 pb-3 border-b border-border">
+                <h2
+                  id="create-profile-title"
+                  className="font-mondwest text-display text-base tracking-wider"
                 >
-                  <SelectOption value="">{t.profiles.cloneFromNone}</SelectOption>
-                  {profiles.map((profile) => (
-                    <SelectOption key={profile.name} value={profile.name}>
-                      {profile.name}
+                  {t.profiles.newProfile}
+                </h2>
+              </header>
+
+              <div className="min-h-0 overflow-y-auto p-5 grid gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="profile-name">{t.profiles.name}</Label>
+
+                  <Input
+                    id="profile-name"
+                    autoFocus
+                    placeholder={t.profiles.namePlaceholder}
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") handleCreate();
+                    }}
+                    aria-invalid={
+                      newName.trim() !== "" &&
+                      !PROFILE_NAME_RE.test(newName.trim())
+                    }
+                  />
+
+                  <p className="text-xs text-muted-foreground">
+                    {t.profiles.nameRule}
+                  </p>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="clone-from">{t.profiles.cloneFrom}</Label>
+                  <Select
+                    id="clone-from"
+                    value={cloneFrom ?? ""}
+                    onValueChange={(v) => {
+                      const next = v || null;
+                      setCloneFrom(next);
+                      if (next === null) setCloneAll(false);
+                    }}
+                  >
+                    <SelectOption value="">{t.profiles.cloneFromNone}</SelectOption>
+                    {profiles.map((profile) => (
+                      <SelectOption key={profile.name} value={profile.name}>
+                        {profile.name}
+                      </SelectOption>
+                    ))}
+                  </Select>
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="profile-description">
+                    {L.descriptionOptional}
+                  </Label>
+
+                  <textarea
+                    id="profile-description"
+                    className="flex min-h-[64px] w-full border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                    placeholder={L.descriptionPlaceholder}
+                    value={newDescription}
+                    onChange={(e) => setNewDescription(e.target.value)}
+                  />
+                </div>
+
+                <div className="grid gap-2">
+                  <Label htmlFor="profile-model">{L.modelOptional}</Label>
+
+                  <Select
+                    id="profile-model"
+                    value={modelChoice}
+                    disabled={modelChoices === null}
+                    onValueChange={setModelChoice}
+                  >
+                    <SelectOption value="">
+                      {modelChoices === null ? L.modelLoading : L.modelInherit}
                     </SelectOption>
-                  ))}
-                </Select>
-              </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="profile-description">
-                  {L.descriptionOptional}
-                </Label>
+                    {(modelChoices ?? []).map((c) => (
+                      <SelectOption
+                        key={`${c.provider}\u0000${c.model}`}
+                        value={`${c.provider}\u0000${c.model}`}
+                      >
+                        {c.label}
+                      </SelectOption>
+                    ))}
+                  </Select>
 
-                <textarea
-                  id="profile-description"
-                  className="flex min-h-[64px] w-full border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                  placeholder={L.descriptionPlaceholder}
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                />
-              </div>
+                  {modelChoices !== null && modelChoices.length === 0 && (
+                    <p className="text-xs text-muted-foreground">{L.modelNone}</p>
+                  )}
+                </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="profile-model">{L.modelOptional}</Label>
+                <fieldset className="grid gap-3 border-t border-border pt-4">
+                  <legend className="font-mondwest text-display text-xs tracking-wider text-muted-foreground">
+                    {L.advancedOptions}
+                  </legend>
 
-                <Select
-                  id="profile-model"
-                  value={modelChoice}
-                  disabled={modelChoices === null}
-                  onValueChange={setModelChoice}
-                >
-                  <SelectOption value="">
-                    {modelChoices === null ? L.modelLoading : L.modelInherit}
-                  </SelectOption>
+                  <div className="flex items-center gap-2.5">
+                    <Checkbox
+                      checked={cloneAll}
+                      disabled={!cloning}
+                      id="clone-all"
+                      onCheckedChange={(checked) => setCloneAll(checked === true)}
+                    />
 
-                  {(modelChoices ?? []).map((c) => (
-                    <SelectOption
-                      key={`${c.provider}\u0000${c.model}`}
-                      value={`${c.provider}\u0000${c.model}`}
+                    <Label
+                      className={cn(
+                        "font-mondwest normal-case tracking-normal text-sm cursor-pointer",
+                        !cloning && "opacity-50",
+                      )}
+                      htmlFor="clone-all"
                     >
-                      {c.label}
-                    </SelectOption>
-                  ))}
-                </Select>
+                      {L.cloneAll}
+                    </Label>
+                  </div>
 
-                {modelChoices !== null && modelChoices.length === 0 && (
-                  <p className="text-xs text-muted-foreground">{L.modelNone}</p>
-                )}
-              </div>
+                  <div className="flex items-center gap-2.5">
+                    <Checkbox
+                      checked={noSkills}
+                      id="no-skills"
+                      disabled={cloning}
+                      onCheckedChange={(checked) => setNoSkills(checked === true)}
+                    />
 
-              <fieldset className="grid gap-3 border-t border-border pt-4">
-                <legend className="font-mondwest text-display text-xs tracking-wider text-muted-foreground">
-                  {L.advancedOptions}
-                </legend>
+                    <Label
+                      className={cn(
+                        "font-mondwest normal-case tracking-normal text-sm cursor-pointer",
+                        cloning && "opacity-50",
+                      )}
+                      htmlFor="no-skills"
+                    >
+                      {L.noSkillsOption}
+                    </Label>
+                  </div>
+                </fieldset>
 
-                <div className="flex items-center gap-2.5">
-                  <Checkbox
-                    checked={cloneAll}
-                    disabled={!cloning}
-                    id="clone-all"
-                    onCheckedChange={(checked) => setCloneAll(checked === true)}
-                  />
-
-                  <Label
-                    className={cn(
-                      "font-mondwest normal-case tracking-normal text-sm cursor-pointer",
-                      !cloning && "opacity-50",
-                    )}
-                    htmlFor="clone-all"
+                <div className="flex justify-end">
+                  <Button
+                    className="uppercase"
+                    size="sm"
+                    onClick={handleCreate}
+                    disabled={creating}
                   >
-                    {L.cloneAll}
-                  </Label>
+                    {creating ? t.common.creating : t.common.create}
+                  </Button>
                 </div>
-
-                <div className="flex items-center gap-2.5">
-                  <Checkbox
-                    checked={noSkills}
-                    id="no-skills"
-                    disabled={cloning}
-                    onCheckedChange={(checked) => setNoSkills(checked === true)}
-                  />
-
-                  <Label
-                    className={cn(
-                      "font-mondwest normal-case tracking-normal text-sm cursor-pointer",
-                      cloning && "opacity-50",
-                    )}
-                    htmlFor="no-skills"
-                  >
-                    {L.noSkillsOption}
-                  </Label>
-                </div>
-              </fieldset>
-
-              <div className="flex justify-end">
-                <Button
-                  className="uppercase"
-                  size="sm"
-                  onClick={handleCreate}
-                  disabled={creating}
-                >
-                  {creating ? t.common.creating : t.common.create}
-                </Button>
               </div>
             </div>
           </div>
-        </div>
+        </DashboardModalPortal>
       )}
 
       {/* Active profile banner */}
@@ -1230,168 +1233,170 @@ export default function ProfilesPage() {
 
       {/* Editor dialog — model / description / SOUL for the selected profile */}
       {editorName && (
-        <div
-          ref={editorModalRef}
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
-          onClick={(e) => e.target === e.currentTarget && closeEditor()}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="profile-editor-title"
-        >
+        <DashboardModalPortal>
           <div
-            className={cn(
-              themedBody,
-              "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]",
-            )}
+            ref={editorModalRef}
+            className="fixed inset-0 z-[100] flex items-center justify-center bg-background/85 p-4"
+            onClick={(e) => e.target === e.currentTarget && closeEditor()}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="profile-editor-title"
           >
-            <Button
-              ghost
-              size="icon"
-              onClick={closeEditor}
-              className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
-              aria-label="Close"
-            >
-              <X />
-            </Button>
-
-            <header className="p-5 pb-3 border-b border-border">
-              <h2
-                id="profile-editor-title"
-                className="font-mondwest text-display text-base tracking-wider"
-              >
-                {editorKind === "model"
-                  ? L.editModel
-                  : editorKind === "desc"
-                    ? L.description
-                    : t.profiles.soulSection}
-                <span className="text-muted-foreground"> · {editorName}</span>
-              </h2>
-            </header>
-
             <div
               className={cn(
-                "p-5 grid gap-4",
-                editorKind === "soul" && "min-h-0 overflow-y-auto",
+                themedBody,
+                "relative w-full max-w-lg border border-border bg-card shadow-2xl flex flex-col max-h-[90vh]",
               )}
             >
-              {editorKind === "model" &&
-                (modelChoices !== null && modelChoices.length === 0 ? (
-                  <p className="text-xs text-muted-foreground">{L.modelNone}</p>
-                ) : (
-                  <>
-                    <Select
-                      value={modelEditChoice}
-                      disabled={modelChoices === null}
-                      placeholder={
-                        modelChoices === null ? L.modelLoading : L.modelSelect
-                      }
-                      onValueChange={setModelEditChoice}
-                    >
-                      {(modelChoices ?? []).map((c) => (
-                        <SelectOption
-                          key={`${c.provider}\u0000${c.model}`}
-                          value={`${c.provider}\u0000${c.model}`}
+              <Button
+                ghost
+                size="icon"
+                onClick={closeEditor}
+                className="absolute right-2 top-2 text-muted-foreground hover:text-foreground"
+                aria-label="Close"
+              >
+                <X />
+              </Button>
+
+              <header className="p-5 pb-3 border-b border-border">
+                <h2
+                  id="profile-editor-title"
+                  className="font-mondwest text-display text-base tracking-wider"
+                >
+                  {editorKind === "model"
+                    ? L.editModel
+                    : editorKind === "desc"
+                      ? L.description
+                      : t.profiles.soulSection}
+                  <span className="text-muted-foreground"> · {editorName}</span>
+                </h2>
+              </header>
+
+              <div
+                className={cn(
+                  "p-5 grid gap-4",
+                  editorKind === "soul" && "min-h-0 overflow-y-auto",
+                )}
+              >
+                {editorKind === "model" &&
+                  (modelChoices !== null && modelChoices.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">{L.modelNone}</p>
+                  ) : (
+                    <>
+                      <Select
+                        value={modelEditChoice}
+                        disabled={modelChoices === null}
+                        placeholder={
+                          modelChoices === null ? L.modelLoading : L.modelSelect
+                        }
+                        onValueChange={setModelEditChoice}
+                      >
+                        {(modelChoices ?? []).map((c) => (
+                          <SelectOption
+                            key={`${c.provider}\u0000${c.model}`}
+                            value={`${c.provider}\u0000${c.model}`}
+                          >
+                            {c.label}
+                          </SelectOption>
+                        ))}
+                      </Select>
+
+                      <div className="flex justify-end">
+                        <Button
+                          size="sm"
+                          className="uppercase"
+                          onClick={() => handleSaveModel(editorName)}
+                          disabled={
+                            modelSaving ||
+                            !modelChoices?.some(
+                              (c) =>
+                                `${c.provider}\u0000${c.model}` ===
+                                modelEditChoice,
+                            )
+                          }
                         >
-                          {c.label}
-                        </SelectOption>
-                      ))}
-                    </Select>
+                          {modelSaving ? t.common.saving : t.common.save}
+                        </Button>
+                      </div>
+                    </>
+                  ))}
+
+                {editorKind === "desc" && (
+                  <>
+                    <div className="flex items-center justify-between gap-2">
+                      <Label
+                        htmlFor="profile-desc-editor"
+                        className="font-mondwest text-display text-xs tracking-wider text-muted-foreground"
+                      >
+                        {L.description}
+                      </Label>
+
+                      <Button
+                        size="sm"
+                        ghost
+                        className="gap-1.5"
+                        disabled={describing}
+                        onClick={() => handleAutoDescribe(editorName)}
+                      >
+                        <Sparkles className="h-3.5 w-3.5" />
+                        {describing ? L.generating : L.autoGenerate}
+                      </Button>
+                    </div>
+
+                    <textarea
+                      id="profile-desc-editor"
+                      className="flex min-h-[96px] w-full border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder={L.descriptionPlaceholder}
+                      value={descText}
+                      onChange={(e) => setDescText(e.target.value)}
+                    />
 
                     <div className="flex justify-end">
                       <Button
                         size="sm"
                         className="uppercase"
-                        onClick={() => handleSaveModel(editorName)}
-                        disabled={
-                          modelSaving ||
-                          !modelChoices?.some(
-                            (c) =>
-                              `${c.provider}\u0000${c.model}` ===
-                              modelEditChoice,
-                          )
-                        }
+                        onClick={() => handleSaveDesc(editorName)}
+                        disabled={descSaving}
                       >
-                        {modelSaving ? t.common.saving : t.common.save}
+                        {descSaving ? t.common.saving : t.common.save}
                       </Button>
                     </div>
                   </>
-                ))}
+                )}
 
-              {editorKind === "desc" && (
-                <>
-                  <div className="flex items-center justify-between gap-2">
+                {editorKind === "soul" && (
+                  <>
                     <Label
-                      htmlFor="profile-desc-editor"
+                      htmlFor="profile-soul-editor"
                       className="font-mondwest text-display text-xs tracking-wider text-muted-foreground"
                     >
-                      {L.description}
+                      {t.profiles.soulSection}
                     </Label>
 
-                    <Button
-                      size="sm"
-                      ghost
-                      className="gap-1.5"
-                      disabled={describing}
-                      onClick={() => handleAutoDescribe(editorName)}
-                    >
-                      <Sparkles className="h-3.5 w-3.5" />
-                      {describing ? L.generating : L.autoGenerate}
-                    </Button>
-                  </div>
+                    <textarea
+                      id="profile-soul-editor"
+                      className="flex min-h-[280px] w-full border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                      placeholder={t.profiles.soulPlaceholder}
+                      value={soulText}
+                      onChange={(e) => setSoulText(e.target.value)}
+                    />
 
-                  <textarea
-                    id="profile-desc-editor"
-                    className="flex min-h-[96px] w-full border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    placeholder={L.descriptionPlaceholder}
-                    value={descText}
-                    onChange={(e) => setDescText(e.target.value)}
-                  />
-
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      className="uppercase"
-                      onClick={() => handleSaveDesc(editorName)}
-                      disabled={descSaving}
-                    >
-                      {descSaving ? t.common.saving : t.common.save}
-                    </Button>
-                  </div>
-                </>
-              )}
-
-              {editorKind === "soul" && (
-                <>
-                  <Label
-                    htmlFor="profile-soul-editor"
-                    className="font-mondwest text-display text-xs tracking-wider text-muted-foreground"
-                  >
-                    {t.profiles.soulSection}
-                  </Label>
-
-                  <textarea
-                    id="profile-soul-editor"
-                    className="flex min-h-[280px] w-full border border-input bg-transparent px-3 py-2 text-sm font-mono shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    placeholder={t.profiles.soulPlaceholder}
-                    value={soulText}
-                    onChange={(e) => setSoulText(e.target.value)}
-                  />
-
-                  <div className="flex justify-end">
-                    <Button
-                      size="sm"
-                      className="uppercase"
-                      onClick={() => handleSaveSoul(editorName)}
-                      disabled={soulSaving}
-                    >
-                      {soulSaving ? t.common.saving : t.common.save}
-                    </Button>
-                  </div>
-                </>
-              )}
+                    <div className="flex justify-end">
+                      <Button
+                        size="sm"
+                        className="uppercase"
+                        onClick={() => handleSaveSoul(editorName)}
+                        disabled={soulSaving}
+                      >
+                        {soulSaving ? t.common.saving : t.common.save}
+                      </Button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        </DashboardModalPortal>
       )}
     </div>
   );
