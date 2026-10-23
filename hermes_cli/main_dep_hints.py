@@ -40,5 +40,5 @@ def smart_app_control_block_message(error: BaseException) -> str | None:
         "     application (Smart App Control / Application Control).",
         "  3. Use the CLI or gateway instead (they use your system Python).",
         "",
-        "See https://aka.ms/smartappcontrol for Windows Smart App Control details.",
+        "See https://support.microsoft.com/en-us/topic/what-is-smart-app-control-285ea03d-fa88-4d56-882e-6698afdb7003 for Windows Smart App Control details.",
     ])

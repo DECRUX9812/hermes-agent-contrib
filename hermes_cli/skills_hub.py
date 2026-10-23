@@ -1378,7 +1378,7 @@ def do_publish(skill_path: str, target: str = "github", repo: str = "",
         _report_pair(c, *_github_publish(path, name, repo, auth))
     elif target == "clawhub":
         c.print("[yellow]ClawHub publishing is not yet supported. "
-                "Submit manually at https://clawhub.ai/submit[/]\n")
+                "Submit manually at https://clawhub.ai/skills/publish[/]\n")
     else:
         c.print(f"[bold red]Unknown target:[/] {target}. Use 'github' or 'clawhub'.\n")
 

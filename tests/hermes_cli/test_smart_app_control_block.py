@@ -39,7 +39,7 @@ def test_smart_app_control_block_message_matches_the_dll_ssl_signature():
     assert "embedded Python runtime" in message
     assert "_ssl" in message
     assert "repair" in message  # must say the repair loop cannot fix this
-    assert "https://aka.ms/smartappcontrol" in message
+    assert "https://support.microsoft.com/en-us/topic/what-is-smart-app-control-285ea03d-fa88-4d56-882e-6698afdb7003" in message
 
 
 def test_smart_app_control_block_message_ignores_other_errors():

@@ -59,7 +59,7 @@ ADVISORIES: tuple[Advisory, ...] = (
             "clean releases again (2.4.7, 2.4.8); this advisory only fires if "
             "the compromised 2.4.6 is still installed."
         ),
-        url="https://socket.dev/blog/mini-shai-hulud-worm-pypi",
+        url="https://github.com/mistralai/client-python/security/advisories/GHSA-wx9m-wx4f-4cmg",
         compromised=(("mistralai", frozenset({"2.4.6"})),),
         remediation=(
             "Run: pip uninstall -y mistralai  (or: uv pip uninstall mistralai)",
