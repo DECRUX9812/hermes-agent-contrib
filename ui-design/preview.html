@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warm Paper — component preview</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <style>
+      /* ── Tokens — the only place a colour, radius or size is decided. ───── */
+      :root {
+        --bg: #f6f3ee;
+        --surface: #fbfaf7;
+        --raised: #ffffff;
+        --line: #e7e2d9;
+        --line-strong: #d6cfc2;
+        --text: #26231e;
+        --text-2: #6b665c;
+        /* The skill's hint grey (#9a9487) is 2.7:1 on paper — below AA for 12px
+           text. The app lifts its tertiary tier per skin (text-ramp.ts), and this
+           is what it resolves to on Warm Paper: 4.59:1. Quaternary is 3.07:1. */
+        --text-3: #716e69;
+        --text-4: #8e8b86;
+        --accent: #5b6ee1;
+        --accent-ink: #4a5bd0;
+        --accent-soft: #e9ecfb;
+        --ok: #3f8a5f;
+        --warn: #b7791f;
+        --err: #bd4139;
+        --radius-s: 6px;
+        --radius-m: 10px;
+        --radius-l: 14px;
+        --shadow-pop: 0 8px 24px rgba(38, 35, 30, 0.1), 0 2px 6px rgba(38, 35, 30, 0.06);
+        --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, monospace;
+        --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+      }
+
+      [data-theme='dark'] {
+        --bg: #17161a;
+        --surface: #1c1b20;
+        --raised: #232228;
+        --line: #2c2b32;
+        --line-strong: #3a3943;
+        --text: #ece9e2;
+        --text-2: #a7a399;
+        --text-3: #8a8886;
+        --text-4: #646363;
+        --accent: #8d9bff;
+        --accent-ink: #8d9bff;
+        --accent-soft: #2a2d4d;
+        --ok: #6bbf8a;
+        --warn: #d8a44e;
+        --err: #e0776f;
+        --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+      }
+
+      * { box-sizing: border-box; }
+
+      html, body {
+        margin: 0;
+        background: #dedad2;
+        font-family: var(--font-sans);
+        color: var(--text);
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── Page frame (this is a mockup document, not the app shell) ─────── */
+      .page { padding: 28px; display: flex; flex-direction: column; gap: 26px; max-width: 1560px; margin: 0 auto; }
+      .page-title { font-size: 13px; font-weight: 500; color: #57534a; letter-spacing: 0; margin: 0; }
+      .page-title small { color: #8a857a; font-weight: 400; }
+
+      .pair { display: grid; grid-template-columns: 1fr; gap: 22px; }
+      @media (min-width: 1180px) { .pair { grid-template-columns: 1fr 1fr; } }
+
+      .cap {
+        font-size: 11px;
+        font-family: var(--font-mono);
+        text-transform: lowercase;
+        color: #57534a;
+        margin: 0 0 8px 2px;
+        letter-spacing: 0;
+      }
+      [data-theme='dark'] .cap, [data-theme='dark'] ~ .cap { color: #8a857a; }
+
+      /* ── App shell ──────────────────────────────────────────────────────── */
+      .app {
+        background: var(--bg);
+        color: var(--text);
+        border-radius: var(--radius-l);
+        border: 1px solid var(--line-strong);
+        overflow: hidden;
+        display: grid;
+        grid-template-columns: 232px 1fr;
+        height: 640px;
+        font-size: 13px;
+        line-height: 1.6;
+        box-shadow: 0 1px 2px rgba(38, 35, 30, 0.06);
+        transition: background 160ms var(--ease), color 160ms var(--ease);
+      }
+
+      /* Sidebar */
+      .side {
+        background: var(--surface);
+        border-right: 1px solid var(--line);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 0;
+      }
+      .side-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        height: 44px;
+        padding: 0 12px;
+        border-bottom: 1px solid var(--line);
+        flex: none;
+      }
+      .mark {
+        width: 22px; height: 22px;
+        border-radius: var(--radius-s);
+        border: 1px solid var(--line-strong);
+        background: var(--raised);
+        display: grid; place-items: center;
+        font-size: 11px; font-weight: 500; color: var(--text-2);
+      }
+      .side-head .name { font-size: 13px; font-weight: 500; }
+      .side-head .env { margin-left: auto; font-size: 11px; color: var(--text-3); font-family: var(--font-mono); }
+
+      .side-scroll { padding: 8px; overflow: hidden; flex: 1; }
+      .group-label {
+        font-size: 11px;
+        color: var(--text-3);  /* lifted to AA on this skin */
+        padding: 10px 8px 4px;
+        font-weight: 500;
+      }
+      .row {
+        display: flex; align-items: center; gap: 8px;
+        height: 34px;
+        padding: 0 8px;
+        border-radius: 8px;
+        color: var(--text-2);
+        font-size: 13px;
+        white-space: nowrap;
+        overflow: hidden;
+        transition: background 120ms var(--ease), color 120ms var(--ease);
+      }
+      .row .label { overflow: hidden; text-overflow: ellipsis; }
+      .row .meta { margin-left: auto; font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+      .row[data-active='true'] { background: var(--accent-soft); color: var(--text); }
+      .row[data-active='true'] .meta { color: var(--text-2); }
+      .row:not([data-active='true']):hover { background: color-mix(in srgb, var(--line) 55%, transparent); }
+      .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ok); flex: none; }
+      .dot.off { background: var(--line-strong); }
+
+      .side-foot {
+        border-top: 1px solid var(--line);
+        padding: 8px 10px;
+        display: flex; align-items: center; gap: 8px;
+      }
+      .avatar {
+        width: 24px; height: 24px; border-radius: 50%;
+        border: 1px solid var(--line-strong);
+        background: var(--raised);
+        display: grid; place-items: center;
+        font-size: 10px; font-weight: 500; color: var(--text-2);
+        flex: none;
+      }
+      .side-foot .who { font-size: 12px; color: var(--text-2); }
+      .side-foot .plan { font-size: 11px; color: var(--text-3); }
+
+      /* Main */
+      /* `min-height: 0` is load-bearing: without it the grid item's automatic
+         minimum is its content height, so a long thread grows the item past the
+         fixed frame and the composer gets clipped at the bottom edge. */
+      .main { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg); }
+      .top {
+        height: 44px;
+        display: flex; align-items: center; gap: 10px;
+        padding: 0 16px;
+        border-bottom: 1px solid var(--line);
+        flex: none;
+      }
+      .top h1 { font-size: 13px; font-weight: 500; margin: 0; }
+      .chip {
+        display: inline-flex; align-items: center; gap: 6px;
+        height: 22px; padding: 0 8px;
+        border: 1px solid var(--line);
+        border-radius: 9999px;
+        font-size: 11px;
+        color: var(--text-2);
+        background: var(--surface);
+      }
+      .top .right { margin-left: auto; display: flex; align-items: center; gap: 4px; }
+      .icon-btn {
+        width: 32px; height: 32px;
+        display: grid; place-items: center;
+        border: 0; border-radius: var(--radius-s);
+        background: transparent; color: var(--text-2);
+        cursor: pointer;
+        transition: background 120ms var(--ease), color 120ms var(--ease);
+      }
+      .icon-btn:hover { background: var(--line); color: var(--text); }
+      .icon-btn svg { width: 16px; height: 16px; stroke-width: 1.5; }
+
+      /* A live thread is scrolled to the bottom: the newest turn sits against
+         the composer and older content clips off the TOP. `min-height: 0` is
+         what lets this flex child actually shrink instead of pushing the
+         composer out of the frame. */
+      .thread {
+        flex: 1;
+        min-height: 0;
+        overflow: hidden;
+        display: flex;
+        align-items: flex-end;
+        padding: 0 0 4px;
+        mask-image: linear-gradient(to bottom, transparent 0, #000 34px);
+      }
+      .col { width: 100%; max-width: 740px; margin: 0 auto; padding: 0 20px; display: flex; flex-direction: column; gap: 22px; }
+
+      .turn-meta { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; display: flex; gap: 6px; align-items: center; }
+
+      .user-msg {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-m);
+        padding: 10px 12px;
+        font-size: 13.5px;
+        line-height: 1.6;
+      }
+
+      .assistant { font-size: 14.5px; line-height: 1.6; color: var(--text); }
+      .assistant p { margin: 0 0 10px; }
+      .assistant p:last-child { margin-bottom: 0; }
+      .assistant strong { font-weight: 500; }
+      .assistant h3 { font-size: 14.5px; font-weight: 500; margin: 14px 0 6px; }
+      .assistant ul { margin: 6px 0 10px; padding-left: 18px; }
+      .assistant li { margin: 2px 0; }
+      .link { color: var(--accent-ink); text-decoration: none; border-bottom: 1px solid color-mix(in srgb, var(--accent) 32%, transparent); }
+      .code-inline {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        padding: 1px 4px;
+      }
+      .code {
+        font-family: var(--font-mono);
+        font-size: 12px;
+        line-height: 1.55;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-m);
+        padding: 10px 12px;
+        overflow: hidden;
+        color: var(--text);
+      }
+      .code .k { color: var(--accent-ink); }
+      .code .c { color: var(--text-3); }
+
+      /* Tool line — one quiet row */
+      .tool {
+        display: flex; align-items: center; gap: 6px;
+        font-size: 12px;
+        color: var(--text-3);
+        font-family: var(--font-mono);
+        padding: 1px 0;
+      }
+      .tool .chev { width: 12px; height: 12px; stroke-width: 1.5; }
+      .tool .name { color: var(--text-2); }
+      .tool .err { width: 5px; height: 5px; border-radius: 50%; background: var(--err); }
+
+      /* Composer */
+      .composer-wrap { flex: none; padding: 8px 20px 0; }
+      .composer {
+        max-width: 740px;
+        margin: 0 auto;
+        background: var(--raised);
+        border: 1px solid var(--line-strong);
+        border-radius: var(--radius-l);
+        padding: 12px 14px 10px;
+        transition: box-shadow 140ms var(--ease), border-color 140ms var(--ease);
+      }
+      .composer[data-focus='true'] { box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent) 35%, transparent); }
+      .composer .ph { color: var(--text-3); font-size: 13.5px; }
+      .composer .caret {
+        display: inline-block; width: 1px; height: 15px;
+        background: var(--accent); vertical-align: -2px; margin: 0 1px;
+      }
+      .composer-controls {
+        display: flex; align-items: center; gap: 2px;
+        margin-top: 10px;
+        padding-top: 8px;
+        border-top: 1px solid color-mix(in srgb, var(--line) 70%, transparent);
+      }
+      .ctl {
+        height: 24px; padding: 0 7px;
+        border: 0; border-radius: var(--radius-s);
+        background: transparent;
+        color: var(--text-2);
+        font: inherit; font-size: 11.5px;
+        display: inline-flex; align-items: center; gap: 5px;
+        cursor: pointer;
+      }
+      .ctl:hover { background: var(--line); color: var(--text); }
+      .ctl .kbd { font-family: var(--font-mono); font-size: 10.5px; color: var(--text-3); }
+      .send {
+        margin-left: auto;
+        width: 28px; height: 28px;
+        border-radius: 8px;
+        border: 0;
+        background: var(--accent-ink);
+        color: #fff;
+        display: grid; place-items: center;
+        cursor: pointer;
+      }
+      .send svg { width: 15px; height: 15px; stroke-width: 1.8; }
+
+      /* Status bar */
+      .status {
+        height: 28px;
+        display: flex; align-items: center; gap: 14px;
+        padding: 0 16px;
+        font-size: 11px;
+        color: var(--text-3);
+        font-variant-numeric: tabular-nums;
+      }
+      .status .sep { width: 1px; height: 12px; background: var(--line); }
+      .status .right { margin-left: auto; }
+
+      /* Popover */
+      .pop-wrap { position: relative; }
+      .popover {
+        position: absolute;
+        right: 0; top: 34px;
+        width: 232px;
+        background: var(--raised);
+        border: 1px solid var(--line);
+        border-radius: var(--radius-m);
+        box-shadow: var(--shadow-pop);
+        padding: 6px;
+        z-index: 2;
+      }
+      .pop-item {
+        display: flex; align-items: center; gap: 8px;
+        height: 30px; padding: 0 8px;
+        border-radius: var(--radius-s);
+        font-size: 12.5px;
+        color: var(--text);
+      }
+      .pop-item:hover { background: var(--line); }
+      .pop-item .meta { margin-left: auto; font-size: 11px; color: var(--text-3); font-family: var(--font-mono); }
+      .pop-sep { height: 1px; background: var(--line); margin: 5px 4px; }
+
+      /* Empty state */
+      .empty { height: 100%; display: grid; place-content: center; justify-items: center; text-align: center; gap: 10px; padding: 0 24px; }
+      .empty h2 { font-size: 28px; font-weight: 500; margin: 0; letter-spacing: -0.01em; }
+      .empty p { margin: 0; font-size: 13.5px; color: var(--text-2); max-width: 46ch; line-height: 1.6; text-wrap: balance; }
+      .suggestions { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 8px; }
+      .sug {
+        height: 30px; padding: 0 11px;
+        border: 1px solid var(--line);
+        border-radius: 9999px;
+        background: var(--surface);
+        color: var(--text-2);
+        font-size: 12.5px;
+        display: inline-flex; align-items: center;
+        cursor: pointer;
+        transition: border-color 120ms var(--ease), color 120ms var(--ease);
+      }
+      .sug:hover { border-color: var(--line-strong); color: var(--text); }
+
+      /* Token strip */
+      .tokens { display: grid; grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); gap: 8px; }
+      .swatch { border: 1px solid var(--line-strong); border-radius: var(--radius-s); overflow: hidden; background: var(--raised); }
+      .swatch .fill { height: 40px; }
+      .swatch .tag { padding: 5px 7px; font-family: var(--font-mono); font-size: 10px; color: var(--text-2); display: flex; justify-content: space-between; gap: 6px; }
+      .panel { background: var(--bg); border: 1px solid var(--line-strong); border-radius: var(--radius-l); padding: 14px; }
+
+      .toggle {
+        display: inline-flex; gap: 2px; padding: 2px;
+        border: 1px solid var(--line-strong); border-radius: 9999px; background: var(--surface);
+      }
+      .toggle button {
+        border: 0; background: transparent; font: inherit; font-size: 11px;
+        color: var(--text-2); padding: 4px 10px; border-radius: 9999px; cursor: pointer;
+      }
+      .toggle button[data-on='true'] { background: var(--accent-soft); color: var(--text); }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      <div style="display: flex; align-items: center; gap: 12px">
+        <p class="page-title">
+          Warm Paper · <small>component preview — sidebar, thread, composer, popover, empty state</small>
+        </p>
+        <div class="toggle" style="margin-left: auto" role="group" aria-label="Theme">
+          <button data-set="both" data-on="true">side by side</button>
+          <button data-set="light">light</button>
+          <button data-set="dark">dark</button>
+        </div>
+      </div>
+
+      <div class="pair" id="pair">
+        <!-- ═══ LIGHT ═══ -->
+        <div>
+          <p class="cap">light</p>
+          <div class="app" data-theme="light" data-shot="chat">
+            <aside class="side">
+              <div class="side-head">
+                <div class="mark">H</div>
+                <span class="name">Hermes</span>
+                <span class="env">local</span>
+              </div>
+              <div class="side-scroll">
+                <div class="group-label">today</div>
+                <div class="row" data-active="true"><span class="dot"></span><span class="label">Warm Paper skin</span><span class="meta">now</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Dev loop is green</span><span class="meta">11:02</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Contractor quotes</span><span class="meta">09:41</span></div>
+                <div class="group-label">yesterday</div>
+                <div class="row"><span class="dot off"></span><span class="label">Demo video mix</span><span class="meta">21:15</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Slip schedule</span><span class="meta">18:30</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Panama LLC filing</span><span class="meta">16:08</span></div>
+              </div>
+              <div class="side-foot">
+                <div class="avatar">RK</div>
+                <div>
+                  <div class="who">Ritesh</div>
+                  <div class="plan">default profile</div>
+                </div>
+              </div>
+            </aside>
+
+            <div class="main">
+              <header class="top">
+                <h1>Warm Paper skin</h1>
+                <span class="chip">opus 4.5</span>
+                <div class="right pop-wrap">
+                  <button class="icon-btn" aria-label="Session menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
+                  </button>
+                </div>
+              </header>
+
+              <div class="thread">
+                <div class="col">
+                  <div>
+                    <div class="user-msg">Can you apply that warm-paper design to the dev app and let me look at it?</div>
+                    <div class="turn-meta" style="margin-top: 6px">you · 14:22</div>
+                  </div>
+
+                  <div class="assistant">
+                    <p>Done — it's a skin now, not a rewrite. The palette carries the surfaces, and a small scoped block adds the leading, the focus ring and the caret.</p>
+                    <div class="tool">
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 6 6 6-6 6" /></svg>
+                      <span class="name">read_file</span>
+                      <span>src/themes/presets.ts</span>
+                      <span>· 140 lines</span>
+                    </div>
+                    <div class="tool">
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 6 6 6-6 6" /></svg>
+                      <span class="name">terminal</span>
+                      <span>vitest run src/themes</span>
+                      <span>· 38 pass</span>
+                    </div>
+                    <h3>What's on screen</h3>
+                    <ul>
+                      <li>Paper <span class="code-inline">#f6f3ee</span>, one indigo, no shadows on cards.</li>
+                      <li>Body at 15px / 1.6 — roughly 74 characters per line.</li>
+                      <li>Tool calls collapse to one quiet row; errors are a dot, not a banner.</li>
+                    </ul>
+                    <div class="code"><span class="c">// token contract</span>
+:root[data-hermes-theme='paper'] {
+  <span class="k">--dt-background</span>: #f6f3ee;
+  <span class="k">--dt-primary</span>:    #4a5bd0;  <span class="c">/* 5.1:1 on paper */</span>
+}</div>
+                    <p style="margin-top: 10px">Say the word and I'll make it the default on the dev host: <span class="link">dev.decruxtech.com</span></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="composer-wrap">
+                <div class="composer" data-focus="true">
+                  <div class="ph">Message Hermes<span class="caret"></span></div>
+                  <div class="composer-controls">
+                    <button class="ctl">opus 4.5</button>
+                    <button class="ctl">high effort</button>
+                    <button class="ctl">agent</button>
+                    <button class="send" aria-label="Send">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="status">
+                <span>context 12%</span>
+                <span class="sep"></span>
+                <span>$0.41</span>
+                <span class="sep"></span>
+                <span class="right">default · 8 skills</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="cap" style="margin: 16px 0 8px 2px">empty state</p>
+          <div class="app" data-theme="light" style="height: 300px; grid-template-columns: 232px 1fr">
+            <aside class="side">
+              <div class="side-head">
+                <div class="mark">H</div>
+                <span class="name">Hermes</span>
+                <span class="env">local</span>
+              </div>
+              <div class="side-scroll">
+                <div class="group-label">today</div>
+                <div class="row" data-active="true"><span class="dot"></span><span class="label">New session</span><span class="meta">now</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Dev loop is green</span><span class="meta">11:02</span></div>
+              </div>
+              <div class="side-foot">
+                <div class="avatar">RK</div>
+                <div><div class="who">Ritesh</div><div class="plan">default profile</div></div>
+              </div>
+            </aside>
+            <div class="main">
+              <header class="top"><h1>New session</h1><span class="chip">opus 4.5</span></header>
+              <div class="empty">
+                <h2>Good evening</h2>
+                <p>Pick up a session on the left, or start with one of these.</p>
+                <div class="suggestions">
+                  <button class="sug">Review the dev loop</button>
+                  <button class="sug">Summarise today</button>
+                  <button class="sug">Write a changelog</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ═══ DARK ═══ -->
+        <div>
+          <p class="cap">dark</p>
+          <div class="app" data-theme="dark" data-shot="chat">
+            <aside class="side">
+              <div class="side-head">
+                <div class="mark">H</div>
+                <span class="name">Hermes</span>
+                <span class="env">local</span>
+              </div>
+              <div class="side-scroll">
+                <div class="group-label">today</div>
+                <div class="row" data-active="true"><span class="dot"></span><span class="label">Warm Paper skin</span><span class="meta">now</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Dev loop is green</span><span class="meta">11:02</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Contractor quotes</span><span class="meta">09:41</span></div>
+                <div class="group-label">yesterday</div>
+                <div class="row"><span class="dot off"></span><span class="label">Demo video mix</span><span class="meta">21:15</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Slip schedule</span><span class="meta">18:30</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Panama LLC filing</span><span class="meta">16:08</span></div>
+              </div>
+              <div class="side-foot">
+                <div class="avatar">RK</div>
+                <div><div class="who">Ritesh</div><div class="plan">default profile</div></div>
+              </div>
+            </aside>
+
+            <div class="main">
+              <header class="top">
+                <h1>Warm Paper skin</h1>
+                <span class="chip">opus 4.5</span>
+                <div class="right pop-wrap">
+                  <button class="icon-btn" aria-label="Session menu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
+                  </button>
+                </div>
+              </header>
+
+              <div class="thread">
+                <div class="col">
+                  <div>
+                    <div class="user-msg">Can you apply that warm-paper design to the dev app and let me look at it?</div>
+                    <div class="turn-meta" style="margin-top: 6px">you · 14:22</div>
+                  </div>
+
+                  <div class="assistant">
+                    <p>Done — it's a skin now, not a rewrite. The palette carries the surfaces, and a small scoped block adds the leading, the focus ring and the caret.</p>
+                    <div class="tool">
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 6 6 6-6 6" /></svg>
+                      <span class="name">read_file</span>
+                      <span>src/themes/presets.ts</span>
+                      <span>· 140 lines</span>
+                    </div>
+                    <div class="tool">
+                      <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m9 6 6 6-6 6" /></svg>
+                      <span class="name">terminal</span>
+                      <span>vitest run src/themes</span>
+                      <span>· 38 pass</span>
+                      <span class="err"></span>
+                    </div>
+                    <h3>What's on screen</h3>
+                    <ul>
+                      <li>Ink <span class="code-inline">#ece9e2</span> on <span class="code-inline">#17161a</span> — 14.9:1.</li>
+                      <li>Body at 15px / 1.6 — roughly 74 characters per line.</li>
+                      <li>Tool calls collapse to one quiet row; errors are a dot, not a banner.</li>
+                    </ul>
+                    <div class="code"><span class="c">// token contract</span>
+:root[data-hermes-theme='paper'] {
+  <span class="k">--dt-background</span>: #17161a;
+  <span class="k">--dt-primary</span>:    #8d9bff;  <span class="c">/* 7.1:1 on ink */</span>
+}</div>
+                    <p style="margin-top: 10px">Say the word and I'll make it the default on the dev host: <span class="link">dev.decruxtech.com</span></p>
+                  </div>
+                </div>
+              </div>
+
+              <div class="composer-wrap">
+                <div class="composer" data-focus="true">
+                  <div class="ph">Message Hermes<span class="caret"></span></div>
+                  <div class="composer-controls">
+                    <button class="ctl">opus 4.5</button>
+                    <button class="ctl">high effort</button>
+                    <button class="ctl">agent</button>
+                    <button class="send" aria-label="Send">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 19V5M5 12l7-7 7 7" /></svg>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="status">
+                <span>context 12%</span>
+                <span class="sep"></span>
+                <span>$0.41</span>
+                <span class="sep"></span>
+                <span class="right">default · 8 skills</span>
+              </div>
+            </div>
+          </div>
+
+          <p class="cap" style="margin: 16px 0 8px 2px">popover + menu</p>
+          <div class="app" data-theme="dark" style="height: 300px; grid-template-columns: 232px 1fr">
+            <aside class="side">
+              <div class="side-head">
+                <div class="mark">H</div>
+                <span class="name">Hermes</span>
+                <span class="env">local</span>
+              </div>
+              <div class="side-scroll">
+                <div class="group-label">today</div>
+                <div class="row" data-active="true"><span class="dot"></span><span class="label">Warm Paper skin</span><span class="meta">now</span></div>
+                <div class="row"><span class="dot off"></span><span class="label">Dev loop is green</span><span class="meta">11:02</span></div>
+              </div>
+              <div class="side-foot"><div class="avatar">RK</div><div><div class="who">Ritesh</div><div class="plan">default profile</div></div></div>
+            </aside>
+            <div class="main">
+              <header class="top">
+                <h1>Warm Paper skin</h1>
+                <span class="chip">opus 4.5</span>
+                <div class="right">
+                  <button class="icon-btn" aria-label="Session menu" aria-expanded="true" style="background: var(--line); color: var(--text)">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="5" cy="12" r="1" /><circle cx="12" cy="12" r="1" /><circle cx="19" cy="12" r="1" /></svg>
+                  </button>
+                </div>
+              </header>
+              <div style="position: relative; flex: 1">
+                <div class="popover" style="top: 6px; right: 12px; width: 240px">
+                  <div class="pop-item">Rename<span class="meta">⌘R</span></div>
+                  <div class="pop-item">Pin to top<span class="meta">⌘P</span></div>
+                  <div class="pop-item">Duplicate</div>
+                  <div class="pop-sep"></div>
+                  <div class="pop-item" style="color: var(--err)">Delete session</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ═══ Tokens ═══ -->
+      <div>
+        <p class="cap">token contract — light / dark</p>
+        <div class="pair">
+          <div class="panel" data-theme="light">
+            <div class="tokens" id="tokens-light"></div>
+          </div>
+          <div class="panel" data-theme="dark">
+            <div class="tokens" id="tokens-dark"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const TOKENS = [
+        ['--bg', 'paper'],
+        ['--surface', 'sidebar'],
+        ['--raised', 'composer'],
+        ['--line', 'hairline'],
+        ['--text', 'ink'],
+        ['--text-2', 'secondary'],
+        ['--text-3', 'hint'],
+        ['--accent', 'brand'],
+        ['--accent-soft', 'active row'],
+        ['--ok', 'ok'],
+        ['--warn', 'warn'],
+        ['--err', 'error']
+      ]
+
+      // Each strip lives inside a `.panel[data-theme]`, so its own computed
+      // style resolves the tokens for that mode — no probing needed.
+      for (const theme of ['light', 'dark']) {
+        const host = document.getElementById(`tokens-${theme}`)
+        for (const [name, label] of TOKENS) {
+          const value = getComputedStyle(host).getPropertyValue(name).trim()
+          const el = document.createElement('div')
+          el.className = 'swatch'
+          el.innerHTML =
+            `<div class="fill" style="background:${value}"></div>` +
+            `<div class="tag"><span>${label}</span><span>${value}</span></div>`
+          host.appendChild(el)
+        }
+      }
+
+      document.querySelectorAll('[data-set]').forEach(btn => {
+        btn.addEventListener('click', () => {
+          document.querySelectorAll('[data-set]').forEach(b => (b.dataset.on = String(b === btn)))
+          const set = btn.dataset.set
+          document.querySelectorAll('.app').forEach(app => {
+            app.style.display = set === 'both' || app.getAttribute('data-theme') === set ? '' : 'none'
+          })
+          document.querySelectorAll('.pair > div').forEach(column => {
+            const visible = [...column.querySelectorAll('.app')].some(app => app.style.display !== 'none')
+            column.style.display = visible ? '' : 'none'
+          })
+        })
+      })
+    </script>
+  </body>
+</html>
