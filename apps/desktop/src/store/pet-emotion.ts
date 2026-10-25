@@ -1,4 +1,4 @@
-import { computed } from 'nanostores'
+import { atom } from 'nanostores'
 
 import { $messages } from '@/store/session'
 
@@ -193,9 +193,53 @@ function lastAssistantText(): string {
   return ''
 }
 
-/** Live emotion: task state first, message sentiment second. Never invented. */
-export const $petEmotion = computed([$petActivity, $messages], (activity, messages): PetEmotion => {
-  void messages // recompute when messages change; text read inside for freshness
+/**
+ * How often message sentiment may be recomputed. `$messages` changes on every
+ * streamed token, and the sentiment pass walks the transcript backwards and
+ * runs ~40 regexes over the last assistant message — at 30 tokens/second that
+ * was the avatar's cost, not the chat's. Task state still applies instantly;
+ * only the text read is sampled.
+ */
+const EMOTION_SAMPLE_MS = 750
 
-  return deriveEmotion(activity, analyzeSentiment(lastAssistantText()))
+function currentEmotion(): PetEmotion {
+  return deriveEmotion($petActivity.get(), analyzeSentiment(lastAssistantText()))
+}
+
+/**
+ * Live emotion: task state first, message sentiment second. Never invented.
+ *
+ * An atom updated by subscriptions rather than a `computed`, so the expensive
+ * half can be sampled without changing how consumers read it.
+ */
+const $emotion = atom<PetEmotion>(currentEmotion())
+
+let sampleTimer: ReturnType<typeof setTimeout> | null = null
+
+const recomputeNow = (): void => {
+  if (sampleTimer) {
+    clearTimeout(sampleTimer)
+    sampleTimer = null
+  }
+
+  $emotion.set(currentEmotion())
+}
+
+// Task state is cheap and still flips the avatar immediately.
+$petActivity.subscribe(() => recomputeNow())
+
+// Tokens arrive faster than anyone can read an expression: coalesce them into
+// one trailing recompute per sample window. The timer itself is the only work
+// a token pays for.
+$messages.subscribe(() => {
+  if (sampleTimer) {
+    return
+  }
+
+  sampleTimer = setTimeout(() => {
+    sampleTimer = null
+    $emotion.set(currentEmotion())
+  }, EMOTION_SAMPLE_MS)
 })
+
+export const $petEmotion = $emotion
