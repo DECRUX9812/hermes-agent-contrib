@@ -24,7 +24,7 @@ import type { ReactNode } from 'react'
 import { capabilityScoped } from '@/api/client'
 import { loadArtifactsForSessions } from '@/app/artifacts/artifact-utils'
 import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
-import { openSession, type OpenSessionIntent } from '@/app/open-session'
+import { type OpenSessionIntent, openSession as openSessionInternal } from '@/app/open-session'
 import { syncWorkspaceRoute } from '@/app/routes'
 import type { ClientSessionState } from '@/app/types'
 import {
@@ -1324,14 +1324,14 @@ export const host = {
           }
 
           if (options.workspaceMode === 'bots') {
-            openSession(storedSessionId, navigate, intent, {
+            openSessionInternal(storedSessionId, navigate, intent, {
               ownerRoute: ownerRoute ?? undefined,
               workspaceMode: 'bots',
               workspaceOwnerKey: options.workspaceOwnerKey,
               ...(options.tabTitle ? { workspaceTabTitle: options.tabTitle } : {})
             })
           } else {
-            openSession(storedSessionId, navigate, intent)
+            openSessionInternal(storedSessionId, navigate, intent)
           }
 
           // Judge the main surface AFTER the open: on a cold start the persisted
@@ -2515,3 +2515,22 @@ export { atom, computed } from 'nanostores'
 /** Markdown renderer (same pipeline core chat surfaces use) so plugins render
  *  message text as a preview instead of raw Markdown source. */
 export { Streamdown } from 'streamdown'
+
+/** Navigate to an in-app route. This is `host.navigate` under the bare name a
+ *  lot of plugin code reaches for; the renderer routes on the hash.
+ *  Accepts `/studio`, `studio`, or `#/studio`. */
+export function navigate(path: string): void {
+  host.navigate(path)
+}
+
+/** Open a stored session by id — the deep link the sidebar's rows produce
+ *  (`#/<sessionId>`), so the app's own route-resume does the rest. */
+export function openSession(sessionId: string): void {
+  const id = sessionId.trim()
+
+  if (!id) {
+    return
+  }
+
+  window.location.hash = `#/${id}`
+}
