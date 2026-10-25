@@ -48,9 +48,9 @@ def validate_servers(servers):
     if len(servers) > 16:
         raise RuntimeStoreError('invalid_params', field='editor.mcp_servers',
                                 detail=f'at most 16 servers, got {len(servers)}')
-    if len(_json(servers)) > 65536:
+    if len(_json(servers)) > 1048576:
         raise RuntimeStoreError('invalid_params', field='editor.mcp_servers',
-                                detail='the serialized server list exceeds 65536 bytes')
+                                detail='the serialized server list exceeds 1048576 bytes')
     names = set()
     try:
         for spec in servers:
