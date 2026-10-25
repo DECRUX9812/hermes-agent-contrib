@@ -92,6 +92,7 @@ interface ResumedSession {
 const $bots = atom<Map<string, BotRoomBot>>(new Map())
 const $rooms = atom<Map<string, BotRoomRoom>>(new Map())
 let wired = false
+let visibilityWired = false
 let pollTimer: ReturnType<typeof setInterval> | null = null
 
 function wireControl(): void {
@@ -121,7 +122,25 @@ function push(payload: BotRoomStatePayload): void {
 
 function startFeed(): void {
   if (pollTimer === null) {
-    pollTimer = setInterval(() => void refreshBots(), 8000)
+    pollTimer = setInterval(() => {
+      // Nothing on screen can change while the document is hidden (the room
+      // overlay is a window kind of its own). Park the 8 s `profiles.list` RPC
+      // until it is visible again — `visibilitychange` below is the catch-up.
+      if (typeof document !== 'undefined' && document.visibilityState !== 'visible') {
+        return
+      }
+
+      void refreshBots()
+    }, 8000)
+  }
+
+  if (!visibilityWired && typeof document !== 'undefined') {
+    visibilityWired = true
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible' && pollTimer !== null) {
+        void refreshBots()
+      }
+    })
   }
 }
 
