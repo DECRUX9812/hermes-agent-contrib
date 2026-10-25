@@ -28,7 +28,7 @@ import {
 // Shared chrome styling for interactive statusbar items (button / link / menu
 // trigger). The 'text' variant intentionally omits hover/transition/disabled.
 const STATUSBAR_ACTION_CLASS =
-  'inline-flex h-full items-center gap-1 rounded-none px-1.5 text-[0.6875rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground disabled:cursor-default disabled:opacity-45'
+  'inline-flex h-full shrink-0 items-center gap-1 overflow-hidden whitespace-nowrap rounded-none px-1.5 text-[0.6875rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground disabled:cursor-default disabled:opacity-45'
 
 export interface StatusbarMenuItem {
   id: string
@@ -93,8 +93,7 @@ export function StatusbarControls({ className, leftItems = [], items = [], ...pr
   const navigate = useNavigate()
   const hiddenIds = useStore($statusbarHiddenIds)
 
-  const visible = (item: StatusbarItem) =>
-    !item.hidden && (item.lockedVisible || !item.toggleLabel || !hiddenIds.includes(item.id))
+  const visible = (item: StatusbarItem) => !item.hidden && (item.lockedVisible || !hiddenIds.includes(item.id))
 
   return (
     <ContextMenu>
@@ -128,6 +127,22 @@ export function StatusbarControls({ className, leftItems = [], items = [], ...pr
   )
 }
 
+/** Menu label for one item: its explicit `toggleLabel`, else the name of the
+ *  contribution the id came from (`forkwatch:pane` → "Forkwatch"). */
+function statusbarItemLabel(item: StatusbarItem): string {
+  if (item.toggleLabel) {
+    return item.toggleLabel
+  }
+
+  if (typeof item.title === 'string' && item.title.trim()) {
+    return item.title.trim()
+  }
+
+  const base = item.id.includes(':') ? item.id.split(':')[0] : item.id
+
+  return base.replace(/[-_]+/g, ' ').replace(/^\w/, char => char.toUpperCase())
+}
+
 /** Right-click the bar to choose what it shows. Lists every item that named
  *  itself with `toggleLabel`, in bar order (left cluster then right), so the
  *  menu reads like the surface it edits. Hiding the whole bar lives at the
@@ -147,11 +162,18 @@ function StatusbarVisibilityMenu({
   // Deduped by id: an item can legitimately appear in both clusters across
   // renders (contributions move sides), and a repeated checkbox would let one
   // row's toggle silently contradict the other's.
+  //
+  // EVERY item is listable now, not just the ones that opted in with
+  // `toggleLabel`. Plugin chips render their own node and never set one, so the
+  // old filter meant the items users most want to hide (agentcraft, forkwatch,
+  // quota pills) never appeared in the menu at all. A missing label falls back
+  // to the id's own name so the row still reads as something: `forkwatch:pane`
+  // → "Forkwatch", `agentcraft:status` → "Agentcraft".
   const toggles = useMemo(() => {
     const seen = new Set<string>()
 
     return [...leftItems, ...items].filter(item => {
-      if (!item.toggleLabel || seen.has(item.id)) {
+      if (!item.id || seen.has(item.id)) {
         return false
       }
 
@@ -178,7 +200,7 @@ function StatusbarVisibilityMenu({
               // command list).
               onSelect={event => event.preventDefault()}
             >
-              <span className="truncate">{item.toggleLabel}</span>
+              <span className="truncate">{statusbarItemLabel(item)}</span>
             </ContextMenuCheckboxItem>
           ))}
           <ContextMenuSeparator />
@@ -227,8 +249,15 @@ const StatusbarItemView = memo(function StatusbarItemView({
   const [menuOpen, setMenuOpen] = useState(false)
 
   // Render escape hatch: the contribution owns its own chrome/state/tooltip.
+  // Wrapped in a shrink-0 slot: without it the chip is squeezed by the flex row
+  // and its own text paints over its neighbours' (the statusbar clips, it does
+  // not scroll), which is exactly the "labels on top of each other" mess.
   if (item.render) {
-    return <ContribRender render={item.render} />
+    return (
+      <div className="flex h-full shrink-0 items-center overflow-hidden">
+        <ContribRender render={item.render} />
+      </div>
+    )
   }
 
   const tooltipLabel = item.actionId ? <TipKeybindLabel actionId={item.actionId} text={item.title} /> : item.title

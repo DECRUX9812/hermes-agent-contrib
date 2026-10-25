@@ -71,11 +71,14 @@ describe('statusbar item visibility', () => {
     expect(row.getAttribute('aria-checked')).toBe('true')
   })
 
-  it('leaves items that never opted into the menu alone', () => {
+  // Plugin chips render their own node and never set `toggleLabel`; the old
+  // contract left them permanently visible, which meant the items users most
+  // want to hide were the ones the menu could not list.
+  it('hides a contribution that never named itself, once the user hides it', () => {
     $statusbarHiddenIds.set(['plugin-thing'])
     bar([{ id: 'plugin-thing', label: 'Plugin thing', variant: 'action' }])
 
-    expect(screen.getByText('Plugin thing')).toBeTruthy()
+    expect(screen.queryByText('Plugin thing')).toBeNull()
   })
 })
 
@@ -154,12 +157,13 @@ describe('whole-bar visibility', () => {
     expect($statusbarVisible.get()).toBe(true)
   })
 
-  it('offers the hide row even when no item opted into the show/hide list', async () => {
+  it('lists a contribution that never named itself, so it can be hidden', async () => {
     const statusbar = bar([{ id: 'plugin-thing', label: 'Plugin thing', variant: 'action' }])
 
     openContextMenu(statusbar)
 
     expect(await screen.findByRole('menuitem', { name: /hide status bar/i })).toBeTruthy()
-    expect(screen.queryByRole('menuitemcheckbox')).toBeNull()
+    // The label falls back to the id's own words instead of the raw slot id.
+    expect((await screen.findByRole('menuitemcheckbox')).textContent).toBe('Plugin thing')
   })
 })
