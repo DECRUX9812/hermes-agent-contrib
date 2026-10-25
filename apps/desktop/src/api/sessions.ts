@@ -684,6 +684,7 @@ function approximateMessageJsonChars(messages: SessionMessage[]): number {
 
     if (typeof content === 'string') {
       chars += content.length
+
       continue
     }
 
@@ -696,6 +697,7 @@ function approximateMessageJsonChars(messages: SessionMessage[]): number {
 
       if (typeof part === 'string') {
         chars += part.length
+
         continue
       }
 
