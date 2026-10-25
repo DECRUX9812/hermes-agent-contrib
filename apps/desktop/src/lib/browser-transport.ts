@@ -145,6 +145,46 @@ export function navigateToBrowserLogin(error: BrowserReauthRequiredError): void 
   if (window.dispatchEvent(event)) {window.location.assign(error.loginUrl)}
 }
 
+/**
+ * The gated host's login page, when the HTML an `/api` call came back with IS
+ * that page.
+ *
+ * A browser-hosted deployment answers an unauthenticated request with
+ * `303 → /login`, and `fetch` follows the redirect, so the caller sees
+ * `200 OK` plus the login page's HTML — indistinguishable from a broken API
+ * unless we look for the gate. Without this, an expired session surfaced as
+ * "Hermes couldn't start / Hermes API returned HTML for /api/auth/ws-ticket"
+ * with a repair-install dialog, when the only thing needed was to sign in.
+ *
+ * Returns null for any other HTML (proxy error page, captive portal), which
+ * keeps the old hard failure for those.
+ */
+export function loginPageUrl(
+  bootstrap: BrowserBootstrap,
+  response: Response,
+  text: string
+): string | null {
+  try {
+    const url = new URL(response.url)
+
+    if (/\/login\/?$/.test(url.pathname)) {
+      return url.href
+    }
+  } catch {
+    // `response.url` can be empty for a synthetic response; fall through to
+    // the body check.
+  }
+
+  if (!/<form/i.test(text) || !/type=["']?password/i.test(text)) {
+    return null
+  }
+
+  const target = new URL(`${bootstrap.basePath}/login`, window.location.origin)
+  target.searchParams.set('next', `${window.location.pathname}${window.location.search}${window.location.hash}`)
+
+  return target.href
+}
+
 interface BrowserFetchRequest {
   body?: BodyInit
   headers?: HeadersInit
@@ -228,6 +268,17 @@ export async function browserApi<T>(bootstrap: BrowserBootstrap, request: Hermes
   if (!text) {return null as T}
 
   if (/^\s*<(?:!doctype|html)/i.test(text)) {
+    const loginUrl = loginPageUrl(bootstrap, response, text)
+
+    if (loginUrl) {
+      // The session is gone, not the API: send the tab to the sign-in page
+      // instead of failing boot with a repair dialog.
+      const error = new BrowserReauthRequiredError('Sign in required', loginUrl)
+      navigateToBrowserLogin(error)
+
+      throw error
+    }
+
     throw new Error(`Hermes API returned HTML for ${request.path}`)
   }
 
