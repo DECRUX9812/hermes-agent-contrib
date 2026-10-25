@@ -88,3 +88,18 @@ host check are satisfied.
 
 `ui-design/preview.html` is the static component sheet if you want to look at the
 tokens and states without flipping the live app.
+
+## Follow-up pass (the two items the first pass left open)
+
+Both were called out as "open for your call" and are now closed:
+
+| Item | What was wrong | Fix |
+| --- | --- | --- |
+| Home-screen black void | The `computer-viewer` plugin painted its noVNC slot `bg-black`; in a browser tab the viewer never starts (no desktop file bridge), so a dead screen filled the pane — and once the surface was themed, an empty 658px box still pushed the hero down. | Slot uses `var(--dt-background)`; when the viewer is in its error state the box is `display:none`, so the pane collapses to its header + the honest error card. |
+| Statusbar menu can't list plugin chips | `StatusbarVisibilityMenu` filtered on `toggleLabel`, which plugin contributions never set — the items users most want to hide could not be listed, and `visible()` forced them always-on. | Every item is listable, labelled `toggleLabel` → `title` → the contribution name in the id (`forkwatch:pane` → "Forkwatch"); `visible()` honours the hidden list for all items. Tests updated to the new contract. |
+| Statusbar labels overlapping | Neither the shared action class nor the render escape hatch had `shrink-0`, so a crowded bar squeezed chips until their text painted over their neighbours. | `shrink-0` + `whitespace-nowrap` on the action class, `shrink-0` slot around `item.render`; the bar clips instead of overlapping. |
+| "Plugin X failed to load" toast | `@hermes/plugin-sdk` exported neither `navigate` nor `openSession`; `cost-analytics` and `delegation-reports` import them, so both threw at load and left a permanent red toast. | Both exported from `src/sdk/index.ts`: `navigate` delegates to `host.navigate`, `openSession` sets the `#/<id>` deep link the sidebar rows use. |
+
+Verified against `https://dev.decruxtech.com` (1440×900, authenticated probe): no
+page errors, no plugin toast, no black rectangle, statusbar labels legible.
+Statusbar + contrib suites: 13 files / 99 tests pass.
