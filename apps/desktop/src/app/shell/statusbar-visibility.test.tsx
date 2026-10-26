@@ -71,11 +71,23 @@ describe('statusbar item visibility', () => {
     expect(row.getAttribute('aria-checked')).toBe('true')
   })
 
-  it('leaves items that never opted into the menu alone', () => {
-    $statusbarHiddenIds.set(['plugin-thing'])
-    bar([{ id: 'plugin-thing', label: 'Plugin thing', variant: 'action' }])
+  it('lets the user hide plugin items that never set toggleLabel (falls back to label / id)', async () => {
+    const statusbar = bar([
+      { id: 'plugin-thing', label: 'Plugin thing', variant: 'action' },
+      { id: 'forkwatch:pane', render: () => <span>v0.2.0</span> }
+    ])
 
-    expect(screen.getByText('Plugin thing')).toBeTruthy()
+    expect(within(statusbar).getByText('Plugin thing')).toBeTruthy()
+    expect(within(statusbar).getByText('v0.2.0')).toBeTruthy()
+
+    openContextMenu(statusbar)
+
+    expect(await screen.findByRole('menuitemcheckbox', { name: 'Plugin thing' })).toBeTruthy()
+    const forkwatchRow = await screen.findByRole('menuitemcheckbox', { name: 'Forkwatch' })
+    fireEvent.click(forkwatchRow)
+
+    expect($statusbarHiddenIds.get()).toContain('forkwatch:pane')
+    expect(within(statusbar).queryByText('v0.2.0')).toBeNull()
   })
 })
 
@@ -154,8 +166,8 @@ describe('whole-bar visibility', () => {
     expect($statusbarVisible.get()).toBe(true)
   })
 
-  it('offers the hide row even when no item opted into the show/hide list', async () => {
-    const statusbar = bar([{ id: 'plugin-thing', label: 'Plugin thing', variant: 'action' }])
+  it('offers the hide row even when the bar has no visible items', async () => {
+    const statusbar = bar([{ hidden: true, id: 'plugin-thing', label: 'Plugin thing', variant: 'action' }])
 
     openContextMenu(statusbar)
 

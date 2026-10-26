@@ -1566,6 +1566,11 @@ export const host = {
 export const openSession = (storedSessionId: string, options?: PluginOpenSessionOptions): Promise<void> =>
   host.openSession(storedSessionId, options)
 
+/** Top-level `navigate` — the SAME function as `host.navigate`, re-exported
+ *  for the same reason as `openSession` (`import { navigate } from
+ *  '@hermes/plugin-sdk'`). */
+export const navigate = (path: string): void => host.navigate(path)
+
 // -- react bridge -------------------------------------------------------------
 
 export type { DesktopSettingKey, DesktopSettingValues } from './settings'

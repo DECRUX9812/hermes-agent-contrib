@@ -27,8 +27,12 @@ import {
 
 // Shared chrome styling for interactive statusbar items (button / link / menu
 // trigger). The 'text' variant intentionally omits hover/transition/disabled.
+// `shrink-0` + `whitespace-nowrap` so items never squeeze below their label
+// width or wrap mid-chip when the bar gets crowded — the cluster's
+// `overflow-x-clip` clips whole trailing items instead of letting flexbox
+// compress siblings into each other's bounds.
 const STATUSBAR_ACTION_CLASS =
-  'inline-flex h-full items-center gap-1 rounded-none px-1.5 text-[0.6875rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground disabled:cursor-default disabled:opacity-45'
+  'inline-flex h-full shrink-0 items-center gap-1 whitespace-nowrap rounded-none px-1.5 text-[0.6875rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground disabled:cursor-default disabled:opacity-45'
 
 export interface StatusbarMenuItem {
   id: string
@@ -67,14 +71,39 @@ export interface StatusbarItem {
   title?: string
   to?: string
   variant?: 'action' | 'link' | 'menu' | 'text'
-  /** Plain-text name for the bar's right-click show/hide menu. An item without
-   *  one is never listed there and always shows — the safe default for plugin
-   *  contributions that don't opt in. */
+  /** Plain-text name for the bar's right-click show/hide menu. When omitted,
+   *  the menu falls back to `title` or a humanized `id` so plugin chips are
+   *  still hideable without every plugin having to opt in. */
   toggleLabel?: string
   /** Listed in the menu but not switchable: the bar's own affordances (command
    *  center, update/version pills) would strand the user if they could be
    *  hidden from the surface that hides them. */
   lockedVisible?: boolean
+}
+
+/** Human-readable name for the right-click show/hide menu. Built-ins set
+ *  `toggleLabel`; plugin contributions usually only set `id` (prefixed with
+ *  `<pluginId>:`) and sometimes `title` / a string `label`. Every bar item
+ *  must have a name so a crowded bar can always be pared back from the menu. */
+function itemMenuLabel(item: StatusbarItem): string {
+  if (item.toggleLabel) {
+    return item.toggleLabel
+  }
+
+  if (typeof item.label === 'string' && item.label.trim()) {
+    return item.label.trim()
+  }
+
+  if (item.title?.trim()) {
+    return item.title.trim()
+  }
+
+  // `forkwatch:pane` -> `Forkwatch`, `hermes-Notify-v2:notify-bell` -> `Hermes Notify V2`
+  const head = item.id.split(':')[0] || item.id
+
+  return head
+    .replace(/[-_]+/g, ' ')
+    .replace(/\b[a-z]/g, char => char.toUpperCase())
 }
 
 export interface StatusbarSelectModifiers {
@@ -93,8 +122,7 @@ export function StatusbarControls({ className, leftItems = [], items = [], ...pr
   const navigate = useNavigate()
   const hiddenIds = useStore($statusbarHiddenIds)
 
-  const visible = (item: StatusbarItem) =>
-    !item.hidden && (item.lockedVisible || !item.toggleLabel || !hiddenIds.includes(item.id))
+  const visible = (item: StatusbarItem) => !item.hidden && (item.lockedVisible || !hiddenIds.includes(item.id))
 
   return (
     <ContextMenu>
@@ -128,9 +156,9 @@ export function StatusbarControls({ className, leftItems = [], items = [], ...pr
   )
 }
 
-/** Right-click the bar to choose what it shows. Lists every item that named
- *  itself with `toggleLabel`, in bar order (left cluster then right), so the
- *  menu reads like the surface it edits. Hiding the whole bar lives at the
+/** Right-click the bar to choose what it shows. Lists every item in bar order
+ *  (left cluster then right, including plugin chips via `itemMenuLabel`), so
+ *  the menu reads like the surface it edits. Hiding the whole bar lives at the
  *  bottom — VS Code puts it on the same context menu. */
 function StatusbarVisibilityMenu({
   hiddenIds,
@@ -151,7 +179,7 @@ function StatusbarVisibilityMenu({
     const seen = new Set<string>()
 
     return [...leftItems, ...items].filter(item => {
-      if (!item.toggleLabel || seen.has(item.id)) {
+      if (item.hidden || seen.has(item.id)) {
         return false
       }
 
@@ -178,7 +206,7 @@ function StatusbarVisibilityMenu({
               // command list).
               onSelect={event => event.preventDefault()}
             >
-              <span className="truncate">{item.toggleLabel}</span>
+              <span className="truncate">{itemMenuLabel(item)}</span>
             </ContextMenuCheckboxItem>
           ))}
           <ContextMenuSeparator />
@@ -226,9 +254,15 @@ const StatusbarItemView = memo(function StatusbarItemView({
 }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
-  // Render escape hatch: the contribution owns its own chrome/state/tooltip.
+  // Render escape hatch: the contribution owns its own chrome/state/tooltip,
+  // but the slot wrapper stays `shrink-0` so a plugin chip with no flex-shrink
+  // class of its own can't collapse into neighboring items when the bar fills.
   if (item.render) {
-    return <ContribRender render={item.render} />
+    return (
+      <div className="inline-flex h-full shrink-0 items-center whitespace-nowrap">
+        <ContribRender render={item.render} />
+      </div>
+    )
   }
 
   const tooltipLabel = item.actionId ? <TipKeybindLabel actionId={item.actionId} text={item.title} /> : item.title
@@ -320,7 +354,7 @@ const StatusbarItemView = memo(function StatusbarItemView({
       <Tip label={tooltipLabel}>
         <div
           className={cn(
-            'inline-flex h-full items-center gap-1 px-1.5 text-[0.6875rem] text-(--ui-text-tertiary)',
+            'inline-flex h-full shrink-0 items-center gap-1 whitespace-nowrap px-1.5 text-[0.6875rem] text-(--ui-text-tertiary)',
             item.className
           )}
         >
