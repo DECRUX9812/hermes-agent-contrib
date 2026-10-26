@@ -207,6 +207,10 @@ export interface HermesPlugin {
    *  them and gate them. Today: `'preview.executeJavaScript'` (`ctx.preview`).
    *  A door the plugin did not declare refuses every call. */
   capabilities?: readonly string[]
+  /** Bundled plugin ids this runtime plugin supersedes. Activating it switches
+   *  each loaded bundled twin off (persisted, like the settings toggle) so the
+   *  two never register side by side; the user can switch either back. */
+  replaces?: readonly string[]
   /** Called once at load; wire contributions through `ctx`. */
   register: (ctx: PluginContext) => void
 }

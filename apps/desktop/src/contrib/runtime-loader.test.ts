@@ -5,7 +5,7 @@ import type * as HermesModule from '@/hermes'
 import { $previewScriptGrants, grantPreviewScript } from '@/store/plugin-preview-grants'
 
 import { emitGatewayEvent } from './events'
-import { $pluginRecords, publishPlugin, setPluginEnabled } from './plugins-store'
+import { $pluginDecisions, $pluginRecords, publishPlugin, setPluginEnabled } from './plugins-store'
 import {
   discoverRuntimePlugins,
   loadRuntimePlugin,
@@ -535,6 +535,50 @@ describe('bundled-shadowed disk copies', () => {
         status: 'disabled',
         file: '/local/.hermes/desktop-plugins/hermes-bots/plugin.js'
       })
+    } finally {
+      createObjectURL.mockRestore()
+      revokeObjectURL.mockRestore()
+      vi.stubGlobal('Blob', RealBlob)
+    }
+  })
+})
+
+describe('runtime plugins that replace a bundled twin', () => {
+  it('switches the loaded bundled twin off before registering', async () => {
+    const deactivate = vi.fn()
+    publishPlugin({ id: 'bundled-twin', name: 'Twin', kind: 'bundled', status: 'loaded' }, { activate: vi.fn(), deactivate })
+
+    const createObjectURL = vi
+      .spyOn(URL, 'createObjectURL')
+      .mockImplementation(
+        blob =>
+          `data:text/javascript;base64,${Buffer.from((blob as unknown as { parts: string[] }).parts.join('')).toString('base64')}`
+      )
+
+    const revokeObjectURL = vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
+    const RealBlob = globalThis.Blob
+    vi.stubGlobal(
+      'Blob',
+      class {
+        parts: string[]
+        constructor(parts: string[]) {
+          this.parts = parts
+        }
+      }
+    )
+
+    try {
+      const id = await loadRuntimePlugin(
+        'export default { id: "twin-plus", replaces: ["bundled-twin"], register() {} }',
+        'twin-plus',
+        { file: '/local/.hermes/desktop-plugins/twin-plus/plugin.js' }
+      )
+
+      expect(id).toBe('twin-plus')
+      expect(deactivate).toHaveBeenCalledTimes(1)
+      expect($pluginRecords.get()['bundled-twin']).toMatchObject({ status: 'disabled' })
+      expect($pluginDecisions.get()['bundled-twin']).toBe(false)
+      expect($pluginRecords.get()['twin-plus']).toMatchObject({ kind: 'disk', status: 'loaded' })
     } finally {
       createObjectURL.mockRestore()
       revokeObjectURL.mockRestore()

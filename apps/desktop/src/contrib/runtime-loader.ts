@@ -41,7 +41,14 @@ import { forgetPluginPreviewAccess } from '@/store/plugin-preview-grants'
 
 import { trackGatewayEventDisposers } from './events'
 import { createPluginContext, declaredCapabilities, type HermesPlugin } from './plugin'
-import { $pluginRecords, dropPlugin, pluginActive, type PluginKind, publishPlugin } from './plugins-store'
+import {
+  $pluginRecords,
+  dropPlugin,
+  pluginActive,
+  type PluginKind,
+  publishPlugin,
+  setPluginEnabled
+} from './plugins-store'
 
 interface LoadOptions {
   /** Root-level default-enable CAP: `false` ships the plugin opt-in (inventory
@@ -486,6 +493,14 @@ export async function loadRuntimePlugin(
     }
 
     const activate = () => {
+      for (const replaced of plugin.replaces ?? []) {
+        const twin = $pluginRecords.get()[replaced]
+
+        if (twin?.kind === 'bundled' && twin.status === 'loaded') {
+          void setPluginEnabled(replaced, false)
+        }
+      }
+
       // Reload = dispose the previous incarnation, then register fresh.
       unloadRuntimePlugin(plugin.id)
       const disposers: (() => void)[] = []
