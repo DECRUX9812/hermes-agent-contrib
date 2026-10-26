@@ -1,5 +1,9 @@
 /**
- * Pixel Pets — status bar chip + popover.
+ * Pixel Pets — status bar chip + popover, plus a /pixel-pets page.
+ *
+ * Simple mode hides the status bar, so the page is also reachable from a
+ * sidebar row (no tier: shown in both modes) and from Ctrl+K. The row stays
+ * quiet: it only carries a badge while a pet is waiting on the user.
  *
  * Live pet office: a small "🐾 N" chip in the status bar opens a popover
  * showing every Hermes agent as a pixel-art pet with mood animations
@@ -26,6 +30,9 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
+  PALETTE_AREA,
+  ROUTES_AREA,
+  SIDEBAR_NAV_AREA,
   STATUSBAR_AREAS,
   useQuery,
   useQueryClient
@@ -34,6 +41,9 @@ import { jsx, jsxs } from 'react/jsx-runtime'
 import { useState } from 'react'
 
 const ID = 'pixel-office'
+const PAGE = '/pixel-pets'
+const ATTN_MS = 30_000
+const ATTN_DOWN_MAX_MS = 300_000
 
 // Pet roster — every Hermes profile is a named pet with species + color.
 const PET = {
@@ -410,7 +420,7 @@ function useOffice(open) {
   })
 }
 
-function OfficePanel({ data, onChat }) {
+function OfficePanel({ data, onChat, page = false }) {
   const qc = useQueryClient()
   const agents = (data && data.agents) || []
   const whip = (data && data.whip) || { count: 0, last: null }
@@ -430,7 +440,7 @@ function OfficePanel({ data, onChat }) {
 
   return jsxs('div', {
     className: 'flex flex-col gap-2',
-    style: { maxHeight: 'min(28rem, 70vh)' },
+    style: page ? undefined : { maxHeight: 'min(28rem, 70vh)' },
     children: [
       jsxs('div', {
         className: 'flex items-center gap-2',
@@ -455,7 +465,7 @@ function OfficePanel({ data, onChat }) {
       agents.length === 0
         ? jsx('div', { className: 'py-4 text-center text-xs text-(--ui-text-tertiary)', children: 'No pets in the office yet. Start a Hermes session.' })
         : jsx('div', {
-            className: 'grid grid-cols-2 gap-1.5 overflow-y-auto',
+            className: page ? 'grid grid-cols-2 gap-2 sm:grid-cols-3' : 'grid grid-cols-2 gap-1.5 overflow-y-auto',
             style: { gridAutoRows: 'min-content' },
             children: agents.map(a => jsx(AgentCard, { a, now: (data && data.ts) || Date.now() / 1000, onChat }, a.id))
           }),
@@ -465,6 +475,37 @@ function OfficePanel({ data, onChat }) {
           className: 'truncate border-t border-(--ui-stroke-secondary) pt-1.5 text-[0.6875rem] text-(--ui-text-tertiary)',
           children: '💥 "' + whip.last.line + '" · ' + whip.last.by + ', ' + ago(whip.last.ts) + ' ago'
         })
+    ]
+  })
+}
+
+function waitingCount(data) {
+  return ((data && data.agents) || []).filter(a => a.status === 'waiting').length
+}
+
+function PetsPage() {
+  const [chatProfile, setChatProfile] = useState(null)
+  const { data, isError, isPending } = useOffice(true)
+
+  return jsxs('div', {
+    className: 'flex h-full min-h-0 w-full flex-col overflow-y-auto',
+    children: [
+      jsx('div', {
+        className: 'mx-auto w-full p-4 sm:p-6',
+        style: { maxWidth: '56rem' },
+        children: isError
+          ? jsxs('div', {
+              className: 'flex flex-col gap-1 py-10 text-center',
+              children: [
+                jsx('span', { className: 'text-sm font-semibold text-(--ui-text-primary)', children: '🐾 Pixel Pets' }),
+                jsx('span', { className: 'text-xs text-(--ui-text-tertiary)', children: 'The Pixel Pets backend is not running, so there are no pets to show right now.' })
+              ]
+            })
+          : isPending
+            ? jsx('div', { className: 'py-10 text-center text-xs text-(--ui-text-tertiary)', children: 'Loading pets…' })
+            : jsx(OfficePanel, { data, onChat: setChatProfile, page: true })
+      }),
+      chatProfile && jsx(ChatModal, { profile: chatProfile, onClose: () => setChatProfile(null) })
     ]
   })
 }
@@ -481,7 +522,10 @@ function PetsChip() {
 
   const agents = data.agents || []
   const busy = agents.filter(a => a.status === 'working' || a.status === 'thinking').length
-  const label = 'Pixel Pets: ' + agents.length + ' pet' + (agents.length === 1 ? '' : 's') + (busy ? ', ' + busy + ' busy' : '')
+  const waiting = waitingCount(data)
+  const label =
+    'Pixel Pets: ' + agents.length + ' pet' + (agents.length === 1 ? '' : 's') +
+    (busy ? ', ' + busy + ' busy' : '') + (waiting ? ', ' + waiting + ' waiting for you' : '')
 
   return jsxs('span', {
     className: 'contents',
@@ -504,7 +548,8 @@ function PetsChip() {
               children: [
                 jsx('span', { 'aria-hidden': true, children: '🐾' }),
                 jsx('span', { className: 'tabular-nums', children: String(agents.length) }),
-                busy > 0 && jsx('span', { 'aria-hidden': true, className: 'pixel-pulse inline-block size-1.5 rounded-full bg-(--ui-accent)', style: { animation: 'pixel-pulse 1.6s ease-in-out infinite' } })
+                // Calm by default: a still dot only while a pet is waiting on the user.
+                waiting > 0 && jsx('span', { 'aria-hidden': true, className: 'inline-block size-1.5 rounded-full bg-(--ui-accent)' })
               ]
             })
           }),
@@ -566,12 +611,72 @@ export default {
     }
 
     // A status bar chip, not a docked pane: the office is a glance, so it
-    // should not take a fixed slice of every chat.
-    ctx.register({
-      id: 'chip',
-      area: STATUSBAR_AREAS.right,
-      order: 40,
-      render: () => jsx(PetsChip, {})
+    // should not take a fixed slice of every chat. The page + palette row are
+    // the second entry point (Simple mode has no status bar).
+    ctx.registerMany([
+      {
+        id: 'chip',
+        area: STATUSBAR_AREAS.right,
+        order: 40,
+        render: () => jsx(PetsChip, {})
+      },
+      {
+        id: 'page',
+        area: ROUTES_AREA,
+        data: { path: PAGE },
+        render: () => jsx(PetsPage, {})
+      },
+      {
+        id: 'open',
+        area: PALETTE_AREA,
+        data: {
+          id: 'pixel-office.open',
+          label: 'Open Pixel Pets',
+          keywords: ['pets', 'pixel', 'office', 'agents'],
+          run: () => host.navigate(PAGE)
+        }
+      }
+    ])
+
+    // Sidebar row. Re-registered only when the waiting count changes, so the
+    // badge appears when a pet needs the user and disappears after.
+    let waiting = 0
+    const registerNav = () =>
+      ctx.register({
+        id: 'nav',
+        area: SIDEBAR_NAV_AREA,
+        order: 60,
+        data: { codicon: 'heart', label: 'Pixel Pets', path: PAGE, badge: waiting > 0 ? String(waiting) : undefined }
+      })
+    let disposeNav = registerNav()
+
+    // Light attention poll: 30s, backing off to 5 min while the backend is
+    // down, and skipped while the window is hidden.
+    let timer = 0
+    let fails = 0
+    let stopped = false
+    const tick = async () => {
+      if (stopped) return
+      if (document.visibilityState !== 'hidden') {
+        try {
+          const next = waitingCount(await ctxRest('/state', { method: 'GET' }))
+          fails = 0
+          if (next !== waiting) {
+            waiting = next
+            disposeNav()
+            disposeNav = registerNav()
+          }
+        } catch {
+          fails += 1
+        }
+      }
+      if (!stopped) timer = setTimeout(tick, fails ? Math.min(ATTN_DOWN_MAX_MS, ATTN_MS * 2 ** fails) : ATTN_MS)
+    }
+    timer = setTimeout(tick, 1500)
+    ctx.onDispose(() => {
+      stopped = true
+      clearTimeout(timer)
+      disposeNav()
     })
   }
 }
