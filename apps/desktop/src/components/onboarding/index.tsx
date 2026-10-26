@@ -39,6 +39,7 @@ import {
 import { $onboardingSurfaces, onboardingSurfaceActive } from '@/store/onboarding-presence'
 import type { OAuthProvider } from '@/types/hermes'
 
+import { ConnectStep, type SetupStep, SetupStepper } from './connect-step'
 import { DocsLink, FlowPanel, Status } from './flow'
 import { FreeTierSetupNotice } from './free-tier-setup-notice'
 import { DecodedLabel } from './glyph'
@@ -235,6 +236,18 @@ export function DesktopOnboardingOverlay({
   // behind), THEN finalize so the unmount lands after the fade — mirrors the
   // connecting overlay's exit choreography instead of cutting instantly.
   const [leaving, setLeaving] = useState(false)
+  // First run only: "Begin" on the model screen opens the optional Connect step before the chat.
+  const [connectStep, setConnectStep] = useState(false)
+
+  const beginOnboarding = () => {
+    if (!onboarding.manual && !connectStep) {
+      setConnectStep(true)
+
+      return
+    }
+
+    finalizeOnboarding()
+  }
 
   const finalizeOnboarding = () => {
     if (leaving) {
@@ -411,7 +424,17 @@ export function DesktopOnboardingOverlay({
   const showPicker = !freeTierIntro && (flow.status === 'idle' || flow.status === 'success')
   // The final "you're in" screen drops the card chrome and floats centered on
   // the surface — same bare, cinematic treatment as the connecting overlay.
-  const bare = ready && (freeTierIntro || (!showPicker && flow.status === 'confirming_model'))
+  const inConnect = connectStep && ready && !freeTierIntro && flow.status === 'confirming_model'
+  const bare = ready && !inConnect && (freeTierIntro || (!showPicker && flow.status === 'confirming_model'))
+
+  const step: null | SetupStep =
+    !ready || freeTierIntro || onboarding.manual
+      ? null
+      : inConnect
+        ? 'connect'
+        : flow.status === 'confirming_model'
+          ? 'model'
+          : 'identity'
 
   return (
     <div
@@ -440,7 +463,8 @@ export function DesktopOnboardingOverlay({
             : 'translate-y-0 scale-100 opacity-100 blur-0'
         )}
       >
-        {showPicker || !ready ? <Header /> : null}
+        {step ? <SetupStepper current={step} /> : null}
+        {(showPicker || !ready) && !inConnect ? <Header /> : null}
         {onboarding.manual ? (
           <Button
             aria-label={t.common.close}
@@ -458,10 +482,12 @@ export function DesktopOnboardingOverlay({
           {ready ? (
             freeTierIntro ? (
               <FreeTierReadyPanel leaving={leaving} onDismiss={dismissFreeTierIntro} />
+            ) : inConnect ? (
+              <ConnectStep onDone={finalizeOnboarding} />
             ) : showPicker ? (
               <Picker ctx={ctx} />
             ) : (
-              <FlowPanel ctx={ctx} flow={flow} leaving={leaving} onBegin={finalizeOnboarding} />
+              <FlowPanel ctx={ctx} flow={flow} leaving={leaving} onBegin={beginOnboarding} />
             )
           ) : (
             <Preparing boot={boot} />
