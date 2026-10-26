@@ -1,0 +1,9 @@
+{
+  "package": "better-session-appearance",
+  "source": "/home/user/.hermes-webapp/cache/scratch/bsa-clone/public/better-session-appearance/desktop",
+  "sourceMtimeMs": 1792983887868.2397,
+  "catalogName": "better-session-appearance",
+  "repo": "https://github.com/apoapostolov/hermes-agent-awesome-plugins",
+  "sha": "a503f2d3166f41bb0eacd7158150894da7eff14d",
+  "note": "enabled by local override: upstream ships the unified package opt-in"
+}
