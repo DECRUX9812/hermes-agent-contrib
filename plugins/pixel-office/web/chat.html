@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Pet Chat — Pixel Office</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' fill='%230a0d13'/><rect x='4' y='2' width='8' height='6' fill='%23f0b93c'/><rect x='6' y='4' width='1.6' height='2' fill='%230a0d13'/><rect x='8.6' y='4' width='1.6' height='2' fill='%230a0d13'/><rect x='6.5' y='9' width='3' height='2' fill='%23f0b93c'/><rect x='5' y='12' width='6' height='2' fill='%23f0b93c'/></svg>">
+<style>
+  :root {
+    --bg: #0a0d13; --panel: #141926; --panel2: #1b2233; --stroke: #232c42;
+    --text: #e8ebf4; --dim: #94a0b8; --faint: #56627c;
+    --gold: #f0b93c; --emerald: #3ddc97; --red: #ff5c6c; --purple: #b48cff;
+    --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --sans: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    background:
+      radial-gradient(120% 90% at 50% 0%, #101626 0%, var(--bg) 55%);
+    color: var(--text); font: 14px/1.5 var(--sans);
+    display: flex; flex-direction: column; overflow: hidden;
+  }
+  body::after {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 40;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.02) 0 1px, transparent 1px 3px);
+  }
+  header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 18px; border-bottom: 1px solid var(--stroke);
+    background: rgba(10,13,19,.85); backdrop-filter: blur(4px);
+  }
+  .avatar { width: 40px; height: 40px; border-radius: 10px; display: grid; place-items: center; font-size: 22px; border: 1px solid var(--stroke); background: var(--panel); }
+  .hname { font: 800 17px/1.2 var(--sans); color: var(--bot, var(--text)); }
+  .hsub { font: 500 11px/1.4 var(--mono); color: var(--faint); }
+  .hstatus { font: 700 9.5px/1 var(--mono); letter-spacing: .12em; text-transform: uppercase; padding: 4px 8px; border-radius: 999px; border: 1px solid var(--stroke); color: var(--dim); }
+  .hstatus.online { color: var(--emerald); border-color: rgba(61,220,151,.35); background: rgba(61,220,151,.08); }
+  .hstatus.typing { color: var(--gold); border-color: rgba(240,185,60,.4); background: rgba(240,185,60,.1); }
+  .grow { flex: 1; }
+  header button {
+    background: var(--panel2); color: var(--dim); border: 1px solid var(--stroke);
+    border-radius: 8px; padding: 7px 12px; cursor: pointer;
+    font: 600 12px/1 var(--sans); transition: border-color .15s, color .15s;
+  }
+  header button:hover { color: var(--text); border-color: var(--faint); }
+
+  #msgs { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 12px; }
+  .msg { max-width: 78%; padding: 10px 13px; border-radius: 13px; font-size: 13.5px; line-height: 1.55; white-space: pre-wrap; word-wrap: break-word; animation: rise .25s ease both; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .msg .who { display: block; font: 700 9.5px/1 var(--mono); letter-spacing: .14em; text-transform: uppercase; margin-bottom: 4px; opacity: .75; }
+  .msg.user { align-self: flex-end; background: linear-gradient(180deg, #2a3a5e, #22304d); color: var(--text); border: 1px solid #33476f; border-bottom-right-radius: 4px; }
+  .msg.user .who { color: var(--bot, var(--gold)); }
+  .msg.bot { align-self: flex-start; background: var(--panel2); border: 1px solid var(--stroke); border-bottom-left-radius: 4px; }
+  .msg.bot .who { color: var(--bot, var(--emerald)); }
+  .msg.err { border-color: rgba(255,92,108,.4); background: rgba(255,92,108,.08); }
+  .msg .when { display: block; font: 500 9.5px/1 var(--mono); color: var(--faint); margin-top: 5px; }
+  .typing { align-self: flex-start; color: var(--dim); font: 500 12px/1.6 var(--mono); padding: 8px 14px; border: 1px dashed var(--stroke); border-radius: 12px; }
+  .typing .dots::after { content: ""; animation: dots 1.4s steps(4, end) infinite; }
+  @keyframes dots { 0% { content: ""; } 25% { content: "."; } 50% { content: ".."; } 75% { content: "..."; } }
+  .empty { margin: auto; text-align: center; color: var(--faint); font-family: var(--mono); font-size: 12.5px; }
+  .empty .big { font-size: 34px; display: block; margin-bottom: 10px; }
+
+  form {
+    display: flex; gap: 10px; padding: 14px 18px;
+    border-top: 1px solid var(--stroke); background: rgba(10,13,19,.85);
+  }
+  input {
+    flex: 1; background: var(--panel); color: var(--text);
+    border: 1px solid var(--stroke); border-radius: 10px;
+    padding: 11px 14px; font: 13.5px/1.4 var(--sans); outline: none;
+  }
+  input:focus { border-color: var(--bot, var(--gold)); }
+  input::placeholder { color: var(--faint); }
+  button[type=submit] {
+    background: linear-gradient(180deg, color-mix(in srgb, var(--bot, var(--gold)) 22%, #1b2233), #141926);
+    color: var(--text); border: 1px solid color-mix(in srgb, var(--bot, var(--gold)) 55%, transparent);
+    border-radius: 10px; padding: 0 20px; cursor: pointer;
+    font: 800 12px/1 var(--mono); letter-spacing: .1em; text-transform: uppercase;
+    transition: box-shadow .15s, transform .08s;
+  }
+  button[type=submit]:hover { box-shadow: 0 0 18px color-mix(in srgb, var(--bot, var(--gold)) 35%, transparent); }
+  button[type=submit]:active { transform: scale(.96); }
+  button[type=submit]:disabled { opacity: .5; cursor: default; box-shadow: none; }
+  .hint { text-align: center; color: var(--faint); font: 500 10px/1.5 var(--mono); padding: 6px 14px 8px; background: rgba(10,13,19,.6); border-top: 1px solid rgba(35,44,66,.4); }
+  @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<header>
+  <div class="avatar" id="avatar">🐹</div>
+  <div>
+    <div class="hname" id="hname">Pet</div>
+    <div class="hsub" id="hsub">resume · Bot Chat</div>
+  </div>
+  <span class="hstatus" id="hstatus">—</span>
+  <span class="grow"></span>
+  <button id="popin" title="Back to the office">⌂ Office</button>
+  <button id="close" title="Close this window">✕ Close</button>
+</header>
+
+<div id="msgs">
+  <div class="empty" id="empty"><span class="big">🐾</span>Say hi — the pet picks up its Bot Chat session.</div>
+</div>
+
+<form id="form" autocomplete="off">
+  <input id="input" placeholder="Message the pet…" maxlength="4000" autofocus>
+  <button type="submit" id="send">Send</button>
+</form>
+<div class="hint" id="hint"></div>
+
+<script>
+"use strict";
+
+/* Pet roster — mirrors the office page. */
+const BOTS = {
+  "default":    { name: "Hermes",    emoji: "🐱", color: "#5aa7ff", role: "the original" },
+  "researcher": { name: "Scout",     emoji: "🦊", color: "#b48cff", role: "reads everything" },
+  "trader":     { name: "Maverick",  emoji: "🐂", color: "#3ddc97", role: "one decisive play" },
+  "scribe":     { name: "Quill",     emoji: "🐧", color: "#4ec9b0", role: "keeps the record" },
+  "ops":        { name: "Wrench",    emoji: "🐶", color: "#ff9f5a", role: "keeps the lights on" },
+  "manager":    { name: "Director",  emoji: "🦉", color: "#ff5c6c", role: "calls the shots" },
+};
+const WORKER = { name: "Worker", emoji: "🐹", color: "#8b93a7", role: "on the floor" };
+function botFor(p) { return BOTS[p] || WORKER; }
+
+const params = new URLSearchParams(location.search);
+const profile = (params.get("profile") || "").replace(/[^A-Za-z0-9_-]/g, "").slice(0, 40);
+
+const bot = botFor(profile);
+document.documentElement.style.setProperty("--bot", bot.color);
+const avatar = document.getElementById("avatar");
+const hname = document.getElementById("hname");
+const hsub = document.getElementById("hsub");
+const hstatus = document.getElementById("hstatus");
+const msgs = document.getElementById("msgs");
+const empty = document.getElementById("empty");
+const form = document.getElementById("form");
+const input = document.getElementById("input");
+const send = document.getElementById("send");
+const hint = document.getElementById("hint");
+
+avatar.textContent = bot.emoji;
+hname.textContent = bot.emoji + " " + bot.name;
+hsub.textContent = (profile || "unknown") + " · " + bot.role + " · Bot Chat";
+
+let lastCount = 0;
+let lastMsgs = [];
+let sending = false;
+
+function esc(s) {
+  return String(s || "").replace(/[&<>"']/g, c =>
+    ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"}[c]));
+}
+function when(ts) {
+  const d = new Date(ts * 1000);
+  return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+}
+
+function render(st) {
+  const ms = (st && st.messages) || [];
+  lastMsgs = ms;
+  empty.style.display = ms.length ? "none" : "block";
+  const isNew = ms.length > lastCount;
+  if (isNew) {
+    const start = Math.max(0, ms.length - 8);
+    const frag = document.createDocumentFragment();
+    for (let i = start; i < ms.length; i++) {
+      const m = ms[i];
+      const div = document.createElement("div");
+      const errCls = m.role === "bot" && /^⚠/.test(m.text || "") ? " err" : "";
+      div.className = "msg " + (m.role === "user" ? "user" : "bot") + errCls;
+      const who = m.role === "user" ? "you" : bot.name;
+      div.innerHTML = '<span class="who">' + esc(who) + "</span>"
+        + esc(m.text)
+        + '<span class="when">' + when(m.ts) + "</span>";
+      frag.appendChild(div);
+    }
+    msgs.appendChild(frag);
+    lastCount = ms.length;
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+  const typing = !!(st && st.pending);
+  hstatus.textContent = typing ? "typing…" : "online";
+  hstatus.className = "hstatus " + (typing ? "typing" : "online");
+  hint.textContent = typing
+    ? bot.name + " is thinking — the office shows them at work. Replies resume their Bot Chat."
+    : "This is the pet's real Bot Chat session — say anything.";
+  send.disabled = sending || typing;
+  input.disabled = typing;
+}
+
+async function poll() {
+  try {
+    const r = await fetch("chat?profile=" + encodeURIComponent(profile), { cache: "no-store" });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    render(await r.json());
+  } catch (e) {
+    hstatus.textContent = "offline";
+    hstatus.className = "hstatus";
+    hint.textContent = "office unreachable — is the pixel-office plugin running? (" + e.message + ")";
+  }
+}
+
+form.addEventListener("submit", async ev => {
+  ev.preventDefault();
+  const text = input.value.trim();
+  if (!text || sending) return;
+  sending = true;
+  input.value = "";
+  render({ messages: lastMsgs || [], pending: true });
+  try {
+    const r = await fetch("chat", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ profile, message: text }),
+    });
+    if (!r.ok) throw new Error("HTTP " + r.status);
+    await r.json();
+  } catch (e) {
+    hint.textContent = "send failed: " + e.message;
+  }
+  sending = false;
+  poll();
+});
+
+document.getElementById("popin").addEventListener("click", () => { location.href = "/"; });
+document.getElementById("close").addEventListener("click", () => { window.close(); });
+
+if (!profile) {
+  hname.textContent = "No pet selected";
+  hstatus.textContent = "—";
+  hint.textContent = "Open this window from the office: click a pet, then “pop out”.";
+  form.style.display = "none";
+} else {
+  poll();
+  setInterval(poll, 2000);
+  document.title = bot.name + " — Pet Chat";
+}
+</script>
+</body>
+</html>

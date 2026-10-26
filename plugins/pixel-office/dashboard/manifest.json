@@ -1,0 +1,8 @@
+{
+  "name": "pixel-office",
+  "label": "Pixel Office",
+  "description": "Live agent office — watch agents work, crack the whip, chat with pets",
+  "icon": "Package",
+  "version": "1.2.0",
+  "api": "plugin_api.py"
+}
