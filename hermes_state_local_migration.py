@@ -15,6 +15,9 @@ LEGACY_PREFIX = 'gateway.local_legacy.v1:'
 LEGACY_LOCAL_SOURCES = frozenset({'cli', 'tui', 'gui', 'desktop', 'oneshot', 'tool', 'acp'})
 # Legacy labels that are not creation sources of their own (session_policy.SURFACES).
 LEGACY_CREATION_SOURCES = {'desktop': 'gui'}
+# Surfaces whose served backend stamped the WS-upgrade login as ``user_id``: Desktop under ``hermes serve``,
+# and the pre-gateway Webapp chat surface (``tui``).
+LOGIN_STAMPED_SOURCES = frozenset({'desktop', 'tui'})
 
 
 def legacy_account_label(row):
@@ -35,7 +38,9 @@ def login_owned_by(row, subject):
     only); every other caller, the host's own native peer included, still meets a foreign owner.
     """
     user_id = row.get('user_id')
-    if row['source'] != 'desktop' or not isinstance(user_id, str) or not subject:
+    # Overlay core-patch: the pre-gateway Webapp chat surface wrote its own rows as ``tui`` with the
+    # same ``<provider>:<user>`` login stamp, so those rows are that login's too (Bot Mode ``not_found``).
+    if row['source'] not in LOGIN_STAMPED_SOURCES or not isinstance(user_id, str) or not subject:
         return False
     from hermes_state_mutation_binding import _login_label
     return _login_label(subject) == user_id

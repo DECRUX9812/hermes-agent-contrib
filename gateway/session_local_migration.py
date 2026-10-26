@@ -232,10 +232,17 @@ def _endpoint_owner(saved, config):
 def adopt_legacy_session(authority, actor, row):
     if actor.profile_id != authority.profile_id:
         raise RuntimeStoreError('profile_mismatch')
-    if (getattr(authority, '_native_legacy_transports', {}).get(actor.transport_id) != actor
+    from hermes_state_local_migration import LEGACY_CREATION_SOURCES, login_owned_by, validate_legacy_row
+    native = getattr(authority, '_native_legacy_transports', {}).get(actor.transport_id) == actor
+    # Overlay core-patch: a dashboard/Webapp login is no native owner, but a row stamped with exactly
+    # that login's label is already its own (``login_owned_by``), so that login may adopt it. Unstamped
+    # history and every other stamp still need the native owner.
+    from gateway.session_route_recovery import _messaging_platform
+    own_login = (login_owned_by(row, actor.subject)
+                 and _messaging_platform(str(row.get('user_id')).split(':', 1)[0]) is None)
+    if ((not native and not own_login)
             or not {'session:read', 'session:create'} <= actor.capabilities):
         raise RuntimeStoreError('not_found')
-    from hermes_state_local_migration import LEGACY_CREATION_SOURCES, validate_legacy_row
     validate_legacy_row(authority.db, row, subject=actor.subject)
     authority._require_admission_open()
     from gateway.run import _load_gateway_config, _resolve_gateway_model
