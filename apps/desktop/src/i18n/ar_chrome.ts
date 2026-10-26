@@ -199,8 +199,6 @@ export const arChrome = {
       cron: 'المهام المجدولة'
     },
     searchAria: 'البحث في الجلسات',
-    railPlugins: 'الإضافات',
-    railPluginsHint: 'الإضافات: فتح أو تثبيت',
     searchPlaceholder: 'البحث في الجلسات...',
     clearSearch: 'مسح البحث',
     noMatch: query => `لا توجد جلسات تطابق "${query}"`,

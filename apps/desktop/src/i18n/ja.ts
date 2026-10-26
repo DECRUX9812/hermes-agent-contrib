@@ -2162,8 +2162,6 @@ export const jaOverrides = {
       cron: 'スケジュール済みジョブ'
     },
     searchAria: 'セッションを検索',
-    railPlugins: 'プラグイン',
-    railPluginsHint: 'プラグイン: 開く、またはインストール',
     searchPlaceholder: 'セッションを検索…',
     clearSearch: '検索をクリア',
     noMatch: query => `"${query}" に一致するセッションがありません。`,
