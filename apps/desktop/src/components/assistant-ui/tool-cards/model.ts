@@ -149,11 +149,12 @@ function toolCardStatus(part: ToolPart, view: ToolView, family: ToolCardFamily, 
   // A live scripted browser step (browser_exec has no url arg, its page is
   // inside the code) says where it is going; tools with a url arg already
   // title themselves that way, and the settled line keeps the tool's title.
+  // Any other tool opening an address it was given says so too, unless its
+  // own title already reads better.
   if (
     view.status === 'running' &&
     pageUrl &&
-    (family === 'browser' || family === 'web') &&
-    !parseMaybeObject(part.args).url
+    (((family === 'browser' || family === 'web') && !parseMaybeObject(part.args).url) || !view.title)
   ) {
     return translateNow('assistant.toolCards.opening', new URL(pageUrl).hostname.replace(/^www\./, ''))
   }
@@ -163,6 +164,13 @@ function toolCardStatus(part: ToolPart, view: ToolView, family: ToolCardFamily, 
   }
 
   return view.status === 'running' ? t('working') : ''
+}
+
+/** A url argument the tool was handed directly, never one fished out of text. */
+function explicitPageUrl(args: unknown): string | undefined {
+  const url = parseMaybeObject(args).url
+
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim()) && URL.canParse(url.trim()) ? url.trim() : undefined
 }
 
 function epochMs(value: number | undefined): number | undefined {
@@ -177,7 +185,8 @@ export function toolCardView(part: ToolPart, options: { approvalPending?: boolea
   const view = buildToolView(part, '')
   const family = toolCardFamily(part.toolName)
   const state = toolCardState(part, view, options.approvalPending === true)
-  const pageUrl = toolCardPageUrl(part.args, part.result)
+  const webish = family === 'browser' || family === 'web'
+  const pageUrl = webish ? toolCardPageUrl(part.args, part.result) : explicitPageUrl(part.args)
 
   const card: ToolCardView = {
     id: part.toolCallId || stableHash(part.toolName + JSON.stringify(part.args ?? {})),

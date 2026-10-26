@@ -1,15 +1,44 @@
+import { Codicon } from '@/components/ui/codicon'
+import { Favicon } from '@/components/ui/favicon'
 import { useI18n } from '@/i18n'
+import { hostPathLabel } from '@/lib/external-link'
 
+import { isPublicHost } from './public-host'
+import { OpenPageButton, stepPageUrl } from './tool-card-open-page'
+import { ScreenshotThumb } from './tool-card-thumb'
 import type { ToolCardView } from './types'
 
 /** One call's request, output, error and duration inside an expanded card. */
 export function CardBlock({ card, showStatus }: { card: ToolCardView; showStatus: boolean }) {
   const { t } = useI18n()
   const copy = t.assistant.toolCards
+  const pageUrl = stepPageUrl([card])
+  const shot = card.thumb?.kind === 'screenshot' ? card.thumb.src : ''
 
   return (
     <div className="flex min-w-0 flex-col gap-1.5">
       {showStatus ? <div className="truncate text-ui-xs text-fg-muted">{card.status}</div> : null}
+      {pageUrl || shot ? (
+        <div className="flex min-w-0 items-center gap-2" data-card-page="">
+          {shot ? (
+            <ScreenshotThumb src={shot} />
+          ) : (
+            <span className="inline-grid size-4 shrink-0 place-items-center text-fg-subtle">
+              {isPublicHost(new URL(pageUrl).hostname) ? (
+                <Favicon fallback={<Codicon name="globe" size={14} />} url={pageUrl} />
+              ) : (
+                <Codicon name="globe" size={14} />
+              )}
+            </span>
+          )}
+          {pageUrl ? (
+            <>
+              <span className="min-w-0 flex-1 truncate text-ui-xs text-fg-secondary">{hostPathLabel(pageUrl)}</span>
+              <OpenPageButton url={pageUrl} />
+            </>
+          ) : null}
+        </div>
+      ) : null}
       {card.args.length > 0 ? (
         <div className="flex min-w-0 flex-col gap-1">
           <div className="text-ui-2xs text-fg-subtle">{copy.details.request}</div>
