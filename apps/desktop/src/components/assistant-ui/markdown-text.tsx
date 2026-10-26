@@ -53,6 +53,7 @@ import { remarkSoftBreaks } from '@/lib/remark-soft-breaks'
 import { sessionRefFromMarkdownHref } from '@/lib/session-refs'
 import { TOOL_MEDIA_RENDERER_AREA } from '@/lib/tool-media-renderers'
 import { remarkTranscriptDirectives } from '@/lib/transcript-directives'
+import { usePacedText } from '@/lib/use-paced-text'
 import { cn } from '@/lib/utils'
 import { useForcedTextDirection } from '@/store/text-direction'
 
@@ -863,8 +864,19 @@ export function MarkdownTextContent({ isRunning, text, ...surfaceProps }: Markdo
 
 const MarkdownTextImpl = () => {
   const textDirection = useForcedTextDirection()
+  const { status, text } = useMessagePartText()
+  const running = status.type === 'running'
+  // Codex-style pacing: network bursts ease in at a steady cadence
+  // (lib/stream-pacing.ts). Settled, replaced or reduced-motion text passes
+  // through untouched, and the reveal lives in refs so a new part object with
+  // the same text never restarts it (the useSmooth flash noted above).
+  const paced = usePacedText(text, running)
 
-  return <MarkdownTextSurface defer textDirection={textDirection} />
+  return (
+    <TextMessagePartProvider isRunning={running} text={paced}>
+      <MarkdownTextSurface defer textDirection={textDirection} />
+    </TextMessagePartProvider>
+  )
 }
 
 export const MarkdownText = memo(MarkdownTextImpl)

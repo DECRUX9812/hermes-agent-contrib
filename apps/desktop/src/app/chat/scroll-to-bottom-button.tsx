@@ -101,10 +101,10 @@ export function ScrollToBottomButton({ sessionId }: { sessionId: string | null }
       aria-hidden={!visible}
       aria-label={label}
       className={cn(
-        'thread-jump-button absolute left-1/2 z-20 flex h-8 items-center gap-1.5 rounded-full border bg-(--composer-fill) px-3 text-xs font-medium backdrop-blur-[0.75rem] [-webkit-backdrop-filter:blur(0.75rem)]',
-        visibleApproval
-          ? 'border-primary/40 text-primary hover:bg-primary/10'
-          : 'border-border/65 text-muted-foreground hover:text-foreground',
+        // A shadowed pill on a solid fill: no border, and no backdrop blur to
+        // re-composite under streaming text every frame.
+        'thread-jump-button absolute left-1/2 z-20 flex h-8 items-center gap-1.5 rounded-full bg-(--composer-fill) px-3 text-xs font-medium shadow-[0_0.125rem_0.375rem_rgb(0_0_0/0.12),0_0.5rem_1.25rem_rgb(0_0_0/0.14)]',
+        visibleApproval ? 'text-primary hover:bg-primary/10' : 'text-muted-foreground hover:text-foreground',
         !visible && 'pointer-events-none'
       )}
       data-state={state}
@@ -127,7 +127,7 @@ export function ScrollToBottomButton({ sessionId }: { sessionId: string | null }
       tabIndex={visible ? 0 : -1}
       type="button"
     >
-      <Codicon name="arrow-down" size="0.875rem" />
+      <Codicon name="arrow-down" size="0.8125rem" />
       {visibleApproval || count <= 0 ? (
         <span>{label}</span>
       ) : (
