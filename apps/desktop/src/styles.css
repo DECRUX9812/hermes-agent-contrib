@@ -2150,16 +2150,39 @@ body.guest-pointer-lock :is(webview, iframe) {
   --composer-fill: color-mix(in srgb, var(--dt-card) 90%, var(--dt-background));
 }
 
+/* The card colour is mixed with the chat surface underneath, not with
+   `transparent`: a see-through fill let message text (and code blocks)
+   ghost through the composer while it scrolled behind. On a transparent
+   wallpaper window the chat surface is itself see-through, so those themes
+   keep their glass look. */
 [data-slot='composer-root'] {
-  --composer-fill: color-mix(in srgb, var(--dt-card) 88%, transparent);
+  --composer-under: var(--ui-chat-surface-background, var(--dt-background));
+  --composer-fill: color-mix(in srgb, var(--dt-card) 88%, var(--composer-under));
 }
 
 [data-slot='composer-root'][data-thread-scrolled-up] {
-  --composer-fill: color-mix(in srgb, var(--dt-card) 80%, transparent);
+  --composer-fill: color-mix(in srgb, var(--dt-card) 80%, var(--composer-under));
 }
 
 [data-slot='composer-dock']:is(:hover, :focus-within) [data-slot='composer-root'][data-thread-scrolled-up] {
-  --composer-fill: color-mix(in srgb, var(--dt-card) 88%, transparent);
+  --composer-fill: color-mix(in srgb, var(--dt-card) 88%, var(--composer-under));
+}
+
+/* A short fade above the docked composer so the conversation dissolves into
+   it instead of being cut by a hard edge. Never on the floating composer. */
+[data-slot='composer-dock']:not([data-popped-out])::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 1rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--ui-chat-surface-background, transparent));
+}
+
+/* Scrolled up, the composer recedes but stays readable (was 30%). */
+[data-slot='composer-fade'].opacity-30 {
+  opacity: 0.6;
 }
 
 /* Tool/thinking blocks now live at message-text alignment (no leading
