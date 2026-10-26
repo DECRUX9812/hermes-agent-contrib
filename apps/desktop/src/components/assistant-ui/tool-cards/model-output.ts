@@ -179,7 +179,9 @@ export function toolCardThumb(
   pageUrl: string | undefined
 ): ToolCardThumb | undefined {
   if (family !== 'browser' && family !== 'web') {
-    return undefined
+    // Other tools (MCP fetchers, generic HTTP helpers) only get a site chip
+    // for an address they were explicitly asked to open.
+    return pageUrl ? { kind: 'site', url: pageUrl, host: new URL(pageUrl).hostname } : undefined
   }
 
   const record = parseMaybeObject(unwrapToolResult(result))

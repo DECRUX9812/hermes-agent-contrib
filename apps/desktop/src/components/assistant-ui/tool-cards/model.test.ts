@@ -39,6 +39,15 @@ describe('toolCardFamily, name and icon', () => {
 })
 
 describe('status wording and state', () => {
+  it('says where any tool without a title of its own is going while it runs', () => {
+    const card = toolCardView(
+      part({ args: { url: 'https://www.example.com/x' }, toolName: 'mcp__fetch__fetch' })
+    )
+
+    expect(card.state).toBe('running')
+    expect(card.status).toContain('example.com')
+  })
+
   const navigate = { url: 'https://example.com/docs' }
 
   it('reads present tense while running and past tense once settled', () => {
@@ -137,6 +146,20 @@ describe('thumbs', () => {
     const card = toolCardView(
       part({ args: { command: 'curl https://example.com' }, result: { output: 'ok', url: 'https://example.com' }, toolName: 'terminal' })
     )
+
+    expect(card.thumb).toBeUndefined()
+  })
+
+  it('gives any other tool a site chip for a url it was handed', () => {
+    const card = toolCardView(
+      part({ args: { url: 'https://docs.example.com/guide' }, result: 'fetched', toolName: 'mcp__fetch__fetch' })
+    )
+
+    expect(card.thumb).toEqual({ host: 'docs.example.com', kind: 'site', url: 'https://docs.example.com/guide' })
+  })
+
+  it('never fishes a page out of a non-web tool result text', () => {
+    const card = toolCardView(part({ args: { query: 'x' }, result: 'see https://example.com', toolName: 'mcp__fetch__fetch' }))
 
     expect(card.thumb).toBeUndefined()
   })
