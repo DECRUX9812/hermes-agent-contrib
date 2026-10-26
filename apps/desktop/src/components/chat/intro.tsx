@@ -1,7 +1,11 @@
+import { useStore } from '@nanostores/react'
 import { useState } from 'react'
 
+import { requestComposerInsert } from '@/app/chat/composer/focus'
 import { useI18n } from '@/i18n'
 import { capitalize, normalize } from '@/lib/text'
+import { $freeTierSignInOpen } from '@/store/free-tier'
+import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
 import { Wordmark } from './wordmark'
@@ -169,6 +173,13 @@ export function Intro({ personality, seed }: IntroProps) {
     t.intro.stock[key] ?? (NEUTRAL_PERSONALITIES.has(key) ? t.intro.stock.none : t.intro.custom(personality || ''))
 
   const body = bodies?.[Math.abs(rotationSeed) % bodies.length] ?? copy.body
+  const canConnectPortal = useStore($freeTierSignInOpen)
+
+  const STARTER_PROMPTS = [
+    { label: '⚡ Feature Squad', prompt: 'Plan, build, and test a feature in parallel: ' },
+    { label: '🧪 Bug Hunt', prompt: 'Reproduce and fix this bug: ' },
+    { label: '🔍 Research', prompt: 'Search the web and docs to summarize: ' }
+  ]
 
   return (
     <div
@@ -179,6 +190,31 @@ export function Intro({ personality, seed }: IntroProps) {
         <Wordmark className="mb-1" text={WORDMARK} />
 
         <p className="m-0 text-center leading-normal tracking-tight">{body}</p>
+      </div>
+
+      {canConnectPortal && (
+        <div className="pointer-events-auto mt-3 inline-flex items-center justify-center">
+          <button
+            className="inline-flex items-center gap-1.5 rounded-full border border-(--ui-border-subtle) bg-(--ui-sidebar-surface-background) px-3 py-1 text-xs font-medium text-foreground transition-colors hover:border-(--theme-primary) hover:text-(--theme-primary)"
+            onClick={() => openFreeTierSignIn()}
+            type="button"
+          >
+            <span className="text-(--theme-primary)">⚡</span> Connect Nous Portal (1-Click)
+          </button>
+        </div>
+      )}
+
+      <div className="pointer-events-auto mt-4 flex flex-wrap items-center justify-center gap-2">
+        {STARTER_PROMPTS.map(p => (
+          <button
+            className="inline-flex items-center rounded-lg border border-(--ui-border-subtle) bg-(--ui-sidebar-surface-background)/60 px-2.5 py-1 text-xs text-muted-foreground transition-all hover:border-foreground/30 hover:text-foreground"
+            key={p.label}
+            onClick={() => requestComposerInsert(p.prompt, { mode: 'block' })}
+            type="button"
+          >
+            {p.label}
+          </button>
+        ))}
       </div>
     </div>
   )
