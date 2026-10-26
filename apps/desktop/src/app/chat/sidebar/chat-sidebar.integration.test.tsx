@@ -118,6 +118,25 @@ describe('ChatSidebar navigation activity', () => {
     noteActiveTreeGroup(null)
   })
 
+  it('shows a contributed row badge only while one is set', () => {
+    const calm = renderSidebar('/', 'chat')
+
+    expect(calm.container.querySelectorAll('[data-slot="sidebar-nav-badge"]')).toHaveLength(0)
+
+    cleanup()
+
+    const disposeBadge = registry.registerMany([
+      { area: SIDEBAR_NAV_AREA, id: 'pets-nav', data: { badge: '2', codicon: 'heart', label: 'Pets', path: '/pets' } }
+    ])
+
+    const loud = renderSidebar('/', 'chat')
+    const badges = loud.container.querySelectorAll('[data-slot="sidebar-nav-badge"]')
+
+    expect(badges).toHaveLength(1)
+    expect(badges[0]?.textContent).toBe('2')
+    disposeBadge()
+  })
+
   it('keeps navigation and session activity coherent with the focused pane', () => {
     renderSidebar('/kanban', 'extension')
     expectOnlyCurrent('Kanban')
