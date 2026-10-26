@@ -137,6 +137,8 @@ export interface SidebarNavItem extends Tiered {
   action?: 'new-session'
   /** Keybind action id — when set, the tooltip shows the keybind hint. */
   keybindActionId?: string
+  /** Attention count shown at the row's end; unset when nothing needs the user. */
+  badge?: string
 }
 
 export interface PersistedDisplayTranscriptProvenance {

@@ -432,7 +432,8 @@ export function ChatSidebar({
             label: data.label,
             icon: (props: { className?: string }) => <Codicon name={codicon} {...props} />,
             route: data.path,
-            tier: data.tier
+            tier: data.tier,
+            badge: data.badge || undefined
           }
         ]
       }),
@@ -1668,6 +1669,15 @@ export function ChatSidebar({
                     <span className="min-w-0 truncate" data-tip-arrow-only="" data-tour={`sidebar-nav-${item.id}`}>
                       {s.nav[item.id] ?? item.label}
                     </span>
+                    {item.badge && (
+                      <span
+                        aria-label={`${item.badge} need attention`}
+                        className="ml-auto min-w-4 rounded-full bg-primary px-1 text-center text-[0.6875rem] font-medium leading-4 text-primary-foreground tabular-nums"
+                        data-slot="sidebar-nav-badge"
+                      >
+                        {item.badge}
+                      </span>
+                    )}
                     {isNewSession && (
                       <KbdGroup
                         className={cn('ml-auto opacity-55', newSessionKbdFlash && 'opacity-100!')}

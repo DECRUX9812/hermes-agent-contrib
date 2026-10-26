@@ -225,6 +225,12 @@ export interface SidebarNavContribution {
   path: string
   /** `'advanced'` keeps the row out of Simple mode; unset shows it everywhere. */
   tier?: InterfaceTier
+  /**
+   * Short trailing count for when the page NEEDS the user (e.g. `'1'`). Leave it
+   * unset the rest of the time — a calm sidebar has no idle badges. To change
+   * it, dispose and re-register the row.
+   */
+  badge?: string
 }
 
 // ── Contributed profile-group header — the `sidebar.profileGroup.header` area ─
