@@ -42,34 +42,29 @@ const tone: Record<NotificationKind, { icon: IconComponent; iconClass: string; v
 
 const STACK_SURFACE = 'pointer-events-auto border border-(--stroke-nous) bg-popover/95 shadow-nous backdrop-blur-md'
 
-function partitionNotifications(notifications: AppNotification[]) {
-  const defaultStack: AppNotification[] = []
-  const bottomRightStack: AppNotification[] = []
+// Important toasts (errors, warnings, anything with an action) ride on top of
+// ambient confirmations, newest first within each group.
+function orderNotifications(notifications: AppNotification[]) {
+  const important: AppNotification[] = []
+  const ambient: AppNotification[] = []
 
   for (const notification of notifications) {
     if (notification.placement === 'bottom-right') {
-      bottomRightStack.push(notification)
+      ambient.push(notification)
     } else {
-      defaultStack.push(notification)
+      important.push(notification)
     }
   }
 
-  return { bottomRightStack, defaultStack }
+  return [...important, ...ambient]
 }
 
 export function NotificationStack() {
   const notifications = useStore($notifications)
-  const { bottomRightStack, defaultStack } = partitionNotifications(notifications)
+  const ordered = orderNotifications(notifications)
   const { t } = useI18n()
   const lastNotificationIdRef = useRef<string | null>(null)
-  const [expanded, setExpanded] = useState(false)
   const copy = t.notifications
-
-  useEffect(() => {
-    if (defaultStack.length <= 1) {
-      setExpanded(false)
-    }
-  }, [defaultStack.length])
 
   // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
   useEffect(() => {
@@ -90,78 +85,17 @@ export function NotificationStack() {
     }
   }, [notifications])
 
-  return (
-    <>
-      <TopCenterStack
-        copy={copy}
-        expanded={expanded}
-        notifications={defaultStack}
-        onToggleExpanded={() => setExpanded(v => !v)}
-      />
-      <BottomRightStack copy={copy} notifications={bottomRightStack} />
-    </>
-  )
+  return <CornerStack copy={copy} notifications={ordered} />
 }
 
-// Portaled to <body> on the over-modal rung so a toast clears an open dialog —
-// see the top-center variant below for why.
+// Portaled to <body> on the over-modal rung so a toast fired from inside a
+// dialog is still seen — but parked in the bottom-right corner, never over a
+// dialog's centre or its buttons. On phones it sits above the composer.
 const REGION_BASE = 'pointer-events-none fixed z-(--z-over-modal) flex gap-2'
 
-// Primary stack: top-center, collapsed to the latest toast with a "+N more"
-// expander + clear-all — the noisy/important surface (errors, warnings,
-// action toasts). Without the portal it lives inside the React root subtree,
-// which any body-level dialog/overlay portal paints over — so a toast fired
-// while a dialog is open was invisible.
-function TopCenterStack({
-  copy,
-  expanded,
-  notifications,
-  onToggleExpanded
-}: {
-  copy: ReturnType<typeof useI18n>['t']['notifications']
-  expanded: boolean
-  notifications: AppNotification[]
-  onToggleExpanded: () => void
-}) {
-  const older = notifications.slice(1)
-
-  return createPortal(
-    <div
-      aria-label={copy.region}
-      className={cn(
-        REGION_BASE,
-        'left-1/2 top-[calc(var(--titlebar-height,34px)+0.75rem)] w-[min(28rem,calc(100%-2rem))] -translate-x-1/2 flex-col p-1',
-        expanded && 'max-h-[70vh] overflow-y-auto overscroll-contain'
-      )}
-      role="region"
-    >
-      <NotificationDeck expanded={expanded} notifications={notifications} />
-      {older.length > 0 && (
-        <div className="pointer-events-auto flex min-h-8 items-center justify-between px-3 text-xs">
-          <Button className="-ml-2" onClick={onToggleExpanded} size="xs" type="button" variant="text">
-            {expanded ? copy.hide : copy.show} {copy.more(older.length)}
-          </Button>
-          <Button
-            className="-mr-2"
-            onClick={() => {
-              notifications.forEach(notification => noteUserDismissed(notification.id))
-              clearNotifications()
-            }}
-            size="xs"
-            type="button"
-            variant="text"
-          >
-            {copy.clearAll}
-          </Button>
-        </div>
-      )}
-    </div>,
-    document.body
-  )
-}
-
-// Ambient confirmations use the same bounded depth, rising from the corner.
-function BottomRightStack({
+// One place for every toast: collapsed to the latest with a "+N more" expander
+// and clear-all.
+function CornerStack({
   copy,
   notifications
 }: {
@@ -183,18 +117,24 @@ function BottomRightStack({
       className={cn(
         REGION_BASE,
         'right-4 bottom-4 w-[min(24rem,calc(100%-2rem))] flex-col-reverse p-1',
+        'max-sm:right-2 max-sm:bottom-[calc(env(safe-area-inset-bottom,0px)+6rem)] max-sm:w-[calc(100%-1rem)]',
         expanded && 'max-h-[70vh] overflow-y-auto overscroll-contain'
       )}
+      data-slot="notification-region"
       role="region"
     >
       {older.length > 0 && (
         <div className="pointer-events-auto flex items-center justify-between px-2 text-xs">
-          <Button onClick={() => setExpanded(value => !value)} size="xs" variant="text">
+          <Button onClick={() => setExpanded(value => !value)} size="xs" type="button" variant="text">
             {expanded ? copy.hide : copy.show} {copy.more(older.length)}
           </Button>
           <Button
-            onClick={() => notifications.forEach(notification => userDismiss(notification.id))}
+            onClick={() => {
+              notifications.forEach(notification => noteUserDismissed(notification.id))
+              clearNotifications()
+            }}
             size="xs"
+            type="button"
             variant="text"
           >
             {copy.clearAll}
@@ -254,11 +194,11 @@ function renderMessage(message: string, accent?: string): ReactNode {
   )
 }
 
-// AlertTitle defaults to a single-line clamp. Toast errors are often a full
-// sentence, so the toast wraps — then caps height and scrolls instead of
-// growing down the chat or clipping with an ellipsis.
+// AlertTitle defaults to a single-line clamp. Toast headlines are often a full
+// sentence, so the toast wraps to two lines at most; the full text is under
+// Details (the store moves long or path-bearing copy there).
 export function toastTitleClassName() {
-  return 'col-start-auto line-clamp-none max-h-[4.5em] overflow-y-auto overscroll-contain whitespace-normal wrap-break-word'
+  return 'col-start-auto line-clamp-2 whitespace-normal wrap-break-word'
 }
 
 function NotificationItem({ notification, stack }: { notification: AppNotification; stack: CardStackAction }) {
@@ -293,10 +233,10 @@ function NotificationItem({ notification, stack }: { notification: AppNotificati
           </AlertTitle>
         )}
         <AlertDescription className="col-start-auto">
-          <p className="m-0 wrap-break-word">{renderMessage(notification.message, accent)}</p>
+          <p className="m-0 line-clamp-3 wrap-break-word">{renderMessage(notification.message, accent)}</p>
           {notification.meta && <p className="m-0 text-xs text-muted-foreground tabular-nums">{notification.meta}</p>}
           {hasDetail && <NotificationDetail detail={notification.detail || ''} />}
-          {(notification.action || notification.secondaryAction) && (
+          {(notification.action || notification.secondaryAction || notification.linkAction) && (
             <div className="mt-1.5 flex flex-wrap gap-1.5">
               {notification.action && (
                 <Button
@@ -309,7 +249,7 @@ function NotificationItem({ notification, stack }: { notification: AppNotificati
                   }}
                   size="sm"
                   type="button"
-                  variant="default"
+                  variant={notification.actionsEqual ? 'outline' : 'default'}
                 >
                   {notification.action.label}
                 </Button>
@@ -328,6 +268,23 @@ function NotificationItem({ notification, stack }: { notification: AppNotificati
                   variant="outline"
                 >
                   {notification.secondaryAction.label}
+                </Button>
+              )}
+              {notification.linkAction && (
+                <Button
+                  className="text-muted-foreground hover:text-foreground"
+                  disabled={stack.busy || !stack.active}
+                  onClick={() => {
+                    void stack.depart(() => {
+                      notification.linkAction?.onClick()
+                      dismissNotification(notification.id)
+                    })
+                  }}
+                  size="sm"
+                  type="button"
+                  variant="text"
+                >
+                  {notification.linkAction.label}
                 </Button>
               )}
             </div>
