@@ -90,7 +90,7 @@ export function NotificationStack() {
 
 // Portaled to <body> on the over-modal rung so a toast fired from inside a
 // dialog is still seen — but parked in the bottom-right corner, never over a
-// dialog's centre or its buttons. On phones it sits above the composer.
+// dialog's centre or its buttons, and lifted clear of the composer's send button.
 const REGION_BASE = 'pointer-events-none fixed z-(--z-over-modal) flex gap-2'
 
 // One place for every toast: collapsed to the latest with a "+N more" expander
@@ -116,7 +116,7 @@ function CornerStack({
       aria-label={copy.region}
       className={cn(
         REGION_BASE,
-        'right-4 bottom-4 w-[min(24rem,calc(100%-2rem))] flex-col-reverse p-1',
+        'right-4 bottom-24 w-[min(24rem,calc(100%-2rem))] flex-col-reverse p-1',
         'max-sm:right-2 max-sm:bottom-[calc(env(safe-area-inset-bottom,0px)+6rem)] max-sm:w-[calc(100%-1rem)]',
         expanded && 'max-h-[70vh] overflow-y-auto overscroll-contain'
       )}
