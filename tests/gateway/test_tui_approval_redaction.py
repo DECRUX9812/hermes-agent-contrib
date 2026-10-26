@@ -22,8 +22,9 @@ class TestTuiApprovalEmitRedaction:
 
         sent = {}
         monkeypatch.setattr(server_requests, "send_async",
-                            lambda method, sid, params, on_result: (sent.update(method=method, sid=sid, params=params),
-                                                                    lambda reason: None)[1])
+                            lambda method, sid, params, on_result, **kwargs: (
+                                sent.update(method=method, sid=sid, params=params), lambda reason: None
+                            )[1])
         monkeypatch.setattr(tui_server, "_sessions", {"sess-1": {"session_key": "key-1"}})
         return tui_server, sent
 

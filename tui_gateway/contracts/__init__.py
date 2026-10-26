@@ -9,6 +9,7 @@ from . import (
     connectors_operation,
     display,
     events,
+    fork_approvals,
     groups_bot_relay,
     i18n,
     liveness,
