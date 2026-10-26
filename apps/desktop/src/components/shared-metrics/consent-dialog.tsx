@@ -15,7 +15,7 @@ import { useI18n } from '@/i18n'
 import { ChevronDown } from '@/lib/icons'
 import { $tourActive } from '@/lib/tour/tour-active'
 import { cn } from '@/lib/utils'
-import { notifyError } from '@/store/notifications'
+import { dismissNotification, notify, notifyError } from '@/store/notifications'
 import { $desktopOnboarding } from '@/store/onboarding'
 import { $onboardingSurfaceClear } from '@/store/onboarding-presence'
 import {
@@ -40,16 +40,34 @@ interface SharedMetricsConsentDialogProps {
 
 const CHOICE_ORDER: readonly SharedMetricsChoice[] = ['share', 'off']
 
+/** The offer's toast id — one standing question, never stacked. */
+export const SHARED_METRICS_OFFER_ID = 'shared-metrics-offer'
+
+/**
+ * Offer-notice state for this app session. `dismissed`: the user's ✕ means
+ * "not now", so keep it away until the app reloads. `closing`: set while code
+ * clears or answers the notice, so that close is not read as "not now".
+ */
+const offerState = { closing: false, dismissed: false }
+
+/** Clear the offer notice from code (not the user's ✕). */
+function closeOffer() {
+  offerState.closing = true
+  dismissNotification(SHARED_METRICS_OFFER_ID)
+  offerState.closing = false
+}
+
 /**
  * Owner of the one-time shared-metrics question, the Desktop twin of `hermes
  * setup`'s Shared Metrics section. It reads the focused profile's answer once
- * first-run onboarding is out of the way; an unanswered profile gets an OFFER in
- * the composer status stack (`SharedMetricsConsentStrip`), never a modal — a
- * healthy install opens straight to chat. An answer given in the CLI (or here,
+ * first-run onboarding is out of the way; an unanswered profile gets an OFFER as
+ * a quiet bottom-right notice (two equal answers plus Details), never a modal
+ * and never a strip glued to the composer — a healthy install opens straight
+ * to chat. Closing the notice with ✕ puts the question away for this session. An answer given in the CLI (or here,
  * or in Settings) is the same config keys, so nobody is asked twice. This host
  * also paints the "What is collected" details the strip opens on request:
  * two equal choices, neither preselected or focused, and closing it decides
- * nothing (the strip stays until answered).
+ * nothing (the notice comes back until answered).
  */
 export function SharedMetricsConsentDialog({ enabled, profile, requestGateway }: SharedMetricsConsentDialogProps) {
   const { t } = useI18n()
@@ -93,6 +111,48 @@ export function SharedMetricsConsentDialog({ enabled, profile, requestGateway }:
 
     return () => void (cancelled = true)
   }, [ready, profile, scopedRequest])
+
+  const offerPending = ready && sharedMetricsOfferPending(consent)
+  const reask = consent?.reask === true
+
+  useEffect(() => {
+    if (!offerPending || detailsOpen || offerState.dismissed) {
+      closeOffer()
+
+      return
+    }
+
+    const answer = (choice: SharedMetricsChoice) => {
+      offerState.closing = true
+      void answerSharedMetricsOffer(scopedRequest, choice).catch(err => notifyError(err, copy.saveFailed))
+    }
+
+    notify({
+      action: { label: copy.stripChoices.share, onClick: () => answer('share') },
+      actionsEqual: true,
+      icon: 'graph',
+      id: SHARED_METRICS_OFFER_ID,
+      kind: 'info',
+      linkAction: { label: copy.stripDetails, onClick: () => $sharedMetricsDetailsOpen.set(true) },
+      message: reask ? copy.stripReaskBody : copy.stripBody,
+      onDismiss: () => {
+        // Details / answers dismiss the notice too; only a bare close is "not now".
+        if (offerState.closing || $sharedMetricsDetailsOpen.get()) {
+          offerState.closing = false
+
+          return
+        }
+
+        offerState.dismissed = true
+      },
+      persistent: true,
+      placement: 'bottom-right',
+      secondaryAction: { label: copy.stripChoices.off, onClick: () => answer('off') },
+      title: copy.consentTitle
+    })
+  }, [copy, detailsOpen, offerPending, reask, scopedRequest])
+
+  useEffect(() => () => closeOffer(), [])
 
   if (!ready || !detailsOpen || !sharedMetricsOfferPending(consent)) {
     return null

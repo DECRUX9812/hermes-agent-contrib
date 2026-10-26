@@ -2,6 +2,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { en } from '@/i18n/en'
+import { $notifications, dismissNotification } from '@/store/notifications'
 import { $desktopOnboarding } from '@/store/onboarding'
 import { markOnboardingDecided } from '@/store/onboarding-presence'
 import {
@@ -11,7 +12,7 @@ import {
   sharedMetricsOfferPending
 } from '@/store/shared-metrics'
 
-import { SharedMetricsConsentDialog } from './consent-dialog'
+import { SHARED_METRICS_OFFER_ID, SharedMetricsConsentDialog } from './consent-dialog'
 
 // Onboarding's due check answered "not due": first-run surfaces are free to show.
 markOnboardingDecided()
@@ -50,7 +51,7 @@ afterEach(() => {
 })
 
 describe('SharedMetricsConsentDialog', () => {
-  it('never blocks launch: an undecided profile becomes a composer offer, not a modal', async () => {
+  it('never blocks launch: an undecided profile becomes a corner offer, not a modal', async () => {
     const undecided = backend({ enabled: false, send: false, decided: false })
 
     const { unmount } = render(
@@ -98,5 +99,26 @@ describe('SharedMetricsConsentDialog', () => {
       first_run: true,
       profile: 'havoc'
     })
+  })
+})
+
+describe('shared-metrics offer notice', () => {
+  it('asks once as a quiet corner notice with two equal answers, and ✕ puts it away', async () => {
+    const { requestGateway } = backend({ enabled: false, send: false, decided: false })
+
+    render(<SharedMetricsConsentDialog enabled profile="default" requestGateway={requestGateway} />)
+
+    await waitFor(() => expect($notifications.get().some(n => n.id === SHARED_METRICS_OFFER_ID)).toBe(true))
+
+    const offer = $notifications.get().find(n => n.id === SHARED_METRICS_OFFER_ID)!
+    expect(offer.placement).toBe('bottom-right')
+    expect(offer.actionsEqual).toBe(true)
+    expect([offer.action?.label, offer.secondaryAction?.label]).toEqual([copy.stripChoices.share, copy.stripChoices.off])
+
+    dismissNotification(SHARED_METRICS_OFFER_ID)
+    $sharedMetricsDetailsOpen.set(true)
+    $sharedMetricsDetailsOpen.set(false)
+    await waitFor(() => expect($notifications.get().some(n => n.id === SHARED_METRICS_OFFER_ID)).toBe(false))
+    expect(sharedMetricsOfferPending($sharedMetricsConsent.get())).toBe(true)
   })
 })
