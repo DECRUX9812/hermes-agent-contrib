@@ -1,18 +1,35 @@
 /**
- * Pixel Pets — desktop pane.
+ * Pixel Pets — status bar chip + popover.
  *
- * Live pet office: a bottom-docked pane showing every Hermes agent as a
- * pixel-art pet with mood animations (working = typing, idle = zZz, etc).
+ * Live pet office: a small "🐾 N" chip in the status bar opens a popover
+ * showing every Hermes agent as a pixel-art pet with mood animations
+ * (working = typing, idle = zZz, etc). It used to be a bottom-docked pane
+ * that took a fixed 220px from every chat; now it costs one chip, and
+ * nothing at all when the office backend is off.
  * Click a pet to chat with it — a real conversation with that profile's
  * canonical "Bot Chat" session (backend resumes it and captures the reply).
  * "⧉" pops the chat into its own browser window
  * (http://127.0.0.1:8113/chat.html?profile=X).
  *
- * v1.2.0: pets. Data comes from the plugin's own backend namespace
- * (/api/plugins/pixel-office/...), polled every 2.5s via React Query.
+ * v1.3.0: data comes from the plugin's own backend namespace
+ * (/api/plugins/pixel-office/...): every 2.5s while the popover is open,
+ * every 10s while closed, backing off to 60s while the backend is down.
  */
 
-import { cn, haptic, host, useQuery, useQueryClient } from '@hermes/plugin-sdk'
+import {
+  cn,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  haptic,
+  host,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  STATUSBAR_AREAS,
+  useQuery,
+  useQueryClient
+} from '@hermes/plugin-sdk'
 import { jsx, jsxs } from 'react/jsx-runtime'
 import { useState } from 'react'
 
@@ -157,9 +174,9 @@ const STATUS_COLORS = {
   working: 'var(--ui-accent)',
   thinking: 'var(--ui-text-secondary)',
   waiting: 'var(--ui-accent)',
-  idle: 'var(--ui-text-quaternary)',
+  idle: 'var(--ui-text-tertiary)',
   done: 'var(--ui-accent)',
-  gone: 'var(--ui-text-quaternary)'
+  gone: 'var(--ui-text-tertiary)'
 }
 
 function ago(ts) {
@@ -182,7 +199,7 @@ function AgentCard({ a, now, onChat }) {
     onKeyDown: chatable ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChat(a.profile) } } : undefined,
     title: chatable ? 'Click to chat with ' + pet[0] : a.label,
     className: cn(
-      'group relative flex items-center gap-2 rounded-lg border px-2 py-1.5',
+      'group relative flex items-center gap-2 rounded-lg border px-2 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)',
       'border-(--ui-stroke-secondary) bg-(--chrome-action-hover)',
       'pet-' + status,
       whipped && 'pet-whipped border-(--ui-accent)',
@@ -198,19 +215,19 @@ function AgentCard({ a, now, onChat }) {
       jsxs('div', { className: 'min-w-0 flex-1', children: [
         jsxs('div', { className: 'flex items-center gap-1', children: [
           jsx('span', { className: 'truncate text-xs font-semibold', style: { color: pet[2] }, children: pet[1] + ' ' + pet[0] }),
-          a.kind === 'subagent' && jsx('span', { className: 'rounded border border-(--ui-stroke-secondary) px-1 text-[8px] uppercase text-(--ui-text-quaternary)', children: 'sub' }),
+          a.kind === 'subagent' && jsx('span', { className: 'rounded border border-(--ui-stroke-secondary) px-1 text-[0.6875rem] text-(--ui-text-tertiary)', children: 'sub' }),
           whipped && jsx('span', { children: '💥' })
         ]}),
-        jsx('div', { className: 'truncate font-mono text-[10px] text-(--ui-text-quaternary)', children: (a.tool || a.detail || (a.platform || 'hermes')) + ' · ' + ago(a.updated_at) }),
+        jsx('div', { className: 'truncate font-mono text-[0.6875rem] text-(--ui-text-tertiary)', children: (a.tool || a.detail || (a.platform || 'hermes')) + ' · ' + ago(a.updated_at) }),
         jsxs('div', { className: 'flex items-center gap-1', children: [
           jsx('span', { className: 'inline-block size-1.5 rounded-full', style: { background: STATUS_COLORS[status] || STATUS_COLORS.idle } }),
           jsx('span', {
-            className: cn('text-[9px] font-bold uppercase tracking-wider', status === 'working' && 'text-(--ui-accent)', status === 'thinking' && 'text-(--ui-text-secondary)', status === 'waiting' && 'text-(--ui-accent)', status === 'idle' && 'text-(--ui-text-quaternary)'),
+            className: cn('text-[0.6875rem] font-medium text-(--ui-text-tertiary)', status === 'working' && 'text-(--ui-accent)', status === 'thinking' && 'text-(--ui-text-secondary)', status === 'waiting' && 'text-(--ui-accent)'),
             children: (MOOD[status] ? MOOD[status] + ' ' : '') + status
           })
         ]})
       ]}),
-      chatable && jsx('span', { className: 'ml-0.5 shrink-0 text-[11px] opacity-0 transition-opacity group-hover:opacity-70', children: '💬' })
+      chatable && jsx('span', { className: 'ml-0.5 shrink-0 text-xs opacity-0 transition-opacity group-hover:opacity-70 group-focus-visible:opacity-70', children: '💬' })
     ]
   })
 }
@@ -264,13 +281,15 @@ function ChatModal({ profile, onClose }) {
 
   const busy = sending || pending
 
-  return jsxs('div', {
-    className: 'fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 p-4',
-    onClick: onClose,
-    children: [
-      jsxs('div', {
-        className: 'flex max-h-[80vh] w-[460px] max-w-full flex-col overflow-hidden rounded-xl border border-(--ui-stroke-secondary) bg-(--ui-bg-elevated) shadow-2xl',
-        onClick: e => e.stopPropagation(),
+  // SDK Dialog: portalled above the app, focus-trapped, Escape closes, and on
+  // the shared modal layer instead of a private z-[9999].
+  return jsx(Dialog, {
+    open: true,
+    onOpenChange: next => { if (!next) onClose() },
+    children: jsxs(DialogContent, {
+        showCloseButton: false,
+        className: 'w-[460px] max-w-[calc(100vw-1rem)]',
+        bodyClassName: 'flex max-h-[80vh] flex-col gap-0 overflow-hidden p-0',
         children: [
           jsxs('div', {
             className: 'flex items-center gap-2.5 border-b border-(--ui-stroke-secondary) px-3.5 py-2.5',
@@ -282,29 +301,29 @@ function ChatModal({ profile, onClose }) {
               jsxs('div', {
                 className: 'min-w-0 flex-1',
                 children: [
-                  jsx('div', {
+                  jsx(DialogTitle, {
                     className: 'truncate text-sm font-semibold',
                     style: { color: bot[2] },
                     children: bot[1] + ' ' + bot[0]
                   }),
                   jsx('div', {
-                    className: 'truncate font-mono text-[10px] text-(--ui-text-quaternary)',
+                    className: 'truncate font-mono text-[0.6875rem] text-(--ui-text-tertiary)',
                     children: profile + ' · Bot Chat'
                   })
                 ]
               }),
               jsx('span', {
-                className: 'rounded-full border px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ' +
+                className: 'rounded-full border px-2 py-0.5 text-[0.6875rem] font-medium ' +
                   (pending ? 'border-(--ui-accent) text-(--ui-accent)' : 'border-(--ui-stroke-secondary) text-(--ui-text-tertiary)'),
                 children: pending ? 'typing…' : 'online'
               }),
               jsx('button', {
-                type: 'button', onClick: popOut, title: 'Open in its own window',
+                type: 'button', onClick: popOut, title: 'Open in its own window', 'aria-label': 'Open in its own window',
                 className: 'rounded-md border border-(--ui-stroke-secondary) px-2 py-1 text-xs text-(--ui-text-tertiary) transition-colors hover:text-(--ui-text-primary)',
                 children: '⧉'
               }),
               jsx('button', {
-                type: 'button', onClick: onClose, title: 'Close',
+                type: 'button', onClick: onClose, title: 'Close', 'aria-label': 'Close',
                 className: 'rounded-md border border-(--ui-stroke-secondary) px-2 py-1 text-xs text-(--ui-text-tertiary) transition-colors hover:text-(--ui-text-primary)',
                 children: '✕'
               })
@@ -314,7 +333,7 @@ function ChatModal({ profile, onClose }) {
             className: 'flex flex-1 flex-col gap-2 overflow-y-auto px-3.5 py-3',
             children: [
               msgs.length === 0 && !pending &&
-                jsx('div', { className: 'py-12 text-center font-mono text-xs text-(--ui-text-quaternary)', children: '🐾 Say hi — the pet picks up its Bot Chat session.' }),
+                jsx('div', { className: 'py-12 text-center text-xs text-(--ui-text-tertiary)', children: '🐾 Say hi — the pet picks up its Bot Chat session.' }),
               msgs.map((m, i) => jsxs('div', {
                 className: cn(
                   'max-w-[85%] rounded-lg border border-(--ui-stroke-secondary) px-2.5 py-1.5 text-xs leading-relaxed whitespace-pre-wrap',
@@ -322,7 +341,7 @@ function ChatModal({ profile, onClose }) {
                 ),
                 children: [
                   jsx('div', {
-                    className: 'mb-0.5 text-[8.5px] font-bold uppercase tracking-wider opacity-70',
+                    className: 'mb-0.5 text-[0.6875rem] font-semibold opacity-80',
                     style: m.role === 'user' ? undefined : { color: bot[2] },
                     children: m.role === 'user' ? 'you' : bot[0]
                   }),
@@ -344,42 +363,53 @@ function ChatModal({ profile, onClose }) {
                 value: input,
                 onChange: e => setInput(e.target.value),
                 placeholder: 'Message the pet…',
+                'aria-label': 'Message ' + bot[0],
                 disabled: busy,
                 autoFocus: true,
                 className: 'min-w-0 flex-1 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-bg-input) px-2.5 py-1.5 text-xs text-(--ui-text-primary) outline-none focus:border-(--ui-accent)'
               }),
               jsx('button', {
                 type: 'submit', disabled: busy,
-                className: 'rounded-md border border-(--ui-accent) px-3 py-1.5 text-[11px] font-bold text-(--ui-accent) transition-colors hover:bg-(--chrome-action-hover)',
+                className: 'rounded-md border border-(--ui-accent) px-3 py-1.5 text-xs font-semibold text-(--ui-accent) transition-colors hover:bg-(--chrome-action-hover)',
                 children: 'Send'
               })
             ]
           }),
           jsx('div', {
-            className: 'border-t border-(--ui-stroke-secondary) px-3.5 py-1.5 text-center font-mono text-[10px] text-(--ui-text-quaternary)',
+            className: 'border-t border-(--ui-stroke-secondary) px-3.5 py-1.5 text-center text-[0.6875rem] text-(--ui-text-tertiary)',
             children: pending
               ? bot[0] + ' is working on it — watch the office.'
               : 'Real Bot Chat session · ⧉ opens its own window.'
           })
         ]
-      })
-    ]
+    })
   })
 }
 
-function OfficePane() {
-  const qc = useQueryClient()
-  const [chatProfile, setChatProfile] = useState(null)
-  const { data, isError, isLoading } = useQuery({
+// Poll fast only while someone is looking; back off while the backend is down
+// so an office that is switched off costs (almost) nothing.
+const OPEN_MS = 2500
+const CLOSED_MS = 10_000
+const DOWN_MAX_MS = 60_000
+
+function useOffice(open) {
+  return useQuery({
     queryKey: [ID, 'state'],
-    queryFn: async () => {
-      const res = await ctxRest('/state', { method: 'GET' })
-      return res
+    queryFn: async () => ctxRest('/state', { method: 'GET' }),
+    retry: false,
+    refetchInterval: query => {
+      const fails = query.state.fetchFailureCount || 0
+      if (query.state.status === 'error' && fails > 0) {
+        return Math.min(DOWN_MAX_MS, CLOSED_MS * 2 ** (fails - 1))
+      }
+      return open ? OPEN_MS : CLOSED_MS
     },
-    refetchInterval: 2500,
     refetchIntervalInBackground: false
   })
+}
 
+function OfficePanel({ data, onChat }) {
+  const qc = useQueryClient()
   const agents = (data && data.agents) || []
   const whip = (data && data.whip) || { count: 0, last: null }
 
@@ -387,54 +417,108 @@ function OfficePane() {
     void (async () => {
       haptic('tap')
       try {
-        await ctxRest('/whip', { method: 'POST', body: { by: 'desktop pane', target: '' } })
-        host.notify({ kind: 'success', message: '💥 CRACK! The whip has been cracked.' })
+        await ctxRest('/whip', { method: 'POST', body: { by: 'desktop', target: '' } })
+        host.notify({ kind: 'success', message: '💥 Crack! Every pet is back at work.' })
         qc.invalidateQueries({ queryKey: [ID, 'state'] })
       } catch {
-        host.notify({ kind: 'error', message: 'Whip failed — is the office plugin enabled?' })
+        host.notify({ kind: 'error', message: 'Could not crack the whip. Is the Pixel Pets backend on?' })
       }
     })()
   }
 
   return jsxs('div', {
-    className: 'flex h-full flex-col gap-1.5 overflow-hidden p-2.5',
+    className: 'flex max-h-[min(28rem,70vh)] flex-col gap-2',
     children: [
-      // header
       jsxs('div', {
         className: 'flex items-center gap-2',
         children: [
-          jsx('span', { className: 'text-xs font-bold tracking-wide text-(--ui-text-secondary)', children: '🐾 PIXEL PETS' }),
-          jsx('span', { className: 'inline-block size-1.5 rounded-full bg-(--ui-accent)', style: { animation: 'pixel-pulse 1.6s ease-in-out infinite' } }),
-          jsx('span', { className: 'text-[11px] text-(--ui-text-quaternary)', children: agents.length + ' pet' + (agents.length === 1 ? '' : 's') + ' · ' + whip.count + ' whips · click a pet to chat' }),
+          jsx('span', { className: 'text-sm font-semibold text-(--ui-text-primary)', children: '🐾 Pixel Pets' }),
+          jsx('span', {
+            className: 'text-xs text-(--ui-text-tertiary)',
+            children: agents.length + ' pet' + (agents.length === 1 ? '' : 's') + ' · ' + whip.count + ' whip' + (whip.count === 1 ? '' : 's')
+          }),
           jsx('span', { className: 'flex-1' }),
           jsx('button', {
             type: 'button',
             onClick: crack,
             className: cn(
-              'rounded-md border border-(--ui-accent) px-2.5 py-0.5 text-[11px] font-bold',
-              'text-(--ui-accent) transition-colors hover:bg-(--chrome-action-hover)'
+              'rounded-md border border-(--ui-accent) px-2 py-0.5 text-xs font-medium',
+              'text-(--ui-accent) transition-colors hover:bg-(--chrome-action-hover) focus-visible:ring-2 focus-visible:ring-(--ui-accent) outline-none'
             ),
-            children: '🪄 CRACK THE WHIP'
+            children: 'Crack the whip'
           })
         ]
       }),
-      isLoading && jsx('div', { className: 'text-xs text-(--ui-text-quaternary)', children: 'loading office…' }),
-      isError && jsx('div', { className: 'text-xs text-(--ui-text-quaternary)', children: 'office unreachable — check the plugin is enabled' }),
-      !isLoading && !isError && agents.length === 0 &&
-        jsx('div', { className: 'text-xs text-(--ui-text-quaternary)', children: 'no pets in the office yet — start a Hermes session' }),
-      // pet grid
-      jsx('div', {
-        className: 'grid flex-1 auto-rows-min grid-cols-2 gap-1.5 overflow-y-auto lg:grid-cols-3',
-        children: agents.map(a => jsx(AgentCard, { a, now: (data && data.ts) || Date.now() / 1000, onChat: setChatProfile }, a.id))
-      }),
-      // whip footer
+      agents.length === 0
+        ? jsx('div', { className: 'py-4 text-center text-xs text-(--ui-text-tertiary)', children: 'No pets in the office yet. Start a Hermes session.' })
+        : jsx('div', {
+            className: 'grid auto-rows-min grid-cols-2 gap-1.5 overflow-y-auto',
+            children: agents.map(a => jsx(AgentCard, { a, now: (data && data.ts) || Date.now() / 1000, onChat }, a.id))
+          }),
+      agents.length > 0 && jsx('div', { className: 'text-[0.6875rem] text-(--ui-text-tertiary)', children: 'Click a pet to chat with it.' }),
       whip.last &&
         jsx('div', {
-          className: 'truncate border-t border-(--ui-stroke-secondary) pt-1 text-[11px] text-(--ui-text-tertiary)',
-          children: '💥 "' + whip.last.line + '" — ' + whip.last.by + ', ' + ago(whip.last.ts) + ' ago'
-        }),
-      chatProfile &&
-        jsx(ChatModal, { profile: chatProfile, onClose: () => setChatProfile(null) })
+          className: 'truncate border-t border-(--ui-stroke-secondary) pt-1.5 text-[0.6875rem] text-(--ui-text-tertiary)',
+          children: '💥 "' + whip.last.line + '" · ' + whip.last.by + ', ' + ago(whip.last.ts) + ' ago'
+        })
+    ]
+  })
+}
+
+function PetsChip() {
+  const [open, setOpen] = useState(false)
+  const [chatProfile, setChatProfile] = useState(null)
+  const { data, isError } = useOffice(open)
+
+  // Backend off or still loading: no chip, no error text in the chrome.
+  if (isError || !data) {
+    return chatProfile ? jsx(ChatModal, { profile: chatProfile, onClose: () => setChatProfile(null) }) : null
+  }
+
+  const agents = data.agents || []
+  const busy = agents.filter(a => a.status === 'working' || a.status === 'thinking').length
+  const label = 'Pixel Pets: ' + agents.length + ' pet' + (agents.length === 1 ? '' : 's') + (busy ? ', ' + busy + ' busy' : '')
+
+  return jsxs('span', {
+    className: 'contents',
+    children: [
+      jsxs(Popover, {
+        open,
+        onOpenChange: setOpen,
+        children: [
+          jsx(PopoverTrigger, {
+            asChild: true,
+            children: jsxs('button', {
+              type: 'button',
+              title: label,
+              'aria-label': label,
+              className: cn(
+                'inline-flex h-full items-center gap-1 px-1.5 text-[0.6875rem] outline-none',
+                'hover:bg-(--chrome-action-hover) hover:text-foreground focus-visible:ring-2 focus-visible:ring-(--ui-accent)',
+                open || busy ? 'text-foreground' : 'text-(--ui-text-tertiary)'
+              ),
+              children: [
+                jsx('span', { 'aria-hidden': true, children: '🐾' }),
+                jsx('span', { className: 'tabular-nums', children: String(agents.length) }),
+                busy > 0 && jsx('span', { 'aria-hidden': true, className: 'pixel-pulse inline-block size-1.5 rounded-full bg-(--ui-accent)', style: { animation: 'pixel-pulse 1.6s ease-in-out infinite' } })
+              ]
+            })
+          }),
+          jsx(PopoverContent, {
+            align: 'end',
+            side: 'top',
+            className: 'w-[min(26rem,calc(100vw-1rem))] p-3',
+            children: jsx(OfficePanel, {
+              data,
+              onChat: profile => {
+                setOpen(false)
+                setChatProfile(profile)
+              }
+            })
+          })
+        ]
+      }),
+      chatProfile && jsx(ChatModal, { profile: chatProfile, onClose: () => setChatProfile(null) })
     ]
   })
 }
@@ -451,13 +535,14 @@ export default {
     ctxRest = (path, opts) => ctx.rest(path, opts)
     ctxOs = ctx.os || ctxOs
 
-    // One injected stylesheet for pet animations — scoped to this pane.
+    // One injected stylesheet for pet animations — scoped to the pet cards.
     if (!document.getElementById('pixel-office-styles')) {
       const style = document.createElement('style')
       style.id = 'pixel-office-styles'
       style.textContent = [
         '@keyframes pixel-pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }',
         '.pet-sprite { transition: transform .2s ease; }',
+        '@media (prefers-reduced-motion: reduce) { .pet-sprite, .pixel-pulse { animation: none !important; } }',
         '.pet-working .pet-sprite { animation: pixel-bob .6s ease-in-out infinite; }',
         '.pet-thinking .pet-sprite { animation: pixel-tilt 1.8s ease-in-out infinite; }',
         '.pet-waiting .pet-sprite { animation: pixel-wobble 1.6s ease-in-out infinite; }',
@@ -474,12 +559,13 @@ export default {
       document.head.appendChild(style)
     }
 
+    // A status bar chip, not a docked pane: the office is a glance, so it
+    // should not take a fixed slice of every chat.
     ctx.register({
-      id: 'pane',
-      area: 'panes',
-      title: 'Pixel Pets',
-      data: { placement: 'bottom', dock: { pane: 'workspace', pos: 'bottom' }, height: '220px' },
-      render: () => jsx(OfficePane, {})
+      id: 'chip',
+      area: STATUSBAR_AREAS.right,
+      order: 40,
+      render: () => jsx(PetsChip, {})
     })
   }
 }
