@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { ackComposerInsert } from '@/app/chat/composer/focus'
 import { createClientSessionState } from '@/lib/chat-runtime'
-import { host } from '@/sdk'
+import { host, openSession as openSessionExport } from '@/sdk'
 import { $selectedStoredSessionId, setActiveSessionId, setAwaitingResponse, setBusy } from '@/store/session'
 import { clearAllSessionStates, publishSessionState } from '@/store/session-states'
 
@@ -20,6 +20,24 @@ vi.mock('@/store/gateway', async importOriginal => ({
   openGatewayForAgent: warmMocks.openGatewayForAgent,
   openGatewayForProfile: warmMocks.openGatewayForProfile
 }))
+
+describe('plugin-sdk named exports', () => {
+  it('exposes openSession at the top level, not only as host.openSession', async () => {
+    // The runtime shim re-exports `Object.keys(__HERMES_PLUGIN_SDK__)`, so a
+    // member reachable only through `host` is not a named export and a plugin
+    // doing `import { openSession } from '@hermes/plugin-sdk'` fails at link
+    // time — the exact failure a fork-era plugin reports as
+    // "does not provide an export named 'openSession'".
+    expect(typeof openSessionExport).toBe('function')
+
+    const spy = vi.spyOn(host, 'openSession').mockResolvedValue(undefined)
+
+    await openSessionExport('stored-session-1', { profile: 'default' })
+
+    expect(spy).toHaveBeenCalledWith('stored-session-1', { profile: 'default' })
+    spy.mockRestore()
+  })
+})
 
 describe('host.warmProfile routing contract', () => {
   beforeEach(() => {

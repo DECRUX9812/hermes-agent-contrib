@@ -73,14 +73,13 @@ interface PluginSourceResponse {
  *  "not on disk" answer. `ok` is the discriminant both call sites narrow on. */
 type PluginSourceRead = { ok: false } | { byteSize: number; ok: true; text: string }
 
-/** Full, untruncated source of one allowlisted file in one plugin folder.
- *  Returns the loader's structured "not on disk" result instead of rejecting so
- *  a folder that vanished mid-scan reads as absence (readPackageMarker already
- *  try/catches, loadDiskPlugin treats a rejection as unloadable). */
-async function readDesktopPluginSource(
-  name: string,
-  file: '.hermes-package.json' | 'plugin.js'
-): Promise<PluginSourceRead> {
+/** Full, untruncated source of one file inside one plugin folder. *file* is
+ *  relative to `<root>/<name>/` and may be nested (`vendor/x.mjs`), which is how
+ *  a plugin loads assets it ships beside its entry point. Returns the loader's
+ *  structured "not on disk" result instead of rejecting so a folder that
+ *  vanished mid-scan reads as absence (readPackageMarker already try/catches,
+ *  loadDiskPlugin treats a rejection as unloadable). */
+async function readDesktopPluginSource(name: string, file: string): Promise<PluginSourceRead> {
   try {
     const response = await hermesApi<PluginSourceResponse>({
       path: `/api/desktop-plugins/source?name=${encodeURIComponent(name)}&file=${encodeURIComponent(file)}`
@@ -96,9 +95,11 @@ async function readDesktopPluginSource(
   }
 }
 
-/** Split `<root>/<name>[/<file>]` back into its parts. Returns null for a path
- *  that is not under the root, so an absolute path from anywhere else can never
- *  be turned into a request for an arbitrary folder. */
+/** Split `<root>/<name>[/<file…>]` back into its parts. Returns null for a path
+ *  that is not under the root (or whose segments could escape it), so an
+ *  absolute path from anywhere else can never be turned into a request for an
+ *  arbitrary folder. Nested files are kept as a relative path: the backend
+ *  re-validates every segment and refuses anything outside `<root>/<name>/`. */
 function splitUnderRoot(root: string, path: string): null | { file?: string; name?: string } {
   const normalizedRoot = root.replace(/\/+$/, '')
 
@@ -108,15 +109,13 @@ function splitUnderRoot(root: string, path: string): null | { file?: string; nam
 
   const segments = path.slice(normalizedRoot.length + 1).split('/')
 
-  if (segments.length === 1) {
-    return { name: segments[0] }
+  if (segments.some(segment => !segment || segment === '.' || segment === '..')) {
+    return null
   }
 
-  if (segments.length === 2) {
-    return { file: segments[1], name: segments[0] }
-  }
+  const [name, ...rest] = segments as [string, ...string[]]
 
-  return null
+  return rest.length ? { file: rest.join('/'), name } : { name }
 }
 
 /**
@@ -209,7 +208,7 @@ function createCapability(): BrowserDesktopPluginCapability {
         return { ok: false, error: 'ENOENT', message: 'Path outside the desktop plugins root' }
       }
 
-      const source = await readDesktopPluginSource(under.name, under.file as '.hermes-package.json')
+      const source = await readDesktopPluginSource(under.name, under.file)
 
       return source.ok ? { text: source.text } : { ok: false, error: 'ENOENT', message: 'File not found' }
     },
@@ -219,13 +218,20 @@ function createCapability(): BrowserDesktopPluginCapability {
 
       const under = root ? splitUnderRoot(root, path) : null
 
-      if (!under?.name || under.file !== 'plugin.js') {
-        return { text: '' }
+      // Reject rather than resolve '' — an empty source would be evaluated as
+      // an empty module (or, for a hashing caller, read as a tampered file).
+      // Electron's readPluginSource rejects for the same reasons.
+      if (!under?.name || !under.file) {
+        throw new Error('Path outside the desktop plugins root')
       }
 
-      const source = await readDesktopPluginSource(under.name, 'plugin.js')
+      const source = await readDesktopPluginSource(under.name, under.file)
 
-      return { text: source.ok ? source.text : '' }
+      if (!source.ok) {
+        throw new Error(`Plugin source read failed: ${under.file}`)
+      }
+
+      return { text: source.text }
     }
   }
 }

@@ -24,7 +24,7 @@ import type { ReactNode } from 'react'
 import { capabilityScoped, getApiRequestConnection } from '@/api/client'
 import { mutateSessionFenced } from '@/api/sessions'
 import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
-import { openSession, type OpenSessionIntent } from '@/app/open-session'
+import { openSession as coreOpenSession, type OpenSessionIntent } from '@/app/open-session'
 import { syncWorkspaceRoute } from '@/app/routes'
 import type { ClientSessionState } from '@/app/types'
 import {
@@ -1046,14 +1046,14 @@ export const host = {
           }
 
           if (options.workspaceMode === 'bots') {
-            openSession(storedSessionId, navigate, intent, {
+            coreOpenSession(storedSessionId, navigate, intent, {
               ownerRoute: ownerRoute ?? undefined,
               workspaceMode: 'bots',
               workspaceOwnerKey: options.workspaceOwnerKey,
               ...(options.tabTitle ? { workspaceTabTitle: options.tabTitle } : {})
             })
           } else {
-            openSession(storedSessionId, navigate, intent)
+            coreOpenSession(storedSessionId, navigate, intent)
           }
 
           // Judge the main surface AFTER the open: on a cold start the persisted
@@ -1552,6 +1552,19 @@ export const host = {
    *  `host.i18n.languageOptions()` lists what the switcher shows. */
   i18n: i18nHost
 }
+
+/** Top-level `openSession` — the SAME function as `host.openSession`.
+ *
+ *  The runtime plugin shim re-exports a namespace's own keys
+ *  (`sdk/runtime.ts` builds `export const { … } = m` from
+ *  `Object.keys(__HERMES_PLUGIN_SDK__)`), so a member reachable only as
+ *  `host.openSession` is NOT a named export. Plugin code that does
+ *  `import { openSession } from '@hermes/plugin-sdk'` then fails at link time
+ *  ("does not provide an export named 'openSession'") and the whole plugin
+ *  vanishes — the failure mode every fork-era plugin using this call hits.
+ *  Alias it here rather than duplicating the implementation. */
+export const openSession = (storedSessionId: string, options?: PluginOpenSessionOptions): Promise<void> =>
+  host.openSession(storedSessionId, options)
 
 // -- react bridge -------------------------------------------------------------
 

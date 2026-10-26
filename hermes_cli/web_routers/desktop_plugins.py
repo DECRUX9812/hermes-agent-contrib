@@ -71,9 +71,16 @@ DESKTOP_PLUGINS_DIR = "desktop-plugins"
 PACKAGE_MARKER = ".hermes-package.json"
 ENTRY_FILE = "plugin.js"
 
-# Only these two files inside a plugin folder are ever readable. Nothing else in
-# the folder (README, assets, node_modules, ...) is exposed.
-READABLE_FILES = frozenset({ENTRY_FILE, PACKAGE_MARKER})
+# The entry point and the package marker — the two files the LOADER itself
+# reads. They are not the only readable files: a plugin folder may ship more
+# than its entry (a vendored browser bundle, a worker, a data file), and
+# Electron's `readPluginSource` serves any of them. Restricting the browser door
+# to these two made a multi-file plugin read its own assets as EMPTY and fail
+# closed — `computer-viewer` hashes `vendor/novnc-rfb.mjs` and refused to start
+# ("vendored noVNC failed integrity check") although the file was byte-identical
+# to its pinned digest. Reads stay folder-scoped (see _validated_plugin_file):
+# anything outside `<root>/<name>/` is still refused.
+ENTRY_FILES = frozenset({ENTRY_FILE, PACKAGE_MARKER})
 
 # Electron's readPluginSource ceiling (global.d.ts:335-338 documents 16 MiB).
 PLUGIN_SOURCE_MAX_BYTES = 16 * 1024 * 1024
@@ -135,22 +142,40 @@ def _validated_plugin_dir(name: str) -> Path:
     return target
 
 
-def _validated_entry_file(name: str, filename: str) -> Path:
-    """Resolve ``<root>/<name>/<filename>`` for an allowlisted filename."""
-    if filename not in READABLE_FILES:
-        raise HTTPException(status_code=403, detail="That file is not readable over this route")
+def _validated_plugin_file(name: str, filename: str) -> Path:
+    """Resolve ``<root>/<name>/<relative file>`` for a file INSIDE that folder.
 
+    ``filename`` may be nested (``vendor/novnc-rfb.mjs``) but every segment must
+    be plain: no absolute path, no ``.``/``..``, no backslash, no NUL. The folder
+    is validated by :func:`_validated_plugin_dir` (one plain segment, resolved
+    parent == resolved root) and containment is re-checked on the RESOLVED file,
+    so a symlink inside the folder cannot point back out of it. A folder-scoped
+    read is the same privilege the renderer already has by evaluating the
+    folder's ``plugin.js``, and is narrower than Electron's door (which reads any
+    path).
+    """
     directory = _validated_plugin_dir(name)
-    target = directory / filename
+    candidate = (filename or "").strip()
+    segments = candidate.split("/")
+
+    if (
+        not candidate
+        or candidate.startswith("/")
+        or "\\" in candidate
+        or "\0" in candidate
+        or any(segment in ("", ".", "..") for segment in segments)
+    ):
+        raise HTTPException(status_code=400, detail="Invalid desktop plugin file")
 
     try:
-        resolved = target.resolve()
+        resolved_dir = directory.resolve()
+        resolved = (directory / candidate).resolve()
     except (OSError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail="Invalid path") from exc
 
-    # Containment re-check AFTER symlink resolution: a symlinked plugin.js
-    # pointing anywhere else in HERMES_HOME must not become a file reader.
-    if resolved.parent != directory.resolve():
+    # Containment re-check AFTER symlink resolution: a symlinked entry pointing
+    # anywhere else in HERMES_HOME must not become a file reader.
+    if resolved != resolved_dir and resolved_dir not in resolved.parents:
         raise HTTPException(status_code=403, detail="Path outside the desktop plugin folder")
 
     try:
@@ -260,12 +285,15 @@ async def desktop_plugins_list(name: Optional[str] = None):
 
 @router.get("/api/desktop-plugins/source")
 async def desktop_plugins_source(name: str, file: str = ENTRY_FILE):
-    """Full, untruncated source of one allowlisted file inside one plugin folder.
+    """Full, untruncated source of one file inside one plugin folder.
 
-    Only ``plugin.js`` and ``.hermes-package.json`` are readable, only one
-    folder deep, only for a single-segment folder name.
+    ``file`` is relative to ``<root>/<name>/`` and may be nested
+    (``vendor/novnc-rfb.mjs``), which is how a plugin loads its own bundled
+    assets. Traversal, absolute paths and symlinks leaving the folder are
+    refused; every file is capped at 16 MiB (Electron's ``readPluginSource``
+    ceiling) and never truncated.
     """
-    target = _validated_entry_file(name, file)
+    target = _validated_plugin_file(name, file)
     text, size = await asyncio.to_thread(_read_entry_source, target)
 
     return {"name": target.name, "path": str(target), "byteSize": size, "text": text}

@@ -19,8 +19,8 @@ import { $pluginRecords } from './plugins-store'
 import { discoverRuntimePlugins, unloadRuntimePlugin, watchRuntimePlugins } from './runtime-loader'
 
 // The REAL /api handler for the plugin routes, not a hand-written double: this
-// mirrors hermes_cli/web_routers/desktop_plugins.py's contract (root, one
-// folder deep, plugin.js + .hermes-package.json only).
+// mirrors hermes_cli/web_routers/desktop_plugins.py's contract (root, one folder
+// deep, any plain relative file inside that folder).
 const ROOT = '/home/u/.hermes/desktop-plugins'
 
 interface ApiFile {
@@ -83,8 +83,15 @@ function handleApi(request: HermesApiRequest) {
     const name = query.get('name') || ''
     const file = query.get('file') || 'plugin.js'
 
-    if (!['plugin.js', '.hermes-package.json'].includes(file)) {
-      throw new Error('That file is not readable over this route')
+    // Mirrors _validated_plugin_file: any plain relative path INSIDE the
+    // folder, never a segment that could leave it.
+    if (
+      !file ||
+      file.startsWith('/') ||
+      file.includes('\\') ||
+      file.split('/').some(segment => !segment || segment === '.' || segment === '..')
+    ) {
+      throw new Error('Invalid desktop plugin file')
     }
 
     const entry = apiFiles.get(`${ROOT}/${name}/${file}`)
@@ -228,18 +235,25 @@ describe('browser desktop-plugin capability', () => {
     expect(hostReadDir).toHaveBeenCalledTimes(1)
   })
 
-  it('never exposes a file outside plugin.js / the package marker', async () => {
+  it('serves a nested asset inside the plugin folder and refuses paths that leave it', async () => {
     const desktop = window.hermesDesktop!
 
     await expect(
       desktop.readFileText!('/home/u/.hermes/config.yaml')
     ).resolves.toMatchObject({ ok: false })
 
+    // A plugin's OWN bundled file must be readable — a multi-file plugin
+    // (computer-viewer ships vendor/novnc-rfb.mjs and hash-checks it) cannot
+    // load otherwise. The read is still folder-scoped.
+    apiFiles.set(`${ROOT}/backdrops/vendor/rfb.mjs`, { text: 'export const RFB = 1' })
+    await expect(desktop.readPluginSource!(`${ROOT}/backdrops/vendor/rfb.mjs`)).resolves.toEqual({
+      text: 'export const RFB = 1'
+    })
+
     // A path that escapes the root by traversal resolves to no segments at all.
-    await expect(desktop.readPluginSource!(`${ROOT}/../config.yaml`)).resolves.toEqual({ text: '' })
-    // ...and a nested file two levels down is refused too.
-    apiFiles.set(`${ROOT}/backdrops/src/secret.js`, { text: 'nope' })
-    await expect(desktop.readPluginSource!(`${ROOT}/backdrops/src/secret.js`)).resolves.toEqual({ text: '' })
+    await expect(desktop.readPluginSource!(`${ROOT}/../config.yaml`)).rejects.toThrow()
+    // A missing file rejects instead of evaluating an empty module.
+    await expect(desktop.readPluginSource!(`${ROOT}/backdrops/nope.js`)).rejects.toThrow()
   })
 
   it('reads the .hermes-package.json marker so a unified half stays opt-in', async () => {

@@ -1,9 +1,9 @@
 """Live check of the desktop-plugin routes: real FastAPI app, real filesystem.
 
 Proves the security posture the renderer capability depends on — traversal,
-nesting, dotfiles and non-allowlisted filenames are refused, and a real plugin
-folder's plugin.js is served untruncated — by calling the routes, not by
-reading them.
+absolute paths and symlinks leaving a plugin folder are refused, a folder's own
+files (entry, marker, nested assets) are served untruncated, and a real plugin
+folder's plugin.js loads — by calling the routes, not by reading them.
 
 Run:  python3 -m pytest tests/hermes_cli/test_web_desktop_plugins.py -q
 """
@@ -108,12 +108,38 @@ def test_rejects_anything_but_one_plain_folder_segment(client, name):
     assert client.get("/api/desktop-plugins/source", params={"name": name}).status_code in (400, 403, 404)
 
 
-@pytest.mark.parametrize("file", ["secrets.env", "auth.json", "assets/logo.js", "plugin.js.bak", "../auth.json"])
-def test_rejects_any_file_outside_the_allowlist(client, file):
+@pytest.mark.parametrize("file", ["secrets.env", "assets/logo.js"])
+def test_serves_any_file_inside_the_plugin_folder(client, file):
+    """A plugin folder is its own code: the renderer already evaluates its
+    plugin.js, so every regular file inside it is readable — that is what a
+    multi-file plugin (a vendored browser bundle, a worker) needs. Electron's
+    door reads any path at all; this stays folder-scoped."""
     response = client.get("/api/desktop-plugins/source", params={"name": "backdrops", "file": file})
 
-    assert response.status_code in (403, 400, 404)
-    assert "do-not-serve" not in response.text
+    assert response.status_code == 200
+    assert response.json()["text"]
+
+
+@pytest.mark.parametrize(
+    "file",
+    [
+        "../auth.json",
+        "../../home/auth.json",
+        "assets/../../auth.json",
+        "/etc/passwd",
+        "assets//logo.js",
+        "./plugin.js",
+        "../unified/plugin.js",
+    ],
+)
+def test_refuses_any_file_that_leaves_the_plugin_folder(client, file):
+    """Folder-scoped means folder-scoped: no traversal, no absolute path and no
+    hop into a sibling plugin (which would break per-plugin isolation)."""
+    response = client.get("/api/desktop-plugins/source", params={"name": "backdrops", "file": file})
+
+    assert response.status_code in (400, 403, 404)
+    assert '"token":"nope"' not in response.text
+    assert "id: 'unified'" not in response.text
 
 
 def test_symlinked_entry_point_out_of_the_root_is_refused(client, tmp_path):
