@@ -52,6 +52,8 @@ const LAST_PROFILE_KEY = 'hermes-desktop-active-profile-v1'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
+// Same list as the inline pre-paint script in index.html.
+const TRANSPARENT_WINDOWS = new Set(['hud', 'overlay', 'quick', 'wake'])
 const INJECTED_FONT_URLS = new Set<string>()
 
 const resolveMode = (mode: ThemeMode, systemDark = matchesQuery('(prefers-color-scheme: dark)')): 'light' | 'dark' =>
@@ -397,6 +399,14 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
     background: chromeBg,
     foreground: c.foreground
   })
+
+  // The pre-paint script pins an inline background on <html> for the first
+  // frame. Keep it in step with the live theme, or a theme switch leaves the
+  // old colour behind every overscroll / rubber-band edge until the next
+  // reload. Transparent windows (HUD, overlay, quick, wake) never get one.
+  if (!TRANSPARENT_WINDOWS.has(new URLSearchParams(window.location.search).get('win') ?? '')) {
+    document.documentElement.style.backgroundColor = chromeBg
+  }
 
   // Raw (non-JSON) keys read by the inline pre-paint script in index.html —
   // they let a brand-new window paint the themed background on its very first
