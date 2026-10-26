@@ -46,7 +46,7 @@ const INTERFACE_MODE_STORAGE_KEY = 'hermes.desktop.interfaceMode.v1'
 // Advanced is the ABSENCE of a mode: encoded as "no key" so a user who never
 // touched the picker never gains a record, and clearing the key means Advanced.
 const modeCodec: Codec<InterfaceMode> = {
-  decode: raw => (raw === 'simple' ? 'simple' : DEFAULT_INTERFACE_MODE),
+  decode: raw => (raw === 'simple' || raw === 'advanced' ? raw : DEFAULT_INTERFACE_MODE),
   encode: mode => (mode === DEFAULT_INTERFACE_MODE ? null : mode)
 }
 

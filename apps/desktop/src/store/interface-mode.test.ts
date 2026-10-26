@@ -168,3 +168,24 @@ describe('tiers', () => {
     expect($showsAdvancedChrome.get()).toBe(false)
   })
 })
+
+describe('interface mode persistence across a reload', () => {
+  beforeEach(() => {
+    window.localStorage.clear()
+    vi.resetModules()
+  })
+
+  it('keeps whichever valid mode the user picked, including the non-default one', async () => {
+    const first = await loadStore()
+    const other = first.DEFAULT_INTERFACE_MODE === 'simple' ? 'advanced' : 'simple'
+
+    first.setInterfaceMode(other)
+    vi.resetModules()
+    expect((await loadStore()).$interfaceMode.get()).toBe(other)
+
+    window.localStorage.setItem(MODE_KEY, 'intermediate')
+    vi.resetModules()
+    const reloaded = await loadStore()
+    expect(reloaded.$interfaceMode.get()).toBe(reloaded.DEFAULT_INTERFACE_MODE)
+  })
+})
