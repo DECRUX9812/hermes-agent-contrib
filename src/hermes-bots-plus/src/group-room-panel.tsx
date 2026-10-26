@@ -231,7 +231,7 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
           </button>
         ))}
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto">
         {props.tab === 'floor' ? (
           <div className="p-3">
             <FloorSquad {...props} />

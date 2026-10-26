@@ -380,7 +380,7 @@ export function MissionRail() {
   const filterHint = routineFilterHint(view.all, jobs)
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain">
+    <div className="flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain">
       <BotHero bot={owner} meta={meta} onEdit={() => setEditing(true)} />
       <RailTabs badges={{ approvals: approvalCount }} onChange={setRailTab} value={tab} />
       <div

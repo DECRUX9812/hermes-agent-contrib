@@ -275,7 +275,7 @@ export function GroupThreadRail({
           />
         </label>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto px-1.5 pb-2">
+      <div className="min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-1.5 pb-2">
         <button
           aria-current={focusThread === null ? 'true' : undefined}
           className={cn(

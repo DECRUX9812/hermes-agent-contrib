@@ -15914,7 +15914,7 @@ function GroupRoomPanel(props) {
           },
           entry.id
         )) }),
-        /* @__PURE__ */ jsx22("div", { className: "min-h-0 flex-1 overflow-y-auto", children: props.tab === "floor" ? /* @__PURE__ */ jsx22("div", { className: "p-3", children: /* @__PURE__ */ jsx22(FloorSquad, { ...props }) }) : props.tab === "decisions" ? /* @__PURE__ */ jsxs21("div", { className: "flex flex-col gap-3 p-3", "data-testid": "group-decisions-tab", children: [
+        /* @__PURE__ */ jsx22("div", { className: "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto", children: props.tab === "floor" ? /* @__PURE__ */ jsx22("div", { className: "p-3", children: /* @__PURE__ */ jsx22(FloorSquad, { ...props }) }) : props.tab === "decisions" ? /* @__PURE__ */ jsxs21("div", { className: "flex flex-col gap-3 p-3", "data-testid": "group-decisions-tab", children: [
           props.decisions,
           /* @__PURE__ */ jsx22(TeamApprovals, { teamId: props.teamId }),
           !props.decisionCount ? /* @__PURE__ */ jsx22("p", { className: "m-0 text-[0.75rem] text-(--ui-text-tertiary)", children: b.group.decisionsEmpty }) : null
@@ -16158,7 +16158,7 @@ function GroupThreadRail({
             }
           )
         ] }) }),
-        /* @__PURE__ */ jsxs22("div", { className: "min-h-0 flex-1 overflow-y-auto px-1.5 pb-2", children: [
+        /* @__PURE__ */ jsxs22("div", { className: "min-h-0 min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-1.5 pb-2", children: [
           /* @__PURE__ */ jsxs22(
             "button",
             {
@@ -26740,7 +26740,7 @@ function MissionRail() {
   const detailJob = detailJobId ? jobs.find((job) => job.job_id === detailJobId) || null : null;
   const staleNotice = error && !view.live && view.all.length ? b.cron.staleNotice : null;
   const filterHint = routineFilterHint(view.all, jobs);
-  return /* @__PURE__ */ jsxs53("div", { className: "flex h-full min-h-0 flex-col overflow-y-auto overscroll-contain", children: [
+  return /* @__PURE__ */ jsxs53("div", { className: "flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain", children: [
     /* @__PURE__ */ jsx55(BotHero2, { bot: owner, meta, onEdit: () => setEditing(true) }),
     /* @__PURE__ */ jsx55(RailTabs, { badges: { approvals: approvalCount }, onChange: setRailTab, value: tab }),
     /* @__PURE__ */ jsxs53(
@@ -29028,7 +29028,7 @@ function renderRosterContent({
         description: query.trim() ? selectedGateway ? b.roster.noMatchQueryOn(query.trim(), String(selectedGateway.label)) : b.roster.noMatchQuery(query.trim()) : selectedGateway ? b.roster.noMatchFiltersOn(String(selectedGateway.label)) : b.roster.noMatchFilters,
         icon: "search"
       }
-    ) }) : /* @__PURE__ */ jsx64("div", { className: "min-h-0 flex-1 overflow-y-auto overscroll-contain", "data-slot": "bots-roster", children: /* @__PURE__ */ jsxs62("div", { className: "grid w-full min-w-0 gap-0.5 px-1.5 pb-2", children: [
+    ) }) : /* @__PURE__ */ jsx64("div", { className: "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain", "data-slot": "bots-roster", children: /* @__PURE__ */ jsxs62("div", { className: "grid w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5 px-1.5 pb-2", children: [
       showGatewaySections ? [
         sortedGroupRows.length ? renderGroupChatSection() : null,
         ...gatewaySections.sections.map(renderGatewaySection)
