@@ -199,26 +199,36 @@ def _validated_plugin_file(name: str, filename: str) -> Path:
     return resolved
 
 
-def _list_root_entries(root: Path) -> list[dict]:
+def _list_root_entries(root: Path, display: Optional[Path] = None, *, keep_marker: bool = False) -> list[dict]:
     """Directory entries directly under the root, sorted for a stable scan.
 
     Mirrors the shape ``readDir`` returns to the renderer
     (``HermesReadDirResult``), because ``scanDiskPlugins`` filters
     ``entries.filter(e => e.isDirectory)`` (runtime-loader.ts:841).
+
+    ``display`` is the folder the reported ``path`` values are built from. A
+    plugin folder is usually a SYMLINK into a checkout, and ``root`` is then the
+    resolved target; reporting resolved paths sends the loader's next read
+    (``plugin.js``) to a path outside ``<root>/`` that the browser door refuses,
+    so every symlinked plugin silently never loads. Paths are therefore always
+    reported under ``<root>/<name>/``. ``keep_marker`` keeps the
+    ``.hermes-package.json`` marker in a folder listing, which the loader's
+    metadata walk looks for (Electron's readDir lists it too).
     """
     entries: list[dict] = []
+    shown = display if display is not None else root
 
     try:
         with os.scandir(root) as scan:
             for entry in scan:
                 # Dotfiles are not plugin folders and the loader never wants
                 # them (mirrors Electron's per-folder name validation above).
-                if entry.name.startswith("."):
+                if entry.name.startswith(".") and not (keep_marker and entry.name == PACKAGE_MARKER):
                     continue
 
                 entries.append({
                     "name": entry.name,
-                    "path": str(root / entry.name),
+                    "path": str(shown / entry.name),
                     "isDirectory": entry.is_dir(follow_symlinks=True),
                 })
     except (FileNotFoundError, NotADirectoryError):
@@ -285,8 +295,9 @@ async def desktop_plugins_list(name: Optional[str] = None):
         return {"entries": await asyncio.to_thread(_list_root_entries, root)}
 
     directory = _validated_plugin_dir(name)
+    shown = _desktop_plugins_root() / name.strip()
 
-    return {"entries": await asyncio.to_thread(_list_root_entries, directory)}
+    return {"entries": await asyncio.to_thread(_list_root_entries, directory, shown, keep_marker=True)}
 
 
 @router.get("/api/desktop-plugins/source")

@@ -186,3 +186,26 @@ def test_oversize_source_is_refused_not_truncated(client, monkeypatch):
     monkeypatch.setattr(routes, "PLUGIN_SOURCE_MAX_BYTES", 10)
 
     assert client.get("/api/desktop-plugins/source", params={"name": "backdrops"}).status_code == 413
+
+
+def test_symlinked_plugin_folder_listing_reports_paths_under_the_root(client, tmp_path):
+    """The loader reads ``plugin.js`` at the ``path`` the folder listing gives
+    and the browser door refuses anything outside ``<root>/``. A plugin folder
+    that is a symlink must therefore be listed with paths under the root, not
+    under the symlink's resolved target, or it silently never loads."""
+    checkout = tmp_path / "checkout" / "linked"
+    checkout.mkdir(parents=True)
+    (checkout / "plugin.js").write_text("export default { id: 'linked' }", encoding="utf-8")
+    (checkout / ".hermes-package.json").write_text("{}", encoding="utf-8")
+
+    plugins = tmp_path / "home" / "desktop-plugins"
+    plugins.mkdir(parents=True, exist_ok=True)
+    (plugins / "linked").symlink_to(checkout)
+
+    root = client.get("/api/desktop-plugins/root").json()["root"]
+    entries = client.get("/api/desktop-plugins/list", params={"name": "linked"}).json()["entries"]
+    by_name = {e["name"]: e for e in entries}
+
+    assert by_name["plugin.js"]["path"] == str(Path(root) / "linked" / "plugin.js")
+    assert all(e["path"].startswith(root + "/") for e in entries)
+    assert ".hermes-package.json" in by_name
