@@ -23,6 +23,7 @@ import { jaPreviewWeb } from './ja_preview_web'
 import { jaProjects } from './ja_projects'
 import { jaSharedMetrics } from './ja_shared_metrics'
 import { jaThemePicker } from './ja_theme_picker'
+import { jaToolCards } from './ja_tool_cards'
 import { jaUpdateChannel } from './ja_update_channel'
 
 export const jaOverrides = {
@@ -3387,6 +3388,7 @@ export const jaOverrides = {
       alwaysAllow: '常に許可'
     },
     clarify: jaClarify,
+    toolCards: jaToolCards,
     themePicker: jaThemePicker,
     tool: {
       copyCode: 'コードをコピー',

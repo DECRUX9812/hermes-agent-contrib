@@ -22,6 +22,7 @@ import { esPreviewWeb } from './es_preview_web'
 import { esProjects } from './es_projects'
 import { esSharedMetrics } from './es_shared_metrics'
 import { esThemePicker } from './es_theme_picker'
+import { esToolCards } from './es_tool_cards'
 import { esUpdateChannel } from './es_update_channel'
 import { introEs } from './intro-es'
 
@@ -5048,6 +5049,7 @@ export const esOverrides = {
       alwaysAllow: 'Permitir siempre'
     },
     clarify: esClarify,
+    toolCards: esToolCards,
     themePicker: esThemePicker,
     catalogInstall: {
       preparing: 'Preparando la instalación…',

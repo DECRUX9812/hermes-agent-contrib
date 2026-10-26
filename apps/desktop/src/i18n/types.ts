@@ -32,6 +32,7 @@ import type { RightSidebarTranslations } from './types_right_sidebar'
 import type { SetupConnectTranslations } from './types_setup_connect'
 import type { SharedMetricsTranslations } from './types_shared_metrics'
 import type { ThemePickerCopy } from './types_theme_picker'
+import type { ToolCardsCopy } from './types_tool_cards'
 import type { UninstallSectionTranslations } from './types_uninstall_section'
 import type { UpdateChannelCopy } from './types_update_channel'
 
@@ -4000,6 +4001,7 @@ catalog: CatalogTranslations
       alwaysAllow: string
     }
     clarify: ClarifyCopy
+    toolCards: ToolCardsCopy
     themePicker: ThemePickerCopy
     catalogInstall: CatalogInstallTranslations
     mcpSetup: {
