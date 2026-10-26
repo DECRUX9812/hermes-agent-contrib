@@ -24,7 +24,7 @@ class _Transport:
         pass
 
 
-async def _web_lookup(tmp_path, monkeypatch, source, user_id, login=('basic', '', 'ritesh')):
+async def _web_lookup(tmp_path, monkeypatch, source, user_id, login=('basic', '', 'ritesh'), extra=None):
     from gateway.run_runtime import initialize_gateway_runtime
     from gateway.runtime_ownership import process_ownership
     from gateway.session_authorities import authority_for_profile_id, owner_scope
@@ -53,6 +53,9 @@ async def _web_lookup(tmp_path, monkeypatch, source, user_id, login=('basic', ''
             with owner_scope(web.authority):
                 replies[prof] = await web.dispatch({'id': 1, 'method': 'session.list', 'params': {
                     'profile': prof, 'title': 'Bot Chat', 'include_hidden': True, 'limit': 200}})
+        for index, (method, params) in enumerate(extra(replies) if extra else ()):
+            with owner_scope(web.authority):
+                replies[(index, method)] = await web.dispatch({'id': 2 + index, 'method': method, 'params': params})
     finally:
         for connection in connections:
             with owner_scope(connection.authority):
@@ -105,3 +108,25 @@ def test_login_owned_by_covers_webapp_tui_rows_only_for_that_login(tmp_path):
         assert not login_owned_by(db.get_session('cli'), 'auth:v1:["basic","","ritesh"]')
     finally:
         db.close()
+
+
+@pytest.mark.asyncio
+async def test_webapp_bot_chat_flow_after_adoption(tmp_path, monkeypatch):
+    """The rest of a bot click from the browser: the adopted chat resumes, a second lookup is stable
+    (adoption is idempotent, never a second mint), and a fresh Bot Chat mints with
+    exactly the params canonical-chat.ts sends."""
+    def steps(replies):
+        beta = replies['beta']['result']['sessions'][0]
+        return [
+            ('session.resume', {'profile': 'beta', 'session_id': beta.get('resolved_id') or beta['id']}),
+            ('session.list', {'profile': 'beta', 'title': 'Bot Chat', 'include_hidden': True, 'limit': 200}),
+            ('session.create', {'profile': 'default', 'title': 'Bot Chat', 'hidden': True,
+                                'follow_profile_config': True}),
+        ]
+    replies = await _web_lookup(tmp_path, monkeypatch, 'tui', 'basic:ritesh', extra=steps)
+    resumed = replies[(0, 'session.resume')]
+    assert 'error' not in resumed, resumed
+    again = replies[(1, 'session.list')]
+    assert [s['id'] for s in again['result']['sessions']] == ['beta-bot-chat'], again
+    minted = replies[(2, 'session.create')]
+    assert 'error' not in minted and minted['result'].get('session_id'), minted
