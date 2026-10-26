@@ -39,7 +39,7 @@ export type InterfaceMode = 'advanced' | 'simple'
 /** Picker order — the quiet option first. */
 export const INTERFACE_MODES: readonly InterfaceMode[] = ['simple', 'advanced']
 
-export const DEFAULT_INTERFACE_MODE: InterfaceMode = 'advanced'
+export const DEFAULT_INTERFACE_MODE: InterfaceMode = 'simple'
 
 const INTERFACE_MODE_STORAGE_KEY = 'hermes.desktop.interfaceMode.v1'
 
