@@ -1,3 +1,6 @@
 
 # Never commit Tailscale status snapshots (node keys, IPs)
 **/status-cache.json
+__pycache__/
+*.pyc
+.pytest_cache/
