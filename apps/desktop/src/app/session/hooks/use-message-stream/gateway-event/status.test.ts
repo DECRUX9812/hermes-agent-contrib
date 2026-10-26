@@ -113,3 +113,14 @@ describe('gateway `error` event → error card + toast', () => {
     expect(toast.detail).toBeUndefined()
   })
 })
+
+describe('gateway `error` event on the thread in view', () => {
+  it('shows the inline error card only, without a duplicate toast', () => {
+    const { ctx, failAssistantMessage } = errorContext('The provider refused the request.')
+
+    handleStatusEvent({ ...ctx, isActiveEvent: true })
+
+    expect(failAssistantMessage).toHaveBeenCalled()
+    expect($notifications.get()).toHaveLength(0)
+  })
+})

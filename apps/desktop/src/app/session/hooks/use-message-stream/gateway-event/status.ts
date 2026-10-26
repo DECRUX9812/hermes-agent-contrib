@@ -333,14 +333,14 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
       requestDesktopOnboarding(errorMessage)
     } else if (surface?.code === 'disk_full') {
       notifyError(new Error(errorMessage), translateNow('notifications.errors.diskFull'))
-    } else {
-      // Toast globally, not just when the failing thread is focused: a
-      // turn-ending error (e.g. out of funds) blocks every thread, so the
-      // inline error alone is too easy to miss. The stable id collapses the
-      // same error from multiple blocked threads into one toast. For a
-      // recovered code the message is the card's glossed sentence with the raw
-      // gateway text as the dimmed detail; otherwise the server copy is the
-      // message and there is no separate detail to repeat.
+    } else if (!isActiveEvent) {
+      // The thread on screen already shows the failure as its inline error
+      // card, so a toast there says the same thing twice. Toast only when the
+      // failing thread is NOT the one in view (a turn-ending error such as
+      // out-of-funds blocks every thread, so it must still be noticed). The
+      // stable id collapses the same error from several background threads
+      // into one toast. For a recovered code the message is the card's
+      // glossed sentence with the raw gateway text as the detail.
       // No Retry action: assistant-ui's reload is per-thread, and for the
       // codes recovered above a retry would fail identically anyway.
       notify({
