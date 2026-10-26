@@ -306,6 +306,9 @@ def _request_protected_instruction_approval(reasons: list[str], task_id: str = "
         decision = _await_gateway_decision(session_key, notify_cb, approval_data, surface="gateway")
         if decision.get("notify_failed"):
             return blocked.format(why="requires approval but the approval request could not be delivered.")
+        if decision.get("already_ran"):
+            from tools.approval_journal import ALREADY_RAN_REASON
+            return blocked.format(why=ALREADY_RAN_REASON)
         if decision.get("cancelled"):
             return blocked.format(why=f"approval was withdrawn before the user answered ({decision['cancelled']}).")
         choice, timed = decision.get("choice"), not decision.get("resolved")

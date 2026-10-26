@@ -5054,13 +5054,21 @@ export const deOverrides = {
       command: 'Befehl',
       moreOptions: 'Weitere Genehmigungsoptionen',
       allowSession: 'Diese Session erlauben',
+      allowOnce: 'Einmal erlauben',
+      alwaysAllowHere: 'Immer erlauben',
+      deny: 'Ablehnen',
+      cardTitle: 'Diesen Befehl ausführen lassen?',
+      cardDetailsTitle: 'Diese Änderung prüfen',
       alwaysAllowMenu: 'Immer erlauben…',
       jumpToApproval: 'Genehmigung erforderlich',
       reject: 'Ablehnen',
       alwaysTitle: 'Diesen Befehl immer erlauben?',
       alwaysDescription: pattern =>
         `Dies fügt das Muster „${pattern}“ Ihrer dauerhaften Zulassungsliste hinzu (~/.hermes/config.yaml). Hermes fragt bei solchen Befehlen nicht mehr nach – weder in dieser noch in zukünftigen Sessions.`,
-      alwaysAllow: 'Immer erlauben'
+      alwaysAllow: 'Immer erlauben',
+      alwaysConfirmPrompt: pattern => `„${pattern}“ immer erlauben?`,
+      decisionRecorded: choice => `Entscheidung gespeichert: ${choice}`,
+      noLongerPending: 'Diese Freigabe ist nicht mehr ausstehend.'
     },
     clarify: deClarify,
     toolCards: deToolCards,

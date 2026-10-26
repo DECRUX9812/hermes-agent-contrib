@@ -4352,13 +4352,21 @@ export const zhOverrides = {
       command: '命令',
       moreOptions: '更多审批选项',
       allowSession: '允许本会话',
+      allowOnce: '允许一次',
+      alwaysAllowHere: '始终允许',
+      deny: '拒绝',
+      cardTitle: '允许运行此命令？',
+      cardDetailsTitle: '检查此更改',
       alwaysAllowMenu: '始终允许…',
       jumpToApproval: '需要审批',
       reject: '拒绝',
       alwaysTitle: '始终允许此命令？',
       alwaysDescription: pattern =>
         `这会将“${pattern}”模式加入永久允许列表 (~/.hermes/config.yaml)。Hermes 对类似命令将不再询问，包括当前会话和未来会话。`,
-      alwaysAllow: '始终允许'
+      alwaysAllow: '始终允许',
+      alwaysConfirmPrompt: pattern => `始终允许“${pattern}”？`,
+      decisionRecorded: choice => `已记录决定：${choice}`,
+      noLongerPending: '此审批已不再等待处理。'
     },
     clarify: zhClarify,
     toolCards: zhToolCards,

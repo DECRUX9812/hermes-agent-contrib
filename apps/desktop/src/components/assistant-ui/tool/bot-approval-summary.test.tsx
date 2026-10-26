@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '@/components/assistant-ui/test-utils'
 import { Thread } from '@/components/assistant-ui/thread'
+import { ApprovalComposerEntry } from '@/components/assistant-ui/tool/approval'
 import { clearAllPrompts, setApprovalRequest } from '@/store/prompts'
 import { $activeSessionId } from '@/store/session'
 import { $botChatSessionIds, $sessionTiles, setSessionTileWorkspaceScope } from '@/store/session-states'
@@ -39,6 +40,7 @@ function Harness({ message }: { message: ThreadMessage }) {
   return (
     <ThreadRuntime messages={[message]}>
       <Thread />
+      <ApprovalComposerEntry runtimeSessionId={SID} storedSessionId={STORED} />
     </ThreadRuntime>
   )
 }
@@ -49,7 +51,7 @@ function markBotChat() {
 }
 
 function seedPendingApproval() {
-  setApprovalRequest({ command: 'npm test', description: 'run tests', sessionId: SID })
+  setApprovalRequest({ command: 'npm test', description: 'run tests', requestId: 'req-1', sessionId: SID })
 }
 
 beforeEach(() => {
@@ -75,19 +77,20 @@ describe('bot approval summary', () => {
 
     const { container } = render(<Harness message={runningTerminalMessage()} />)
 
-    expect(await screen.findByRole('button', { name: /^Run\b/ })).toBeTruthy()
+    expect(await screen.findByRole('button', { name: /Allow once/ })).toBeTruthy()
     const stack = container.querySelector('[data-approval-stack]') as HTMLElement
 
-    expect(within(stack).getByRole('button', { name: /Reject/ })).toBeTruthy()
+    expect(within(stack).getByRole('button', { name: /Deny/ })).toBeTruthy()
     expect(container.querySelector('[data-approval-activity]')).toBeNull()
   })
 
-  it('keeps the run summary above the approval prompt outside a Bot Chat', async () => {
+  it('shows only the approval card outside a Bot Chat too', async () => {
     seedPendingApproval()
 
     const { container } = render(<Harness message={runningTerminalMessage()} />)
 
-    expect(await screen.findByRole('button', { name: /^Run\b/ })).toBeTruthy()
-    expect(container.querySelector('[data-approval-activity]')).not.toBeNull()
+    expect(await screen.findByRole('button', { name: /Allow once/ })).toBeTruthy()
+    expect(container.querySelector('[data-approval-stack]')).not.toBeNull()
+    expect(container.querySelector('[data-approval-activity]')).toBeNull()
   })
 })

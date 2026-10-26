@@ -3379,13 +3379,26 @@ export const jaOverrides = {
       command: 'コマンド',
       moreOptions: 'その他の承認オプション',
       allowSession: 'このセッションで許可',
+      allowOnce: '今回のみ許可',
+      alwaysAllowHere: '常に許可',
+      deny: '拒否',
+      cardTitle: 'このコマンドの実行を許可しますか？',
+      cardDetailsTitle: 'この変更を確認',
       alwaysAllowMenu: '常に許可…',
       jumpToApproval: '承認が必要',
       reject: '拒否',
       alwaysTitle: 'このコマンドを常に許可しますか？',
       alwaysDescription: pattern =>
         `これにより "${pattern}" パターンが永続的な許可リスト (~/.hermes/config.yaml) に追加されます。Hermes はこのセッションや将来のセッションで、このようなコマンドについて再度尋ねません。`,
-      alwaysAllow: '常に許可'
+      alwaysAllow: '常に許可',
+      reconnect: '再接続',
+      timedOutSystemLine:
+        '承認がタイムアウトしました — コマンドは実行されていません。Hermes に再試行を依頼するか、設定 → 安全 → 承認タイムアウトで上限を上げてください。',
+      openSafetySettings: '安全設定を開く',
+      commandDetails: 'コマンドの詳細',
+      alwaysConfirmPrompt: pattern => `「${pattern}」を常に許可しますか？`,
+      decisionRecorded: choice => `決定を記録しました: ${choice}`,
+      noLongerPending: 'この承認は保留中ではありません。'
     },
     clarify: jaClarify,
     toolCards: jaToolCards,
