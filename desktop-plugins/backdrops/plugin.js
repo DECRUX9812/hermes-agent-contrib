@@ -44,12 +44,84 @@ let $own // the stored photo atom, seeded from ctx.storage at register
 const isHttp = url => /^https?:\/\//i.test(url)
 const isAbsolute = url => /^[a-z][a-z0-9+.-]*:/i.test(url)
 
-// Older Desktop builds have no backdrop.* keys — degrade to a read-only card
-// instead of a load failure (the host.settings doc tells plugins to feature-
-// detect). Writes notify once.
-let warnedWrite = false
+// Builds without the backdrop.image/scene/strength host keys (Nous main's
+// webapp only has the boolean 'backdrop.v1') get a self-paint fallback: the
+// choice is kept in this plugin's own storage and painted behind every chat
+// surface with one injected stylesheet. No toast, no core patch needed.
+const HOST_KEYS = (() => {
+  try {
+    host.settings.get('backdrop.image')
+    return true
+  } catch {
+    return false
+  }
+})()
+
+const LOCAL_KEY = 'hermes.plugin.backdrops.selfpaint.v1'
+const LOCAL_DEFAULTS = { 'backdrop.image': null, 'backdrop.scene': 'off', 'backdrop.strength': 'balanced' }
+const localListeners = new Map()
+
+const readLocal = () => {
+  try {
+    return { ...LOCAL_DEFAULTS, ...(JSON.parse(window.localStorage.getItem(LOCAL_KEY) || '{}') || {}) }
+  } catch {
+    return { ...LOCAL_DEFAULTS }
+  }
+}
+
+const writeLocal = values => {
+  try {
+    window.localStorage.setItem(LOCAL_KEY, JSON.stringify(values))
+    return true
+  } catch {
+    return false
+  }
+}
+
+// Opacity per strength step; the chat surface's own background stays below.
+const SELF_PAINT_OPACITY = { soft: 0.32, balanced: 0.2, subtle: 0.1 }
+const SELF_PAINT_STYLE_ID = 'hermes-plugin-backdrops-selfpaint'
+
+const selfPaintCss = values => {
+  const image = values['backdrop.image']
+
+  if (values['backdrop.scene'] !== 'custom' || typeof image !== 'string' || !image) {
+    return ''
+  }
+
+  const opacity = SELF_PAINT_OPACITY[values['backdrop.strength']] ?? SELF_PAINT_OPACITY.balanced
+
+  return `[data-chat-surface]::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;` +
+    `background:url(${JSON.stringify(image)}) center/cover no-repeat;opacity:${opacity}}`
+}
+
+const selfPaint = () => {
+  if (HOST_KEYS || typeof document === 'undefined') {
+    return
+  }
+
+  let style = document.getElementById(SELF_PAINT_STYLE_ID)
+
+  if (!style) {
+    style = document.createElement('style')
+    style.id = SELF_PAINT_STYLE_ID
+    document.head.appendChild(style)
+  }
+
+  style.textContent = selfPaintCss(readLocal())
+}
+
+const unpaint = () => {
+  if (typeof document !== 'undefined') {
+    document.getElementById(SELF_PAINT_STYLE_ID)?.remove()
+  }
+}
 
 const getSetting = key => {
+  if (!HOST_KEYS) {
+    return readLocal()[key] ?? null
+  }
+
   try {
     return host.settings.get(key)
   } catch {
@@ -58,16 +130,51 @@ const getSetting = key => {
 }
 
 const setSetting = (key, value) => {
+  if (!HOST_KEYS) {
+    const values = readLocal()
+    values[key] = value
+
+    // Picking an image (gallery tile, own photo) is choosing the custom scene.
+    if (key === 'backdrop.image') {
+      values['backdrop.scene'] = value ? 'custom' : 'off'
+    }
+
+    const ok = writeLocal(values)
+
+    if (!ok) {
+      host.notifyError(new Error('storage full'), 'Could not save that backdrop.')
+      return false
+    }
+
+    selfPaint()
+
+    for (const [k, fns] of localListeners) {
+      for (const fn of fns) {
+        fn(values[k])
+      }
+    }
+
+    return true
+  }
+
   try {
     host.settings.set(key, value)
     return true
   } catch {
-    if (!warnedWrite) {
-      warnedWrite = true
-      host.notify({ kind: 'error', message: 'Update Hermes Desktop to apply gallery backdrops.' })
-    }
     return false
   }
+}
+
+const subscribeSetting = (key, fn) => {
+  if (HOST_KEYS) {
+    return host.settings.subscribe(key, fn)
+  }
+
+  const fns = localListeners.get(key) ?? new Set()
+  fns.add(fn)
+  localListeners.set(key, fns)
+
+  return () => fns.delete(fn)
 }
 
 const manifestBase = ctx => ctx.storage.get('manifestUrl', MANIFEST_URL)
@@ -177,6 +284,13 @@ const appliedBadge = () =>
 
 /** One door for every apply surface (gallery tile, statusbar quick-pick). */
 const applyDrop = (ctx, url) => {
+  // Self-paint mode has no Chat Background "off" scene to fall back on, so a
+  // second click on the active drop clears it.
+  if (!HOST_KEYS && getSetting('backdrop.scene') === 'custom' && getSetting('backdrop.image') === url) {
+    setSetting('backdrop.image', null)
+    return
+  }
+
   haptic('tap')
 
   // A photo the user dropped through the native tile is worth keeping —
@@ -598,7 +712,8 @@ export default {
     // First run with no backdrop of their own: put the poster on it. Anything
     // already chosen is left exactly as it is — the gallery tiles still switch.
     try {
-      if (!getSetting('backdrop.image')) {
+      // Self-paint mode stays off until a drop is picked.
+      if (HOST_KEYS && !getSetting('backdrop.image')) {
         setSetting('backdrop.image', POSTER_NIGHT)
         setSetting('backdrop.scene', 'custom')
       }
@@ -614,13 +729,16 @@ export default {
     $backdrop.set(readBackdrop())
 
     try {
-      ctx.onDispose(host.settings.subscribe('backdrop.image', () => $backdrop.set(readBackdrop())))
-      ctx.onDispose(host.settings.subscribe('backdrop.scene', () => $backdrop.set(readBackdrop())))
+      ctx.onDispose(subscribeSetting('backdrop.image', () => $backdrop.set(readBackdrop())))
+      ctx.onDispose(subscribeSetting('backdrop.scene', () => $backdrop.set(readBackdrop())))
       $strength.set(getSetting('backdrop.strength') ?? 'balanced')
-      ctx.onDispose(host.settings.subscribe('backdrop.strength', value => $strength.set(value)))
+      ctx.onDispose(subscribeSetting('backdrop.strength', value => $strength.set(value)))
     } catch {
       // Pre-backdrop-keys build: the card still renders; tiles stay inert.
     }
+
+    selfPaint()
+    ctx.onDispose(unpaint)
 
     ctx.register({
       id: 'gallery',
