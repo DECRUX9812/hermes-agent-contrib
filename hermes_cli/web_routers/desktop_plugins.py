@@ -265,7 +265,7 @@ async def desktop_plugins_root():
     """
     try:
         root = _desktop_plugins_root()
-    except Exception:
+    except (OSError, RuntimeError):
         return {"root": ""}
 
     return {"root": str(root)}
