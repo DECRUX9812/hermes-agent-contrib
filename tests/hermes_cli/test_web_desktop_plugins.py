@@ -156,6 +156,25 @@ def test_symlinked_entry_point_out_of_the_root_is_refused(client, tmp_path):
     assert "export default" not in response.text
 
 
+def test_symlinked_plugin_FOLDER_is_served(client, tmp_path):
+    """A plugin installed as a link to its checkout is what the Electron door
+    loads, so the browser door must serve it too: the link is one plain segment
+    inside the root, chosen by the root's owner, and its files stay scoped to
+    the resolved folder."""
+    checkout = tmp_path / "checkout" / "linked"
+    checkout.mkdir(parents=True)
+    (checkout / "plugin.js").write_text("export default { id: 'linked' }", encoding="utf-8")
+
+    plugins = tmp_path / "home" / "desktop-plugins"
+    plugins.mkdir(parents=True, exist_ok=True)
+    (plugins / "linked").symlink_to(checkout)
+
+    response = client.get("/api/desktop-plugins/source", params={"name": "linked"})
+
+    assert response.status_code == 200
+    assert "id: 'linked'" in response.json()["text"]
+
+
 def test_missing_root_degrades_to_an_empty_listing(client, tmp_path, monkeypatch):
     monkeypatch.setattr(routes, "get_hermes_home", lambda: str(tmp_path / "no-such-home"))
 

@@ -108,10 +108,19 @@ def _desktop_plugins_root() -> Path:
 def _validated_plugin_dir(name: str) -> Path:
     """Resolve ``<root>/<name>`` for a single-segment folder name.
 
-    The name is validated as ONE path segment and the resolved parent must be
-    the resolved root, so no traversal, symlink escape or nested path can be
-    expressed by the parameter. 400 for a malformed name, 404 for a folder that
-    is not there.
+    The name is validated as ONE path segment, so no traversal or nested path
+    can be expressed by the parameter. 400 for a malformed name, 404 for a
+    folder that is not there.
+
+    The entry itself may be a SYMLINK to a checkout elsewhere: linking a
+    plugin's working copy into ``<root>`` is how a dev plugin is installed
+    (the Electron door reads such a folder unmodified), and the browser door
+    must load the same plugins the desktop app does. The parameter is still one
+    plain segment, so nothing outside the root is addressable *by the caller*,
+    and a plugin folder already executes as this user — following the link
+    grants no privilege the root's owner did not already have. File reads stay
+    scoped to the RESOLVED folder (:func:`_validated_plugin_file`), so a
+    symlinked file inside it still cannot point back out.
     """
     candidate = (name or "").strip()
 
@@ -129,13 +138,10 @@ def _validated_plugin_dir(name: str) -> Path:
     root = _desktop_plugins_root()
 
     try:
-        resolved_root = root.resolve()
         target = (root / candidate).resolve()
     except (OSError, RuntimeError) as exc:
         raise HTTPException(status_code=400, detail="Invalid path") from exc
 
-    if target.parent != resolved_root:
-        raise HTTPException(status_code=403, detail="Path outside the desktop plugins root")
     if not target.is_dir():
         raise HTTPException(status_code=404, detail="Desktop plugin not found")
 
