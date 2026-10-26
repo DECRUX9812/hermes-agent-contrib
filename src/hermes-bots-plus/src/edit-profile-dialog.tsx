@@ -1,0 +1,303 @@
+/**
+ * Edit Profile: appearance, title, description, and the advanced profile
+ * config disclosure for an existing bot.
+ */
+
+import {
+  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DisclosureCaret,
+  host,
+  Input,
+  queryClient,
+  Textarea,
+  useI18n,
+  useQuery,
+  useValue
+} from '@hermes/plugin-sdk'
+import { useState } from 'react'
+
+import { avatarColor, botAppearance, BotFace } from './avatar'
+import { AvatarPicker } from './avatar-picker'
+import { $botMeta, botSelectionKey, ROSTER_KEY, saveBotMeta } from './data'
+import { labeled } from './dialog-parts'
+import { editedLook, type EditProfileLook } from './edit-profile-look'
+import { useBots } from './i18n'
+import { displayName } from './labels'
+import {
+  AdvancedProfileConfig,
+  applyAdvancedConfig,
+  capabilityCounts,
+  emptyAdvancedState,
+  type ProfileDescribeResponse
+} from './profile-config'
+import { botRosterMeta, requestForBot, resolveBotConnectionRoute } from './routing'
+import type { AvatarAppearance, RosterRow } from './types'
+
+// ── edit profile dialog ──────────────────────────────────────────────────────
+
+interface EditProfileDialogProps {
+  bot: null | RosterRow
+  onClose: () => void
+  open: boolean
+}
+
+export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps) {
+  const { t } = useI18n()
+  const b = useBots()
+  const metaAll = useValue($botMeta)
+  const meta = bot ? botRosterMeta(bot, metaAll) : null
+
+  const appearance: AvatarAppearance = bot
+    ? botAppearance(bot.name, meta)
+    : {
+        shape: 'circle',
+        color: null,
+        image: null
+      }
+
+  const [shape, setShape] = useState(appearance.shape)
+  const [color, setColor] = useState<null | string>(appearance.color)
+  const [image, setImage] = useState<null | string>(appearance.image ?? null)
+  // A thin row from another connection carries its backend's title on the
+  // row itself; there may be no local record for it.
+  const openingTitle = meta?.title || bot?.title || ''
+  const openingRole = meta?.role || ''
+
+  const opening: EditProfileLook = {
+    shape: appearance.shape,
+    color: appearance.color,
+    image: appearance.image ?? null,
+    role: openingRole,
+    title: openingTitle
+  }
+
+  const [opened, setOpened] = useState(opening)
+  const [title, setTitle] = useState(openingTitle)
+  const [role, setRole] = useState(openingRole)
+  const [description, setDescription] = useState(bot?.description || '')
+  const [busy, setBusy] = useState(false)
+  const [advanced, setAdvanced] = useState(false)
+  const [adv, setAdv] = useState(emptyAdvancedState())
+
+  // C2: enabled-count read for the Capabilities header — one lightweight
+  // profiles.describe while the dialog is open (the expanded surface keeps
+  // its own loader; this only feeds the collapsed summary).
+  const capsConnectionId = bot ? (resolveBotConnectionRoute(bot).route?.connectionId ?? '') : ''
+
+  const { data: capsData } = useQuery({
+    queryKey: ['bots-capabilities-summary', capsConnectionId, bot?.name ?? ''],
+    enabled: open && Boolean(bot),
+    retry: false,
+    staleTime: 60_000,
+    queryFn: async () => {
+      if (!bot) {
+        return null
+      }
+
+      try {
+        return (await requestForBot(bot, 'profiles.describe', { name: bot.name })) as ProfileDescribeResponse
+      } catch {
+        return null
+      }
+    }
+  })
+
+  const caps = capabilityCounts(capsData)
+
+  // Re-seed local state each time a different bot opens the dialog.
+  const [seedKey, setSeedKey] = useState<null | string>(null)
+  const currentKey = bot ? `${botSelectionKey(bot)}:${open}` : null
+
+  if (currentKey !== seedKey) {
+    setSeedKey(currentKey)
+
+    if (bot && open) {
+      setShape(appearance.shape)
+      setColor(appearance.color)
+      setImage(appearance.image ?? null)
+      setTitle(openingTitle)
+      setRole(openingRole)
+      setOpened(opening)
+      setDescription(bot.description || '')
+      setBusy(false)
+      setAdvanced(false)
+      setAdv(emptyAdvancedState())
+    }
+  }
+
+  if (!bot) {
+    return null
+  }
+
+  const submit = async () => {
+    if (busy) {
+      return
+    }
+
+    setBusy(true)
+    let advancedFailed = false
+
+    const look = editedLook(opened, { shape, color, image, role, title })
+    const persistence = look ? await saveBotMeta(bot, look) : null
+
+    // Only an explicit remote failure is an error — 'unsupported' is the
+    // documented older-gateway fallback (local wins, silently), and toasting
+    // it would flag every save on every legacy setup forever.
+    const lookFailed = persistence?.serverOutcome === 'failed'
+
+    if (lookFailed) {
+      host.notify({
+        kind: 'error',
+        message: b.avatar.savedLocally
+      })
+    }
+
+    if (persistence?.serverOutcome === 'persisted') {
+      queryClient.invalidateQueries({
+        queryKey: ROSTER_KEY
+      })
+    }
+
+    const desc = description.trim()
+
+    if (desc !== (bot.description || '').trim()) {
+      try {
+        await requestForBot(bot, 'cli.exec', {
+          argv: ['profile', 'describe', bot.name, '--text', desc]
+        })
+        queryClient.invalidateQueries({
+          queryKey: ROSTER_KEY
+        })
+      } catch (err) {
+        host.notifyError(err, b.avatar.savedLocallyDescriptionFailed)
+      }
+    }
+
+    if (adv.loaded && (adv.dirtyModel || adv.dirtySoul || adv.dirtySkills || adv.dirtyToolsets || adv.dirtyMcp)) {
+      try {
+        const res = await applyAdvancedConfig(bot, adv)
+        const failed = Object.entries(res?.applied || {}).filter(([, ok]) => !ok)
+
+        if (failed.length) {
+          advancedFailed = true
+          host.notify({
+            kind: 'error',
+            message: b.editor.sectionsFailed(failed.map(([k]) => k).join(', '))
+          })
+        }
+      } catch (err) {
+        advancedFailed = true
+        host.notifyError(err, b.bot.advancedFailed)
+      }
+    }
+
+    if (!advancedFailed && !lookFailed) {
+      host.notify({
+        kind: 'success',
+        message: b.editor.updated(displayName(bot, { title }))
+      })
+    }
+
+    setBusy(false)
+    onClose()
+  }
+
+  return (
+    <Dialog onOpenChange={value => !value && !busy && onClose()} open={open}>
+      <DialogContent
+        className={advanced ? 'max-w-3xl' : 'max-w-sm'} // Same resizable-window treatment as the create dialog.
+        style={
+          advanced
+            ? {
+                resize: 'both',
+                overflow: 'auto',
+                minWidth: 420,
+                minHeight: 360,
+                maxWidth: '95vw',
+                maxHeight: '90vh'
+              }
+            : undefined
+        }
+      >
+        <DialogHeader>
+          <DialogTitle>{b.bot.editTitle}</DialogTitle>
+          <DialogDescription>{b.editor.editDescription(displayName(bot, null), bot.name)}</DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4">
+          <div className="flex justify-center py-1">
+            <BotFace color={avatarColor(color, bot.name)} image={image} name={bot.name} shape={shape} size={64} />
+          </div>
+          <AvatarPicker
+            color={color}
+            generateSeed={{
+              name: bot.name,
+              title,
+              description
+            }}
+            image={image}
+            onColor={setColor}
+            onImage={setImage}
+            onShape={setShape}
+            shape={shape}
+          />
+          {labeled(
+            b.editor.title,
+            <Input
+              onChange={event => setTitle(event.target.value)}
+              placeholder={displayName(bot, null)}
+              value={title}
+            />
+          )}
+          {labeled(
+            b.editor.role,
+            <Input
+              onChange={event => setRole(event.target.value)}
+              placeholder={b.editor.rolePlaceholder}
+              value={role}
+            />
+          )}
+          {labeled(
+            b.editor.description,
+            <Textarea
+              className="min-h-16"
+              onChange={event => setDescription(event.target.value)}
+              placeholder={b.bot.helpPromptPlaceholder}
+              value={description}
+            />
+          )}
+          <Button
+            className="flex items-center gap-1 text-xs font-medium text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)"
+            onClick={() => setAdvanced(v => !v)}
+            size="inline"
+            variant="text"
+          >
+            <DisclosureCaret open={advanced} />
+            {b.editor.capabilities}
+            <span className="font-normal text-(--ui-text-quaternary)">
+              {caps ? b.editor.capabilitiesSummary(caps.skills, caps.toolsets, caps.mcp) : b.editor.capabilitiesHint}
+            </span>
+          </Button>
+          {advanced ? (
+            <div className="rounded-md border border-(--ui-stroke-secondary) p-3">
+              <AdvancedProfileConfig bot={bot} setState={setAdv} state={adv} />
+            </div>
+          ) : null}
+        </div>
+        <DialogFooter>
+          <Button disabled={busy} onClick={onClose} variant="ghost">
+            {t.common.cancel}
+          </Button>
+          <Button disabled={busy} onClick={submit}>
+            {busy ? t.common.saving : t.common.save}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}

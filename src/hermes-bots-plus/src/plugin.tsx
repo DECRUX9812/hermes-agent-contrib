@@ -1,0 +1,1162 @@
+/**
+ * Hermes Bot Mode — a "one chat per agent" roster for the Hermes desktop.
+ *
+ * Left pane "Bots": one row per Hermes profile (a bot = an agent profile) with
+ * a customizable avatar (shape + color + eyes, image, or pet). Click opens that
+ * bot's chat; right-click → Edit Profile (avatar, title, description).
+ * "New Bot" creates a profile — Name / Title / Description with an
+ * "Advanced" disclosure for full profile config.
+ *
+ * Right tile "Routines": scheduled tasks (Hermes cron jobs) scoped to the
+ * bot you're currently chatting with — follows the live gateway profile.
+ *
+ * Bots message each other straight into each bot's ONE canonical "Bot
+ * Chat" — @-mentions deliver over gateway RPCs (no CLI relay), and
+ * bot-initiated sends use `hermes -p <bot> chat --in ~ -c "Bot Chat"`.
+ */
+
+import {
+  CHAT_EMPTY_AREA,
+  CHAT_HEADER_AREAS,
+  Codicon,
+  COMPOSER_AREAS,
+  host,
+  LocalizedTabTitle,
+  PALETTE_AREA,
+  type PaletteContribution,
+  type PaneContribution,
+  type RouteContribution,
+  ROUTES_AREA,
+  SIDEBAR_LIST_TOP_AREA,
+  SIDEBAR_NAV_AREA,
+  SIDEBAR_PROFILE_GROUP_HEADER_AREA,
+  type SidebarNavContribution,
+  TRANSCRIPT_DIRECTIVE_AREA,
+  translateNow
+} from '@hermes/plugin-sdk'
+import type {
+  ChatEmptyProps,
+  ChatHeaderSlotContribution,
+  PluginContext,
+  ProfileGroupRoute,
+  TranscriptDirectiveProps
+} from '@hermes/plugin-sdk'
+
+import { AgentsSection } from './agents-section'
+import { AUTOPILOT_LOCALES } from './autopilot-i18n'
+import { startFaceClock, stopFaceClock } from './avatar'
+import { BotDelegateHint } from './bot-delegate-hint-view'
+import { BotInboundCards } from './bot-events-view'
+import { BotHeaderIdentity } from './bot-header-chip'
+import { BOT_PLAN_DIRECTIVE, rewritePlanDraft } from './bot-plan'
+import { BotPlanCard, canonicalBotChatOnScreen } from './bot-plan-card'
+import { BotPlanChecklist } from './bot-plan-checklist'
+import {
+  $agentsSectionOpen,
+  $botChatFocused,
+  $botsPaneVisible,
+  $focusedBotOwner,
+  $openBotChat,
+  $selectedBot,
+  $selectedRosterHydrated,
+  $selectedRosterKey,
+  focusedMentionProfile
+} from './bot-state'
+import { hydrateDismissedBotTips } from './bot-tips'
+import { BotChatTips } from './bot-tips-view'
+import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
+import { BotChatEmpty } from './chat-empty'
+import { hydrateDismissedNudges } from './context-nudge'
+import { BotContextNudge } from './context-nudge-view'
+import { bindProfileSync } from './cron'
+import {
+  $botMeta,
+  $lastRoster,
+  annotateBotSource,
+  botHandle,
+  botMentionTag,
+  botRosterKey,
+  botSelectionKey,
+  botSourceStatus,
+  cachedUnionRoster,
+  isActiveRosterBot,
+  migrateBotMeta,
+  preferReachableSameNameRows,
+  primeRoster,
+  resolveRosterMentions
+} from './data'
+import {
+  $groupChats,
+  $groupChatWorkspace,
+  assignLegacyThreads,
+  handleSessionsGatewayTransition,
+  hydrateGroupChatTombstones,
+  pullGroupChatServerState,
+  refreshGroupChatLimits,
+  scheduleGroupChatServerSync,
+  setGroupChatSyncDisposed,
+  stopGroupChatServerSync,
+  sweepGroupChatMembersForRemovedConnection,
+  updateGroupChat
+} from './group-chat'
+import { groupWorkspaceOwnerKey } from './group-membership'
+import { bindGroupReadTracking } from './group-unread'
+import { isBotHidden } from './hidden-bots'
+import { HIRE_LOCALES } from './hire-i18n'
+import { annotateOrphanedGroupChatMembers } from './hygiene'
+import { BOTS_LOCALES, botsText, useBots } from './i18n'
+import { displayName } from './labels'
+import { hydrateRosterSortMode } from './live-status'
+import { MissionRail } from './mission-rail'
+import { hydrateNeedsYou } from './needs-you'
+import { hydrateRailSections, hydrateRailTab } from './rail-state'
+import { startBotRelay, stopBotRelay } from './relay'
+import { $activityToasts, openRosterBot } from './roster-actions'
+import {
+  botChatOwnsWorkspace,
+  BotsPane,
+  releaseStaleOpenBotChat,
+  selectedRosterBot,
+  sessionOwnsWorkspace
+} from './roster-pane'
+import { hydrateRosterViewMode } from './roster-view'
+import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
+import { startScreenAutoRaise } from './screen-autoraise'
+import { ProfileGroupScreenPortal } from './screen-portal'
+import { startHideSweepScheduler } from './session-sweep'
+import { SHARE_LOCALES } from './share-i18n'
+import { bumpBotOpenGeneration, getBotOpenGeneration, ID, setPluginCtx } from './shared'
+import { TEAM_LOCALES } from './team-i18n'
+import { TeamPage } from './team-page'
+import type { GroupChat, RosterRow } from './types'
+import { loadBotSections } from './user-sections'
+
+// ── plugin ───────────────────────────────────────────────────────────────────
+
+/** One row the composer's `@` popover renders from the roster. */
+interface MentionCompletionItem {
+  display: string
+  insert: string
+  meta: string
+  /** Handles that resolve to this same bot — the raw profile name and the
+   *  roster handle — so the popover can drop the gateway's own row for that
+   *  name instead of listing the bot twice (once under its title slug,
+   *  once under the raw name). */
+  handles?: string[]
+}
+
+/** The draft a `composer.middleware` handler rewrites, passes through, or
+ *  cancels (this plugin never cancels). */
+interface ComposerDraftPayload {
+  attachments?: unknown[]
+  /** Bubble text for a rewritten draft (plan mode shows '/plan …', not the
+   *  model-facing scaffold it sends). */
+  displayText?: string
+  text: string
+}
+
+/** Reactive tab label for the routines/context rail — `LocalizedTabTitle`
+ *  only reaches core translations, so the plugin block needs `useBots`. */
+function RailTabTitle() {
+  return <>{useBots().rail.title}</>
+}
+
+export default {
+  id: 'hermes-bots-plus',
+  name: `${translateNow('common.bots')} 2.0`,
+  description: 'Bot Mode 2.0 (hermes-plus overlay). Switches the bundled Bot Mode off: both manage the same Bot Chats.',
+  replaces: ['hermes-bots'],
+  register(ctx: PluginContext) {
+    setPluginCtx(ctx)
+    // The user's own roster sections. Read once at register; every mutation
+    // writes through.
+    loadBotSections()
+    const disposeLocales = ctx.i18n.register(BOTS_LOCALES)
+    const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
+    const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
+    const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
+    const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
+    setGroupChatSyncDisposed(false)
+    startFaceClock()
+    // The cross-connection relay rides every gateway socket this Desktop
+    // holds: roster sync + envelope drain/deliver/reply loops.
+    startBotRelay()
+    // Opt-in per bot: raise a bot's Screen tab on its first live screen tool call.
+    const stopScreenAutoRaise = startScreenAutoRaise()
+
+    // Disabling the plugin (or a hot reload) must actually stop the clock —
+    // before this, the rAF loop + 1Hz document scan ran until app restart.
+    if (typeof ctx.onDispose === 'function') {
+      ctx.onDispose(disposeLocales)
+      ctx.onDispose(disposeTeamLocales)
+      ctx.onDispose(disposeHireLocales)
+      ctx.onDispose(disposeShareLocales)
+      ctx.onDispose(disposeAutopilotLocales)
+      ctx.onDispose(stopFaceClock)
+      ctx.onDispose(stopBotRelay)
+      ctx.onDispose(stopScreenAutoRaise)
+    }
+
+    // @-mention autocomplete: typing "@rese…" in ANY composer offers the
+    // roster's handles (issue #88060). Reads the roster straight from the
+    // query cache — useRoster keeps it ≤5s stale and the popover must answer
+    // synchronously per keystroke. Multi-source rosters contribute their
+    // precomputed @name-device handles via botHandle. The active profile is
+    // excluded (a bot doesn't @ itself); 'default' surfaces as @hermes.
+    ctx.register({
+      id: 'mention-completions',
+      area: COMPOSER_AREAS.atCompletions,
+      data: {
+        provide: (query: string): MentionCompletionItem[] => {
+          const roster = cachedUnionRoster()
+          const profiles = Array.isArray(roster?.profiles) ? roster.profiles : []
+
+          if (!profiles.length) {
+            return []
+          }
+
+          const active = focusedMentionProfile()
+          const q = (query || '').toLowerCase()
+          const items: MentionCompletionItem[] = []
+
+          const live = {
+            name: active,
+            connectionId: String(host.state.connectionId?.get?.() || host.activeConnectionId?.() || 'local')
+          }
+
+          const offered = profiles.filter(profile => profile?.name && !isActiveRosterBot(profile, live))
+          // Two rows tagging alike (two remote defaults both titled "CoS Bot")
+          // cannot share a bare tag — it would resolve to neither. Pin the
+          // ambiguous ones to their connection (#103731).
+          const tagCounts = new Map<string, number>()
+
+          for (const profile of offered) {
+            const tag = botMentionTag(profile).toLowerCase()
+            tagCounts.set(tag, (tagCounts.get(tag) || 0) + 1)
+          }
+
+          for (const profile of offered) {
+            const handle = botHandle(profile.name, profile)
+            const display = displayName(profile, botRosterMeta(profile, $botMeta.get()))
+            // Renamed bots complete on their friendly name — the tag is the
+            // renamed slug when one exists, the profile handle otherwise.
+            const tag = botMentionTag(profile)
+
+            if (
+              q &&
+              !tag.toLowerCase().startsWith(q) &&
+              !handle.toLowerCase().startsWith(q) &&
+              !display.toLowerCase().startsWith(q)
+            ) {
+              continue
+            }
+
+            const qualified = (tagCounts.get(tag.toLowerCase()) || 0) > 1 && profile.connectionId
+            const insert = qualified ? `@${tag}@${profile.connectionId}` : `@${tag}`
+            const source = profile.connectionLabel ? ` · ${profile.connectionLabel}` : ''
+            items.push({
+              insert,
+              display: insert,
+              meta: `Bot · ${display}${source}`,
+              // The live gateway's own `@` rows list this backend's profiles
+              // by raw name; claim ours so the popover drops that twin row.
+              // Remote rows are NOT ours to claim — the local gateway's
+              // same-named row resolves locally, not to the remote bot.
+              ...(profile.remoteSource ? {} : { handles: [`@${profile.name}`] })
+            })
+          }
+
+          return items.slice(0, 8)
+        }
+      }
+    })
+
+    // Hydrate persisted avatars/titles. Migration writes v2 only after a
+    // provable sole-local topology and deliberately leaves v1 untouched for
+    // one-version rollback.
+    void migrateBotMeta(ctx.storage).catch(() => undefined)
+
+    // The last selected bot, source-qualified. Restoring it is PRESENTATION
+    // ONLY: it paints the roster highlight, and never activates a gateway,
+    // opens a chat, or creates a session. The hydrated flag must flip on
+    // every settle path — the roster holds a loading state until it does,
+    // and a storage quirk must not strand it there.
+    try {
+      Promise.resolve<unknown>(ctx.storage?.get?.('selected-roster-bot-v1', null))
+        .then(value => {
+          if (typeof value === 'string' && value.trim()) {
+            $selectedRosterKey.set(value.trim())
+          }
+        })
+        .catch(() => undefined)
+        .finally(() => $selectedRosterHydrated.set(true))
+    } catch {
+      /* no storage — this window starts with no restored selection */
+      $selectedRosterHydrated.set(true)
+    }
+
+    // Bot Mode sessions are always hidden now — the old "hide Bot Chats"
+    // pref is gone (its stored key is simply ignored). The reconciliation
+    // sweep below hides any rows born visible under the old pref.
+
+    // Hydrate the activity-toast pref (default OFF).
+    try {
+      Promise.resolve<unknown>(ctx.storage?.get?.('activity-toasts', null))
+        .then(value => {
+          if (typeof value === 'boolean') {
+            $activityToasts.set(value)
+          }
+        })
+        .catch(() => undefined)
+    } catch {
+      /* no storage — default (silent) stays */
+    }
+
+    // Hydrate the roster sort pref (default 'recent'; 'attention' floats
+    // bots with open items — self-contained in live-status.ts).
+    hydrateRosterSortMode()
+    hydrateRosterViewMode()
+    // Hydrate the mission rail's per-section fold state (default expanded).
+    hydrateRailSections()
+    hydrateRailTab()
+
+    // Hydrate dismissed tip cards (G9) — per bot, this device only.
+    hydrateDismissedBotTips()
+    hydrateDismissedNudges()
+    // Hydrate the universal Needs You index (Team OS slice 5) — malformed or
+    // unknown entries are dropped inside, never thrown on.
+    hydrateNeedsYou()
+
+    // Hydrate the Sessions-rail Agents fold (default open).
+    try {
+      Promise.resolve<unknown>(ctx.storage?.get?.('agents-section-open', null))
+        .then(value => {
+          if (typeof value === 'boolean') {
+            $agentsSectionOpen.set(value)
+          }
+        })
+        .catch(() => undefined)
+    } catch {
+      /* no storage — the rail section stays open */
+    }
+
+    // Hydrate persisted group-chat room logs (epoch/running are runtime-only
+    // and always reset — a loop can't survive a window reload anyway).
+    // Disband memory must be in place before the first gateway pull merges
+    // a mirror that may still project a disbanded room (#105275) — the pull
+    // below awaits this, otherwise the first pull resurrects the room until
+    // the next one re-tombstones it.
+    let tombstonesHydrated: Promise<void> = Promise.resolve()
+
+    try {
+      tombstonesHydrated = Promise.resolve<unknown>(ctx.storage?.get?.('group-chat-tombstones', null))
+        .then(value => hydrateGroupChatTombstones(value))
+        .catch(() => undefined)
+    } catch {
+      /* no storage — no remembered disbands this window */
+    }
+
+    // The config.yaml `group_chat` block feeds every room that never set its
+    // own override — read it once at register; the per-room merge in
+    // getGroupChatLimits resolves the rest per drive.
+    void refreshGroupChatLimits()
+
+    try {
+      Promise.resolve<unknown>(ctx.storage?.get?.('group-chats', null))
+        .then(async value => {
+          if (value && typeof value === 'object' && !Array.isArray(value)) {
+            const rooms: Record<string, GroupChat> = {}
+
+            for (const [name, room] of Object.entries(value)) {
+              if (room && Array.isArray(room.log)) {
+                rooms[name] = {
+                  // Pre-thread entries get synthetic thread ids on hydrate so
+                  // every UI/engine path can assume entry.thread exists.
+                  log: assignLegacyThreads(room.log),
+                  watermarks: room.watermarks && typeof room.watermarks === 'object' ? room.watermarks : {},
+                  sessions: room.sessions && typeof room.sessions === 'object' ? room.sessions : {},
+                  sessionOwners: room.sessionOwners && typeof room.sessionOwners === 'object' ? room.sessionOwners : {},
+                  stranded: room.stranded && typeof room.stranded === 'object' ? room.stranded : {},
+                  // #93129: rehydrate sticky stop holds with the same shape
+                  // guard as the other maps — a held bot stays held across
+                  // window restarts until explicitly released.
+                  holds: room.holds && typeof room.holds === 'object' ? room.holds : {},
+                  // Per-axis drive-budget overrides ride the room record like
+                  // goal/image — a room set to run longer keeps its budget.
+                  limits: room.limits && typeof room.limits === 'object' ? room.limits : undefined,
+                  listener: typeof room.listener === 'string' && room.listener ? room.listener : undefined,
+                  externalCursors:
+                    room.externalCursors && typeof room.externalCursors === 'object' ? room.externalCursors : {},
+                  members: Array.isArray(room.members) ? room.members : [],
+                  roomId: typeof room.roomId === 'string' && room.roomId ? room.roomId : null,
+                  image: typeof room.image === 'string' && room.image ? room.image : null,
+                  rosterOrder: Number.isFinite(room.rosterOrder) ? room.rosterOrder : undefined,
+                  pinned: Boolean(room.pinned),
+                  sectionId: room.sectionId ?? null,
+                  syncRevision: Math.max(0, Number(room.syncRevision || 0)),
+                  epoch: 0,
+                  running: false
+                }
+              }
+            }
+
+            $groupChats.set({
+              ...rooms,
+              ...$groupChats.get()
+            })
+
+            // #93492: annotate rows orphaned before this build (their
+            // connection was deleted while an older Desktop ran, so no
+            // 'removed' push ever swept them). Registry read is
+            // feature-detected; when unavailable only the unresolvable-route
+            // shape (lost connectionId) is annotated.
+            try {
+              const registry =
+                typeof window !== 'undefined'
+                  ? await Promise.resolve(window.hermesDesktop?.connections?.list?.()).catch(() => null)
+                  : null
+
+              const liveIds = Array.isArray(registry?.connections)
+                ? new Set(registry.connections.map(connection => String(connection?.id || '').trim()).filter(Boolean))
+                : null
+
+              const annotated = annotateOrphanedGroupChatMembers($groupChats.get(), liveIds)
+
+              if (annotated.changed) {
+                // Per-room updateGroupChat keeps the durable record's full
+                // shape (sessionOwners, holds) in storage; sync:false —
+                // the scheduleGroupChatServerSync below publishes once.
+                for (const [roomName, room] of Object.entries(annotated.rooms)) {
+                  if (room !== $groupChats.get()[roomName]) {
+                    updateGroupChat(roomName, () => room, {
+                      sync: false
+                    })
+                  }
+                }
+              }
+            } catch {
+              /* registry unavailable — the lost-connectionId shape is still safe to render */
+            }
+          }
+
+          // Receive before publish. A fresh Desktop with no local room cache
+          // must hydrate the gateway projection instead of merely avoiding an
+          // empty overwrite and then rendering an empty conversation.
+          await tombstonesHydrated
+          await pullGroupChatServerState().catch(() => false)
+          scheduleGroupChatServerSync($groupChats.get())
+        })
+        .catch(() => undefined)
+    } catch {
+      /* no storage — rooms start empty */
+    }
+
+    // Routines follow the chat you're in: track the focused chat's owner
+    // profile (falls back to the live gateway profile on older desktops —
+    // see $focusedBotProfile). Keying this off the socket's home alone left
+    // the unread-suppression and Routines scope on the wrong bot whenever a
+    // focused tab showed another profile's chat.
+    // Capture the unbinds: without them a disable → re-enable cycle stacks a
+    // duplicate listener per cycle (same survives-disable class as the face
+    // clock before its onDispose hook — these kept firing until app restart).
+    const unbindProfileListener = bindProfileSync($focusedBotOwner)
+    const unbindGatewayListener = host.state.gateway.listen(handleSessionsGatewayTransition)
+    // Roster unread badges track room read marks renderer-locally; the bound
+    // listener seeds first-sight rooms and keeps the open room marked read.
+    const unbindGroupReadTracking = bindGroupReadTracking()
+
+    // The composer's @ picker reads the roster cache synchronously; fill it on
+    // the first gateway open so cross-connection bots complete before the Bots
+    // pane has ever mounted (#94018). The pane owns the refresh once open.
+    const primeOnGatewayOpen = (state: unknown) => {
+      if (String(state) === 'open') {
+        void primeRoster()
+      }
+    }
+
+    primeOnGatewayOpen(host.state.gateway.get())
+    const unbindRosterPrime = host.state.gateway.listen(primeOnGatewayOpen)
+
+    // #93492 root fix: the registry pushes a lifecycle event when a
+    // connection is removed. The gateway store already disposes the dead
+    // sockets; the persisted group-chat rosters referencing that connection
+    // were never touched, which is what left panes throwing "Bot X has no
+    // connection owner" forever. Annotate (never silently delete) those
+    // member rows the moment the connection goes away. Feature-detected:
+    // older Electron mains don't emit it, and bare vm test harnesses have
+    // no window global.
+    let unbindConnectionsChanged: null | (() => void) = null
+
+    try {
+      if (typeof window !== 'undefined') {
+        unbindConnectionsChanged =
+          window.hermesDesktop?.connections?.onChanged?.(payload => {
+            if (payload?.reason === 'removed') {
+              sweepGroupChatMembersForRemovedConnection(payload.connectionId)
+            }
+          }) || null
+      }
+    } catch {
+      /* registry lifecycle push unavailable — hydrate-time annotate still covers it */
+    }
+
+    if (typeof ctx.onDispose === 'function') {
+      ctx.onDispose(() => {
+        stopGroupChatServerSync()
+
+        if (typeof unbindProfileListener === 'function') {
+          unbindProfileListener()
+        }
+
+        if (typeof unbindGatewayListener === 'function') {
+          unbindGatewayListener()
+        }
+
+        if (typeof unbindRosterPrime === 'function') {
+          unbindRosterPrime()
+        }
+
+        if (typeof unbindGroupReadTracking === 'function') {
+          unbindGroupReadTracking()
+        }
+
+        if (typeof unbindConnectionsChanged === 'function') {
+          unbindConnectionsChanged()
+        }
+      })
+    }
+
+    // Reconciliation sweep: hide every Bot Mode session we know about, on
+    // load and again on each reconnect (a swap can land on a gateway whose
+    // rows were created before the always-hidden policy). Deferred a tick so
+    // the meta/room storage hydrates above have landed; idempotent after that.
+    // (Feature-guarded: bare vm test harnesses have no setTimeout global.)
+    startHideSweepScheduler(ctx)
+    // Sessions sidebar: each gateway/profile group gets the profile's Screen portal
+    // above its sessions, so the bot's computer is reachable from either mode.
+    ctx.register({
+      id: 'screen-portal',
+      area: SIDEBAR_PROFILE_GROUP_HEADER_AREA,
+      data: { render: (route: ProfileGroupRoute) => <ProfileGroupScreenPortal route={route} /> }
+    })
+
+    // Sessions rail, above Pinned: the compact Agents fold — the roster's
+    // one-click form inside the same column the sessions live in, so a bot
+    // never needs a tab switch to open. The BOTS pane stays the management
+    // surface (the fold's header gear / "All bots" row front it).
+    ctx.register({
+      id: 'agents-section',
+      area: SIDEBAR_LIST_TOP_AREA,
+      data: { render: () => <AgentsSection />, searchable: true }
+    })
+    // G3/G7 — the canonical Bot Chat's header carries the bot's persona:
+    // the role one-liner beside the title, and the pinned model as a chip
+    // whose click opens the same quick-swap menu the row context menu has.
+    // The contribution decides per header — only (profile, 'Bot Chat') gets
+    // it; every other chat renders nothing.
+    ctx.register({
+      id: 'bot-header-identity',
+      area: CHAT_HEADER_AREAS.title,
+      data: { render: props => <BotHeaderIdentity {...props} /> } as ChatHeaderSlotContribution
+    })
+
+    ctx.register({
+      id: 'pane',
+      area: 'panes',
+      // `title` is sampled at register (module import, before the locale has
+      // loaded) — the tab renders `tabTitle` below so BOTS follows the locale.
+      title: translateNow('common.bots'),
+      // dock: explicit adoption gesture — CENTER-STACK into the sessions zone
+      // so the sidebar grows a SESSIONS | BOTS tab strip instead of splitting
+      // two cramped panes down the column. Center is safe now: insertAtGroup
+      // pins the zone's header explicitly shown on a center gain (and it
+      // stays shown once the zone has stacked), so the sessions pane can
+      // never vanish behind a stripless Bots tab — the lone-pane auto-hide
+      // trap this dock used to work around with a 'bottom' split.
+      // enforce: standing invariant, not a one-shot migration — the pane
+      // re-homes into the sessions strip at EVERY boot it isn't already
+      // there, whatever tokens or user placement an older install persisted.
+      // The one-time heal ('sessions-tab-v1') burned its token even when its
+      // guards skipped the move, so exactly the users who had fought the old
+      // stacked layout (dragged panes → $userPlacedPanes) stayed stacked
+      // forever. Owner's order: SESSIONS | BOTS is always a tab strip.
+      // An intra-session drag still sticks until the next launch (the
+      // invariant runs at adoption time only — see enforceDockedPanes in the
+      // tree store).
+      // collapsible: the pane lives in the sessions zone, so it must LEAVE
+      // the grid with that zone below the sidebar-collapse breakpoint. The
+      // sessions pane collapses alone without this flag. The zone then keeps
+      // a stranded BOTS tab on screen. The narrow edge overlay mirrors the
+      // zone's tab strip, so the pane stays reachable while collapsed.
+      data: {
+        placement: 'left',
+        width: '260px',
+        collapsible: true,
+        hideOnly: true,
+        tabTitle: () => <LocalizedTabTitle select={t => t.common.bots} />,
+        tabTitleText: () => translateNow('common.bots'),
+        dock: {
+          pane: 'sessions',
+          pos: 'center',
+          enforce: true
+        }
+      } satisfies PaneContribution,
+      render: () => <BotsPane />
+    })
+
+    // Routines — its OWN tiling pane splitting the workspace's right edge
+    // (NOT the collapsible right sidebar; placement 'right' is that sidebar's
+    // role and hides the pane until "Show Right Sidebar").
+    //
+    // Registered ONLY while Bot Mode is on screen: the pane exists while the
+    // Bots pane is visible (its zone's active tab, or a lone pane in a
+    // stacked pre-heal layout) and unregisters when the user tabs back to
+    // Sessions — no Cronjobs tile squatting beside the chat outside Bot Mode.
+    // `ctx.register` returns the disposer that makes this cheap; the tree
+    // keeps the pane's spot, so re-registering re-adopts it where it was.
+    // host.paneVisibility is feature-detected: older desktops without the SDK
+    // export keep the always-registered behavior.
+    const registerRoutinesPane = (restoreDismissed: boolean) => {
+      const dispose = ctx.register({
+        id: 'routines',
+        area: 'panes',
+        // The rail hosts profile card / task log / computer / deliverables —
+        // `rail.title`, not `cron.title`, so the tab reads 'Bot context' instead
+        // of duplicating the 'Scheduled jobs' section inside it. `botsText`,
+        // not `useI18n`: a pane title is read at registration, outside React.
+        title: botsText().rail.title,
+        data: {
+          tabTitle: () => <RailTabTitle />,
+          tabTitleText: () => botsText().rail.title,
+          placement: 'main',
+          // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
+          dock: {
+            pane: 'workspace',
+            pos: 'right',
+            enforce: true
+          },
+          // A bot's context rail is glanceable, not something you sit in — it
+          // arrives as the right edge's vertical tab and takes no width off the
+          // chat until the user opens it.
+          defaultCollapsed: true,
+          width: '320px'
+        } satisfies PaneContribution,
+        render: () => <MissionRail />
+      })
+
+      // The pane's ✕ remembers a Close across launches, and nothing else ever
+      // shows this pane again — it only comes back by being registered here.
+      // Entering Bot Mode is the user asking for their bot's chrome, so a
+      // remembered Close is dropped and the pane returns the way it first
+      // arrived: as the collapsed right-edge tab (#102224). Only on ENTRY:
+      // the pane also re-registers whenever a bot chat regains the workspace
+      // inside one Bots session (a group room and back), and a ✕ from that
+      // same session must survive those.
+      if (restoreDismissed && typeof host.undismissPane === 'function') {
+        host.undismissPane(`${ID}:routines`)
+      }
+
+      return dispose
+    }
+
+    if (typeof host.paneVisibility === 'function') {
+      // The contribution-scoped pane id (`register` prefixes `${ID}:`).
+      const $sidebarVisible = host.paneVisibility(`${ID}:pane`)
+      let unregisterRoutines: null | (() => void) = null
+      // Armed by each Bots-tab entry, spent by the first registration after it.
+      let restoreDismissedOnRegister = true
+
+      const syncRoutinesPane = () => {
+        if (botChatOwnsWorkspace()) {
+          if (!unregisterRoutines) {
+            unregisterRoutines = registerRoutinesPane(restoreDismissedOnRegister)
+            restoreDismissedOnRegister = false
+          }
+        } else if (unregisterRoutines) {
+          // Clicking the Cronjobs tile moves focus onto the tile itself, which
+          // drops bot-chat workspace ownership for a beat. While Bot Mode is
+          // still on screen and the tile is the one holding focus, keep it —
+          // a pane must never unregister itself out from under its own click.
+          // Leaving Bot Mode ($botsPaneVisible false) still unregisters.
+          const $self = host.paneVisibility(`${ID}:routines`)
+
+          if ($botsPaneVisible.get() && $self && typeof $self.get === 'function' && $self.get()) {
+            return
+          }
+
+          unregisterRoutines()
+          unregisterRoutines = null
+        }
+      }
+
+      const stopSidebarSync = $sidebarVisible.listen(visible => {
+        $botsPaneVisible.set(Boolean(visible))
+
+        if (visible) {
+          restoreDismissedOnRegister = true
+
+          const group = $groupChatWorkspace.get()
+          const selected = selectedRosterBot($lastRoster.get(), $selectedRosterKey.get())
+
+          // Owner routing only. With neither a group nor a selected bot there
+          // is no bot-owned surface to scope, so leave the workspace on
+          // whatever the user was already looking at — the roster-hydration
+          // effect in BotsPane scopes it the moment a real owner exists.
+          //
+          // This is where the Bots home used to claim the center and refuse a
+          // new chat with "Select a Bot or group first." Deleting the home
+          // deleted the dead end it was apologizing for: with nothing selected
+          // the center is an ordinary session and `+` works there. The refusal
+          // itself still stands for the cases that remain — a group room, and
+          // a selected row too orphaned to route (setBotsWorkspaceOwner's
+          // blocked target).
+          if (group) {
+            setBotsWorkspaceOwner(
+              groupWorkspaceOwnerKey(group),
+              null,
+              'New group conversations start in the group composer.'
+            )
+          } else if (selected) {
+            setBotsWorkspaceOwner(botWorkspaceOwnerKey(selected), selected)
+          }
+        } else {
+          // Strand any owner wake still dialing. Its SDK open will fail the
+          // workspace token too; this plugin generation prevents that expected
+          // cancellation from showing an error after the user deliberately
+          // returned to Sessions.
+          bumpBotOpenGeneration()
+          host.setWorkspaceScope?.('sessions')
+        }
+
+        syncRoutinesPane()
+      })
+
+      const stopGroupSync = $groupChatWorkspace.listen(syncRoutinesPane)
+
+      // React on the NEXT tick — a layout notification arrives mid-mutation,
+      // and registering/unregistering panes from inside it would re-enter the
+      // tree store.
+      const scheduleRoutinesSync = () => {
+        try {
+          setTimeout(syncRoutinesPane, 0)
+        } catch {
+          syncRoutinesPane()
+        }
+      }
+
+      // Tab focus moves without swapping the gateway socket, so the focused
+      // STORED session is the truth about session focus; older shells fall
+      // back to the active session id.
+      const focusStore = host.state.focusedStoredSessionId || host.state.activeSessionId
+
+      const stopFocusSync =
+        typeof focusStore?.listen === 'function'
+          ? focusStore.listen(id => {
+              $botChatFocused.set(Boolean(id))
+              releaseStaleOpenBotChat(id)
+              syncRoutinesPane()
+            })
+          : null
+
+      // Proactive reclaim refresh: when the gateway reaps the runtime behind
+      // the OPEN bot chat (idle TTL, LRU cap, WS-orphan reap — the mass-reap
+      // shape hits every background bot at once), re-resume the canonical
+      // chat immediately instead of letting the user's next send eat the
+      // stale-id error + recovery retry. Matched on the STORED id (the
+      // claim's ids are stored ids; the payload carries both). Best-effort:
+      // a failed re-resume (backend still down) leaves the lazy recovery on
+      // next send as the backstop. Feature-detected — older shells have no
+      // host.onEvent.
+      //
+      // This is a BACKGROUND wake: it refreshes in place (refreshInPlace
+      // through openBotCanonicalChat) and never navigates, so a user
+      // reading the Kanban board — or any other route — keeps their view
+      // (issue 121874).
+      const stopReclaimSync =
+        typeof host.onEvent === 'function'
+          ? host.onEvent('session.reclaimed', event => {
+              const payload = (event?.payload || {}) as { stored_session_id?: string }
+              const stored = String(payload.stored_session_id || '')
+              const claim = $openBotChat.get()
+
+              if (!stored || !claim) {
+                return
+              }
+
+              const owned = [claim.openedSessionId, claim.openedRegistryId].filter(Boolean)
+
+              if (!owned.includes(stored)) {
+                return
+              }
+
+              // A claim without a registry id is the legacy newChat draft
+              // fallback: re-resolving the canonical chat here would replace
+              // a draft the user is typing into. Its tile recovers on the next
+              // send like any tab.
+              if (!claim.openedRegistryId) {
+                return
+              }
+
+              const bot = selectedRosterBot($lastRoster.get(), $selectedRosterKey.get())
+
+              if (!bot) {
+                return
+              }
+
+              const generation = getBotOpenGeneration()
+              void openBotCanonicalChat(bot, { background: true })
+                .then(opened => {
+                  // A user action while the re-resume ran owns the center now.
+                  if (!opened || generation !== getBotOpenGeneration()) {
+                    return
+                  }
+
+                  $openBotChat.set({
+                    key: claim.key,
+                    openedRegistryId: opened.registryId,
+                    openedSessionId: opened.openedId
+                  })
+                })
+                .catch(() => {
+                  /* backend still down — next send recovers via the ladder */
+                })
+            })
+          : null
+
+      $botsPaneVisible.set(Boolean($sidebarVisible.get()))
+      $botChatFocused.set(sessionOwnsWorkspace())
+      // A persisted layout can boot directly into Bot Mode. Reconcile now,
+      // then once more after the layout mutation finishes.
+      syncRoutinesPane()
+      scheduleRoutinesSync()
+
+      if (typeof ctx.onDispose === 'function') {
+        // The registration disposer is already tracked by ctx.register; only
+        // the listeners need explicit teardown or they survive plugin disable.
+        ctx.onDispose(() => {
+          stopSidebarSync()
+          stopGroupSync()
+          stopFocusSync?.()
+          stopReclaimSync?.()
+        })
+      }
+    } else {
+      registerRoutinesPane(true)
+    }
+
+    // A bot's chat before it has spoken: core's splash is Hermes' wordmark and
+    // stands down for any session that exists, so the bot titles its own.
+    ctx.register({
+      id: 'chat-empty',
+      area: CHAT_EMPTY_AREA,
+      data: {
+        render: ({ sessionId }: ChatEmptyProps) => <BotChatEmpty sessionId={sessionId} />
+      }
+    })
+
+    // G9 — capability tip cards under the empty-state hero, on the same
+    // claim the hero makes (canonical chat, empty transcript = first run).
+    ctx.register({
+      id: 'chat-empty-tips',
+      area: CHAT_EMPTY_AREA,
+      data: {
+        render: ({ sessionId }: ChatEmptyProps) => <BotChatTips sessionId={sessionId} />
+      }
+    })
+
+    // G5 — inbound events bound to the bot (mailbox notes, relay deliveries,
+    // routine completions) as compact cards inside its canonical chat. The
+    // contribution answers for itself: null when the focused chat is not a
+    // canonical Bot Chat.
+    ctx.register({
+      id: 'bot-inbound-cards',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotInboundCards />
+    })
+
+    // Topics nudge — on a canonical chat grown long, one dismissible line
+    // suggesting a fresh topic (same powers, new context). Advisory only.
+    ctx.register({
+      id: 'bot-context-nudge',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotContextNudge />
+    })
+
+    // Bot-pane UX — a plain working session ON A BOT PROFILE is the one
+    // shape delegation can't reach; a dismissible chip over the composer
+    // offers to mint a fresh topic in the bot's workspace (powers are
+    // mint-time — the chat itself can never become one). The contribution
+    // answers for itself per surface: null on the canonical chat, on
+    // topics, and on non-bot sessions.
+    ctx.register({
+      id: 'bot-delegate-hint',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotDelegateHint />
+    })
+
+    ctx.register({
+      id: 'new-agent',
+      area: PALETTE_AREA,
+      data: {
+        id: `${ID}.new-agent`,
+        label: 'New Bot…',
+        keywords: ['bot', 'agent', 'profile', 'teammate', 'create'],
+        run: () => {
+          host.notify({
+            kind: 'info',
+            message: ctx.i18n.t('bot.createFirstHint')
+          })
+        }
+      }
+    })
+
+    // One palette row per live bot — the keyboard door straight into a bot's
+    // canonical chat. `items()` re-reads the cached roster on every palette
+    // open (same freshness contract as `detail()`), and projects the same
+    // visible set the rail's BOTS fold computes rather than keeping a second
+    // membership list. The parent "Bots" row opens the pane.
+    ctx.register({
+      id: 'agents',
+      area: PALETTE_AREA,
+      data: {
+        id: `${ID}.agents`,
+        label: 'Bots',
+        keywords: ['bot', 'agent', 'roster', 'chat'],
+        run: () => void host.revealPane(`${ID}:pane`),
+        items: () => {
+          const meta = $botMeta.get()
+          const snapshot = cachedUnionRoster()
+          const sources = snapshot?.sources ?? []
+
+          const visible = preferReachableSameNameRows(
+            (snapshot?.profiles ?? []).filter(
+              bot => !isBotHidden(bot, meta) && botSourceStatus(annotateBotSource(bot, sources)).available
+            )
+          )
+
+          return visible.map(bot => ({
+            id: `bot-${botRosterKey(bot)}`,
+            label: displayName(bot, botRosterMeta(bot, meta)),
+            keywords: ['bot', 'agent', 'chat', bot.name, botHandle(bot.name, bot)].filter(Boolean),
+            detail: () => (bot.remoteSource ? 'remote' : 'local'),
+            icon: (props: { className?: string }) => <Codicon name="robot" {...props} />,
+            run: () => void openRosterBot(bot)
+          }))
+        }
+      }
+    })
+
+    // `/plan` in a canonical Bot Chat (B1): the draft is rewritten into a
+    // plan-mode prompt — the reply's numbered plan + trailing `::botplan`
+    // marker render as an approval card (botplan directive below) instead of
+    // a normal turn. Everywhere else `/plan` passes through to the backend's
+    // own planner (.hermes/plans/*.md). Registered BEFORE the mention
+    // middleware so a `@bot` inside the task still resolves, appending its
+    // note after the scaffold rather than inside the brief.
+    ctx.register({
+      id: 'plan-mode-middleware',
+      area: COMPOSER_AREAS.middleware,
+      data: {
+        handler: (draft: ComposerDraftPayload): ComposerDraftPayload => {
+          const rewritten = rewritePlanDraft(
+            draft.text || '',
+            canonicalBotChatOnScreen(host.state.focusedStoredSessionId.get())
+          )
+
+          return rewritten ? { ...draft, text: rewritten.text, displayText: rewritten.displayText } : draft
+        }
+      }
+    })
+
+    // The plan reply's `::botplan` paragraph becomes the approval card — the
+    // numbered list above it stays normal transcript text, so an unclaimed
+    // marker (streaming, non-canonical chat) degrades to a plain line.
+    ctx.register({
+      id: 'botplan-directive',
+      area: TRANSCRIPT_DIRECTIVE_AREA,
+      data: {
+        name: BOT_PLAN_DIRECTIVE,
+        render: (props: TranscriptDirectiveProps) => <BotPlanCard {...props} />
+      }
+    })
+
+    // B2 — the live checklist pinned above a canonical chat's composer while
+    // an approved plan runs. Fully transcript-derived (bot-plan.ts); clear is
+    // cosmetic and in-memory.
+    ctx.register({
+      id: 'bot-plan-checklist',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotPlanChecklist />
+    })
+
+    // @-mention middleware: "@<bot> do the thing" in any chat gets an
+    // IDENTIFICATION note — who the user is referring to, resolved against
+    // the LIVE roster ("user@example.com" or an unknown @ passes through
+    // untouched). The middleware never delivers anything itself: the agent
+    // owns messaging via its message_agent tool (Bot Chats), so there is
+    // exactly one send path and user text is never forwarded verbatim by
+    // the renderer. The composer's @-autocomplete remains the picking aid.
+    ctx.register({
+      id: 'mention-middleware',
+      area: COMPOSER_AREAS.middleware,
+      data: {
+        handler: async (draft: ComposerDraftPayload): Promise<ComposerDraftPayload> => {
+          const text = draft.text || ''
+
+          // /new inside a bot's canonical forever-chat would fork the
+          // relationship into a scratch session — the one thing Bots mode
+          // promises never happens. Reroute to /compact (same felt effect:
+          // fresh working context, SAME conversation) and say so. Only
+          // guards the canonical chat: Sessions-mode scratchpads on the
+          // same profile keep full /new freedom.
+          const slashNew = /^\/(new|reset)\s*$/.exec(text.trim())
+
+          if (slashNew) {
+            const activeBot = $selectedBot.get()
+            // Canonical identity is the profile's "Bot Chat" registry row —
+            // read it from the roster cache (canonical_session, resolved
+            // server-side by name), matching either the durable row id or
+            // the compression-lineage tip currently on screen.
+            const roster = $lastRoster.get()
+            const row = Array.isArray(roster) ? roster.find(bot => botSelectionKey(bot) === activeBot) : null
+
+            // The STORED id, which is the id space canonical_session is keyed
+            // in. `host.state.activeSessionId` is the runtime id and could
+            // never match, so the guard read `host.activeSessionId` — no such
+            // property — and silently resolved to null on every turn: /new
+            // reset the forever-chat instead of compacting it.
+            if (activeBot && isCanonicalChatOnScreen(row, host.state.focusedStoredSessionId.get())) {
+              host.notify({
+                kind: 'info',
+                title: 'This chat never resets',
+                message:
+                  'Bot chats are one continuous conversation — compacting instead. ' +
+                  'For a throwaway session with this bot, use Sessions mode.'
+              })
+
+              return {
+                ...draft,
+                text: '/compact'
+              }
+            }
+          }
+
+          if (!/(^|\s)@[a-z0-9][a-z0-9_-]*/i.test(text)) {
+            return draft
+          }
+
+          const live = {
+            name: focusedMentionProfile(),
+            connectionId: String(host.state.connectionId?.get?.() || host.activeConnectionId?.() || 'local')
+          }
+
+          let cached = cachedUnionRoster()
+
+          if (!Array.isArray(cached?.profiles)) {
+            // Cold cache (the Bots pane never ran this launch): fill it the way
+            // the pane does. The profiles.list fallback below only knows the
+            // ACTIVE gateway and drops every cross-connection target (#94018).
+            await primeRoster()
+            cached = cachedUnionRoster()
+          }
+
+          const roster = Array.isArray(cached?.profiles) ? cached.profiles : null
+          let mentionedBots = roster ? resolveRosterMentions(text, roster, live) : []
+
+          if (!roster) {
+            try {
+              const res = await host.request<{ profiles?: RosterRow[] }>('profiles.list', {
+                include_sessions: false
+              })
+
+              // Same resolver as the cached path — renamed bots (display_name
+              // / ui_meta title) stay taggable when the roster cache is cold.
+              mentionedBots = resolveRosterMentions(text, res?.profiles ?? [], live).map(bot => ({
+                ...bot,
+                remoteSource: false
+              }))
+            } catch {
+              return draft
+            }
+          }
+
+          if (!mentionedBots.length) {
+            return draft
+          }
+
+          // Identification only. Each line names the agent the user's tag
+          // resolves to (friendly title + device for cross-connection rows),
+          // so the agent knows exactly who "@research-buddy" is. Cross-
+          // connection targets carry the '@connection' suffix message_agent
+          // resolves against the Desktop-synced relay roster.
+          const lines = mentionedBots.map(bot => {
+            const handle = botHandle(bot.name, bot)
+
+            const title = String(
+              botRosterMeta(bot, $botMeta.get())?.title || bot.ui_meta?.['hermes-bots']?.title || bot.title || ''
+            ).trim()
+
+            // message_agent only resolves canonical identities: the relay
+            // matches a roster row's handle/profile (± @connection-id), the
+            // local path a bare profile name or 'hermes'. botHandle() prefers
+            // the row's source-qualified UI alias ('default-vera'), which
+            // neither resolver accepts — annotate the canonical form instead.
+            const target =
+              bot.remoteSource && bot.connectionId ? `${bot.name}@${bot.connectionId}` : botHandle(bot.name)
+
+            // Local rows get the same annotation whenever their UI alias
+            // ('default-this-device') differs from the resolvable handle —
+            // otherwise the agent has only the alias to go on and the local
+            // path rejects it the same way (#97678).
+            const where = bot.remoteSource
+              ? ` — on ${bot.connectionLabel || bot.connectionId} (message_agent target: "${target}")`
+              : handle !== target
+                ? ` (message_agent target: "${target}")`
+                : ''
+
+            return `@${handle} = agent profile "${bot.name}"${title ? ` ("${title}")` : ''}${where}`
+          })
+
+          const note =
+            '\n\n[@mentions resolved from the Bot Mode roster — the user is referring to: ' +
+            lines.join('; ') +
+            '. If they want one of these agents contacted, compose your own message and send it with your message_agent tool (agents on other connected machines are reachable too — the Desktop relays it); never forward the user\u2019s text verbatim. If this session has no message_agent tool, agent messaging is unavailable here — say so.]'
+
+          return {
+            ...draft,
+            text: text + note
+          }
+        }
+      }
+    })
+
+    // Team Bots: the `/team` home, its sidebar row and a palette entry. All SDK-only, so the
+    // same registration works when this plugin runs inside a web-hosted client.
+    for (const contribution of [
+      {
+        id: 'team-page',
+        area: ROUTES_AREA,
+        data: { path: '/team' } satisfies RouteContribution,
+        render: () => <TeamPage />
+      },
+      {
+        id: 'team-nav',
+        area: SIDEBAR_NAV_AREA,
+        order: 40,
+        data: { codicon: 'organization', label: ctx.i18n.t('team.nav'), path: '/team' } satisfies SidebarNavContribution
+      },
+      {
+        id: 'team-open',
+        area: PALETTE_AREA,
+        data: {
+          id: 'team.open',
+          label: ctx.i18n.t('team.title'),
+          keywords: ['team', 'org', 'goals', 'budget', 'approvals'],
+          run: () => host.navigate('/team')
+        } satisfies PaletteContribution
+      }
+    ]) {
+      ctx.register(contribution)
+    }
+  }
+}

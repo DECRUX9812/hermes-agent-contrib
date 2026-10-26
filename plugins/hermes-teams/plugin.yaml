@@ -1,0 +1,11 @@
+name: hermes-teams
+version: "0.1.0"
+requires_hermes: ">=0.22.0"
+manifest_version: 2
+description: "Bot Mode v3 (hermes-plus overlay): role-based bots and team runs on the Kanban kernel. teams.* JSON-RPC methods for the desktop Teams view."
+author: DECRUX9812
+kind: standalone
+license: MIT
+tags:
+  - hermes-plus
+  - bot-mode

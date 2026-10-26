@@ -1,0 +1,11 @@
+name: hermes-bots-plus
+version: "0.1.0"
+requires_hermes: ">=0.22.0"
+manifest_version: 2
+description: "Gateway half of Bot Mode 2.0 (hermes-plus overlay): bots_team.* and bots_mailbox.* JSON-RPC methods for the hermes-bots-plus desktop plugin."
+author: DECRUX9812
+kind: standalone
+license: MIT
+tags:
+  - hermes-plus
+  - bot-mode
