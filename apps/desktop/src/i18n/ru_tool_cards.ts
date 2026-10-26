@@ -21,6 +21,7 @@ export const ruToolCards: ToolCardsCopy = {
   },
   usedTimes: (name, count) => `Использовано: ${name} ×${count}`,
   working: 'Выполняется…',
+  opening: host => `Открываю ${host}…`,
   awaitingApproval: 'Ждёт вашего подтверждения',
   reviewApproval: 'Проверить',
   failed: 'Ошибка',

@@ -25,6 +25,8 @@ export interface ToolCardsCopy {
   usedTimes: (name: string, count: number) => string
   /** Status while a call has no better line yet. */
   working: string
+  /** A live browser step heading to a site. */
+  opening: (host: string) => string
   awaitingApproval: string
   reviewApproval: string
   failed: string

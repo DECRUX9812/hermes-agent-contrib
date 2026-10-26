@@ -2,6 +2,7 @@ import type { ThreadMessage } from '@assistant-ui/react'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, expect, it } from 'vitest'
 
+import { DEFAULT_INTERFACE_MODE, setInterfaceMode } from '@/store/interface-mode'
 import { $hideCodeDiffs, $toolDisclosureStates, setHideCodeDiffs, setToolViewMode } from '@/store/tool-view'
 
 import { assistantMessage, stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '../test-utils'
@@ -31,6 +32,8 @@ function editMessage(toolName: string, failed = false): ThreadMessage {
 }
 
 beforeEach(() => {
+  // The preference under test is the Advanced one; Simple Mode's policy owns it otherwise.
+  setInterfaceMode('advanced')
   $toolDisclosureStates.set({})
   setHideCodeDiffs(false)
   setToolViewMode('product')
@@ -38,6 +41,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  setInterfaceMode(DEFAULT_INTERFACE_MODE)
   setHideCodeDiffs(false)
   setToolViewMode('product')
   $toolDisclosureStates.set({})

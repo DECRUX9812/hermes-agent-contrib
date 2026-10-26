@@ -156,6 +156,7 @@ export const arAssistant = {
       },
       usedTimes: (name, count) => `استُخدم ${name} ×${count}`,
       working: 'جارٍ العمل…',
+      opening: host => `جارٍ فتح ${host}…`,
       awaitingApproval: 'في انتظار موافقتك',
       reviewApproval: 'مراجعة',
       failed: 'فشل',

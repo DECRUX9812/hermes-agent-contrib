@@ -269,3 +269,47 @@ describe('toolCardsFromParts', () => {
     expect(groups[0].state).toBe('approval')
   })
 })
+
+describe('browser_exec scripts', () => {
+  const code = '# Open example.com and extract page title\nnew_tab("https://example.com")\nwait_for_load()\ntitle = js("document.title")\n'
+
+  it('finds the page in the script and says where a live step is going', () => {
+    const card = toolCardView(part({ args: { code }, toolName: 'browser_exec' }), {})
+
+    expect(card.family).toBe('browser')
+    expect(card.thumb).toEqual({ host: 'example.com', kind: 'site', url: 'https://example.com' })
+    expect(card.status).toBe('Opening example.com…')
+  })
+
+  it('keeps a page address reported only in the result text', () => {
+    const card = toolCardView(
+      part({ args: { code: 'print(1)' }, result: { output: 'Now at https://news.example.org/item?id=1.' }, toolName: 'browser_exec' })
+    )
+
+    expect(card.thumb).toMatchObject({ kind: 'site', url: 'https://news.example.org/item?id=1' })
+  })
+
+  it('takes the last screenshot a browser result lists', () => {
+    const card = toolCardView(
+      part({
+        args: { code },
+        result: { output: 'ok', screenshots: ['/tmp/a.png', '/tmp/b.png'] },
+        toolName: 'browser_exec'
+      })
+    )
+
+    expect(card.thumb).toEqual({ kind: 'screenshot', src: '/tmp/b.png', url: 'https://example.com' })
+  })
+})
+
+describe('fenced tool results', () => {
+  it('reads the JSON inside an untrusted_tool_result fence', () => {
+    const result =
+      '<untrusted_tool_result source="browser_exec">\nThe following is tool output.\n{"success": true, "exit_code": 0, "output": "PAGE_TITLE: Example Domain\\n", "url": "https://example.com/"}\n</untrusted_tool_result>'
+
+    const card = toolCardView(part({ args: { code: 'print(1)' }, result, toolName: 'browser_exec' }))
+
+    expect(card.output).toBe('PAGE_TITLE: Example Domain')
+    expect(card.thumb).toMatchObject({ kind: 'site', url: 'https://example.com/' })
+  })
+})

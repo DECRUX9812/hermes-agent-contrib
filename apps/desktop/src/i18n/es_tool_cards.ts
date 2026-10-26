@@ -21,6 +21,7 @@ export const esToolCards: ToolCardsCopy = {
   },
   usedTimes: (name, count) => `Usó ${name} ×${count}`,
   working: 'Trabajando…',
+  opening: host => `Abriendo ${host}…`,
   awaitingApproval: 'Esperando tu aprobación',
   reviewApproval: 'Revisar',
   failed: 'Error',

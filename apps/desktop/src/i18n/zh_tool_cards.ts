@@ -21,6 +21,7 @@ export const zhToolCards: ToolCardsCopy = {
   },
   usedTimes: (name, count) => `已使用 ${name} ×${count}`,
   working: '处理中…',
+  opening: host => `正在打开 ${host}…`,
   awaitingApproval: '等待你的批准',
   reviewApproval: '查看',
   failed: '失败',

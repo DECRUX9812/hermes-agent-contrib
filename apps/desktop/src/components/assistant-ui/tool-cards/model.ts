@@ -2,6 +2,7 @@ import {
   buildToolView,
   isRecord,
   isSilentTool,
+  parseMaybeObject,
   stableHash,
   type ToolPart,
   type ToolView
@@ -136,13 +137,25 @@ const TITLELESS_TOOLS = new Set([
   'browser_vision'
 ])
 
-function toolCardStatus(part: ToolPart, view: ToolView): string {
+function toolCardStatus(part: ToolPart, view: ToolView, family: ToolCardFamily, pageUrl?: string): string {
   if (part.interrupted) {
     return t('stopped')
   }
 
   if (TITLELESS_TOOLS.has(part.toolName)) {
     return t(`statuses.${part.toolName}.${view.status === 'running' ? 'pending' : 'done'}`)
+  }
+
+  // A live scripted browser step (browser_exec has no url arg, its page is
+  // inside the code) says where it is going; tools with a url arg already
+  // title themselves that way, and the settled line keeps the tool's title.
+  if (
+    view.status === 'running' &&
+    pageUrl &&
+    (family === 'browser' || family === 'web') &&
+    !parseMaybeObject(part.args).url
+  ) {
+    return translateNow('assistant.toolCards.opening', new URL(pageUrl).hostname.replace(/^www\./, ''))
   }
 
   if (view.title) {
@@ -171,7 +184,7 @@ export function toolCardView(part: ToolPart, options: { approvalPending?: boolea
     family,
     icon: toolCardIcon(part.toolName, family),
     name: toolCardName(part.toolName, family),
-    status: toolCardStatus(part, view),
+    status: toolCardStatus(part, view, family, pageUrl),
     state,
     args: toolCardArgs(part.args),
     durationLabel: view.durationLabel,

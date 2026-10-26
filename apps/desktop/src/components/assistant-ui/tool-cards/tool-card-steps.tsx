@@ -26,10 +26,10 @@ function stepScreenshot(card: ToolCardView): string {
  *  (a click or screenshot stays on the page the last navigation opened). */
 export function stepPageUrl(cards: readonly ToolCardView[], index: number): string {
   for (let at = Math.min(index, cards.length - 1); at >= 0; at -= 1) {
-    const thumb = cards[at]?.thumb
+    const url = cards[at]?.thumb?.url
 
-    if (thumb?.kind === 'site' && /^https?:\/\//i.test(thumb.url)) {
-      return thumb.url
+    if (url && /^https?:\/\//i.test(url)) {
+      return url
     }
   }
 
@@ -117,13 +117,17 @@ export function BrowserSteps({ group }: { group: ToolCardGroup }) {
         {shot ? (
           <StepShot key={shot} src={shot} />
         ) : (
-          <div className="flex h-full w-full flex-col items-center justify-center gap-1 text-ui-xs text-fg-subtle">
-            {host && isPublicHost(host) && step.thumb?.kind === 'site' ? (
-              <span className="inline-grid size-3.5 place-items-center">
-                <Favicon fallback={<span className="block size-full" />} url={step.thumb.url} />
+          <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs text-fg-subtle">
+            {pageUrl && isPublicHost(new URL(pageUrl).hostname) ? (
+              <span className="inline-grid size-6 place-items-center">
+                <Favicon fallback={<Codicon name="globe" size={20} />} url={pageUrl} />
               </span>
             ) : null}
-            {host ? <span className="truncate">{host}</span> : null}
+            {pageUrl ? (
+              <span className="max-w-full truncate text-ui-sm text-fg-secondary">{hostPathLabel(pageUrl)}</span>
+            ) : host ? (
+              <span className="truncate">{host}</span>
+            ) : null}
             <span>{copy.noScreenshot}</span>
           </div>
         )}

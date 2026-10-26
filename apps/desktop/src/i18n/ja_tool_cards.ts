@@ -21,6 +21,7 @@ export const jaToolCards: ToolCardsCopy = {
   },
   usedTimes: (name, count) => `${name} ×${count} 回使用`,
   working: '処理中…',
+  opening: host => `${host} を開いています…`,
   awaitingApproval: '承認待ち',
   reviewApproval: '確認',
   failed: '失敗',

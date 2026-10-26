@@ -206,6 +206,7 @@ export const zhHantAssistant = {
       },
       usedTimes: (name, count) => `已使用 ${name} ×${count}`,
       working: '處理中…',
+      opening: host => `正在開啟 ${host}…`,
       awaitingApproval: '等待你的批准',
       reviewApproval: '檢視',
       failed: '失敗',

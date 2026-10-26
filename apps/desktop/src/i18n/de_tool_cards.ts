@@ -21,6 +21,7 @@ export const deToolCards: ToolCardsCopy = {
   },
   usedTimes: (name, count) => `${name} ×${count} genutzt`,
   working: 'Läuft…',
+  opening: host => `Öffne ${host}…`,
   awaitingApproval: 'Wartet auf Ihre Freigabe',
   reviewApproval: 'Prüfen',
   failed: 'Fehlgeschlagen',
