@@ -827,6 +827,93 @@ def delete_link(parent_id: str = Query(...), child_id: str = Query(...), board: 
         return {"ok": bool(kanban_db.unlink_tasks(conn, parent_id, child_id))}
 
 
+# --- Squads (hermes_cli.kanban_squads) -------------------------------------
+
+_squad_error_400 = partial(_map_errors, 400, ValueError)  # SquadError is a ValueError
+
+
+@router.get("/squads/roles")
+def list_squad_roles():
+    from hermes_cli import kanban_squads as sq
+
+    with _squad_error_400():
+        return {"roles": sq.roles_view()}
+
+
+@router.post("/squads/roles/{role_id}/bot")
+def ensure_squad_role_bot(role_id: str):
+    from hermes_cli import kanban_squads as sq
+
+    with _squad_error_400(), _map_errors(409, FileExistsError):
+        profile, created = sq.ensure_role_bot(sq.get_role(role_id))
+        return {"profile": profile, "created": created}
+
+
+@router.get("/squads/templates")
+def list_squad_templates():
+    from hermes_cli import kanban_squads as sq
+
+    with _squad_error_400():
+        return {"templates": [t.as_dict() for t in sq.templates().values()]}
+
+
+class StartSquadBody(BaseModel):
+    template: str
+    goal: str
+    assignees: dict[str, str] = Field(default_factory=dict)
+    create_missing: bool = False
+    workspace_kind: Optional[str] = None
+    workspace_path: Optional[str] = None
+    idempotency_key: Optional[str] = None
+
+
+@router.post("/squads/runs")
+def start_squad(payload: StartSquadBody, board: Optional[str] = Query(None)):
+    from hermes_cli import kanban_squads as sq
+
+    with _squad_error_400(), _map_errors(409, FileExistsError):
+        template = sq.get_template(payload.template)
+        catalog = sq.roles()
+        assignees = sq.resolve_assignees(template, catalog, payload.assignees, create_missing=payload.create_missing)
+        with _board_conn(board) as (board, conn):
+            root = sq.start_run(conn, template=template, goal=payload.goal, catalog=catalog, assignees=assignees,
+                                workspace_kind=payload.workspace_kind, workspace_path=payload.workspace_path,
+                                idempotency_key=payload.idempotency_key)
+            return {"run": sq.run_view(conn, root)}
+
+
+@router.get("/squads/runs")
+def list_squads(limit: int = Query(20, ge=1, le=200), board: Optional[str] = Query(None)):
+    from hermes_cli import kanban_squads as sq
+
+    with _board_conn(board) as (board, conn):
+        return {"runs": sq.list_runs(conn, limit=limit)}
+
+
+@router.get("/squads/runs/{run_id}")
+def get_squad(run_id: str, board: Optional[str] = Query(None)):
+    from hermes_cli import kanban_squads as sq
+
+    with _board_conn(board) as (board, conn), _map_errors(404, sq.SquadError):
+        return {"run": sq.run_view(conn, run_id)}
+
+
+class SquadMessageBody(BaseModel):
+    body: str
+    step: Optional[str] = None
+    author: Optional[str] = "dashboard"
+
+
+@router.post("/squads/runs/{run_id}/messages")
+def post_squad_message(run_id: str, payload: SquadMessageBody, board: Optional[str] = Query(None)):
+    from hermes_cli import kanban_squads as sq
+
+    with _board_conn(board) as (board, conn), _squad_error_400():
+        comment_id = sq.post_message(conn, run_id, body=payload.body, author=payload.author or "dashboard",
+                                     step=payload.step)
+        return {"comment_id": comment_id, "run": sq.run_view(conn, run_id)}
+
+
 def _bulk_apply_one(conn, tid: str, payload: BulkTaskBody, board: Optional[str], entry: dict) -> None:
     """Apply the bulk patch to one task, recording refusals in ``entry`` without aborting the
     remaining ops — except a rejected status verb (``_StatusRejected`` propagates)."""
