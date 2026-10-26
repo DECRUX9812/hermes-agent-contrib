@@ -288,8 +288,9 @@ function ChatModal({ profile, onClose }) {
     onOpenChange: next => { if (!next) onClose() },
     children: jsxs(DialogContent, {
         showCloseButton: false,
-        className: 'w-[460px] max-w-[calc(100vw-1rem)]',
-        bodyClassName: 'flex max-h-[80vh] flex-col gap-0 overflow-hidden p-0',
+        className: 'max-w-[calc(100vw-1rem)]',
+        style: { width: '460px' },
+        bodyClassName: 'flex flex-col gap-0 overflow-hidden p-0',
         children: [
           jsxs('div', {
             className: 'flex items-center gap-2.5 border-b border-(--ui-stroke-secondary) px-3.5 py-2.5',
@@ -335,8 +336,9 @@ function ChatModal({ profile, onClose }) {
               msgs.length === 0 && !pending &&
                 jsx('div', { className: 'py-12 text-center text-xs text-(--ui-text-tertiary)', children: '🐾 Say hi — the pet picks up its Bot Chat session.' }),
               msgs.map((m, i) => jsxs('div', {
+                style: { maxWidth: '85%' },
                 className: cn(
-                  'max-w-[85%] rounded-lg border border-(--ui-stroke-secondary) px-2.5 py-1.5 text-xs leading-relaxed whitespace-pre-wrap',
+                  'rounded-lg border border-(--ui-stroke-secondary) px-2.5 py-1.5 text-xs leading-relaxed whitespace-pre-wrap',
                   m.role === 'user' ? 'self-end bg-(--ui-bg-quinary)' : 'self-start bg-(--ui-bg-quaternary)'
                 ),
                 children: [
@@ -427,7 +429,8 @@ function OfficePanel({ data, onChat }) {
   }
 
   return jsxs('div', {
-    className: 'flex max-h-[min(28rem,70vh)] flex-col gap-2',
+    className: 'flex flex-col gap-2',
+    style: { maxHeight: 'min(28rem, 70vh)' },
     children: [
       jsxs('div', {
         className: 'flex items-center gap-2',
@@ -452,7 +455,8 @@ function OfficePanel({ data, onChat }) {
       agents.length === 0
         ? jsx('div', { className: 'py-4 text-center text-xs text-(--ui-text-tertiary)', children: 'No pets in the office yet. Start a Hermes session.' })
         : jsx('div', {
-            className: 'grid auto-rows-min grid-cols-2 gap-1.5 overflow-y-auto',
+            className: 'grid grid-cols-2 gap-1.5 overflow-y-auto',
+            style: { gridAutoRows: 'min-content' },
             children: agents.map(a => jsx(AgentCard, { a, now: (data && data.ts) || Date.now() / 1000, onChat }, a.id))
           }),
       agents.length > 0 && jsx('div', { className: 'text-[0.6875rem] text-(--ui-text-tertiary)', children: 'Click a pet to chat with it.' }),
@@ -507,7 +511,9 @@ function PetsChip() {
           jsx(PopoverContent, {
             align: 'end',
             side: 'top',
-            className: 'w-[min(26rem,calc(100vw-1rem))] p-3',
+            // Inline sizes throughout: arbitrary classes used only by a plugin are not in the host stylesheet.
+            className: 'p-3',
+            style: { width: 'min(26rem, calc(100vw - 1rem))', maxWidth: 'calc(100vw - 1rem)' },
             children: jsx(OfficePanel, {
               data,
               onChat: profile => {
