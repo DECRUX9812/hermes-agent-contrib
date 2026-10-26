@@ -3992,6 +3992,11 @@ catalog: CatalogTranslations
       command: string
       commandDetails: string
       moreOptions: string
+      allowOnce: string
+      alwaysAllowHere: string
+      deny: string
+      cardTitle: string
+      cardDetailsTitle: string
       allowSession: string
       alwaysAllowMenu: string
       jumpToApproval: string
@@ -3999,6 +4004,9 @@ catalog: CatalogTranslations
       alwaysTitle: string
       alwaysDescription: (pattern: string) => string
       alwaysAllow: string
+      alwaysConfirmPrompt: (pattern: string) => string
+      decisionRecorded: (choice: string) => string
+      noLongerPending: string
     }
     clarify: ClarifyCopy
     toolCards: ToolCardsCopy

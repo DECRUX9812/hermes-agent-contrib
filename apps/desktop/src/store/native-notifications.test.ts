@@ -304,7 +304,10 @@ describe('sendTestNativeNotification', () => {
 })
 
 describe('respondToApprovalAction', () => {
-  const request = vi.fn().mockResolvedValue({ resolved: true })
+  const request = vi.fn().mockResolvedValue({
+    approval: { choice: 'once', status: 'allowed' },
+    resolved: true
+  })
 
   beforeEach(() => {
     clearAllPrompts()
@@ -316,16 +319,15 @@ describe('respondToApprovalAction', () => {
     $gateway.set(null)
   })
 
-  it('approves via approval.respond {choice: "once"} and clears the prompt', async () => {
+  it('approves through the durable journal and clears the prompt', async () => {
     setActiveSessionId('bg')
-    setApprovalRequest({ command: 'rm -rf /', description: 'dangerous', sessionId: 'bg' })
+    setApprovalRequest({ command: 'rm -rf /', description: 'dangerous', requestId: 'approve-1', sessionId: 'bg' })
 
-    await respondToApprovalAction('bg', 'approve')
+    await respondToApprovalAction('bg', 'approve:approve-1')
 
     expect(request).toHaveBeenCalledWith(
-      'approval.respond',
-      { all: false, choice: 'once', session_id: 'bg' },
-      // #55433: the respond RPC carries an explicit deadline covering the backend's approvals window.
+      'fork.approvals.decide',
+      { choice: 'once', request_id: 'approve-1', session_id: 'bg' },
       APPROVAL_RESPOND_REQUEST_TIMEOUT_MS,
       undefined
     )
@@ -338,14 +340,8 @@ describe('respondToApprovalAction', () => {
     setApprovalRequest({ command: 'second', description: 'second', requestId: 'r2', sessionId: 'bg' })
     await respondToApprovalAction('bg', 'approve:r1')
     expect(request).toHaveBeenCalledWith(
-      'approval.respond',
-      {
-        all: false,
-        choice: 'once',
-        request_id: 'r1',
-        session_id: 'bg'
-      },
-      // #55433: the respond RPC carries an explicit deadline covering the backend's approvals window.
+      'fork.approvals.decide',
+      { choice: 'once', request_id: 'r1', session_id: 'bg' },
       APPROVAL_RESPOND_REQUEST_TIMEOUT_MS,
       undefined
     )
@@ -354,12 +350,12 @@ describe('respondToApprovalAction', () => {
     expect($approvalRequest.get()?.requestId).toBe('r2')
   })
 
-  it('rejects via approval.respond {choice: "deny"}', async () => {
-    await respondToApprovalAction('bg', 'reject')
+  it('denies through the durable journal', async () => {
+    setApprovalRequest({ command: 'dangerous', description: 'dangerous', requestId: 'r-deny', sessionId: 'bg' })
+    await respondToApprovalAction('bg', 'reject:r-deny')
     expect(request).toHaveBeenCalledWith(
-      'approval.respond',
-      { all: false, choice: 'deny', session_id: 'bg' },
-      // #55433: the respond RPC carries an explicit deadline covering the backend's approvals window.
+      'fork.approvals.decide',
+      { choice: 'deny', request_id: 'r-deny', session_id: 'bg' },
       APPROVAL_RESPOND_REQUEST_TIMEOUT_MS,
       undefined
     )
