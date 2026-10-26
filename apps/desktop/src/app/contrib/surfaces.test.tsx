@@ -30,9 +30,14 @@ vi.mock('../shell/hooks/use-statusbar-items', () => ({
 vi.mock('../shell/statusbar-controls', () => ({ StatusbarControls: () => null }))
 vi.mock('../routes', () => ({
   contributedRoutes: () => [],
+  forgetPagePath: () => {},
+  isPendingPagePath: () => false,
   NEW_CHAT_ROUTE: '/new',
+  PENDING_PAGE_GRACE_MS: 12_000,
+  rememberContributedPaths: () => {},
   ROUTES_AREA: 'routes',
-  sessionRoute: (id: string) => `/${id}`
+  sessionRoute: (id: string) => `/${id}`,
+  SIDEBAR_NAV_AREA: 'sidebar.nav'
 }))
 vi.mock('./latest-actions', () => ({ latestChatActions: () => ({}), latestSidebarActions: () => ({}) }))
 vi.mock('./panes', () => ({ setStatusbarItemGroup: vi.fn(), useStatusbarContributions: () => [] }))

@@ -120,6 +120,95 @@ function isContributedPath(pathname: string): boolean {
   return contributedRoutes().some(route => route.path === pathname)
 }
 
+// ── Pending plugin pages ─────────────────────────────────────────────────────
+// Disk plugins load asynchronously (cold boot, hot reload, folder reconcile),
+// so a plugin page's path can be on screen — a reload on `/team`, a click in
+// the reload window — before (or between) its `routes` registration. Without
+// a memory of it, `/team` parses as the session id "team": the workspace
+// flashes an empty "New session" with a resume spinner and then falls back to
+// a fresh chat. Paths a plugin has contributed before (persisted), or that a
+// `sidebar.nav` row points at right now, are treated as PENDING pages instead:
+// never a session id; the surface shows a neutral placeholder until the route
+// lands. A path that never re-registers is forgotten after the grace period.
+
+const KNOWN_PAGE_PATHS_KEY = 'hermes.desktop.knownPagePaths'
+const KNOWN_PAGE_PATHS_MAX = 32
+export const PENDING_PAGE_GRACE_MS = 12_000
+
+function readKnownPagePaths(): string[] {
+  try {
+    const raw = globalThis.localStorage?.getItem(KNOWN_PAGE_PATHS_KEY)
+    const parsed: unknown = raw ? JSON.parse(raw) : []
+
+    return Array.isArray(parsed) ? parsed.filter((p): p is string => typeof p === 'string' && p.startsWith('/')) : []
+  } catch {
+    return []
+  }
+}
+
+let knownPagePaths: string[] | null = null
+
+function knownPages(): string[] {
+  knownPagePaths ??= readKnownPagePaths()
+
+  return knownPagePaths
+}
+
+function writeKnownPagePaths(paths: string[]): void {
+  knownPagePaths = paths.slice(-KNOWN_PAGE_PATHS_MAX)
+
+  try {
+    globalThis.localStorage?.setItem(KNOWN_PAGE_PATHS_KEY, JSON.stringify(knownPagePaths))
+  } catch {
+    // Storage full/blocked: the in-memory list still covers this page load.
+  }
+}
+
+/** Remember every currently contributed page path (call on `routes` changes). */
+export function rememberContributedPaths(paths: readonly string[]): void {
+  const known = knownPages()
+  const fresh = paths.filter(p => p.startsWith('/') && !RESERVED_PATHS.has(p) && !known.includes(p))
+
+  if (fresh.length) {
+    writeKnownPagePaths([...known, ...fresh])
+  }
+}
+
+/** Drop a remembered page path that never re-registered (uninstalled plugin). */
+export function forgetPagePath(path: string): void {
+  const known = knownPages()
+
+  if (known.includes(path)) {
+    writeKnownPagePaths(known.filter(p => p !== path))
+  }
+}
+
+function navContributedPaths(contributions: readonly Contribution[] = registry.getArea(SIDEBAR_NAV_AREA)): string[] {
+  return contributions
+    .map(c => (c.data as Partial<SidebarNavContribution> | undefined)?.path ?? '')
+    .filter(p => p.startsWith('/'))
+}
+
+/** A plugin page path whose route is not registered (yet): never a session.
+ *  React callers pass their `useContributions` snapshots (React Compiler can
+ *  memoize a bare registry read across the registration that should flip it). */
+export function isPendingPagePath(
+  pathname: string,
+  navContributions?: readonly Contribution[],
+  routeContributions?: readonly Contribution[]
+): boolean {
+  if (RESERVED_PATHS.has(pathname) || contributedRoutes(routeContributions).some(route => route.path === pathname)) {
+    return false
+  }
+
+  return knownPages().includes(pathname) || navContributedPaths(navContributions).includes(pathname)
+}
+
+/** Test seam: reset the in-memory cache so a test can seed localStorage. */
+export function resetKnownPagePathsForTest(): void {
+  knownPagePaths = null
+}
+
 // ── Contributed sidebar nav — the `sidebar.nav` registry area ────────────────
 // A DATA contribution adds a row to the sidebar's top nav (below Artifacts).
 // Pair with a ROUTES_AREA page: the row navigates to `path` and lights up
@@ -204,7 +293,12 @@ export function isNewChatRoute(pathname: string): boolean {
 export function routeSessionId(pathname: string): string | null {
   const path = routePathname(pathname)
 
-  if (!path.startsWith(SESSION_ROUTE_PREFIX) || RESERVED_PATHS.has(path) || isContributedPath(path)) {
+  if (
+    !path.startsWith(SESSION_ROUTE_PREFIX) ||
+    RESERVED_PATHS.has(path) ||
+    isContributedPath(path) ||
+    isPendingPagePath(path)
+  ) {
     return null
   }
 
@@ -241,7 +335,7 @@ export function appViewForPath(pathname: string): AppView {
     return 'chat'
   }
 
-  if (isContributedPath(path)) {
+  if (isContributedPath(path) || isPendingPagePath(path)) {
     return 'extension'
   }
 

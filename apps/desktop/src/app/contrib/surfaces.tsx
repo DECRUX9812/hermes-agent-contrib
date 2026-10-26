@@ -8,7 +8,7 @@
  */
 
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, lazy, memo, type ReactNode, Suspense, useMemo } from 'react'
+import { type ComponentProps, lazy, memo, type ReactNode, Suspense, useEffect, useMemo, useState } from 'react'
 import { Navigate, Route, Routes, useParams } from 'react-router'
 
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
@@ -22,7 +22,17 @@ import { $freshDraftReady, $gatewayState } from '@/store/session'
 import { ChatView } from '../chat'
 import { ChatSidebar } from '../chat/sidebar'
 import { TerminalPaneChrome } from '../right-sidebar/terminal/chrome'
-import { contributedRoutes, NEW_CHAT_ROUTE, ROUTES_AREA, sessionRoute } from '../routes'
+import {
+  contributedRoutes,
+  forgetPagePath,
+  isPendingPagePath,
+  NEW_CHAT_ROUTE,
+  PENDING_PAGE_GRACE_MS,
+  rememberContributedPaths,
+  ROUTES_AREA,
+  sessionRoute,
+  SIDEBAR_NAV_AREA
+} from '../routes'
 import { useStatusSnapshot } from '../shell/hooks/use-status-snapshot'
 import { useStatusbarItems } from '../shell/hooks/use-statusbar-items'
 import { ModelMenuPanel } from '../shell/model-menu-panel'
@@ -44,6 +54,44 @@ export function LegacySessionRedirect() {
   const { sessionId } = useParams()
 
   return <Navigate replace to={sessionId ? sessionRoute(sessionId) : NEW_CHAT_ROUTE} />
+}
+
+/** `:sessionId` guard: a plugin page path whose route has not registered yet
+ *  (async disk plugins: cold boot, hot reload) renders a neutral placeholder
+ *  instead of a "New session" chat resuming a session named after the path.
+ *  The static route wins as soon as the plugin registers; a path that never
+ *  does is forgotten and falls back to a new chat after the grace period. */
+export function SessionRouteGate({ chatView }: { chatView: ReactNode }) {
+  const { sessionId } = useParams()
+  // Subscribed so the gate re-evaluates when a nav row or route lands.
+  const navSnapshot = useContributions(SIDEBAR_NAV_AREA)
+  const routeSnapshot = useContributions(ROUTES_AREA)
+  const path = sessionId ? `/${sessionId}` : ''
+  const pending = Boolean(path) && isPendingPagePath(path, navSnapshot, routeSnapshot)
+  const [expired, setExpired] = useState<string | null>(null)
+
+  useEffect(() => {
+    if (!pending) {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      forgetPagePath(path)
+      setExpired(path)
+    }, PENDING_PAGE_GRACE_MS)
+
+    return () => clearTimeout(timer)
+  }, [path, pending])
+
+  if (pending && expired === path) {
+    return <Navigate replace to={NEW_CHAT_ROUTE} />
+  }
+
+  if (pending) {
+    return <div aria-busy="true" className="h-full min-h-0 bg-(--ui-chat-surface-background)" data-slot="pending-page" />
+  }
+
+  return chatView
 }
 
 export const SidebarSurface = memo(function SidebarSurface({
@@ -129,6 +177,10 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
   const routeSnapshot = useContributions(ROUTES_AREA)
   const routeContributions = contributedRoutes(routeSnapshot)
 
+  useEffect(() => {
+    rememberContributedPaths(routeContributions.map(route => route.path))
+  }, [routeContributions])
+
   const modelMenuContent = useMemo(
     () =>
       gatewayState === 'open' ? (
@@ -187,7 +239,7 @@ export const ChatRoutesSurface = memo(function ChatRoutesSurface({
   return (
     <Routes>
       <Route element={chatView} index />
-      <Route element={chatView} path=":sessionId" />
+      <Route element={<SessionRouteGate chatView={chatView} />} path=":sessionId" />
       <Route element={page(<CapabilitiesView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="capabilities" />
       <Route element={page(<MessagingView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="messaging" />
       <Route element={page(<ArtifactsView setStatusbarItemGroup={setStatusbarItemGroup} />)} path="artifacts" />
