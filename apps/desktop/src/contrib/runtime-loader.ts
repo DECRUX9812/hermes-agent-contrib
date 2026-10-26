@@ -44,6 +44,7 @@ import { createPluginContext, declaredCapabilities, type HermesPlugin } from './
 import {
   $pluginRecords,
   dropPlugin,
+  patchPlugin,
   pluginActive,
   type PluginKind,
   publishPlugin,
@@ -498,6 +499,7 @@ export async function loadRuntimePlugin(
 
         if (twin?.kind === 'bundled' && twin.status === 'loaded') {
           void setPluginEnabled(replaced, false)
+          patchPlugin(replaced, { replacedBy: plugin.id })
         }
       }
 

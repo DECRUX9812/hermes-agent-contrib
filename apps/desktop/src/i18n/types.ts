@@ -634,6 +634,9 @@ catalog: CatalogTranslations
       enable: string
       disable: string
       failed: string
+      loaded: string
+      off: string
+      replacedBy: (name: string) => string
       kinds: { bundled: string; disk: string; runtime: string }
       installModal: {
         installFromGit: string

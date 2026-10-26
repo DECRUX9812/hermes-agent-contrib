@@ -576,9 +576,13 @@ describe('runtime plugins that replace a bundled twin', () => {
 
       expect(id).toBe('twin-plus')
       expect(deactivate).toHaveBeenCalledTimes(1)
-      expect($pluginRecords.get()['bundled-twin']).toMatchObject({ status: 'disabled' })
+      expect($pluginRecords.get()['bundled-twin']).toMatchObject({ replacedBy: 'twin-plus', status: 'disabled' })
       expect($pluginDecisions.get()['bundled-twin']).toBe(false)
       expect($pluginRecords.get()['twin-plus']).toMatchObject({ kind: 'disk', status: 'loaded' })
+
+      // Switching the twin back on is the user's call, and it is no longer "replaced".
+      await setPluginEnabled('bundled-twin', true)
+      expect($pluginRecords.get()['bundled-twin']?.replacedBy).toBeUndefined()
     } finally {
       createObjectURL.mockRestore()
       revokeObjectURL.mockRestore()

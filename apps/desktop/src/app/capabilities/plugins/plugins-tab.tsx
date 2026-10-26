@@ -160,6 +160,23 @@ function KindBadge({ kind }: { kind: PackageKind }) {
   )
 }
 
+/** The desktop half's live state. A bundled plugin a runtime one took over reads
+ *  "Replaced by …" instead of a bare "Disabled", so the switch-off is explained. */
+function DesktopStatusPill({ record }: { record: PluginRecord }) {
+  const { t } = useI18n()
+  const d = t.settings.plugins
+
+  if (record.status === 'error') {
+    return <Pill tone="primary">{d.failed}</Pill>
+  }
+
+  if (record.status === 'disabled') {
+    return <Pill>{record.replacedBy ? d.replacedBy(record.replacedBy) : d.off}</Pill>
+  }
+
+  return <Pill tone="success">{d.loaded}</Pill>
+}
+
 // Official in the accent, verified green with a check, community stays neutral.
 const TIER_TONE: Record<string, 'muted' | 'primary' | 'success'> = { official: 'primary', verified: 'success' }
 
@@ -391,7 +408,7 @@ function PackageRow({
                   {server.name}: {p.serverStates[server.state]}
                 </Pill>
               ))}
-              {desktop?.status === 'error' && <Pill tone="primary">{d.failed}</Pill>}
+              {desktop && <DesktopStatusPill record={desktop} />}
             </div>
             {(desktop?.status === 'error' ? desktop.error : pkg.description) && (
               <div

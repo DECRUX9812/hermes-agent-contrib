@@ -30,6 +30,8 @@ export interface PluginRecord {
   packageName?: string
   /** Where that package came from (catalog sidecar or git remote), when known. */
   packageOrigin?: { catalogName?: string; repo?: string; sha?: string }
+  /** Id of the runtime plugin that switched this bundled one off (`HermesPlugin.replaces`). */
+  replacedBy?: string
 }
 
 // Explicit user enable/disable choices, id -> boolean. ABSENCE means "no
@@ -143,6 +145,7 @@ export async function setPluginEnabled(id: string, enabled: boolean): Promise<vo
   }
 
   if (enabled) {
+    patchPlugin(id, { replacedBy: undefined })
     await handle.activate()
   } else {
     handle.deactivate()

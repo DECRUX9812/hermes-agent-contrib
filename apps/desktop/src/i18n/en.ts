@@ -777,6 +777,9 @@ export const en: Translations = {
       enable: 'Enable',
       disable: 'Disable',
       failed: 'failed',
+      loaded: 'Loaded',
+      off: 'Disabled',
+      replacedBy: name => `Replaced by ${name}`,
       kinds: { bundled: 'bundled', disk: 'on disk', runtime: 'runtime' },
       installModal: {
         installFromGit: 'Install from Git',
