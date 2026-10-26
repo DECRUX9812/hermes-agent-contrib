@@ -30,11 +30,18 @@ import { resolveGatewayVersion } from '../../electron/gateway-version'
  * only safe browser equivalents for machine-level capabilities.
  */
 export function installBrowserDesktopBridge(): boolean {
-  if (window.hermesDesktop) {return false}
+  if (window.hermesDesktop) {
+    console.log('[browser-bridge] window.hermesDesktop already exists, skipping')
+    return false
+  }
 
   const bootstrap = browserBootstrap()
 
-  if (!bootstrap) {return false}
+  if (!bootstrap) {
+    console.log('[browser-bridge] no bootstrap found, skipping')
+    return false
+  }
+  console.log('[browser-bridge] installing browser desktop bridge with bootstrap:', bootstrap)
 
   const api = <T>(request: HermesApiRequest) => browserApi<T>(bootstrap, request)
 

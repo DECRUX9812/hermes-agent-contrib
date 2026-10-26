@@ -37,9 +37,11 @@ import type { HermesReadDirResult, HermesReadFileErrorResult } from '@/global'
 async function fetchDesktopPluginsRoot(): Promise<string> {
   try {
     const { root } = await hermesApi<{ root?: string }>({ path: '/api/desktop-plugins/root' })
+    console.log('[browser-plugins] hermesApi /api/desktop-plugins/root success:', root)
 
     return root || ''
-  } catch {
+  } catch (err) {
+    console.error('[browser-plugins] hermesApi /api/desktop-plugins/root failed:', err)
     // No route / offline backend — degrade to "no disk plugins" exactly like a
     // shell without the capability, rather than throwing inside the scan.
     return ''
@@ -167,6 +169,7 @@ function createCapability(): BrowserDesktopPluginCapability {
   return {
     async desktopPluginsRoot() {
       const root = await fetchDesktopPluginsRoot()
+      console.log('[browser-plugins] fetchDesktopPluginsRoot returned:', root)
 
       installedRoot = root
 
@@ -178,6 +181,7 @@ function createCapability(): BrowserDesktopPluginCapability {
     },
 
     async readDir(path: string) {
+      console.log('[browser-plugins] readDir called for path:', path)
       const root = await rootFor(path)
 
       if (!root) {

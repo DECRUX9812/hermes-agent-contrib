@@ -219,7 +219,7 @@ def _list_root_entries(root: Path) -> list[dict]:
                 entries.append({
                     "name": entry.name,
                     "path": str(root / entry.name),
-                    "isDirectory": entry.is_dir(follow_symlinks=False),
+                    "isDirectory": entry.is_dir(follow_symlinks=True),
                 })
     except (FileNotFoundError, NotADirectoryError):
         # No plugins yet — an empty listing, not an error: the loader treats a

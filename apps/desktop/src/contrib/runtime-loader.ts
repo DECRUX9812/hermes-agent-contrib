@@ -395,6 +395,7 @@ export async function loadRuntimePlugin(
   installPluginSdk()
 
   try {
+    console.log(`[plugins] loading runtime plugin: ${origin}`)
     const unsupported = unsupportedImports(source)
 
     if (unsupported.length > 0) {
@@ -596,6 +597,7 @@ interface DiskRoot {
  *  reconcile, so unified packages' desktop halves are current before we scan. */
 async function diskRoots(): Promise<DiskRoot[]> {
   const root = await window.hermesDesktop?.desktopPluginsRoot?.()
+  console.log('[plugins] window.hermesDesktop?.desktopPluginsRoot answered:', root)
 
   return root ? [{ dir: root, entrySegments: ['plugin.js'] }] : []
 }
@@ -893,6 +895,7 @@ async function scanDiskPlugins(reloadKnown = false): Promise<void> {
 
   try {
     const roots = await diskRoots()
+    console.log(`[plugins] scanDiskPlugins roots:`, roots.map(r => r.dir))
 
     if (roots.length === 0) {
       return
@@ -918,6 +921,7 @@ async function scanDiskPlugins(reloadKnown = false): Promise<void> {
 
         try {
           file = await resolveDiskPluginEntry(desktop, dir.path, root.entrySegments)
+          console.log(`[plugins] dir: ${dir.name}, resolved file: ${file}`)
         } catch {
           continue // Folder changed during the metadata walk; the next tick reconciles.
         }
