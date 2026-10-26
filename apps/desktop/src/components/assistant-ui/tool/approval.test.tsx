@@ -82,6 +82,14 @@ describe('ApprovalCard', () => {
     expect((await screen.findByRole('status')).textContent).toContain('Decision recorded: Always allow')
   })
 
+  it('hides Always allow when the backend will not honour a permanent allow', () => {
+    render(<ApprovalCard onAnswer={vi.fn(async () => decision())} request={{ ...request, allowPermanent: false }} />)
+
+    expect(screen.getByRole('button', { name: 'Allow once' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Deny' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Always allow' })).toBeNull()
+  })
+
   it('shows the recorded row when another answer already resolved the request', async () => {
     const onAnswer = vi.fn(async () =>
       decision({

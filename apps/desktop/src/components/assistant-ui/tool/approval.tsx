@@ -146,7 +146,7 @@ export function ApprovalCard({
             >
               {copy.allowOnce}
             </Button>
-            {confirmAlways ? (
+            {request.allowPermanent === false ? null : confirmAlways ? (
               <>
                 <span className="min-w-0 flex-1 text-right text-ui-xs text-fg-secondary">
                   {copy.alwaysConfirmPrompt(pattern)}
