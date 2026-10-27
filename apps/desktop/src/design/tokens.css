@@ -160,3 +160,8 @@
   background: transparent;
   font-weight: 500;
 }
+
+/* Arc rings on a card-radius host stay concentric (audit m5): the ring defaults to rounded-md. */
+:is(.rounded-\[8px\], .rounded-\[9px\], .rounded-\[0\.625rem\]) > .arc-border {
+  --arc-radius: var(--radius-card);
+}
