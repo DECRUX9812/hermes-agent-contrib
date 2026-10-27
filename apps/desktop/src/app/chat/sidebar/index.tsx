@@ -6,6 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'react-router'
 
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
+import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
@@ -59,6 +60,7 @@ import {
   $sidebarStatusFilter,
   $sidebarWorkspaceOrderIds,
   $sidebarWorkspaceParentOrderIds,
+  CHAT_SIDEBAR_PANE_ID,
   filterVisibleProjects,
   pinSession,
   SESSION_SEARCH_FOCUS_EVENT,
@@ -411,6 +413,19 @@ export function ChatSidebar({
   const { t } = useI18n()
   const s = t.sidebar
   const { pathname } = useLocation()
+  // Narrow drawer: picking a route dismisses it (audit M8). Only a change, never on mount.
+  const lastPathname = useRef(pathname)
+
+  // eslint-disable-next-line no-restricted-syntax -- a router value, compared to skip the mount (StrictMode-safe)
+  useEffect(() => {
+    if (lastPathname.current !== pathname) {
+      lastPathname.current = pathname
+      window.dispatchEvent(
+        new CustomEvent(PANE_TOGGLE_REVEAL_EVENT, { detail: { id: CHAT_SIDEBAR_PANE_ID, mode: 'close' } })
+      )
+    }
+  }, [pathname])
+
   // Contributed nav rows (plugins pairing a page with a sidebar entry) render
   // below the built-ins with the same chrome; active = at their route.
   const navContributions = useContributions(SIDEBAR_NAV_AREA)
