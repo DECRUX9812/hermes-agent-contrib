@@ -3100,7 +3100,7 @@ export const jaOverrides = {
     openInExternal: '外部で開く',
     popIn: 'ポップイン',
     popOut: 'ポップアウト',
-    linkHint: '⌘/Ctrl+クリックでプレビューペイン',
+    linkHint: '⌘/Ctrl+クリックでブラウザで開く',
     sourceLineTitle: 'クリックして選択 · Shift クリックで拡張 · コンポーザーにドラッグ',
     source: 'ソース',
     renderedPreview: 'プレビュー',

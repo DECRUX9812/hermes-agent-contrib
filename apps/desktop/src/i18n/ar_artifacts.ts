@@ -70,7 +70,7 @@ export const arArtifacts = {
     openInExternal: 'فتح في الخارج',
     popIn: 'إدخال',
     popOut: 'إخراج',
-    linkHint: '⌘/Ctrl-نقر لجزء المعاينة',
+    linkHint: '⌘/Ctrl-نقر للفتح في المتصفح',
     sourceLineTitle: 'انقر للتحديد · shift-نقر للتوسيع · اسحب إلى المُنشئ',
     source: 'المصدر',
     renderedPreview: 'المعاينة',
