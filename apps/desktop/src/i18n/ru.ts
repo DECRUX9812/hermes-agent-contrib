@@ -3549,7 +3549,8 @@ export const ruOverrides = {
       alwaysAllow: 'Всегда разрешать',
       alwaysConfirmPrompt: pattern => `Всегда разрешать «${pattern}»?`,
       decisionRecorded: choice => `Решение записано: ${choice}`,
-      noLongerPending: 'Это подтверждение больше не ожидает решения.'
+      noLongerPending: 'Это подтверждение больше не ожидает решения.',
+      deniedSessionStopped: 'Отклонено, сеанс остановлен.'
     },
     clarify: ruClarify,
     toolCards: ruToolCards,

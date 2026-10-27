@@ -23,6 +23,8 @@ import {
 import { StatusBadge } from '../../status-dot'
 
 const RECENT_DECISION_MS = 1800
+// The approvals plugin's reason for a prompt upstream denied because its turn or session stopped.
+const SESSION_STOPPED = 'session_stopped'
 
 export interface ApprovalCardProps {
   /** A live server request or a pending row restored from the journal. */
@@ -99,29 +101,22 @@ export function ApprovalCard({
 
   const outcome = recordedChoice
     ? copy.decisionRecorded(
-        recordedChoice === 'deny'
-          ? copy.deny
-          : recordedChoice === 'always'
-            ? copy.alwaysAllow
-            : copy.allowOnce
+        recordedChoice === 'deny' ? copy.deny : recordedChoice === 'always' ? copy.alwaysAllow : copy.allowOnce
       )
-    : decision?.approval?.reason || copy.noLongerPending
+    : decision?.approval?.reason === SESSION_STOPPED
+      ? copy.deniedSessionStopped
+      : decision?.approval?.reason || copy.noLongerPending
 
   return (
     <article
       aria-label={copy.jumpToApproval}
-      className={cn(
-        'grid min-w-0 gap-2 rounded-card border border-line bg-surface-raised p-3',
-        compact && 'p-2'
-      )}
+      className={cn('grid min-w-0 gap-2 rounded-card border border-line bg-surface-raised p-3', compact && 'p-2')}
       data-request-id={request.requestId}
       data-slot="tool-approval-card"
     >
       <div className="flex min-w-0 items-center gap-2">
         <StatusBadge aria-label={copy.jumpToApproval} className="shrink-0" state="needs-approval" />
-        <p className="min-w-0 truncate text-ui-sm font-medium text-fg">
-          {request.toolName || copy.cardTitle}
-        </p>
+        <p className="min-w-0 truncate text-ui-sm font-medium text-fg">{request.toolName || copy.cardTitle}</p>
       </div>
 
       {command ? (
@@ -137,13 +132,7 @@ export function ApprovalCard({
       ) : (
         <>
           <div className="flex flex-wrap items-center justify-end gap-2" data-slot="tool-approval-actions">
-            <Button
-              data-approval-run=""
-              disabled={busy}
-              onClick={() => void answer('once')}
-              size="sm"
-              type="button"
-            >
+            <Button data-approval-run="" disabled={busy} onClick={() => void answer('once')} size="sm" type="button">
               {copy.allowOnce}
             </Button>
             {request.allowPermanent === false ? null : confirmAlways ? (
@@ -154,13 +143,7 @@ export function ApprovalCard({
                 <Button disabled={busy} onClick={() => void answer('always')} size="sm" type="button">
                   {t.common.confirm}
                 </Button>
-                <Button
-                  disabled={busy}
-                  onClick={() => setConfirmAlways(false)}
-                  size="sm"
-                  type="button"
-                  variant="ghost"
-                >
+                <Button disabled={busy} onClick={() => setConfirmAlways(false)} size="sm" type="button" variant="ghost">
                   {t.common.cancel}
                 </Button>
               </>
@@ -222,6 +205,20 @@ export function ApprovalComposerEntry({ runtimeSessionId, storedSessionId }: App
 
   const [recent, setRecent] = useState<RecentApprovalDecision | null>(null)
   const [dismissedIds, setDismissedIds] = useState<ReadonlySet<string>>(new Set())
+  const [seenLive, setSeenLive] = useState(liveRequests)
+  const [gone, setGone] = useState<ApprovalRequest[]>([])
+
+  // A live prompt that left without our answer was stopped, timed out or answered elsewhere: hide it
+  // at once, then show its journal outcome (the cancel can reach us before the plugin's write).
+  if (seenLive !== liveRequests) {
+    const left = seenLive.filter(
+      request => request.requestId && !liveRequests.some(live => live.requestId === request.requestId)
+    )
+
+    setSeenLive(liveRequests)
+    setGone(left)
+    setDismissedIds(current => new Set([...current, ...left.map(request => request.requestId ?? '')]))
+  }
 
   useEffect(() => {
     let active = true
@@ -234,28 +231,49 @@ export function ApprovalComposerEntry({ runtimeSessionId, storedSessionId }: App
       }
     }
 
-    setSnapshot(current =>
-      current.sessionId === storedSessionId ? current : { sessionId: storedSessionId, rows: [] }
-    )
+    setSnapshot(current => (current.sessionId === storedSessionId ? current : { sessionId: storedSessionId, rows: [] }))
 
-    void listSessionApprovals(gateway, routeSessionId, storedSessionId)
-      .then(rows => {
-        if (active) {
+    const load = (attempt: number) =>
+      void listSessionApprovals(gateway, routeSessionId, storedSessionId)
+        .then(rows => {
+          if (!active) {
+            return
+          }
+
           setSnapshot({ sessionId: storedSessionId, rows })
-        }
-      })
-      .catch(() => {
-        if (active) {
-          setSnapshot(current =>
-            current.sessionId === storedSessionId ? current : { sessionId: storedSessionId, rows: [] }
+
+          const outcomes = gone.map(
+            request => [request, rows.find(row => row.request_id === request.requestId)] as const
           )
-        }
-      })
+
+          if (attempt < 4 && outcomes.some(([, row]) => row?.status === 'pending')) {
+            window.setTimeout(() => load(attempt + 1), 400)
+
+            return
+          }
+
+          const stopped = outcomes.find(([, row]) => row?.reason === SESSION_STOPPED)
+
+          if (stopped?.[1]) {
+            const decision = { approval: stopped[1], choice: null, resolved: false }
+            const request = { ...stopped[0], requestId: stopped[1].request_id }
+            setRecent({ decision, request, sessionId: runtimeSessionId || storedSessionId || '' })
+          }
+        })
+        .catch(() => {
+          if (active) {
+            setSnapshot(current =>
+              current.sessionId === storedSessionId ? current : { sessionId: storedSessionId, rows: [] }
+            )
+          }
+        })
+
+    load(0)
 
     return () => {
       active = false
     }
-  }, [gateway, routeSessionId, storedSessionId, liveRequests])
+  }, [gateway, gone, routeSessionId, runtimeSessionId, storedSessionId, liveRequests])
 
   useEffect(() => {
     setRecent(null)
@@ -287,19 +305,6 @@ export function ApprovalComposerEntry({ runtimeSessionId, storedSessionId }: App
       setDismissedIds(current => new Set(current).add(request.requestId))
       clearApprovalRequest(request.sessionId, journalRequestId(request.requestId))
 
-      if (result.approval && storedSessionId) {
-        setSnapshot(current =>
-          current.sessionId === storedSessionId
-            ? {
-                ...current,
-                rows: current.rows.map(row =>
-                  row.request_id === request.requestId ? result.approval! : row
-                )
-              }
-            : current
-        )
-      }
-
       return result
     },
     [gateway, runtimeSessionId, storedSessionId]
@@ -312,17 +317,19 @@ export function ApprovalComposerEntry({ runtimeSessionId, storedSessionId }: App
     return null
   }
 
-  const activeRequest =
-    recent?.sessionId === currentSessionId
-      ? recent.request
-      : pending[0]
+  const activeRequest = recent?.sessionId === currentSessionId ? recent.request : pending[0]
 
   if (!activeRequest) {
     return null
   }
 
   return (
-    <div className="mx-auto mb-2 w-full max-w-(--composer-width)" data-approval-stack="" data-session-id={currentSessionId} data-slot="composer-approval-entry">
+    <div
+      className="mx-auto mb-2 w-full max-w-(--composer-width)"
+      data-approval-stack=""
+      data-session-id={currentSessionId}
+      data-slot="composer-approval-entry"
+    >
       <ApprovalCard
         initialDecision={recent?.sessionId === currentSessionId ? recent.decision : null}
         onAnswer={choice => answer(activeRequest, choice)}

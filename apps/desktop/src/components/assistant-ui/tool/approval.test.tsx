@@ -2,9 +2,21 @@ import type { ApprovalChoice, ForkApproval } from '@hermes/shared'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import type { ApprovalDecision, ApprovalRequest } from '@/store/prompts'
+import { $gateway } from '@/store/gateway'
+import {
+  type ApprovalDecision,
+  type ApprovalRequest,
+  clearApprovalRequest,
+  listSessionApprovals,
+  receiveApprovalRequest
+} from '@/store/prompts'
 
-import { ApprovalCard } from './approval'
+import { ApprovalCard, ApprovalComposerEntry } from './approval'
+
+vi.mock('@/store/prompts', async original => ({
+  ...(await original<Record<string, unknown>>()),
+  listSessionApprovals: vi.fn(async () => [])
+}))
 
 const request: ApprovalRequest & { requestId: string } = {
   command: 'rm -rf /tmp/cache',
@@ -105,5 +117,41 @@ describe('ApprovalCard', () => {
 
     expect((await screen.findByRole('status')).textContent).toContain('Decision recorded: Deny')
     expect(screen.queryByRole('button', { name: 'Allow once' })).toBeNull()
+  })
+
+  it('says the prompt was denied when its session stopped', () => {
+    const stopped = { ...row('once', 'denied'), choice: null, reason: 'session_stopped', ran_at: null }
+    render(
+      <ApprovalCard
+        initialDecision={decision({ approval: stopped, choice: null, resolved: false })}
+        onAnswer={vi.fn()}
+        request={request}
+      />
+    )
+
+    expect(screen.getByRole('status').textContent).toBe('Denied, session stopped.')
+  })
+})
+
+describe('ApprovalComposerEntry', () => {
+  it('turns a prompt withdrawn by an interrupt into a denied outcome instead of a hanging card', async () => {
+    const stopped = { ...row('once', 'denied'), choice: null, reason: 'session_stopped', ran_at: null }
+    const list = vi.mocked(listSessionApprovals)
+    // The cancel reaches the desktop before the plugin's write: the first re-list still says pending.
+    list
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([row('once', 'pending')])
+      .mockResolvedValue([stopped])
+    $gateway.set({} as never)
+    await act(() => receiveApprovalRequest(null, request))
+
+    render(<ApprovalComposerEntry runtimeSessionId="runtime-1" storedSessionId="stored-1" />)
+    expect(screen.getByRole('button', { name: 'Allow once' })).toBeTruthy()
+
+    act(() => clearApprovalRequest('runtime-1', request.requestId))
+
+    expect(screen.queryByRole('button', { name: 'Allow once' })).toBeNull()
+    expect((await screen.findByRole('status', {}, { timeout: 2000 })).textContent).toBe('Denied, session stopped.')
+    $gateway.set(null as never)
   })
 })

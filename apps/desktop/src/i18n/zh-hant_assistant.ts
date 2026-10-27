@@ -192,6 +192,7 @@ export const zhHantAssistant = {
       alwaysConfirmPrompt: pattern => `一律允許「${pattern}」？`,
       decisionRecorded: choice => `已記錄決定：${choice}`,
       noLongerPending: '此核准已不再等待處理。',
+      deniedSessionStopped: '已拒絕，工作階段已停止。',
       reconnect: '重新連線',
       timedOutSystemLine: '核准逾時——指令未執行。請要求 Hermes 重試，或在設定 → 安全 → 核准逾時中提高上限。',
       openSafetySettings: '開啟安全設定',

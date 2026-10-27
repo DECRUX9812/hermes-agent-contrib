@@ -3398,7 +3398,8 @@ export const jaOverrides = {
       commandDetails: 'コマンドの詳細',
       alwaysConfirmPrompt: pattern => `「${pattern}」を常に許可しますか？`,
       decisionRecorded: choice => `決定を記録しました: ${choice}`,
-      noLongerPending: 'この承認は保留中ではありません。'
+      noLongerPending: 'この承認は保留中ではありません。',
+      deniedSessionStopped: '拒否しました。セッションは停止しました。'
     },
     clarify: jaClarify,
     toolCards: jaToolCards,

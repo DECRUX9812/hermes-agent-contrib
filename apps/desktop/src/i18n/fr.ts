@@ -5075,7 +5075,8 @@ export const frOverrides = {
       alwaysAllow: 'Toujours autoriser',
       alwaysConfirmPrompt: pattern => `Toujours autoriser « ${pattern} » ?`,
       decisionRecorded: choice => `Décision enregistrée : ${choice}`,
-      noLongerPending: "Cette approbation n'est plus en attente."
+      noLongerPending: "Cette approbation n'est plus en attente.",
+      deniedSessionStopped: 'Refusé, session arrêtée.'
     },
     clarify: frClarify,
     toolCards: frToolCards,
