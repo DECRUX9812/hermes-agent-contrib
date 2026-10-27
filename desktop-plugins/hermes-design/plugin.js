@@ -425,6 +425,15 @@ const COMPOSER = `
   background: linear-gradient(to bottom, transparent, var(--ui-chat-surface-background, transparent));
 }
 [data-slot='composer-fade'].opacity-30 { opacity: 0.6; }
+/* Jump pill: a shadowed pill on the solid composer fill. No border, and no backdrop blur
+   to re-composite under streaming text every frame. The icon is a touch smaller than core's. */
+.thread-jump-button {
+  border-width: 0;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 0.125rem 0.375rem color-mix(in srgb, black 12%, transparent), 0 0.5rem 1.25rem color-mix(in srgb, black 14%, transparent); /* raw-style-ok: pill shadow */
+}
+.thread-jump-button > .codicon { font-size: 0.8125rem !important; }
 `
 
 // ── Paint-time contrast guard ────────────────────────────────────────────────
