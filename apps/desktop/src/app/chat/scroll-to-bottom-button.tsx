@@ -6,7 +6,7 @@ import { useTranscriptWindow } from '@/components/assistant-ui/thread/transcript
 import { Codicon } from '@/components/ui/codicon'
 import { AnimatedInt } from '@/components/ui/diff-count'
 import { useI18n } from '@/i18n'
-import { scrollToSessionApproval } from '@/lib/approval-anchor'
+import { scrollToSessionApproval } from '@/lib/approval-journal'
 import { triggerHaptic } from '@/lib/haptics'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
