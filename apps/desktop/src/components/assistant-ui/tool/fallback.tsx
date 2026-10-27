@@ -10,6 +10,7 @@ import {
   Fragment,
   type PropsWithChildren,
   type ReactNode,
+  useCallback,
   useContext,
   useEffect,
   useMemo,
@@ -21,8 +22,8 @@ import { useSessionView } from '@/app/chat/session-view'
 import { AnsiText } from '@/components/assistant-ui/ansi-text'
 import { MarkdownImage } from '@/components/assistant-ui/markdown-text'
 import { SET_THEME_TOOL, setThemeCall } from '@/components/assistant-ui/theme-picker/args'
+import { deliveryTargetFromCommand } from '@/components/assistant-ui/thread/agent-delivery'
 import { TimelineTimestamp } from '@/components/assistant-ui/thread/timeline-timestamp'
-import { BotToolCards } from '@/components/assistant-ui/tool-cards/tool-card'
 import { useElapsedSeconds } from '@/components/chat/activity-timer'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { CompactMarkdown } from '@/components/chat/compact-markdown'
@@ -34,6 +35,7 @@ import {
   SCAFFOLD_META_CLASS,
   ScaffoldRow
 } from '@/components/chat/scaffold-row'
+import { ErrorBoundary } from '@/components/error-boundary'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { CopyButton } from '@/components/ui/copy-button'
@@ -42,10 +44,14 @@ import { FadeText } from '@/components/ui/fade-text'
 import { FileTypeIcon } from '@/components/ui/file-type-icon'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { ToolIcon } from '@/components/ui/tool-icon'
+import { type Contribution, useContributions } from '@/contrib'
 import { useI18n } from '@/i18n'
-import { connectorCalls, mcpTargets } from '@/lib/connector-tools'
+import { scrollToSessionApproval } from '@/lib/approval-journal'
+import { connectorCalls, mcpTargets, toolLabels } from '@/lib/connector-tools'
 import { PrettyLink, LinkifiedText as SharedLinkifiedText, urlSlugTitleLabel } from '@/lib/external-link'
 import { AlertCircle, CheckCircle2 } from '@/lib/icons'
+import { isTodoToolName } from '@/lib/todos'
+import { isCardToolName } from '@/lib/tool-render-class'
 import { toolResultRecord } from '@/lib/tool-result-metadata'
 import { useEnterAnimation } from '@/lib/use-enter-animation'
 import { useStoresSelector } from '@/lib/use-session-slice'
@@ -75,6 +81,7 @@ import {
   isCardTool,
   isFileEditTool,
   isPreviewableTarget,
+  isSilentTool,
   looksRedundant,
   type SearchResultRow,
   selectMessageRunning,
@@ -1080,6 +1087,132 @@ function toolGroupKey(toolName: string, args: ToolCallMessagePartProps['args']):
 }
 
 /**
+ * TOOL RUN RENDERER: a plugin draws a Bot Chat's plain tool activity (the
+ * reads, commands and browser steps between the cards that stay in place).
+ * Core keeps the run grouping, the approval lookup and the rule for which calls
+ * count as plain activity; the renderer gets only those calls, and core's rows
+ * for them step aside. Nothing registered, or a renderer that throws, leaves
+ * the run on core's own rows.
+ */
+export const TOOL_RUN_RENDERER_AREA = 'transcript.toolRun'
+
+export interface ToolRunPart {
+  toolName: string
+  toolCallId?: string
+  args?: unknown
+  result?: unknown
+  isError?: boolean
+  timestamp?: number
+  completedAt?: number
+  interrupted?: boolean
+}
+
+export interface ToolRunRendererProps {
+  /** The run's plain-activity calls, in order. */
+  parts: readonly ToolRunPart[]
+  /** The call waiting on the session's pending approval, when it is in this run. */
+  approvalCallId?: string
+  sessionId: null | string
+  storedSessionId: null | string
+  /** Scrolls the session's approval prompt into view. */
+  onReviewApproval: () => void
+}
+
+export interface ToolRunRendererContribution {
+  render: (props: ToolRunRendererProps) => ReactNode
+}
+
+/** True inside a claimed run: core rows for plain activity render nothing. */
+export const ToolRunCoverContext = createContext(false)
+
+const commandOf = (args: unknown): string => {
+  const command = args && typeof args === 'object' ? (args as { command?: unknown }).command : undefined
+
+  return typeof command === 'string' ? command : ''
+}
+
+const RENDERED_ELSEWHERE: readonly ((part: ToolRunPart) => boolean)[] = [
+  part => isTodoToolName(part.toolName),
+  part => part.toolName === 'terminal' && Boolean(deliveryTargetFromCommand(commandOf(part.args))),
+  part => part.toolName === 'react_to_message' && !part.isError,
+  part => isCardTool(part.toolName) || isCardToolName(part.toolName),
+  part => Boolean(setThemeCall(part.toolName, (part.args && typeof part.args === 'object' ? part.args : {}) as never)),
+  part => toolLabels(part.args as never).length > 0,
+  part => isSilentTool(part.toolName)
+]
+
+/** A call with no rendering of its own: not a todo, delivery, card, theme, connector or silent call. */
+export const isPlainToolActivity = (part: ToolRunPart): boolean => !RENDERED_ELSEWHERE.some(test => test(part))
+
+const ToolRunHost: FC<PropsWithChildren<{ claim: Contribution; endIndex: number; startIndex: number }>> = ({
+  children,
+  claim,
+  endIndex,
+  startIndex
+}) => {
+  const view = useSessionView()
+  const sessionId = useStore(view.$runtimeId) ?? null
+  const storedSessionId = useStore(view.$storedId) ?? null
+  const approval = useStore(useMemo(() => sessionApprovalRequest(sessionId), [sessionId]))
+  const parts = useAuiState(state => state.message.parts)
+  const currentTurn = useAuiState(state => isCurrentTurnMessage(state.thread.messages, state.message.id))
+
+  const plain = useMemo(
+    () =>
+      (parts.slice(Math.max(0, startIndex), endIndex + 1) as unknown as (ToolRunPart & { type: string })[]).filter(
+        part => part.type === 'tool-call' && typeof part.toolName === 'string' && isPlainToolActivity(part)
+      ),
+    [parts, startIndex, endIndex]
+  )
+
+  const approvalCallId = useMemo(
+    () =>
+      approval && currentTurn
+        ? plain.findLast(
+            part =>
+              isApprovalActivity(part) &&
+              part.result === undefined &&
+              part.completedAt === undefined &&
+              !part.interrupted
+          )?.toolCallId
+        : undefined,
+    [approval, currentTurn, plain]
+  )
+
+  const onReviewApproval = useCallback(() => void scrollToSessionApproval(sessionId), [sessionId])
+  const render = (claim.data as ToolRunRendererContribution).render
+
+  // Stable component identity per renderer, so a re-render never remounts the cards.
+  const Leaf = useMemo(
+    () =>
+      function ToolRunRendererHost(props: ToolRunRendererProps) {
+        return <>{render(props)}</>
+      },
+    [render]
+  )
+
+  return (
+    <ErrorBoundary
+      fallback={() => (
+        <ToolRun endIndex={endIndex} startIndex={startIndex}>
+          {children}
+        </ToolRun>
+      )}
+      label={`contrib:${claim.id}`}
+    >
+      <Leaf
+        approvalCallId={approvalCallId}
+        onReviewApproval={onReviewApproval}
+        parts={plain}
+        sessionId={sessionId}
+        storedSessionId={storedSessionId}
+      />
+      <ToolRunCoverContext.Provider value={true}>{children}</ToolRunCoverContext.Provider>
+    </ErrorBoundary>
+  )
+}
+
+/**
  * A range of consecutive tool calls, split into the cards that must stay on
  * screen and the runs of activity between them.
  *
@@ -1106,6 +1239,8 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
     isBotChatSession(sessionId)
   )
 
+  const toolRunClaim = useContributions(TOOL_RUN_RENDERER_AREA)[0]
+
   // Joined rather than returned as an array: assistant-ui compares selector
   // results with `Object.is` and re-runs them on every store update, so a
   // fresh array would re-render the whole group on every text delta.
@@ -1119,20 +1254,21 @@ export const ToolGroupSlot: FC<PropsWithChildren<{ endIndex: number; startIndex:
   const items = useMemo(() => splitRunItems(toolNameKey.split('\u0000')), [toolNameKey])
   const rows = Children.toArray(children)
 
-  if (botChat) {
+  if (botChat && toolRunClaim) {
     return (
       <ToolEmbedContext.Provider value={false}>
         {items.map(item =>
           item.kind === 'card' ? (
             <Fragment key={`card:${item.index}`}>{rows[item.index]}</Fragment>
           ) : (
-            <BotToolCards
+            <ToolRunHost
+              claim={toolRunClaim}
               endIndex={startIndex + item.end}
               key={`run:${item.start}`}
               startIndex={startIndex + item.start}
             >
               {rows.slice(item.start, item.end + 1)}
-            </BotToolCards>
+            </ToolRunHost>
           )
         )}
       </ToolEmbedContext.Provider>

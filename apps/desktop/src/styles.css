@@ -3,7 +3,6 @@
 @import 'tw-shimmer';
 @import 'katex/dist/katex.min.css';
 @import '@vscode/codicons/dist/codicon.css';
-@import './design/motion.css';
 
 /* Semantic design tokens (names only; the overrides live in the hermes-design plugin). Every name resolves to the
    live theme's `--ui-*` variables, so all skins restyle them. */
