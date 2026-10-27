@@ -13085,6 +13085,23 @@ var $activeGroupMemberKeys = (0, sdk_compat_exports.computed)(
 init_sdk_compat();
 var $liveTurns = (0, sdk_compat_exports.atom)({});
 var $learnedStoredByRuntime = (0, sdk_compat_exports.atom)({});
+var $liveFiles = (0, sdk_compat_exports.atom)([]);
+var LIVE_FILES_LIMIT = 20;
+var FILE_TOOLS = /* @__PURE__ */ new Set(["patch", "write_file"]);
+function deliveredPath(payload) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+  const p = payload;
+  const tool = String(p.tool_name || p.name || "");
+  const args = p.args && typeof p.args === "object" ? p.args : {};
+  const path = typeof args.path === "string" ? args.path.trim() : "";
+  return FILE_TOOLS.has(tool) && p.is_error !== true && path ? path : null;
+}
+function recordLiveFile(file) {
+  const rest = $liveFiles.get().filter((f) => f.path !== file.path);
+  $liveFiles.set([file, ...rest].slice(0, LIVE_FILES_LIMIT));
+}
 var LIVE_TURN_EVENTS = [
   "approval.cancelled",
   "approval.request",
@@ -13176,6 +13193,25 @@ function wireLiveTurns(onDispose) {
   for (const type of LIVE_TURN_EVENTS) {
     onDispose(host.onEvent(type, (event) => feedLiveTurn({ ...event, type }, busyAtom.get() || {})));
   }
+  onDispose(
+    host.onEvent("tool.complete", (event) => {
+      const path = deliveredPath(event?.payload);
+      const runtimeId = event?.session_id;
+      if (!path || !runtimeId) {
+        return;
+      }
+      const focused = host.state.focusedSessionId?.get() === runtimeId;
+      const profile = focused ? host.state.focusedSessionProfile?.get() : void 0;
+      const storedId = focused ? host.state.focusedStoredSessionId?.get() : void 0;
+      recordLiveFile({
+        at: Date.now(),
+        path,
+        runtimeId,
+        ...profile ? { profile } : {},
+        ...storedId ? { storedId } : {}
+      });
+    })
+  );
   onDispose(busyAtom.listen((busy) => sweepLiveTurns(busy || {})));
   const learn = () => learnStoredId(host.state.focusedSessionId?.get(), host.state.focusedStoredSessionId?.get());
   if (host.state.focusedSessionId && host.state.focusedStoredSessionId) {
@@ -19984,6 +20020,10 @@ function routineHealth(job, active) {
   const failed = ["blocked_config", "delivery_failed", "error"].includes(String(job.last_status || "").trim());
   return failed || job.last_fire_error || job.last_delivery_error ? "warn" : "good";
 }
+function routineNeedsAttention(job) {
+  const active = !isLegacyDelegatedRoutine(job) && job.enabled !== false && job.state !== "paused";
+  return routineHealth(job, active) === "warn";
+}
 function routineLastResult(status, c = botsText().cron) {
   const raw = String(status || "").trim();
   if (!raw) {
@@ -23495,8 +23535,8 @@ function BotCardMeta({ bot }) {
 // src/bot-deliverables.tsx
 init_sdk_compat();
 init_i18n();
-init_routing();
 import { useCallback as useCallback3, useEffect as useEffect13, useRef as useRef7, useState as useState27 } from "react";
+init_routing();
 import { jsx as jsx43, jsxs as jsxs41 } from "react/jsx-runtime";
 var DELIVERABLES_LIMIT = 20;
 var KIND_GLYPH = {
@@ -23508,6 +23548,14 @@ var KIND_GLYPH = {
 function itemSessionId(item) {
   return item.transcript?.sessionId || item.registry?.sessionId || null;
 }
+function ownerLiveFiles(files, owner, storedByRuntime) {
+  if (!owner?.name) {
+    return [];
+  }
+  const canonical = botCanonicalRuntimeId(owner, storedByRuntime);
+  return files.filter((file) => file.profile === owner.name || !!canonical && file.runtimeId === canonical);
+}
+var baseName = (path) => path.split("/").filter(Boolean).at(-1) || path;
 function BotDeliverablesSection({ owner }) {
   const b = useBots();
   const { t } = (0, sdk_compat_exports.useI18n)();
@@ -23560,6 +23608,17 @@ function BotDeliverablesSection({ owner }) {
   const sessionsById = currentView?.sessions ?? /* @__PURE__ */ new Map();
   const status = currentView?.status ?? "loading";
   const refreshing = status === "loading";
+  const learned = (0, sdk_compat_exports.useValue)($learnedStoredByRuntime);
+  const allLive = (0, sdk_compat_exports.useValue)($liveFiles);
+  const live = items.length ? [] : ownerLiveFiles(allLive, owner, learned);
+  const openLive = (file) => {
+    const storedId = file.storedId || learned[file.runtimeId];
+    if (!storedId) {
+      return;
+    }
+    const route = botConnectionRoute(ownerRef.current);
+    void host.openSession(storedId, { ...route ? { route } : {}, profile: ownerRef.current.name, intent: "tab" }).catch((err) => host.notifyError(err, b.deliverables.title));
+  };
   const open = (item) => {
     const owner2 = ownerRef.current;
     const sessionId = itemSessionId(item);
@@ -23602,7 +23661,22 @@ function BotDeliverablesSection({ owner }) {
       /* @__PURE__ */ jsx43("p", { children: items.length ? b.deliverables.stale : b.deliverables.failed }),
       /* @__PURE__ */ jsx43(sdk_compat_exports.Button, { className: "justify-self-start", onClick: load2, size: "xs", variant: "secondary", children: t.common.retry })
     ] }) : null,
-    refreshing && items.length === 0 ? /* @__PURE__ */ jsxs41("div", { className: "flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)", role: "status", children: [
+    live.length ? /* @__PURE__ */ jsx43("div", { className: "grid gap-0.5", "data-testid": "bot-deliverables-live", children: live.map((file) => /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: file.path, children: /* @__PURE__ */ jsxs41(
+      sdk_compat_exports.RowButton,
+      {
+        "aria-label": file.path,
+        className: (0, sdk_compat_exports.cn)(
+          "flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors",
+          "hover:bg-(--chrome-action-hover)"
+        ),
+        onClick: () => openLive(file),
+        children: [
+          /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { "aria-hidden": true, className: "shrink-0 text-xs text-(--ui-text-tertiary)", name: "file" }),
+          /* @__PURE__ */ jsx43("span", { className: "min-w-0 flex-1 truncate text-xs font-medium text-(--ui-text-secondary)", children: baseName(file.path) }),
+          /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(file.at, t.sidebar.row) })
+        ]
+      }
+    ) }, file.path)) }) : refreshing && items.length === 0 ? /* @__PURE__ */ jsxs41("div", { className: "flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)", role: "status", children: [
       /* @__PURE__ */ jsx43(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.deliverables.loading, className: "text-xs" }),
       b.deliverables.loading
     ] }) : status === "unavailable" ? /* @__PURE__ */ jsx43("p", { className: "py-2 text-xs text-(--ui-text-tertiary)", children: b.deliverables.unavailable }) : status === "ready" && items.length === 0 ? /* @__PURE__ */ jsx43("p", { className: "py-2 text-xs leading-relaxed text-(--ui-text-tertiary)", children: b.deliverables.empty }) : /* @__PURE__ */ jsx43("div", { className: "grid gap-0.5", children: items.map((item) => {
@@ -25204,7 +25278,7 @@ var TAB_ICONS = {
   scheduled: "history",
   bot: "hubot"
 };
-function RailTabs({ badges, onChange, value }) {
+function RailTabs({ alerts, badges, onChange, value }) {
   const b = useBots();
   const buttons = useRef10({});
   return /* @__PURE__ */ jsx50(
@@ -25216,11 +25290,13 @@ function RailTabs({ badges, onChange, value }) {
       children: RAIL_TAB_IDS.map((id, index) => {
         const active = id === value;
         const badge = badges[id] ?? 0;
+        const alert = !badge && alerts?.[id];
+        const label = badge ? `${b.activity.tabs[id]} (${badge})` : b.activity.tabs[id];
         return /* @__PURE__ */ jsxs48(
           "button",
           {
             "aria-controls": `rail-panel-${id}`,
-            "aria-label": badge ? `${b.activity.tabs[id]} (${badge})` : b.activity.tabs[id],
+            "aria-label": alert ? `${label}, ${b.roster.needsAttention}` : label,
             "aria-selected": active,
             className: (0, sdk_compat_exports.cn)(
               "flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)",
@@ -25249,7 +25325,8 @@ function RailTabs({ badges, onChange, value }) {
             children: [
               /* @__PURE__ */ jsx50(sdk_compat_exports.Codicon, { "aria-hidden": true, name: TAB_ICONS[id], size: "0.875rem" }),
               /* @__PURE__ */ jsx50("span", { className: "truncate", children: b.activity.tabs[id] }),
-              badge > 0 ? /* @__PURE__ */ jsx50("span", { className: "rounded bg-(--ui-accent)/12 px-1 text-xs tabular-nums text-(--ui-text-primary)", children: badge > 99 ? "99+" : badge }) : null
+              badge > 0 ? /* @__PURE__ */ jsx50("span", { className: "rounded bg-(--ui-accent)/12 px-1 text-xs tabular-nums text-(--ui-text-primary)", children: badge > 99 ? "99+" : badge }) : null,
+              alert ? /* @__PURE__ */ jsx50("span", { "aria-hidden": true, className: "size-1.5 shrink-0 rounded-full hbp-bg-warn", "data-testid": `rail-tab-alert:${id}` }) : null
             ]
           },
           id
@@ -27281,7 +27358,15 @@ function MissionRail() {
         onEdit: () => setEditing(true)
       }
     ),
-    /* @__PURE__ */ jsx56(RailTabs, { badges: { approvals: approvalCount }, onChange: setRailTab, value: tab }),
+    /* @__PURE__ */ jsx56(
+      RailTabs,
+      {
+        alerts: { scheduled: jobs.some(routineNeedsAttention) },
+        badges: { approvals: approvalCount },
+        onChange: setRailTab,
+        value: tab
+      }
+    ),
     /* @__PURE__ */ jsxs54(
       "div",
       {

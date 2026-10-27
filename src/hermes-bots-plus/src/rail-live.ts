@@ -36,6 +36,43 @@ export const $liveTurns = atom<Record<string, LiveTurn>>({})
  *  ids, and the roster keys a bot's chat by its stored id. */
 export const $learnedStoredByRuntime = atom<Record<string, string>>({})
 
+/** A file the bot wrote this window session, newest first. */
+export interface LiveFile {
+  at: number
+  path: string
+  /** The focused chat's profile when the write landed there. */
+  profile?: string
+  runtimeId: string
+  storedId?: string
+}
+
+/** Files written by bots, fed by tool.complete. Delivered as they land,
+ *  for a host whose artifact listing is empty or missing. */
+export const $liveFiles = atom<LiveFile[]>([])
+
+const LIVE_FILES_LIMIT = 20
+const FILE_TOOLS = new Set(['patch', 'write_file'])
+
+/** The path a successful file-writing tool call produced, or null. */
+export function deliveredPath(payload: unknown): null | string {
+  if (!payload || typeof payload !== 'object') {
+    return null
+  }
+
+  const p = payload as Record<string, unknown>
+  const tool = String(p.tool_name || p.name || '')
+  const args = p.args && typeof p.args === 'object' ? (p.args as Record<string, unknown>) : {}
+  const path = typeof args.path === 'string' ? args.path.trim() : ''
+
+  return FILE_TOOLS.has(tool) && p.is_error !== true && path ? path : null
+}
+
+export function recordLiveFile(file: LiveFile): void {
+  const rest = $liveFiles.get().filter(f => f.path !== file.path)
+
+  $liveFiles.set([file, ...rest].slice(0, LIVE_FILES_LIMIT))
+}
+
 export const LIVE_TURN_EVENTS = [
   'approval.cancelled',
   'approval.request',
@@ -162,6 +199,29 @@ export function wireLiveTurns(onDispose: (dispose: () => void) => void): boolean
   for (const type of LIVE_TURN_EVENTS) {
     onDispose(host.onEvent(type, (event: LiveTurnEvent) => feedLiveTurn({ ...event, type }, busyAtom.get() || {})))
   }
+
+  onDispose(
+    host.onEvent('tool.complete', (event: LiveTurnEvent) => {
+      const path = deliveredPath(event?.payload)
+      const runtimeId = event?.session_id
+
+      if (!path || !runtimeId) {
+        return
+      }
+
+      const focused = host.state.focusedSessionId?.get() === runtimeId
+      const profile = focused ? host.state.focusedSessionProfile?.get() : undefined
+      const storedId = focused ? host.state.focusedStoredSessionId?.get() : undefined
+
+      recordLiveFile({
+        at: Date.now(),
+        path,
+        runtimeId,
+        ...(profile ? { profile } : {}),
+        ...(storedId ? { storedId } : {})
+      })
+    })
+  )
 
   onDispose(busyAtom.listen(busy => sweepLiveTurns(busy || {})))
 

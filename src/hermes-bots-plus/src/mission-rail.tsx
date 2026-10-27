@@ -42,6 +42,7 @@ import {
   routineCreateTarget,
   RoutineDetailDialog,
   routineFilterHint,
+  routineNeedsAttention,
   RoutineRow,
   selectRoutineJobs,
   useRoutines
@@ -407,7 +408,12 @@ export function MissionRail() {
         meta={meta}
         onEdit={() => setEditing(true)}
       />
-      <RailTabs badges={{ approvals: approvalCount }} onChange={setRailTab} value={tab} />
+      <RailTabs
+        alerts={{ scheduled: jobs.some(routineNeedsAttention) }}
+        badges={{ approvals: approvalCount }}
+        onChange={setRailTab}
+        value={tab}
+      />
       <div
         aria-labelledby={`rail-tab-${tab}`}
         className="mt-3 min-h-0"

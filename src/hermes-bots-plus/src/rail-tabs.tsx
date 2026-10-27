@@ -12,13 +12,15 @@ const TAB_ICONS: Record<RailTabId, string> = {
 }
 
 interface RailTabsProps {
+  /** Tabs with something that needs a look: a small amber dot, no count. */
+  alerts?: Partial<Record<RailTabId, boolean>>
   badges: Partial<Record<RailTabId, number>>
   onChange: (id: RailTabId) => void
   value: RailTabId
 }
 
 /** Labeled tabs remain discoverable without a tooltip or a pointer. */
-export function RailTabs({ badges, onChange, value }: RailTabsProps) {
+export function RailTabs({ alerts, badges, onChange, value }: RailTabsProps) {
   const b = useBots()
   const buttons = useRef<Partial<Record<RailTabId, HTMLButtonElement | null>>>({})
 
@@ -31,11 +33,13 @@ export function RailTabs({ badges, onChange, value }: RailTabsProps) {
       {RAIL_TAB_IDS.map((id, index) => {
         const active = id === value
         const badge = badges[id] ?? 0
+        const alert = !badge && alerts?.[id]
+        const label = badge ? `${b.activity.tabs[id]} (${badge})` : b.activity.tabs[id]
 
         return (
           <button
             aria-controls={`rail-panel-${id}`}
-            aria-label={badge ? `${b.activity.tabs[id]} (${badge})` : b.activity.tabs[id]}
+            aria-label={alert ? `${label}, ${b.roster.needsAttention}` : label}
             aria-selected={active}
             className={cn(
               'flex min-h-9 min-w-0 items-center justify-center gap-1.5 rounded-md px-2 py-1.5 text-xs font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)',
@@ -82,6 +86,7 @@ export function RailTabs({ badges, onChange, value }: RailTabsProps) {
                 {badge > 99 ? '99+' : badge}
               </span>
             ) : null}
+            {alert ? <span aria-hidden className="size-1.5 shrink-0 rounded-full hbp-bg-warn" data-testid={`rail-tab-alert:${id}`} /> : null}
           </button>
         )
       })}

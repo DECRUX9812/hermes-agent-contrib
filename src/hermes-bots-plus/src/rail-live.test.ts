@@ -1,6 +1,18 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 
-import { $learnedStoredByRuntime, $liveTurns, feedLiveTurn, learnStoredId, reduceLiveTurn, sweepLiveTurns } from './rail-live'
+import { ownerLiveFiles } from './bot-deliverables'
+import { routineNeedsAttention } from './cron'
+import {
+  $learnedStoredByRuntime,
+  $liveFiles,
+  $liveTurns,
+  deliveredPath,
+  feedLiveTurn,
+  learnStoredId,
+  recordLiveFile,
+  reduceLiveTurn,
+  sweepLiveTurns
+} from './rail-live'
 
 const busy = { s1: true }
 
@@ -56,5 +68,48 @@ describe('rail live turns', () => {
     learnStoredId('rt', 'stored')
     learnStoredId(null, 'x')
     expect($learnedStoredByRuntime.get()).toEqual({ rt: 'stored' })
+  })
+})
+
+describe('delivered files', () => {
+  beforeEach(() => $liveFiles.set([]))
+
+  it('takes the path of a successful write_file or patch, nothing else', () => {
+    expect(deliveredPath({ args: { path: '/w/a.md' }, is_error: false, tool_name: 'write_file' })).toBe('/w/a.md')
+    expect(deliveredPath({ args: { path: '/w/b.ts' }, name: 'patch' })).toBe('/w/b.ts')
+    expect(deliveredPath({ args: { path: '/w/a.md' }, is_error: true, tool_name: 'write_file' })).toBeNull()
+    expect(deliveredPath({ args: { command: 'ls' }, tool_name: 'terminal' })).toBeNull()
+    expect(deliveredPath({ args: { path: '/w/a.md' }, tool_name: 'read_file' })).toBeNull()
+    expect(deliveredPath(null)).toBeNull()
+  })
+
+  it('keeps one row per path, newest first', () => {
+    recordLiveFile({ at: 1, path: '/w/a.md', runtimeId: 'r1' })
+    recordLiveFile({ at: 2, path: '/w/b.md', runtimeId: 'r1' })
+    recordLiveFile({ at: 3, path: '/w/a.md', runtimeId: 'r1' })
+    expect($liveFiles.get().map(f => [f.path, f.at])).toEqual([
+      ['/w/a.md', 3],
+      ['/w/b.md', 2]
+    ])
+  })
+
+  it('shows a bot only its own files', () => {
+    const files = [
+      { at: 1, path: '/a', profile: 'scout', runtimeId: 'r1' },
+      { at: 2, path: '/b', profile: 'other', runtimeId: 'r2' },
+      { at: 3, path: '/c', runtimeId: 'r3' }
+    ]
+
+    expect(ownerLiveFiles(files, { name: 'scout' } as never, {}).map(f => f.path)).toEqual(['/a'])
+    expect(ownerLiveFiles(files, null, {})).toEqual([])
+  })
+})
+
+describe('scheduled tab alert', () => {
+  it('flags an enabled routine whose last run failed, never a paused one', () => {
+    expect(routineNeedsAttention({ enabled: true, job_id: 'a', last_status: 'error' } as never)).toBe(true)
+    expect(routineNeedsAttention({ enabled: true, job_id: 'a', last_status: 'ok' } as never)).toBe(false)
+    expect(routineNeedsAttention({ enabled: false, job_id: 'a', last_status: 'error' } as never)).toBe(false)
+    expect(routineNeedsAttention({ job_id: 'a', last_delivery_error: 'x', state: 'paused' } as never)).toBe(false)
   })
 })

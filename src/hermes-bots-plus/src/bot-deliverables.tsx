@@ -18,13 +18,15 @@ import {
   RowButton,
   type SessionInfo,
   Tip,
-  useI18n
+  useI18n,
+  useValue
 } from '@hermes/plugin-sdk'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { useBots } from './i18n'
+import { $learnedStoredByRuntime, $liveFiles, type LiveFile } from './rail-live'
 import { botConnectionRoute } from './routing'
-import { rosterRowAge } from './row-helpers'
+import { botCanonicalRuntimeId, rosterRowAge } from './row-helpers'
 import type { RosterRow } from './types'
 
 const DELIVERABLES_LIMIT = 20
@@ -47,6 +49,25 @@ interface DeliverablesView {
   sessions: ReadonlyMap<string, SessionInfo>
   status: 'loading' | 'ready' | 'error' | 'unavailable'
 }
+
+/** Files this bot wrote in this window, for a host whose artifact listing
+ *  is empty or missing: its canonical chat, or any chat focused under its
+ *  profile when the write landed. */
+export function ownerLiveFiles(
+  files: readonly LiveFile[],
+  owner: null | RosterRow | undefined,
+  storedByRuntime: Readonly<Record<string, string>>
+): LiveFile[] {
+  if (!owner?.name) {
+    return []
+  }
+
+  const canonical = botCanonicalRuntimeId(owner, storedByRuntime)
+
+  return files.filter(file => file.profile === owner.name || (!!canonical && file.runtimeId === canonical))
+}
+
+const baseName = (path: string) => path.split('/').filter(Boolean).at(-1) || path
 
 export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
   const b = useBots()
@@ -120,6 +141,23 @@ export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
   const sessionsById = currentView?.sessions ?? new Map<string, SessionInfo>()
   const status = currentView?.status ?? 'loading'
   const refreshing = status === 'loading'
+  const learned = useValue($learnedStoredByRuntime)
+  const allLive = useValue($liveFiles)
+  const live = items.length ? [] : ownerLiveFiles(allLive, owner, learned)
+
+  const openLive = (file: LiveFile) => {
+    const storedId = file.storedId || learned[file.runtimeId]
+
+    if (!storedId) {
+      return
+    }
+
+    const route = botConnectionRoute(ownerRef.current)
+
+    void host
+      .openSession(storedId, { ...(route ? { route } : {}), profile: ownerRef.current.name, intent: 'tab' })
+      .catch(err => host.notifyError(err, b.deliverables.title))
+  }
 
   const open = (item: RailArtifactItem) => {
     const owner = ownerRef.current
@@ -175,7 +213,30 @@ export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
           </Button>
         </div>
       ) : null}
-      {refreshing && items.length === 0 ? (
+      {live.length ? (
+        <div className="grid gap-0.5" data-testid="bot-deliverables-live">
+          {live.map(file => (
+            <Tip key={file.path} label={file.path}>
+              <RowButton
+                aria-label={file.path}
+                className={cn(
+                  'flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors',
+                  'hover:bg-(--chrome-action-hover)'
+                )}
+                onClick={() => openLive(file)}
+              >
+                <Codicon aria-hidden className="shrink-0 text-xs text-(--ui-text-tertiary)" name="file" />
+                <span className="min-w-0 flex-1 truncate text-xs font-medium text-(--ui-text-secondary)">
+                  {baseName(file.path)}
+                </span>
+                <span className="shrink-0 text-xs text-(--ui-text-tertiary)">
+                  {rosterRowAge(file.at, t.sidebar.row)}
+                </span>
+              </RowButton>
+            </Tip>
+          ))}
+        </div>
+      ) : refreshing && items.length === 0 ? (
         <div className="flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)" role="status">
           <GlyphSpinner ariaLabel={b.deliverables.loading} className="text-xs" />
           {b.deliverables.loading}

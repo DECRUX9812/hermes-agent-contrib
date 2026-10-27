@@ -362,6 +362,14 @@ export function routineHealth(job: RoutineJob, active: boolean): 'good' | 'off' 
   return failed || job.last_fire_error || job.last_delivery_error ? 'warn' : 'good'
 }
 
+/** An enabled routine whose last run, delivery or config failed. The
+ *  Scheduled tab's dot rolls this up; paused routines stay calm. */
+export function routineNeedsAttention(job: RoutineJob): boolean {
+  const active = !isLegacyDelegatedRoutine(job) && job.enabled !== false && job.state !== 'paused'
+
+  return routineHealth(job, active) === 'warn'
+}
+
 export function routineLastResult(status: string | null | undefined, c = botsText().cron): null | string {
   const raw = String(status || '').trim()
 
