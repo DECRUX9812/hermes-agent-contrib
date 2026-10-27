@@ -236,6 +236,22 @@ const PAPER_CSS = `
   background-image: none;
 }
 
+/* Loaders and catalog cards (consistency M2, M3): skeletons pulse on the warm
+   muted tone instead of the soft indigo accent, and skill and plugin cards sit
+   on the paper card colour. Cards mix 22% of the theme's card colour with a cool
+   neutral; take all of it (written inline by applyTheme, hence !important), and
+   drop the per-category blue or orange wash so the grid reads as paper. */
+:root[data-hermes-theme='paper'] {
+  --theme-mix-card: 100% !important;
+}
+:root[data-hermes-theme='paper'] [data-slot='skeleton'] {
+  background-color: var(--dt-muted);
+}
+:root[data-hermes-theme='paper'] [data-catalog-card] {
+  background-color: var(--dt-card);
+  background-image: none;
+}
+
 /* Flat panels: a hairline reads as intentional, a drop shadow reads as 2016. */
 :root[data-hermes-theme='paper'] [data-slot='sidebar-container'] {
   box-shadow: none;
