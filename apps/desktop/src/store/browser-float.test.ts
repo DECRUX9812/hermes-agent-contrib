@@ -12,6 +12,7 @@ import {
   FLOAT_MIN_HEIGHT,
   FLOAT_MIN_WIDTH,
   floatBrowserTab,
+  floatPillOffset,
   minimizeBrowserFloatFrom,
   snapFloatRect,
   toggleBrowserFloat,
@@ -73,6 +74,16 @@ describe('float geometry', () => {
     expect(dockSideForPointer(2, viewport)).toBe('left')
     expect(dockSideForPointer(viewport.width - 1, viewport)).toBe('right')
     expect(dockSideForPointer(600, viewport)).toBeNull()
+  })
+
+  it('seats the minimised pill bottom-right, above the status bar and clear of the title bar', () => {
+    expect(floatPillOffset(viewport, { bottom: 20, top: 34 }, 30)).toEqual({ bottom: 20 + FLOAT_MARGIN, right: FLOAT_MARGIN })
+
+    // A window too short to fit it above the status bar keeps it under the title bar.
+    const short = floatPillOffset({ height: 90, width: 400 }, { bottom: 40, top: 34 }, 30)
+
+    expect(90 - short.bottom - 30).toBeGreaterThanOrEqual(34)
+    expect(short.bottom).toBeGreaterThanOrEqual(0)
   })
 })
 

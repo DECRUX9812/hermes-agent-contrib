@@ -107,6 +107,25 @@ export function snapFloatRect(rect: FloatRect, viewport: Viewport): FloatRect {
   return { ...clamped, x: snap(clamped.x, left, right), y: snap(clamped.y, top, bottom) }
 }
 
+/** What the minimised pill keeps clear of: the title bar and the status bar. */
+export interface FloatPillInsets {
+  bottom: number
+  top: number
+}
+
+/** The minimised pill sits bottom-right of the content area, just above the
+ *  status bar. In a window too short for that it stays under the title bar. */
+export function floatPillOffset(
+  viewport: Viewport,
+  insets: FloatPillInsets,
+  pillHeight: number
+): { bottom: number; right: number } {
+  const lowest = insets.bottom + FLOAT_MARGIN
+  const highest = viewport.height - insets.top - FLOAT_MARGIN - pillHeight
+
+  return { bottom: Math.max(0, Math.min(lowest, highest)), right: FLOAT_MARGIN }
+}
+
 /** The side a drag docks to when the pointer is released against that edge. */
 export function dockSideForPointer(pointerX: number, viewport: Viewport): FloatDockSide | null {
   if (pointerX <= FLOAT_DOCK_DISTANCE) {
