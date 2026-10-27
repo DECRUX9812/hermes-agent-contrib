@@ -31,9 +31,11 @@ import { admitPreviewExternalUrl, PREVIEW_EXTERNAL_CHANNEL } from '@/lib/preview
 import { reachablePreviewUrl } from '@/lib/preview-reach'
 import { rafCoalesce } from '@/lib/raf-coalesce'
 import { cn } from '@/lib/utils'
+import { floatBrowserTab } from '@/store/browser-float'
 import { notify, notifyError } from '@/store/notifications'
 import {
   $browserPages,
+  $floatingBrowserTabId,
   $previewServerRestart,
   commitBrowserTabLocation,
   failPreviewServerRestart,
@@ -303,6 +305,7 @@ export function PreviewPane({
   const webviewRef = useRef<PreviewWebview | null>(null)
   const noteGuestReady = usePreviewGuestOffscreen(webviewRef, tabId)
   const previewServerRestart = useStore($previewServerRestart)
+  const floatingTabId = useStore($floatingBrowserTabId)
   const consoleHeight = useStore(consoleState.$height)
   const consoleOpen = useStore(consoleState.$open)
   const selectedStoredSessionId = useStore($selectedStoredSessionId)
@@ -1504,6 +1507,11 @@ export function PreviewPane({
             loading={loading}
             onBack={goBack}
             onClose={onClose}
+            onFloat={
+              target.kind !== 'url' || isBrowserWindow() || !tabId || floatingTabId === tabId
+                ? undefined
+                : () => floatBrowserTab(tabId)
+            }
             onFlushComments={() => void flushComments()}
             onForward={goForward}
             onNavigate={navigateTo}

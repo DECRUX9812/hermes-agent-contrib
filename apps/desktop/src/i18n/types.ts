@@ -3677,6 +3677,15 @@ catalog: CatalogTranslations
     popIn: string
     popOut: string
     linkHint: string
+    float: {
+      dock: string
+      dockLeft: string
+      dockRight: string
+      float: string
+      label: string
+      minimize: string
+      restore: string
+    }
     sourceLineTitle: string
     source: string
     renderedPreview: string
