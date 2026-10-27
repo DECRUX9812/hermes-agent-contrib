@@ -1,7 +1,5 @@
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 
-import { useWebAccessAvailable } from '@/app/settings/web-access-settings'
-import { Button } from '@/components/ui/button'
 import {
   cancelGithubLogin,
   getGithubStatus,
@@ -11,7 +9,9 @@ import {
   startTunnel,
   stopTunnel,
   type TunnelStatus
-} from '@/hermes'
+} from '@/api/setup-connect'
+import { useWebAccessAvailable } from '@/app/settings/web-access-settings'
+import { Button } from '@/components/ui/button'
 import { useI18n } from '@/i18n'
 import type { SetupConnectTranslations } from '@/i18n/types_setup_connect'
 import { ExternalLink } from '@/lib/external-link'
