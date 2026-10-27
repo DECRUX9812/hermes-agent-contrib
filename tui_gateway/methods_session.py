@@ -45,6 +45,11 @@ def _with_db(code: int, *, session_scoped: bool):
     return deco
 
 
+def _create_idempotency_key(params: dict) -> str | None:
+    """``idempotency_key`` wins; ``request_id`` is its deprecated alias (the desktop client's name)."""
+    return _str_param(params, "idempotency_key") or _str_param(params, "request_id") or None
+
+
 def _str_param(params: dict, key: str, default: str = "") -> str:
     """``str(params[key]).strip()`` with ``default`` for missing / falsy values."""
     return str(params.get(key) or "").strip() or default
@@ -340,7 +345,7 @@ def _create_session(rid, params: dict, *, copy_parent_history: bool = False) -> 
     # Idempotency: a client retrying a create whose first response was lost
     # should get back the SAME session, not a fresh one (which would leave a
     # duplicate child). The caller supplies a stable key per logical create.
-    idem_key = _str_param(params, "idempotency_key") or None
+    idem_key = _create_idempotency_key(params)
     if idem_key is not None:
         with _sessions_lock:
             # Drop expired entries while we're here.

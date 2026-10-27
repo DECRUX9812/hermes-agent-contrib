@@ -31926,6 +31926,18 @@
             "default": null,
             "title": "Profile"
           },
+          "submission_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Submission Id"
+          },
           "text": {
             "default": "",
             "title": "Text"
@@ -36336,6 +36348,18 @@
             ],
             "default": null,
             "title": "Idempotency Key"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Request Id"
           }
         },
         "title": "SessionCreateParams",

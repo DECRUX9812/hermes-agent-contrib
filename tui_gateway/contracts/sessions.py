@@ -137,6 +137,10 @@ class SessionCreateParams(ProfileParams):
     # #65410: stable caller-chosen key so a retried create (response lost in
     # transit) returns the SAME session instead of a duplicate child.
     idempotency_key: str | None = None
+    # Deprecated alias of ``idempotency_key``. The desktop client still sends ``request_id``
+    # here; refusing it as an unknown key (4000) broke every new chat. The handler maps it
+    # onto ``idempotency_key`` when that is absent.
+    request_id: str | None = None
 
 
 class SessionCreateResult(Result):
