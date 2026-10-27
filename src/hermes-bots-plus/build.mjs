@@ -123,7 +123,8 @@ export function loadReactDom() {
       const React = globalThis.__HERMES_REACT__
       if (!React || React.version !== ${JSON.stringify(reactDomVersion)}) throw new Error('host React ' + (React && React.version) + ' does not match react-dom ${reactDomVersion}')
       const url = URL.createObjectURL(new Blob([await readAsset()], { type: 'text/javascript' }))
-      try { return await import(url) } finally { URL.revokeObjectURL(url) }
+      // esbuild wraps the CommonJS entry, so its exports sit on \`default\`.
+      try { const mod = await import(url); return mod.createRoot ? mod : mod.default } finally { URL.revokeObjectURL(url) }
     })()
     loading.catch(() => { loading = null })
   }

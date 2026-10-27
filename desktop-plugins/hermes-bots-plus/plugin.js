@@ -22405,7 +22405,7 @@ var BROWSER_EN = {
   cloudWatching: "Watching a cloud browser, take-over not available",
   cloudWatchingShort: "Cloud browser",
   cloudTip: "This bot browses in a cloud browser, which only it can drive. To take over, switch it to a local headed browser in Settings, Plugins, Browser.",
-  settingsTitle: "Browser",
+  settingsTitle: "Bot browsers",
   settingsIntro: "Where each bot's browser runs. Cloud browsers can be watched but not taken over. A local headed browser opens on this machine's desktop, so you can take over and hand back.",
   settingsEmpty: "No local bots yet.",
   settingsLoading: "Checking\u2026",
@@ -23207,9 +23207,29 @@ function BotBrowserRow({ bot }) {
     )
   ] });
 }
+function cachedProfiles() {
+  const rows = cachedUnionRoster()?.profiles;
+  return Array.isArray(rows) ? rows.filter((row) => row && !row.ghost) : [];
+}
 function BrowserSettingsPage() {
   const text3 = useBrowserText();
-  const bots = localBots((0, sdk_compat_exports.useValue)($lastRoster));
+  const live = (0, sdk_compat_exports.useValue)($lastRoster);
+  const [cached, setCached] = useState25(() => cachedProfiles());
+  useEffect11(() => {
+    if (live.length || cached.length) {
+      return;
+    }
+    let alive = true;
+    void primeRoster().then(() => {
+      if (alive) {
+        setCached(cachedProfiles());
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [live.length, cached.length]);
+  const bots = localBots(live.length ? live : cached);
   return /* @__PURE__ */ jsxs36("div", { className: "hbs-page", "data-hermes-browser-settings": "", children: [
     /* @__PURE__ */ jsx37("p", { className: "hbs-intro", children: text3.settingsIntro }),
     bots.length === 0 ? /* @__PURE__ */ jsx37("p", { className: "hbs-note", children: text3.settingsEmpty }) : /* @__PURE__ */ jsx37("div", { className: "hbs-list", children: bots.map((bot) => /* @__PURE__ */ jsx37(BotBrowserRow, { bot }, bot.name)) })
@@ -23275,7 +23295,8 @@ function loadReactDom() {
       if (!React || React.version !== "19.3.0") throw new Error("host React " + (React && React.version) + " does not match react-dom 19.3.0");
       const url = URL.createObjectURL(new Blob([await readAsset()], { type: "text/javascript" }));
       try {
-        return await import(url);
+        const mod = await import(url);
+        return mod.createRoot ? mod : mod.default;
       } finally {
         URL.revokeObjectURL(url);
       }

@@ -11,7 +11,7 @@ import { Codicon, ConfirmDialog, Tip, useValue } from '@hermes/plugin-sdk'
 import { useEffect, useState } from 'react'
 
 import { forgetBrowserBackends } from '../browser-backend'
-import { $lastRoster } from '../data'
+import { $lastRoster, cachedUnionRoster, primeRoster } from '../data'
 import type { RosterRow } from '../types'
 
 import { type BrowserModeInfo, getBrowserMode, setBrowserMode } from './api'
@@ -128,9 +128,38 @@ function BotBrowserRow({ bot }: { bot: RosterRow }) {
   )
 }
 
+function cachedProfiles(): RosterRow[] {
+  const rows = cachedUnionRoster()?.profiles
+
+  return Array.isArray(rows) ? rows.filter(row => row && !row.ghost) : []
+}
+
 export function BrowserSettingsPage() {
   const text = useBrowserText()
-  const bots = localBots(useValue($lastRoster))
+  const live = useValue($lastRoster)
+  // The Bots pane publishes the roster only while mounted; Settings may open
+  // without it, so read the shared roster cache and fetch it once on a miss.
+  const [cached, setCached] = useState<RosterRow[]>(() => cachedProfiles())
+
+  useEffect(() => {
+    if (live.length || cached.length) {
+      return
+    }
+
+    let alive = true
+
+    void primeRoster().then(() => {
+      if (alive) {
+        setCached(cachedProfiles())
+      }
+    })
+
+    return () => {
+      alive = false
+    }
+  }, [live.length, cached.length])
+
+  const bots = localBots(live.length ? live : cached)
 
   return (
     <div className="hbs-page" data-hermes-browser-settings="">

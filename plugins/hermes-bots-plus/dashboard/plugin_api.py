@@ -3,7 +3,7 @@
 ``GET  browser/probe?url=&origin=``  can the viewer frame this page, and can the gateway reach it
 ``POST browser/view``                render / drive a page in the gateway's headless browser
 ``DELETE browser/view/{tab}``        close that page
-``GET  browser/mode/{profile}``     where that local bot's browser runs (cloud / local headed)
+``GET  browser/mode/{bot}``         where that local bot's browser runs (cloud / local headed)
 ``POST browser/mode``               switch it (config backed up first; settings page confirms)
 
 All behind the dashboard's auth gate like every plugin API. Only http(s) addresses are accepted.
@@ -89,9 +89,11 @@ def _mode_call(work):
         raise HTTPException(status_code=500, detail=type(exc).__name__) from exc
 
 
-@router.get("/browser/mode/{profile}")
-async def browser_mode_get(profile: str) -> dict[str, Any]:
-    return _mode_call(lambda: browser_mode.modes().get(profile))
+# The path parameter must not be called ``profile``: core's plugin-route
+# dependency reads a ``profile`` parameter as the request's profile scope.
+@router.get("/browser/mode/{bot}")
+async def browser_mode_get(bot: str) -> dict[str, Any]:
+    return _mode_call(lambda: browser_mode.modes().get(bot))
 
 
 @router.post("/browser/mode")
