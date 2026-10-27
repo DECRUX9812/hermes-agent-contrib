@@ -462,9 +462,13 @@ export function ChatBar({
     takeDraftRetry
   })
 
-  // Resting / reconnecting / starting placeholder text, re-rolled only on a real
-  // conversation change.
-  const placeholder = useComposerPlaceholder({ disabled, reconnecting, sessionId })
+  // Reconnecting / starting text comes from the hook. At rest it is one stable
+  // line per mode: a random pick on every load read as noise, not design.
+  const transportPlaceholder = useComposerPlaceholder({ disabled, reconnecting, sessionId })
+
+  const placeholder = disabled
+    ? transportPlaceholder
+    : ((sessionId ? t.composer.followUpPlaceholders[0] : t.composer.newSessionPlaceholders[0]) ?? transportPlaceholder)
 
   // Trigger / completion engine: @// detection, the adapter-driven item list,
   // popover selection, and chip insertion. The keydown nav block below consumes
