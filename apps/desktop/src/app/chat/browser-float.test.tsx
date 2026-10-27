@@ -27,6 +27,30 @@ function floatExample() {
   return id
 }
 
+/** A composer dock whose box sits at the bottom of the window. */
+function ComposerDock({ right, top }: { right: number; top: number }) {
+  return (
+    <div
+      data-slot="composer-dock"
+      ref={element => {
+        if (element) {
+          element.getBoundingClientRect = () =>
+            ({
+              bottom: window.innerHeight,
+              height: window.innerHeight - top,
+              left: 0,
+              right,
+              top,
+              width: right,
+              x: 0,
+              y: top
+            }) as DOMRect
+        }
+      }}
+    />
+  )
+}
+
 beforeEach(() => {
   window.localStorage.clear()
   closeRightRail()
@@ -73,6 +97,35 @@ describe('BrowserFloat', () => {
     fireEvent.click(pill)
 
     expect(screen.getByRole('region', { name: 'Floating browser' })).toBeTruthy()
+  })
+
+  it('keeps the pill clear of the composer, where the send button sits', () => {
+    floatExample()
+    render(
+      <>
+        <ComposerDock right={window.innerWidth} top={window.innerHeight - 168} />
+        <BrowserFloat />
+      </>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Minimize (Esc)' }))
+
+    expect(screen.getByRole('button', { name: 'Show floating browser' }).style.bottom).toBe('180px')
+  })
+
+  it('leaves the pill at the status bar when the composer is in its own column', () => {
+    // An open rail narrows the chat column, so the corner over the pill is free.
+    floatExample()
+    render(
+      <>
+        <ComposerDock right={window.innerWidth - 500} top={window.innerHeight - 168} />
+        <BrowserFloat />
+      </>
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Minimize (Esc)' }))
+
+    expect(screen.getByRole('button', { name: 'Show floating browser' }).style.bottom).toBe('12px')
   })
 
   it('docks back into the layout from the title bar', () => {

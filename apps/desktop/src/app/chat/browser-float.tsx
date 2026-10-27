@@ -12,6 +12,7 @@ import {
   clearBrowserFloat,
   dockBrowserFloat,
   dockSideForPointer,
+  FLOAT_MARGIN,
   floatPillOffset,
   type FloatRect,
   setBrowserFloatMinimized,
@@ -30,16 +31,26 @@ const viewport = () => ({ height: window.innerHeight, width: window.innerWidth }
 /** Fallback for `--titlebar-height` when the shell hasn't defined it. */
 const TITLEBAR_FALLBACK = 34
 const PILL_HEIGHT_FALLBACK = 32
+/** `max-w-64` on the pill, for when it hasn't been measured yet. */
+const PILL_WIDTH_FALLBACK = 256
 
-/** Where the pill goes now: measured against the status bar and title bar. */
+/** Where the pill goes now: measured against the status bar, the title bar, and
+ *  the composer — whose send button sits at the bottom-right of the chat column,
+ *  under the pill. */
 function pillOffset(pill: HTMLElement | null) {
   const statusbar = document.querySelector<HTMLElement>('[data-slot="statusbar"]')
   const bottom = statusbar ? Math.max(0, window.innerHeight - statusbar.getBoundingClientRect().top) : 0
   const titlebar = parseFloat(getComputedStyle(statusbar ?? document.documentElement).getPropertyValue('--titlebar-height'))
 
+  // Only clear the composer when it actually reaches under the pill's corner; a
+  // narrow chat column beside an open rail leaves the corner free.
+  const dock = document.querySelector<HTMLElement>('[data-slot="composer-dock"]')?.getBoundingClientRect()
+  const reach = (pill?.offsetWidth || PILL_WIDTH_FALLBACK) + FLOAT_MARGIN
+  const composer = dock && dock.right >= window.innerWidth - reach ? Math.max(0, window.innerHeight - dock.top) : 0
+
   return floatPillOffset(
     viewport(),
-    { bottom, top: Number.isFinite(titlebar) ? titlebar : TITLEBAR_FALLBACK },
+    { bottom, composer, top: Number.isFinite(titlebar) ? titlebar : TITLEBAR_FALLBACK },
     pill?.offsetHeight || PILL_HEIGHT_FALLBACK
   )
 }
@@ -70,18 +81,29 @@ export function BrowserFloat() {
     }
   }, [tab, tabId])
 
-  // Seat the pill above the status bar, and keep it there as the window resizes.
+  // Seat the pill above the composer and the status bar, and keep it there as
+  // the window or the composer changes height.
   useEffect(() => {
     if (!minimized) {
       return
     }
 
     const place = () => setPill(pillOffset(pillRef.current))
+    const dock = document.querySelector<HTMLElement>('[data-slot="composer-dock"]')
+    const watch = dock && typeof ResizeObserver === 'function' ? new ResizeObserver(place) : null
 
     place()
+
+    if (watch && dock) {
+      watch.observe(dock)
+    }
+
     window.addEventListener('resize', place)
 
-    return () => window.removeEventListener('resize', place)
+    return () => {
+      watch?.disconnect()
+      window.removeEventListener('resize', place)
+    }
   }, [minimized])
 
   // Keep the float on screen when the window shrinks.
