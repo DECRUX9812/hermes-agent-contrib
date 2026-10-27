@@ -11,8 +11,7 @@ interface ZoneHeaderLayoutInput {
   measuredBelowControls: boolean
   narrow: boolean
   shown: readonly string[]
-  /** No workspace or main pane in the zone. */
-  sidebarGroup: boolean
+  /** A top-edge zone's tabs ride the window band with the controls. */
   topEdge: boolean
 }
 
@@ -34,14 +33,15 @@ export function useZoneHeaderLayout({
   measuredBelowControls,
   narrow,
   shown,
-  sidebarGroup,
   topEdge
 }: ZoneHeaderLayoutInput): ZoneHeaderLayout {
   const touchTitlebar = useTouchTitlebar()
   const compactTabs = touchTitlebar && narrow && shown.some(isSessionStripPane)
-  // The compact picker needs a full touch row: the titlebar's fit threshold
-  // also has to accommodate the drag handle and the separate new-tab target.
-  const tabsBelowControls = topEdge && (compactTabs || sidebarGroup || measuredBelowControls)
+  // A top-edge zone's tabs ride the window band with the controls. Only a
+  // measured squeeze (or the touch picker) drops them to their own row: a
+  // sidebar group used to be forced below, which left a whole column of dead
+  // chrome above its switcher while the window band ran empty beside it.
+  const tabsBelowControls = topEdge && (compactTabs || measuredBelowControls)
 
   return {
     compactTabs,
