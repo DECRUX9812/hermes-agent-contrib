@@ -71,6 +71,15 @@ export const arArtifacts = {
     popIn: 'إدخال',
     popOut: 'إخراج',
     linkHint: '⌘/Ctrl-نقر للفتح في المتصفح',
+    float: {
+      dock: 'تثبيت المتصفح',
+      dockLeft: 'التثبيت إلى اليسار',
+      dockRight: 'التثبيت إلى اليمين',
+      float: 'تعويم فوق التطبيق',
+      label: 'متصفح عائم',
+      minimize: 'تصغير (Esc)',
+      restore: 'إظهار المتصفح العائم'
+    },
     sourceLineTitle: 'انقر للتحديد · shift-نقر للتوسيع · اسحب إلى المُنشئ',
     source: 'المصدر',
     renderedPreview: 'المعاينة',

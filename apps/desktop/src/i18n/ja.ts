@@ -3097,6 +3097,15 @@ export const jaOverrides = {
     popIn: 'ポップイン',
     popOut: 'ポップアウト',
     linkHint: '⌘/Ctrl+クリックでブラウザで開く',
+    float: {
+      dock: 'ブラウザをドック',
+      dockLeft: '左にドック',
+      dockRight: '右にドック',
+      float: 'アプリの上にフロート',
+      label: 'フローティングブラウザ',
+      minimize: '最小化 (Esc)',
+      restore: 'フローティングブラウザを表示'
+    },
     sourceLineTitle: 'クリックして選択 · Shift クリックで拡張 · コンポーザーにドラッグ',
     source: 'ソース',
     renderedPreview: 'プレビュー',
