@@ -260,6 +260,31 @@ const PAPER_CSS = `
   background-image: none;
 }
 
+/* Framed editors (consistency M7): the SOUL.md and prompt editors kept CodeMirror's
+   GitHub palette (blue headings, grey fences, green links) on paper. Its classes
+   are generated, so the frame sets ink, every highlight inherits it (headings keep
+   their weight), and cursor and selection come from the theme. */
+:root[data-hermes-theme='paper'] .rounded-md > div > .cm-editor {
+  color: var(--ui-text-primary);
+}
+:root[data-hermes-theme='paper'] .rounded-md > div > .cm-editor .cm-line span {
+  color: inherit;
+}
+:root[data-hermes-theme='paper'] .rounded-md > div > .cm-editor .cm-cursor {
+  border-left-color: var(--dt-primary);
+}
+:root[data-hermes-theme='paper'] .rounded-md > div > .cm-editor .cm-selectionBackground,
+:root[data-hermes-theme='paper'] .rounded-md > div > .cm-editor.cm-focused .cm-selectionBackground {
+  background: var(--dt-accent);
+}
+
+/* Profiles (consistency L7): the "Default" badge was the only indigo pill among
+   warm ones (Built-in, Enabled); it reads as the same muted chip now. */
+:root[data-hermes-theme='paper'] header span.rounded-full.bg-primary\\/10.text-primary {
+  background-color: var(--dt-muted);
+  color: var(--ui-text-secondary);
+}
+
 /* Flat panels: a hairline reads as intentional, a drop shadow reads as 2016. */
 :root[data-hermes-theme='paper'] [data-slot='sidebar-container'] {
   box-shadow: none;
