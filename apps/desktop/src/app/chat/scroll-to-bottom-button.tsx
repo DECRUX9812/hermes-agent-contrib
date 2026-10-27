@@ -6,7 +6,6 @@ import { useTranscriptWindow } from '@/components/assistant-ui/thread/transcript
 import { Codicon } from '@/components/ui/codicon'
 import { AnimatedInt } from '@/components/ui/diff-count'
 import { useI18n } from '@/i18n'
-import { scrollToSessionApproval } from '@/lib/approval-journal'
 import { triggerHaptic } from '@/lib/haptics'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
@@ -18,6 +17,28 @@ import {
 } from '@/store/thread-scroll'
 
 import { useComposerSurfaceId } from './composer/scope'
+
+// Attribute-safe selector fragment. jsdom (vitest) does not ship `CSS.escape`.
+const cssEscape = (value: string): string => {
+  if (typeof CSS !== 'undefined' && typeof CSS.escape === 'function') {
+    return CSS.escape(value)
+  }
+
+  return value.replace(/[^a-zA-Z0-9_:-]/g, ch => `\\${ch}`)
+}
+
+// The pending-approval stack renders once per pane, tagged with the owning
+// session so a split view can't jump one pane's arrow into a sibling's
+// approval. `nearest` keeps this a minimal scroll within the transcript's own
+// scroll container instead of an unqualified scrollIntoView, which would also
+// nudge any overflow-hidden ancestor's programmatic scroll offset.
+function findSessionApprovalStack(sessionId: string | null): HTMLElement | null {
+  if (!sessionId) {
+    return null
+  }
+
+  return document.querySelector<HTMLElement>(`[data-approval-stack][data-session-id="${cssEscape(sessionId)}"]`)
+}
 
 /**
  * Floating "jump to bottom" control. Sits centered just above the composer,
@@ -80,17 +101,21 @@ export function ScrollToBottomButton({ sessionId }: { sessionId: string | null }
       aria-hidden={!visible}
       aria-label={label}
       className={cn(
-        // A shadowed pill on a solid fill: no border, and no backdrop blur to
-        // re-composite under streaming text every frame.
-        'thread-jump-button absolute left-1/2 z-20 flex h-8 items-center gap-1.5 rounded-full bg-(--composer-fill) px-3 text-xs font-medium shadow-[0_0.125rem_0.375rem_rgb(0_0_0/0.12),0_0.5rem_1.25rem_rgb(0_0_0/0.14)]',
-        visibleApproval ? 'text-primary hover:bg-primary/10' : 'text-muted-foreground hover:text-foreground',
+        'thread-jump-button absolute left-1/2 z-20 flex h-8 items-center gap-1.5 rounded-full border bg-(--composer-fill) px-3 text-xs font-medium backdrop-blur-[0.75rem] [-webkit-backdrop-filter:blur(0.75rem)]',
+        visibleApproval
+          ? 'border-primary/40 text-primary hover:bg-primary/10'
+          : 'border-border/65 text-muted-foreground hover:text-foreground',
         !visible && 'pointer-events-none'
       )}
       data-state={state}
       onClick={() => {
         triggerHaptic('selection')
 
-        if (visibleApproval && scrollToSessionApproval(request?.sessionId)) {
+        const approvalStack = visibleApproval ? findSessionApprovalStack(request?.sessionId ?? null) : null
+
+        if (approvalStack) {
+          approvalStack.scrollIntoView({ block: 'nearest' })
+
           return
         }
 
@@ -102,7 +127,7 @@ export function ScrollToBottomButton({ sessionId }: { sessionId: string | null }
       tabIndex={visible ? 0 : -1}
       type="button"
     >
-      <Codicon name="arrow-down" size="0.8125rem" />
+      <Codicon name="arrow-down" size="0.875rem" />
       {visibleApproval || count <= 0 ? (
         <span>{label}</span>
       ) : (
