@@ -4,8 +4,12 @@
  * is drawn ON the page and therefore appears in the crop the agent receives —
  * that is the whole point of circling something.
  *
- * The picker is the default: with no tool armed a click still picks an element
- * or drags a comment area.
+ * Draw first, then box or pick with the pointer: the crop is taken when the
+ * target is picked, so anything drawn before that point is in the picture.
+ * Saving or cancelling a comment clears the strokes.
+ *
+ * The picker is the default: with no tool armed a click picks an element and a
+ * drag boxes a comment area.
  */
 
 import { Button } from '@/components/ui/button'
