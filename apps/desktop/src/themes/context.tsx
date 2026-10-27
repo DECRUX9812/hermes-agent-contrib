@@ -367,6 +367,7 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
     // Secondary and muted text as solid roles, not 74%/54% washes of ink, so they hold 5.5:1 / 4.6:1 on every skin.
     '--ui-text-secondary': ensureContrastOklch(mix(c.background, ink, 0.8), c.background, 5.5),
     '--ui-text-tertiary': ensureContrastOklch(mix(c.background, ink, 0.68), c.background, 4.6),
+    '--ui-text-quaternary': ensureContrastOklch(mix(c.background, ink, 0.5), c.background, 3.2),
     '--dt-midground-foreground': c.midgroundForeground ?? readableInk(midground),
     // A LOUD fill of the brand colour, for the rare surface that has to read as
     // the app speaking rather than as chrome. `primary` alone can't do that job:

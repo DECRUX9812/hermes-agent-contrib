@@ -41,8 +41,8 @@
     --dur-fast: 120ms;
     --dur-base: 180ms;
     --dur-slow: 260ms;
-    --ds-focus-ring: 0 0 0 2px var(--ui-chat-surface-background), 0 0 0 4px
-      color-mix(in srgb, var(--ui-accent) 55%, transparent);
+    --ds-focus-ring:
+      0 0 0 2px var(--ui-chat-surface-background), 0 0 0 4px color-mix(in srgb, var(--ui-accent) 55%, transparent);
   }
 }
 
@@ -54,4 +54,52 @@
   .focus-ring:focus-visible {
     box-shadow: var(--ds-focus-ring);
   }
+}
+
+/* Design-system snap (audit M5-M7). Unlayered, so it beats the utilities layer:
+   arbitrary sizes and radii in core and plugins resolve to the ladder and roles. */
+:is(
+  [class*='text-[0.5'],
+  [class*='text-[0.6'],
+  [class*='text-[0.70'],
+  [class*='text-[0.7r'],
+  [class*='text-[0.71'],
+  [class*='text-[0.72'],
+  [class*='text-[0.73'],
+  [class*='text-[8'],
+  [class*='text-[9'],
+  [class*='text-[10'],
+  [class*='text-[11p']
+) {
+  font-size: var(--text-ui-2xs);
+}
+
+:is([class*='text-[0.75'], [class*='text-[0.78'], [class*='text-[0.8r'], [class*='text-[12p']) {
+  font-size: var(--text-ui-xs);
+}
+
+:is([class*='text-[0.8125'], [class*='text-[0.82'], [class*='text-[0.85'], [class*='text-[13p']) {
+  font-size: var(--text-ui-sm);
+}
+
+:is(
+  .rounded-\[3px\],
+  .rounded-\[4px\],
+  .rounded-\[5px\],
+  .rounded-\[6px\],
+  .rounded-\[0\.25rem\],
+  .rounded-\[0\.3125rem\],
+  .rounded-\[0\.375rem\]
+) {
+  border-radius: var(--radius-control);
+}
+
+:is(.rounded-\[8px\], .rounded-\[9px\], .rounded-\[0\.625rem\], .composer-human-message) {
+  border-radius: var(--radius-card);
+}
+
+/* Sentence case: tracked caps labels render as written. */
+.uppercase[class*='tracking-']:not(kbd) {
+  text-transform: none;
+  letter-spacing: normal;
 }
