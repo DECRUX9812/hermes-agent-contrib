@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { ToolCard } from './tool-card'
 import { CardBlock } from './tool-card'
-import { BrowserSteps, stepPageUrl } from './tool-card'
+import { BrowserSteps, pageHost, stepPageUrl } from './tool-card'
 import type { ToolCardGroup, ToolCardView } from './tool-card-model'
 
 const openPreview = vi.fn()
@@ -108,5 +108,17 @@ describe('Open page outside the browser viewer', () => {
 
     fireEvent.click(screen.getByRole('button', { name: 'Open page' }))
     expect(openPreview.mock.calls[0][0]).toMatchObject({ url: 'https://example.com/b' })
+  })
+})
+
+describe('pageHost', () => {
+  it('names the site a screenshot step was on', () => {
+    expect(pageHost('https://www.example.com/a?b=1')).toBe('example.com')
+    expect(pageHost('https://news.example.org/')).toBe('news.example.org')
+  })
+
+  it('is empty for a missing or broken address', () => {
+    expect(pageHost('')).toBe('')
+    expect(pageHost('not a url')).toBe('')
   })
 })

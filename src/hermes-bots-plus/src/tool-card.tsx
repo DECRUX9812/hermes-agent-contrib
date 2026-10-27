@@ -191,6 +191,16 @@ export function CardBlock({ card, showStatus }: { card: ToolCardView; showStatus
   )
 }
 
+/** The site a page address is on, without `www.`, for labels. Empty when the
+ *  address is missing or unparsable. */
+export function pageHost(url: string): string {
+  try {
+    return url ? new URL(url).hostname.replace(/^www\./, '') : ''
+  } catch {
+    return ''
+  }
+}
+
 function stepHost(card: ToolCardView): string {
   return card.thumb?.kind === 'site' ? card.thumb.host : ''
 }
@@ -246,7 +256,7 @@ export function BrowserSteps({ group }: { group: ToolCardGroup }) {
       <div className="text-ui-xs font-semibold text-fg">{copy.title(name)}</div>
       <div className="mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken">
         {shot ? (
-          <ExpandableShot host={host} src={shot} step={selected + 1} />
+          <ExpandableShot host={host || pageHost(pageUrl)} src={shot} step={selected + 1} />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle">
             {pageUrl && isPublicHost(new URL(pageUrl).hostname) ? (

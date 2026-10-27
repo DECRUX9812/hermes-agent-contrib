@@ -33629,6 +33629,13 @@ function CardBlock({ card, showStatus }) {
     ] }) : null
   ] });
 }
+function pageHost(url) {
+  try {
+    return url ? new URL(url).hostname.replace(/^www\./, "") : "";
+  } catch {
+    return "";
+  }
+}
 function stepHost(card) {
   return card.thumb?.kind === "site" ? card.thumb.host : "";
 }
@@ -33672,7 +33679,7 @@ function BrowserSteps({ group }) {
       },
       children: [
         /* @__PURE__ */ jsx77("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
-        /* @__PURE__ */ jsx77("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx77(ExpandableShot, { host: host2, src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs75("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+        /* @__PURE__ */ jsx77("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx77(ExpandableShot, { host: host2 || pageHost(pageUrl), src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs75("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
           pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx77("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx77(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
           pageUrl ? /* @__PURE__ */ jsx77("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx77("span", { className: "truncate", children: host2 }) : null,
           /* @__PURE__ */ jsx77("span", { children: copy.noScreenshot })
