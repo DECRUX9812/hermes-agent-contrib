@@ -209,11 +209,10 @@ function AgentCard({ a, now, onChat }) {
     onKeyDown: chatable ? e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onChat(a.profile) } } : undefined,
     title: chatable ? 'Click to chat with ' + pet[0] : a.label,
     className: cn(
-      'group relative flex items-center gap-2 rounded-lg border px-2 py-1.5 outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)',
-      'border-(--ui-stroke-secondary) bg-(--chrome-action-hover)',
+      'po-card group relative flex items-center gap-2 px-2 py-1.5',
       'pet-' + status,
-      whipped && 'pet-whipped border-(--ui-accent)',
-      chatable && 'cursor-pointer transition-colors hover:border-(--ui-accent)'
+      whipped && 'pet-whipped',
+      chatable && 'po-card-action'
     ),
     children: [
       // the pet sprite — animated by CSS based on .pet-<status>
@@ -224,8 +223,8 @@ function AgentCard({ a, now, onChat }) {
       }),
       jsxs('div', { className: 'min-w-0 flex-1', children: [
         jsxs('div', { className: 'flex items-center gap-1', children: [
-          jsx('span', { className: 'truncate text-xs font-semibold', style: { color: pet[2] }, children: pet[1] + ' ' + pet[0] }),
-          a.kind === 'subagent' && jsx('span', { className: 'rounded border border-(--ui-stroke-secondary) px-1 text-[0.6875rem] text-(--ui-text-tertiary)', children: 'sub' }),
+          jsx('span', { className: 'po-pet-name truncate text-xs font-semibold', style: { '--po-pet': pet[2] }, children: pet[1] + ' ' + pet[0] }),
+          a.kind === 'subagent' && jsx('span', { className: 'po-tag px-1 text-[0.6875rem] text-(--ui-text-tertiary)', children: 'sub' }),
           whipped && jsx('span', { children: '💥' })
         ]}),
         jsx('div', { className: 'truncate font-mono text-[0.6875rem] text-(--ui-text-tertiary)', children: (a.tool || a.detail || (a.platform || 'hermes')) + ' · ' + ago(a.updated_at) }),
@@ -454,10 +453,7 @@ function OfficePanel({ data, onChat, page = false }) {
           jsx('button', {
             type: 'button',
             onClick: crack,
-            className: cn(
-              'rounded-md border border-(--ui-accent) px-2 py-0.5 text-xs font-medium',
-              'text-(--ui-accent) transition-colors hover:bg-(--chrome-action-hover) focus-visible:ring-2 focus-visible:ring-(--ui-accent) outline-none'
-            ),
+            className: 'po-btn px-2.5 text-xs font-medium',
             children: 'Crack the whip'
           })
         ]
@@ -586,11 +582,24 @@ export default {
     ctxRest = (path, opts) => ctx.rest(path, opts)
     ctxOs = ctx.os || ctxOs
 
-    // One injected stylesheet for pet animations — scoped to the pet cards.
-    if (!document.getElementById('pixel-office-styles')) {
-      const style = document.createElement('style')
+    // One injected stylesheet, scoped to the pet cards: surfaces on the host's
+    // design tokens (radius / stroke / accent / focus ring / motion) so every
+    // theme and dark mode repaints them, plus the pet animations. Rewritten on
+    // each register so a hot-reloaded plugin never keeps a stale sheet.
+    {
+      const style = document.getElementById('pixel-office-styles') || document.createElement('style')
       style.id = 'pixel-office-styles'
       style.textContent = [
+        '.po-card { border: 1px solid var(--ui-stroke-secondary); border-radius: var(--radius-card, .625rem); background: var(--chrome-action-hover); outline: none; transition: border-color var(--dur-fast, 120ms) var(--ease-standard, ease), background-color var(--dur-fast, 120ms) var(--ease-standard, ease); }',
+        '.po-card-action { cursor: pointer; }',
+        '.po-card-action:hover { border-color: color-mix(in oklab, var(--ui-accent) 55%, var(--ui-stroke-secondary)); }',
+        '.po-card:focus-visible, .po-btn:focus-visible { box-shadow: var(--ds-focus-ring, 0 0 0 2px var(--ui-accent)); }',
+        '.po-card.pet-whipped { border-color: var(--ui-accent); background: color-mix(in oklab, var(--ui-accent) 8%, var(--chrome-action-hover)); }',
+        '.po-pet-name { color: color-mix(in oklab, var(--po-pet) 62%, var(--ui-text-primary)); }',
+        '.po-tag { border: 1px solid var(--ui-stroke-secondary); border-radius: var(--radius-control, .375rem); }',
+        '.po-btn { display: inline-flex; align-items: center; height: 1.75rem; border-radius: var(--radius-control, .375rem); border: 1px solid color-mix(in oklab, var(--ui-accent) 40%, transparent); background: color-mix(in oklab, var(--ui-accent) 10%, transparent); color: var(--ui-accent); outline: none; cursor: pointer; transition: background-color var(--dur-fast, 120ms) var(--ease-standard, ease); }',
+        '.po-btn:hover { background: color-mix(in oklab, var(--ui-accent) 18%, transparent); }',
+        '.po-btn:active { background: color-mix(in oklab, var(--ui-accent) 24%, transparent); }',
         '@keyframes pixel-pulse { 0%,100% { opacity: 1; } 50% { opacity: .35; } }',
         '.pet-sprite { transition: transform .2s ease; }',
         '@media (prefers-reduced-motion: reduce) { .pet-sprite, .pixel-pulse { animation: none !important; } }',
@@ -607,7 +616,7 @@ export default {
         '@keyframes pixel-sleep { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-1px); } }',
         '@keyframes pixel-hop { 0% { transform: translateY(0); } 40% { transform: translateY(-10px); } 70% { transform: translateY(2px); } 100% { transform: translateY(0); } }'
       ].join('\n')
-      document.head.appendChild(style)
+      if (!style.isConnected) document.head.appendChild(style)
     }
 
     // A status bar chip, not a docked pane: the office is a glance, so it
