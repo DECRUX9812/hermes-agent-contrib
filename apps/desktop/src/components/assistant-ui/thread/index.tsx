@@ -1,6 +1,7 @@
 import { useStore } from '@nanostores/react'
 import { createContext, memo, useCallback, useContext, useMemo, useRef, useState } from 'react'
 
+import { useSessionView } from '@/app/chat/session-view'
 import { ChatEmptySlot } from '@/components/assistant-ui/chat-empty-slot'
 import { AssistantMessage } from '@/components/assistant-ui/thread/assistant-message'
 import { ThreadMessageList } from '@/components/assistant-ui/thread/list'
@@ -12,11 +13,14 @@ import { type RestoreMessageTarget } from '@/components/assistant-ui/thread/type
 import { UserEditComposer } from '@/components/assistant-ui/thread/user-edit-composer'
 import { UserMessage } from '@/components/assistant-ui/thread/user-message'
 import { Intro, type IntroProps } from '@/components/chat/intro'
+import { $workspaceMode } from '@/components/pane-shell/workspace-scope'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { HermesGateway } from '@/hermes'
 import { useI18n } from '@/i18n'
 import { $webappSignedOut } from '@/store/boot'
+import { $introSplash } from '@/store/intro-splash'
 import { notifyError } from '@/store/notifications'
+import { isAuxiliaryWindow } from '@/store/windows'
 
 type ThreadLoadingState = 'response' | 'session'
 
@@ -78,6 +82,9 @@ export const Thread = memo(function Thread({
   // A signed-out Webapp tab keeps no conversation on the page under its sign-in view; the
   // messages mount again from the session once the tab signs back in.
   const signedOut = useStore($webappSignedOut)
+  const introSplash = useStore($introSplash)
+  const isPrimaryView = useSessionView().kind === 'primary'
+  const botsWorkspace = useStore($workspaceMode) === 'bots'
 
   if (isHistorical) {
     onBranchInNewChat = undefined
@@ -168,12 +175,21 @@ export const Thread = memo(function Thread({
   // nothing in it yet gets whichever plugin owns it. The slot often renders
   // nothing, which costs an empty container — harmless, since there is no
   // content to lay out until the first message swaps this branch out.
+  //
+  // A routed session with no messages also gets the starter chips, but only
+  // once it has actually loaded (an existing session's transcript is still
+  // hydrating while loading === 'session'), under the same Appearance toggle
+  // and window rules as the draft splash, and never in Bot Chat, whose empty
+  // state belongs to the bots plugin.
+  const sessionIntro =
+    introSplash && isPrimaryView && !botsWorkspace && loading !== 'session' && !isAuxiliaryWindow()
+
   const emptyBody = intro ? (
     <Intro {...intro} />
   ) : sessionId ? (
     <>
       <ChatEmptySlot sessionId={sessionId} />
-      <Intro />
+      {sessionIntro && <Intro />}
     </>
   ) : null
 

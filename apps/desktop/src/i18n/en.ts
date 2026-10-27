@@ -39,7 +39,16 @@ export const en: Translations = {
   appTour: enAppTour,
   firstRun: enFirstRun,
   // English editorial copy stays in the shipped JSONL; other locales override it.
-  intro: { stock: {}, custom: () => [] },
+  intro: {
+    stock: {},
+    custom: () => [],
+    starters: {
+      featureSquad: { label: 'Feature Squad', prompt: 'Plan, build, and test a feature in parallel: ' },
+      bugHunt: { label: 'Bug Hunt', prompt: 'Reproduce and fix this bug: ' },
+      research: { label: 'Research', prompt: 'Search the web and docs to summarize: ' }
+    },
+    connectPortal: 'Connect Nous Portal'
+  },
   connectors: enConnectorCard,
 
   catalog: enCatalog,

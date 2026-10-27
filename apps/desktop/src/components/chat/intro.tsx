@@ -3,6 +3,7 @@ import { useState } from 'react'
 
 import { requestComposerInsert } from '@/app/chat/composer/focus'
 import { useI18n } from '@/i18n'
+import { Bug, Search, Zap } from '@/lib/icons'
 import { capitalize, normalize } from '@/lib/text'
 import { $freeTierSignInOpen } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
@@ -175,10 +176,10 @@ export function Intro({ personality, seed }: IntroProps) {
   const body = bodies?.[Math.abs(rotationSeed) % bodies.length] ?? copy.body
   const canConnectPortal = useStore($freeTierSignInOpen)
 
-  const STARTER_PROMPTS = [
-    { label: '⚡ Feature Squad', prompt: 'Plan, build, and test a feature in parallel: ' },
-    { label: '🧪 Bug Hunt', prompt: 'Reproduce and fix this bug: ' },
-    { label: '🔍 Research', prompt: 'Search the web and docs to summarize: ' }
+  const starters = [
+    { icon: Zap, ...t.intro.starters.featureSquad },
+    { icon: Bug, ...t.intro.starters.bugHunt },
+    { icon: Search, ...t.intro.starters.research }
   ]
 
   return (
@@ -199,20 +200,22 @@ export function Intro({ personality, seed }: IntroProps) {
             onClick={() => openFreeTierSignIn()}
             type="button"
           >
-            <span className="text-(--theme-primary)">⚡</span> Connect Nous Portal (1-Click)
+            <Zap aria-hidden className="size-3.5 text-(--theme-primary)" />
+            {t.intro.connectPortal}
           </button>
         </div>
       )}
 
       <div className="pointer-events-auto mt-4 flex flex-wrap items-center justify-center gap-2">
-        {STARTER_PROMPTS.map(p => (
+        {starters.map(({ icon: Icon, label, prompt }) => (
           <button
-            className="inline-flex items-center rounded-lg border border-(--ui-border-subtle) bg-(--ui-sidebar-surface-background)/60 px-2.5 py-1 text-xs text-muted-foreground transition-all hover:border-foreground/30 hover:text-foreground"
-            key={p.label}
-            onClick={() => requestComposerInsert(p.prompt, { mode: 'block' })}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-(--ui-border-subtle) bg-(--ui-sidebar-surface-background)/60 px-2.5 py-1 text-xs text-muted-foreground transition-all hover:border-foreground/30 hover:text-foreground"
+            key={label}
+            onClick={() => requestComposerInsert(prompt, { mode: 'block' })}
             type="button"
           >
-            {p.label}
+            <Icon aria-hidden className="size-3.5" />
+            {label}
           </button>
         ))}
       </div>

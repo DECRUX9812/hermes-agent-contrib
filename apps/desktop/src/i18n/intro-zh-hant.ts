@@ -115,5 +115,11 @@ export const introZhHant: Translations['intro'] = {
     '傳送問題、檔案或想法。我會遵循你設定的人格。',
     '把工作放在這裡。我會根據儲存庫的實際情況展開工作。',
     `給我背景資訊，我會以 ${label} 模式回答。`
-  ]
+  ],
+  starters: {
+    featureSquad: { label: '功能小隊', prompt: '平行規劃、建置並測試一個功能：' },
+    bugHunt: { label: '抓蟲', prompt: '重現並修復這個錯誤：' },
+    research: { label: '研究', prompt: '搜尋網頁和文件並摘要：' }
+  },
+  connectPortal: '連接 Nous Portal'
 }
