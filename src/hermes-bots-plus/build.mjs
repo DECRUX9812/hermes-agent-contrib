@@ -1,6 +1,6 @@
 // Bundles the fork's Bot Mode 2.0 source into one desktop-plugin plugin.js.
 // Usage: node build.mjs <path-to-esbuild-package-dir>
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
@@ -42,12 +42,32 @@ const novnc = await esbuild.build({
   write: false
 })
 const novncSource = `/* noVNC ${JSON.parse(readFileSync(resolve(dirname(require.resolve('@novnc/novnc')), '../package.json'), 'utf8')).version}, MPL-2.0, https://github.com/novnc/noVNC */\n${novnc.outputFiles[0].text}`
-const novncLoader = `const source = ${JSON.stringify(novncSource)}
+// It ships as its own file next to plugin.js and is read through the host's
+// plugin-source door only when a screen attaches, so Bot Chat's first load
+// never downloads or parses it.
+const NOVNC_ASSET = 'vendor/novnc-rfb.mjs'
+const novncFile = resolve(dirname(outfile), NOVNC_ASSET)
+mkdirSync(dirname(novncFile), { recursive: true })
+writeFileSync(novncFile, novncSource)
+const novncLoader = `const FOLDER = 'hermes-bots-plus'
+const ASSET = ${JSON.stringify(NOVNC_ASSET)}
 let loading = null
+async function readAsset() {
+  const desktop = globalThis.hermesDesktop
+  const root = await desktop?.desktopPluginsRoot?.()
+  if (!root) throw new Error('desktop plugins root unavailable')
+  const path = String(root).replace(/[\\/]+$/, '') + '/' + FOLDER + '/' + ASSET
+  if (desktop.readPluginSource) return (await desktop.readPluginSource(path)).text
+  const read = await desktop.readFileText?.(path)
+  if (!read || typeof read.text !== 'string' || read.truncated) throw new Error('screen viewer asset unreadable')
+  return read.text
+}
 export function loadNovnc() {
   if (!loading) {
-    const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }))
-    loading = import(url).finally(() => URL.revokeObjectURL(url))
+    loading = readAsset().then(source => {
+      const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }))
+      return import(url).finally(() => URL.revokeObjectURL(url))
+    })
     loading.catch(() => { loading = null })
   }
   return loading
@@ -66,9 +86,9 @@ const hostImports = {
       loader: 'js'
     }))
     build.onResolve({ filter: /^nanostores$/ }, () => ({ path: require.resolve('nanostores') }))
-    // The VNC client rides along as module text and is evaluated from a blob
-    // only when a screen attaches, so plugin load never pays for it. It has
-    // top-level await, so it cannot sit inline in this bundle.
+    // The VNC client is a separate asset (see NOVNC_ASSET); this module only
+    // fetches and evaluates it from a blob on first use (it has top-level
+    // await, so it cannot sit inline in this bundle).
     build.onResolve({ filter: /^@novnc\/novnc$/ }, () => ({ namespace: 'novnc', path: 'rfb' }))
     build.onLoad({ filter: /.*/, namespace: 'novnc' }, () => ({ contents: novncLoader, loader: 'js' }))
   }
@@ -101,4 +121,4 @@ if (leaked.length) {
   process.exit(1)
 }
 
-console.log(`built ${outfile} (${(bundle.length / 1024).toFixed(0)} KiB; ${utilities.missing.length} plugin-only utilities, host css ${hostCss ? 'found' : 'MISSING'})`)
+console.log(`built ${outfile} (${(bundle.length / 1024).toFixed(0)} KiB; ${NOVNC_ASSET} ${(novncSource.length / 1024).toFixed(0)} KiB; ${utilities.missing.length} plugin-only utilities, host css ${hostCss ? 'found' : 'MISSING'})`)
