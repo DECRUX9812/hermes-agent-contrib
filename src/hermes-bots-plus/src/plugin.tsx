@@ -106,6 +106,8 @@ import { isBotHidden } from './hidden-bots'
 import { HIRE_LOCALES } from './hire-i18n'
 import { annotateOrphanedGroupChatMembers } from './hygiene'
 import { BOTS_LOCALES, botsText, useBots } from './i18n'
+import { armInstantAck } from './instant-ack'
+import { InstantAckLine, wireInstantAck } from './instant-ack-line'
 import { displayName } from './labels'
 import { hydrateRosterSortMode } from './live-status'
 import { MissionRail } from './mission-rail'
@@ -1134,6 +1136,39 @@ export default {
         }
       }
     })
+
+    // Instant ack (zero core): registered AFTER the plan and mention
+    // middleware so the receipt restates the draft that is actually sent
+    // (its bubble text). Pass-through only — it never rewrites or cancels.
+    // Everything after the receipt is fed by existing gateway events.
+    if (wireInstantAck(dispose => ctx.onDispose?.(dispose))) {
+      ctx.register({
+        id: 'instant-ack-middleware',
+        area: COMPOSER_AREAS.middleware,
+        data: {
+          handler: (draft: ComposerDraftPayload): ComposerDraftPayload => {
+            const storedId = host.state.focusedStoredSessionId.get()
+
+            if (canonicalBotChatOnScreen(storedId)) {
+              armInstantAck(
+                host.state.focusedSessionId.get(),
+                storedId,
+                draft.displayText ?? draft.text ?? '',
+                host.state.busy.get()
+              )
+            }
+
+            return draft
+          }
+        }
+      })
+
+      ctx.register({
+        id: 'instant-ack',
+        area: COMPOSER_AREAS.top,
+        render: () => <InstantAckLine />
+      })
+    }
 
     // Team Bots: the `/team` home, its sidebar row and a palette entry. All SDK-only, so the
     // same registration works when this plugin runs inside a web-hosted client.

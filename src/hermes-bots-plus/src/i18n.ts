@@ -843,6 +843,15 @@ type BotsMessages = {
     complete: string
     clearChecklist: string
   }
+  ack: {
+    /** Receipt: restates the user's own words, claims nothing else. */
+    prompt: (text: string) => string
+    command: (command: string) => string
+    waiting: string
+    /** First real step, by the tool family that actually started. */
+    verbs: Record<'browse' | 'delegate' | 'edit' | 'read' | 'run' | 'search', string>
+    using: (tool: string) => string
+  }
   /** G1/G8 — the focused bot's context rail: profile card up top, then the
    *  dated task log, computer panel, and routines as collapsible sections. */
   /** The Muse-style context rail: hero, tabs, and the Activity feed that
@@ -1717,6 +1726,20 @@ const en: BotsMessages = {
     stepsDone: (done, total) => `${done}/${total} done`,
     complete: 'Complete',
     clearChecklist: 'Clear'
+  },
+  ack: {
+    prompt: text => `Got it — ${text}`,
+    command: command => `Running ${command}…`,
+    waiting: 'Waiting on the model…',
+    verbs: {
+      browse: 'Opening a page…',
+      delegate: 'Handing off…',
+      edit: 'Editing files…',
+      read: 'Reading files…',
+      run: 'Running a command…',
+      search: 'Searching the web…'
+    },
+    using: tool => `Using ${tool}…`
   },
   activity: {
     tabs: { activity: 'Activity', approvals: 'Approvals', scheduled: 'Scheduled', bot: 'Bot' },
@@ -2601,6 +2624,20 @@ const ja: BotsMessages = {
     complete: '完了',
     clearChecklist: 'クリア'
   },
+  ack: {
+    prompt: text => `了解 — ${text}`,
+    command: command => `${command} を実行中…`,
+    waiting: 'モデルの応答を待っています…',
+    verbs: {
+      browse: 'ページを開いています…',
+      delegate: '引き継いでいます…',
+      edit: 'ファイルを編集中…',
+      read: 'ファイルを読んでいます…',
+      run: 'コマンドを実行中…',
+      search: 'ウェブを検索中…'
+    },
+    using: tool => `${tool} を使用中…`
+  },
   events: {
     open: '開く',
     inflight: 'メッセージを配信中です'
@@ -3466,6 +3503,20 @@ const zh: BotsMessages = {
     complete: '已完成',
     clearChecklist: '清除'
   },
+  ack: {
+    prompt: text => `收到 — ${text}`,
+    command: command => `正在运行 ${command}…`,
+    waiting: '正在等待模型…',
+    verbs: {
+      browse: '正在打开页面…',
+      delegate: '正在移交…',
+      edit: '正在编辑文件…',
+      read: '正在读取文件…',
+      run: '正在运行命令…',
+      search: '正在搜索网页…'
+    },
+    using: tool => `正在使用 ${tool}…`
+  },
   events: {
     open: '打开',
     inflight: '消息正在送达'
@@ -4329,6 +4380,20 @@ const zhHant: BotsMessages = {
     stepsDone: (done, total) => `已完成 ${done}/${total}`,
     complete: '已完成',
     clearChecklist: '清除'
+  },
+  ack: {
+    prompt: text => `收到 — ${text}`,
+    command: command => `正在執行 ${command}…`,
+    waiting: '正在等待模型…',
+    verbs: {
+      browse: '正在開啟頁面…',
+      delegate: '正在移交…',
+      edit: '正在編輯檔案…',
+      read: '正在讀取檔案…',
+      run: '正在執行命令…',
+      search: '正在搜尋網頁…'
+    },
+    using: tool => `正在使用 ${tool}…`
   },
   events: {
     open: '開啟',

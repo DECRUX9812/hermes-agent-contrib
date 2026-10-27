@@ -1626,6 +1626,20 @@ var init_i18n = __esm({
         complete: "Complete",
         clearChecklist: "Clear"
       },
+      ack: {
+        prompt: (text2) => `Got it \u2014 ${text2}`,
+        command: (command) => `Running ${command}\u2026`,
+        waiting: "Waiting on the model\u2026",
+        verbs: {
+          browse: "Opening a page\u2026",
+          delegate: "Handing off\u2026",
+          edit: "Editing files\u2026",
+          read: "Reading files\u2026",
+          run: "Running a command\u2026",
+          search: "Searching the web\u2026"
+        },
+        using: (tool) => `Using ${tool}\u2026`
+      },
       activity: {
         tabs: { activity: "Activity", approvals: "Approvals", scheduled: "Scheduled", bot: "Bot" },
         emptyTitle: "Nothing yet",
@@ -2482,6 +2496,20 @@ var init_i18n = __esm({
         stepsDone: (done, total) => `${done}/${total} \u5B8C\u4E86`,
         complete: "\u5B8C\u4E86",
         clearChecklist: "\u30AF\u30EA\u30A2"
+      },
+      ack: {
+        prompt: (text2) => `\u4E86\u89E3 \u2014 ${text2}`,
+        command: (command) => `${command} \u3092\u5B9F\u884C\u4E2D\u2026`,
+        waiting: "\u30E2\u30C7\u30EB\u306E\u5FDC\u7B54\u3092\u5F85\u3063\u3066\u3044\u307E\u3059\u2026",
+        verbs: {
+          browse: "\u30DA\u30FC\u30B8\u3092\u958B\u3044\u3066\u3044\u307E\u3059\u2026",
+          delegate: "\u5F15\u304D\u7D99\u3044\u3067\u3044\u307E\u3059\u2026",
+          edit: "\u30D5\u30A1\u30A4\u30EB\u3092\u7DE8\u96C6\u4E2D\u2026",
+          read: "\u30D5\u30A1\u30A4\u30EB\u3092\u8AAD\u3093\u3067\u3044\u307E\u3059\u2026",
+          run: "\u30B3\u30DE\u30F3\u30C9\u3092\u5B9F\u884C\u4E2D\u2026",
+          search: "\u30A6\u30A7\u30D6\u3092\u691C\u7D22\u4E2D\u2026"
+        },
+        using: (tool) => `${tool} \u3092\u4F7F\u7528\u4E2D\u2026`
       },
       events: {
         open: "\u958B\u304F",
@@ -3340,6 +3368,20 @@ var init_i18n = __esm({
         complete: "\u5DF2\u5B8C\u6210",
         clearChecklist: "\u6E05\u9664"
       },
+      ack: {
+        prompt: (text2) => `\u6536\u5230 \u2014 ${text2}`,
+        command: (command) => `\u6B63\u5728\u8FD0\u884C ${command}\u2026`,
+        waiting: "\u6B63\u5728\u7B49\u5F85\u6A21\u578B\u2026",
+        verbs: {
+          browse: "\u6B63\u5728\u6253\u5F00\u9875\u9762\u2026",
+          delegate: "\u6B63\u5728\u79FB\u4EA4\u2026",
+          edit: "\u6B63\u5728\u7F16\u8F91\u6587\u4EF6\u2026",
+          read: "\u6B63\u5728\u8BFB\u53D6\u6587\u4EF6\u2026",
+          run: "\u6B63\u5728\u8FD0\u884C\u547D\u4EE4\u2026",
+          search: "\u6B63\u5728\u641C\u7D22\u7F51\u9875\u2026"
+        },
+        using: (tool) => `\u6B63\u5728\u4F7F\u7528 ${tool}\u2026`
+      },
       events: {
         open: "\u6253\u5F00",
         inflight: "\u6D88\u606F\u6B63\u5728\u9001\u8FBE"
@@ -4196,6 +4238,20 @@ var init_i18n = __esm({
         stepsDone: (done, total) => `\u5DF2\u5B8C\u6210 ${done}/${total}`,
         complete: "\u5DF2\u5B8C\u6210",
         clearChecklist: "\u6E05\u9664"
+      },
+      ack: {
+        prompt: (text2) => `\u6536\u5230 \u2014 ${text2}`,
+        command: (command) => `\u6B63\u5728\u57F7\u884C ${command}\u2026`,
+        waiting: "\u6B63\u5728\u7B49\u5F85\u6A21\u578B\u2026",
+        verbs: {
+          browse: "\u6B63\u5728\u958B\u555F\u9801\u9762\u2026",
+          delegate: "\u6B63\u5728\u79FB\u4EA4\u2026",
+          edit: "\u6B63\u5728\u7DE8\u8F2F\u6A94\u6848\u2026",
+          read: "\u6B63\u5728\u8B80\u53D6\u6A94\u6848\u2026",
+          run: "\u6B63\u5728\u57F7\u884C\u547D\u4EE4\u2026",
+          search: "\u6B63\u5728\u641C\u5C0B\u7DB2\u9801\u2026"
+        },
+        using: (tool) => `\u6B63\u5728\u4F7F\u7528 ${tool}\u2026`
       },
       events: {
         open: "\u958B\u555F",
@@ -22830,6 +22886,199 @@ function useHireText() {
 
 // src/plugin.tsx
 init_i18n();
+
+// src/instant-ack.ts
+init_sdk_compat();
+var RECEIPT_MAX_WORDS = 8;
+var WAITING_AFTER_MS = 1200;
+var FENCE = /```[\s\S]*?```/g;
+var MD_LINK = /\[([^\]]*)\]\([^)]*\)/g;
+var NOISE_TOKEN = /^(?:https?:\/\/\S+|www\.\S+|\/[\w./-]+|~\/\S+|@\S+|#\S+)$/i;
+var LEADING_MARKER = /^(?:[\s>*#–—•\])]+|[-–—]\s+|\d+[.)]\s*|\[[ xX]?\]\s*)/u;
+function stripLeadingMarkers(text2) {
+  let out = text2;
+  for (let pass = 0; pass < 6; pass += 1) {
+    const next = out.replace(LEADING_MARKER, "");
+    if (next === out) {
+      break;
+    }
+    out = next;
+  }
+  return out;
+}
+function receiptFromPrompt(text2) {
+  const cleaned = text2.replace(FENCE, " ").replace(MD_LINK, "$1").replace(/`([^`]*)`/g, "$1").replace(/\s+/g, " ").trim();
+  if (!cleaned) {
+    return null;
+  }
+  const command = /^\/([a-z0-9][\w-]*)/i.exec(cleaned);
+  if (command) {
+    return { kind: "command", text: `/${command[1].toLowerCase()}` };
+  }
+  const words = stripLeadingMarkers(cleaned).split(" ").filter((word) => word && !NOISE_TOKEN.test(word));
+  const kept = words.slice(0, RECEIPT_MAX_WORDS).join(" ").replace(/[\s,;:.!?…-]+$/u, "");
+  return kept ? { kind: "prompt", text: kept } : null;
+}
+function ackToolKind(name) {
+  const tool = name.toLowerCase();
+  if (/^(terminal|execute_code|process|shell|bash)/.test(tool)) {
+    return "run";
+  }
+  if (/^(web_search|search_web|search)$/.test(tool)) {
+    return "search";
+  }
+  if (/^(browser_|web_extract|web_fetch|fetch_url)/.test(tool)) {
+    return "browse";
+  }
+  if (/^(read_file|search_files|list_files|grep|glob)/.test(tool)) {
+    return "read";
+  }
+  if (/^(write_file|patch|edit_file|apply_patch)/.test(tool)) {
+    return "edit";
+  }
+  if (/^(delegate_task|message_agent)/.test(tool)) {
+    return "delegate";
+  }
+  return "tool";
+}
+function reduceInstantAck(current, event, at) {
+  if (event.type === "arm") {
+    return { armedAt: at, kind: event.kind, state: "receipt", storedId: event.storedId, text: event.text };
+  }
+  if (!current || event.type === "hand-off") {
+    return null;
+  }
+  if (event.type === "tool-start") {
+    return { armedAt: current.armedAt, name: event.name, state: "working", storedId: current.storedId, tool: ackToolKind(event.name) };
+  }
+  return current.state === "receipt" ? { armedAt: current.armedAt, state: "waiting", storedId: current.storedId } : current;
+}
+var $instantAcks = (0, sdk_compat_exports.atom)({});
+function noteInstantAck(runtimeId, event, at = Date.now()) {
+  const all = $instantAcks.get();
+  const next = reduceInstantAck(all[runtimeId] ?? null, event, at);
+  if (next === (all[runtimeId] ?? null)) {
+    return;
+  }
+  const copy = { ...all };
+  if (next) {
+    copy[runtimeId] = next;
+  } else {
+    delete copy[runtimeId];
+  }
+  $instantAcks.set(copy);
+}
+function armInstantAck(runtimeId, storedId, text2, busy) {
+  const receipt = receiptFromPrompt(text2);
+  if (!runtimeId || !storedId || !receipt || busy) {
+    return false;
+  }
+  noteInstantAck(runtimeId, { ...receipt, storedId, type: "arm" });
+  return true;
+}
+function payloadField(payload, key) {
+  const value = payload && typeof payload === "object" ? payload[key] : void 0;
+  return typeof value === "string" ? value : "";
+}
+function feedInstantAck(event) {
+  const runtimeId = event.session_id;
+  if (!runtimeId || !$instantAcks.get()[runtimeId]) {
+    return;
+  }
+  if (event.type === "tool.generating" || event.type === "tool.start") {
+    const name = payloadField(event.payload, "name") || payloadField(event.payload, "tool_name");
+    if (name) {
+      noteInstantAck(runtimeId, { name, type: "tool-start" });
+    }
+    return;
+  }
+  if (event.type === "message.delta") {
+    if ((payloadField(event.payload, "text") || payloadField(event.payload, "delta")).trim()) {
+      noteInstantAck(runtimeId, { type: "hand-off" });
+    }
+    return;
+  }
+  noteInstantAck(runtimeId, { type: "hand-off" });
+}
+var INSTANT_ACK_EVENTS = [
+  "approval.request",
+  "error",
+  "message.complete",
+  "message.delta",
+  "tool.complete",
+  "tool.generating",
+  "tool.start"
+];
+var IDLE_GRACE_MS = 2e3;
+function sweepInstantAcks(busyBySession, now = Date.now()) {
+  for (const [runtimeId, ack] of Object.entries($instantAcks.get())) {
+    if (!busyBySession[runtimeId] && (ack.state === "working" || now - ack.armedAt >= IDLE_GRACE_MS)) {
+      noteInstantAck(runtimeId, { type: "hand-off" }, now);
+    }
+  }
+}
+
+// src/instant-ack-line.tsx
+init_sdk_compat();
+import { useEffect as useEffect11 } from "react";
+init_data();
+init_i18n();
+import { jsx as jsx41, jsxs as jsxs39 } from "react/jsx-runtime";
+function wireInstantAck(onDispose) {
+  if (typeof host.onEvent !== "function" || !host.state.busyBySession) {
+    return false;
+  }
+  for (const type of INSTANT_ACK_EVENTS) {
+    onDispose(host.onEvent(type, feedInstantAck));
+  }
+  onDispose(host.state.busyBySession.listen((busy) => sweepInstantAcks(busy)));
+  return true;
+}
+function InstantAckLine() {
+  const runtimeId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
+  const storedId = (0, sdk_compat_exports.useValue)(host.state.focusedStoredSessionId);
+  const ack = (0, sdk_compat_exports.useValue)($instantAcks)[runtimeId ?? ""] ?? null;
+  (0, sdk_compat_exports.useValue)($lastRoster);
+  const t = useBots().ack;
+  const state = ack?.state;
+  const armedAt = ack?.armedAt ?? 0;
+  useEffect11(() => {
+    if (!runtimeId || state !== "receipt" && state !== "waiting") {
+      return;
+    }
+    const due = state === "receipt" ? WAITING_AFTER_MS : IDLE_GRACE_MS;
+    const timer = window.setTimeout(
+      () => {
+        if (state === "receipt") {
+          noteInstantAck(runtimeId, { type: "waiting" });
+        }
+        sweepInstantAcks(host.state.busyBySession.get());
+      },
+      Math.max(0, armedAt + due - Date.now())
+    );
+    return () => window.clearTimeout(timer);
+  }, [armedAt, runtimeId, state]);
+  if (!ack || ack.storedId !== storedId || !canonicalBotChatOnScreen(storedId)) {
+    return null;
+  }
+  const label = ack.state === "receipt" ? ack.kind === "command" ? t.command(ack.text) : t.prompt(ack.text) : ack.state === "working" ? ack.tool === "tool" ? t.using(ack.name.replace(/_/g, " ")) : t.verbs[ack.tool] : t.waiting;
+  return /* @__PURE__ */ jsxs39(
+    "div",
+    {
+      "aria-live": "polite",
+      className: "flex min-w-0 items-center gap-1.5 px-1 text-xs text-(--conversation-scaffold-text)",
+      "data-ack-state": ack.state,
+      "data-slot": "instant-ack",
+      role: "status",
+      children: [
+        /* @__PURE__ */ jsx41(sdk_compat_exports.StatusDot, { className: "shrink-0 animate-pulse", tone: ack.state === "waiting" ? "muted" : "good" }),
+        /* @__PURE__ */ jsx41("span", { className: "min-w-0 truncate", children: label })
+      ]
+    }
+  );
+}
+
+// src/plugin.tsx
 init_labels();
 
 // src/mission-rail.tsx
@@ -22933,7 +23182,7 @@ function useBotTeammates(bot) {
 
 // src/bot-card-meta.tsx
 init_i18n();
-import { jsx as jsx41, jsxs as jsxs39 } from "react/jsx-runtime";
+import { jsx as jsx42, jsxs as jsxs40 } from "react/jsx-runtime";
 var REPORTS_SHOWN = 3;
 function botCardMetaItems(bot, teammates, card) {
   const items = [];
@@ -22962,17 +23211,17 @@ function BotCardMeta({ bot }) {
   if (items.length === 0) {
     return null;
   }
-  return /* @__PURE__ */ jsx41(
+  return /* @__PURE__ */ jsx42(
     "div",
     {
       className: "mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[0.6875rem] text-(--ui-text-tertiary)",
       "data-testid": "bot-card-meta",
-      children: items.map((item, index) => /* @__PURE__ */ jsxs39("span", { className: "flex min-w-0 items-center gap-1.5", children: [
-        index > 0 ? /* @__PURE__ */ jsx41("span", { className: "text-(--ui-text-quaternary)", children: "\xB7" }) : null,
+      children: items.map((item, index) => /* @__PURE__ */ jsxs40("span", { className: "flex min-w-0 items-center gap-1.5", children: [
+        index > 0 ? /* @__PURE__ */ jsx42("span", { className: "text-(--ui-text-quaternary)", children: "\xB7" }) : null,
         item.key === "model" ? (
           // The model reads as the one-click switcher, same chip as the Bot Chat header.
-          /* @__PURE__ */ jsx41(BotModelChip, { bot })
-        ) : /* @__PURE__ */ jsx41("span", { className: item.mono ? "truncate font-mono" : "truncate", children: item.text })
+          /* @__PURE__ */ jsx42(BotModelChip, { bot })
+        ) : /* @__PURE__ */ jsx42("span", { className: item.mono ? "truncate font-mono" : "truncate", children: item.text })
       ] }, item.key))
     }
   );
@@ -22982,8 +23231,8 @@ function BotCardMeta({ bot }) {
 init_sdk_compat();
 init_i18n();
 init_routing();
-import { useCallback as useCallback3, useEffect as useEffect11, useRef as useRef7, useState as useState27 } from "react";
-import { jsx as jsx42, jsxs as jsxs40 } from "react/jsx-runtime";
+import { useCallback as useCallback3, useEffect as useEffect12, useRef as useRef7, useState as useState27 } from "react";
+import { jsx as jsx43, jsxs as jsxs41 } from "react/jsx-runtime";
 var DELIVERABLES_LIMIT = 20;
 var KIND_GLYPH = {
   artifact: "file-code",
@@ -23034,7 +23283,7 @@ function BotDeliverablesSection({ owner }) {
       setView((prior) => ({ ...prior.ownerKey === key ? prior : empty, status: "error" }));
     });
   }, []);
-  useEffect11(() => {
+  useEffect12(() => {
     load2();
     const requestSequence = seq;
     return () => {
@@ -23066,12 +23315,12 @@ function BotDeliverablesSection({ owner }) {
       host.notifyError(err, b.deliverables.title);
     }
   };
-  return /* @__PURE__ */ jsxs40("div", { "aria-busy": refreshing, className: "px-3 pb-3", "data-testid": "bot-deliverables", children: [
-    /* @__PURE__ */ jsxs40("div", { className: "flex items-baseline justify-between gap-2 pb-1", children: [
-      /* @__PURE__ */ jsx42("span", { className: "ui-section-label", children: b.deliverables.title }),
-      /* @__PURE__ */ jsxs40("span", { className: "flex items-center gap-1.5", children: [
-        items.length ? /* @__PURE__ */ jsx42("span", { className: "text-xs tabular-nums text-(--ui-text-tertiary)", children: items.length }) : null,
-        /* @__PURE__ */ jsx42(sdk_compat_exports.Tip, { label: b.deliverables.refresh, children: /* @__PURE__ */ jsx42(
+  return /* @__PURE__ */ jsxs41("div", { "aria-busy": refreshing, className: "px-3 pb-3", "data-testid": "bot-deliverables", children: [
+    /* @__PURE__ */ jsxs41("div", { className: "flex items-baseline justify-between gap-2 pb-1", children: [
+      /* @__PURE__ */ jsx43("span", { className: "ui-section-label", children: b.deliverables.title }),
+      /* @__PURE__ */ jsxs41("span", { className: "flex items-center gap-1.5", children: [
+        items.length ? /* @__PURE__ */ jsx43("span", { className: "text-xs tabular-nums text-(--ui-text-tertiary)", children: items.length }) : null,
+        /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: b.deliverables.refresh, children: /* @__PURE__ */ jsx43(
           sdk_compat_exports.Button,
           {
             "aria-label": b.deliverables.refresh,
@@ -23079,22 +23328,22 @@ function BotDeliverablesSection({ owner }) {
             onClick: load2,
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx42(sdk_compat_exports.Codicon, { name: "refresh", spinning: refreshing })
+            children: /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { name: "refresh", spinning: refreshing })
           }
         ) })
       ] })
     ] }),
-    status === "error" ? /* @__PURE__ */ jsxs40("div", { className: "grid gap-2 pb-2 text-xs text-(--ui-text-secondary)", role: "alert", children: [
-      /* @__PURE__ */ jsx42("p", { children: items.length ? b.deliverables.stale : b.deliverables.failed }),
-      /* @__PURE__ */ jsx42(sdk_compat_exports.Button, { className: "justify-self-start", onClick: load2, size: "xs", variant: "secondary", children: t.common.retry })
+    status === "error" ? /* @__PURE__ */ jsxs41("div", { className: "grid gap-2 pb-2 text-xs text-(--ui-text-secondary)", role: "alert", children: [
+      /* @__PURE__ */ jsx43("p", { children: items.length ? b.deliverables.stale : b.deliverables.failed }),
+      /* @__PURE__ */ jsx43(sdk_compat_exports.Button, { className: "justify-self-start", onClick: load2, size: "xs", variant: "secondary", children: t.common.retry })
     ] }) : null,
-    refreshing && items.length === 0 ? /* @__PURE__ */ jsxs40("div", { className: "flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)", role: "status", children: [
-      /* @__PURE__ */ jsx42(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.deliverables.loading, className: "text-xs" }),
+    refreshing && items.length === 0 ? /* @__PURE__ */ jsxs41("div", { className: "flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)", role: "status", children: [
+      /* @__PURE__ */ jsx43(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.deliverables.loading, className: "text-xs" }),
       b.deliverables.loading
-    ] }) : status === "unavailable" ? /* @__PURE__ */ jsx42("p", { className: "py-2 text-xs text-(--ui-text-tertiary)", children: b.deliverables.unavailable }) : status === "ready" && items.length === 0 ? /* @__PURE__ */ jsx42("p", { className: "py-2 text-xs leading-relaxed text-(--ui-text-tertiary)", children: b.deliverables.empty }) : /* @__PURE__ */ jsx42("div", { className: "grid gap-0.5", children: items.map((item) => {
+    ] }) : status === "unavailable" ? /* @__PURE__ */ jsx43("p", { className: "py-2 text-xs text-(--ui-text-tertiary)", children: b.deliverables.unavailable }) : status === "ready" && items.length === 0 ? /* @__PURE__ */ jsx43("p", { className: "py-2 text-xs leading-relaxed text-(--ui-text-tertiary)", children: b.deliverables.empty }) : /* @__PURE__ */ jsx43("div", { className: "grid gap-0.5", children: items.map((item) => {
       const session = itemSessionId(item);
       const sessionTitle = item.transcript?.sessionTitle || (session ? sessionsById.get(session)?.title || "" : "");
-      return /* @__PURE__ */ jsxs40(
+      return /* @__PURE__ */ jsxs41(
         sdk_compat_exports.RowButton,
         {
           "aria-label": item.label,
@@ -23104,7 +23353,7 @@ function BotDeliverablesSection({ owner }) {
           ),
           onClick: () => open(item),
           children: [
-            /* @__PURE__ */ jsx42(
+            /* @__PURE__ */ jsx43(
               sdk_compat_exports.Codicon,
               {
                 "aria-label": item.kind,
@@ -23112,11 +23361,11 @@ function BotDeliverablesSection({ owner }) {
                 name: KIND_GLYPH[item.kind] || "file"
               }
             ),
-            /* @__PURE__ */ jsxs40("span", { className: "min-w-0 flex-1", children: [
-              /* @__PURE__ */ jsx42("span", { className: "block min-w-0 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: item.label }),
-              sessionTitle ? /* @__PURE__ */ jsx42("span", { className: "block min-w-0 truncate text-xs text-(--ui-text-tertiary)", children: sessionTitle }) : null
+            /* @__PURE__ */ jsxs41("span", { className: "min-w-0 flex-1", children: [
+              /* @__PURE__ */ jsx43("span", { className: "block min-w-0 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: item.label }),
+              sessionTitle ? /* @__PURE__ */ jsx43("span", { className: "block min-w-0 truncate text-xs text-(--ui-text-tertiary)", children: sessionTitle }) : null
             ] }),
-            /* @__PURE__ */ jsx42("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(item.timestamp, t.sidebar.row) })
+            /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(item.timestamp, t.sidebar.row) })
           ]
         },
         item.id
@@ -23198,7 +23447,7 @@ function taskLogGroups(runs, now = Date.now()) {
 }
 
 // src/bot-task-log.tsx
-import { jsx as jsx43, jsxs as jsxs41 } from "react/jsx-runtime";
+import { jsx as jsx44, jsxs as jsxs42 } from "react/jsx-runtime";
 var RUN_KIND_GLYPHS = {
   chat: "comment",
   group: "organization",
@@ -23319,17 +23568,17 @@ function BotTaskLog({ jobs, onOpenRoutine, owner }) {
   const { open, replay, retryable, retryOutbox, runs, stopRun, stoppable } = useBotRunsFeed(owner, jobs, onOpenRoutine);
   const days = taskLogGroups(runs);
   if (!days.length) {
-    return /* @__PURE__ */ jsx43("div", { className: "px-3 pb-2 text-xs text-(--ui-text-quaternary)", children: b.runs.empty });
+    return /* @__PURE__ */ jsx44("div", { className: "px-3 pb-2 text-xs text-(--ui-text-quaternary)", children: b.runs.empty });
   }
-  return /* @__PURE__ */ jsx43("div", { className: "px-3 pb-2", children: days.map((day) => /* @__PURE__ */ jsxs41("div", { children: [
-    /* @__PURE__ */ jsx43("div", { className: "pt-2 pb-1 ui-section-label", children: day.label === "today" ? b.rail.today : day.label === "yesterday" ? b.rail.yesterday : dayFormat.format(day.at) }),
-    /* @__PURE__ */ jsx43("div", { className: "grid gap-0.5", children: day.runs.map((run) => {
+  return /* @__PURE__ */ jsx44("div", { className: "px-3 pb-2", children: days.map((day) => /* @__PURE__ */ jsxs42("div", { children: [
+    /* @__PURE__ */ jsx44("div", { className: "pt-2 pb-1 ui-section-label", children: day.label === "today" ? b.rail.today : day.label === "yesterday" ? b.rail.yesterday : dayFormat.format(day.at) }),
+    /* @__PURE__ */ jsx44("div", { className: "grid gap-0.5", children: day.runs.map((run) => {
       const kindLabel = b.runs[`kind${run.kind[0].toUpperCase()}${run.kind.slice(1)}`];
       const statusLabel2 = b.runs[run.status];
       const preview = taskLogPreview(run) || kindLabel;
       const line = taskLogLine(run) || kindLabel;
       const lineClass = "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)";
-      return /* @__PURE__ */ jsxs41(
+      return /* @__PURE__ */ jsxs42(
         sdk_compat_exports.RowButton,
         {
           "aria-label": `${preview} \u2014 ${statusLabel2}`,
@@ -23339,7 +23588,7 @@ function BotTaskLog({ jobs, onOpenRoutine, owner }) {
           ),
           onClick: () => open(run),
           children: [
-            /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: statusLabel2, children: /* @__PURE__ */ jsx43(
+            /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: statusLabel2, children: /* @__PURE__ */ jsx44(
               sdk_compat_exports.Codicon,
               {
                 "aria-label": statusLabel2,
@@ -23348,7 +23597,7 @@ function BotTaskLog({ jobs, onOpenRoutine, owner }) {
                 spinning: run.status === "running"
               }
             ) }),
-            /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: kindLabel, children: /* @__PURE__ */ jsx43(
+            /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: kindLabel, children: /* @__PURE__ */ jsx44(
               sdk_compat_exports.Codicon,
               {
                 "aria-label": kindLabel,
@@ -23356,8 +23605,8 @@ function BotTaskLog({ jobs, onOpenRoutine, owner }) {
                 name: RUN_KIND_GLYPHS[run.kind]
               }
             ) }),
-            preview === line ? /* @__PURE__ */ jsx43("span", { className: lineClass, children: line }) : /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: preview, children: /* @__PURE__ */ jsx43("span", { className: lineClass, children: line }) }),
-            run.replay ? /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: b.runs.replay, children: /* @__PURE__ */ jsx43(
+            preview === line ? /* @__PURE__ */ jsx44("span", { className: lineClass, children: line }) : /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: preview, children: /* @__PURE__ */ jsx44("span", { className: lineClass, children: line }) }),
+            run.replay ? /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: b.runs.replay, children: /* @__PURE__ */ jsx44(
               "span",
               {
                 "aria-label": b.runs.replay,
@@ -23367,10 +23616,10 @@ function BotTaskLog({ jobs, onOpenRoutine, owner }) {
                   void replay(run);
                 },
                 role: "button",
-                children: /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { name: "history" })
+                children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "history" })
               }
             ) }) : null,
-            stoppable(run) ? /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: b.roster.stopRun, children: /* @__PURE__ */ jsx43(
+            stoppable(run) ? /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: b.roster.stopRun, children: /* @__PURE__ */ jsx44(
               "span",
               {
                 "aria-label": b.roster.stopRun,
@@ -23380,10 +23629,10 @@ function BotTaskLog({ jobs, onOpenRoutine, owner }) {
                   stopRun();
                 },
                 role: "button",
-                children: /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { name: "debug-stop" })
+                children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "debug-stop" })
               }
             ) }) : null,
-            retryable(run) ? /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: b.roster.retryDeliveries, children: /* @__PURE__ */ jsx43(
+            retryable(run) ? /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: b.roster.retryDeliveries, children: /* @__PURE__ */ jsx44(
               "span",
               {
                 "aria-label": b.roster.retryDeliveries,
@@ -23393,10 +23642,10 @@ function BotTaskLog({ jobs, onOpenRoutine, owner }) {
                   retryOutbox();
                 },
                 role: "button",
-                children: /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { name: "refresh" })
+                children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "refresh" })
               }
             ) }) : null,
-            /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-[0.65rem] tabular-nums text-(--ui-text-quaternary)", children: timeFormat.format(run.at) })
+            /* @__PURE__ */ jsx44("span", { className: "shrink-0 text-[0.65rem] tabular-nums text-(--ui-text-quaternary)", children: timeFormat.format(run.at) })
           ]
         },
         run.id
@@ -23409,7 +23658,7 @@ function BotTaskLog({ jobs, onOpenRoutine, owner }) {
 init_sdk_compat();
 init_data();
 init_i18n();
-import { jsx as jsx44, jsxs as jsxs42 } from "react/jsx-runtime";
+import { jsx as jsx45, jsxs as jsxs43 } from "react/jsx-runtime";
 var EMPTY2 = (0, sdk_compat_exports.atom)([]);
 function BotTopicProjectMenu({ bot }) {
   const b = useBots();
@@ -23417,10 +23666,10 @@ function BotTopicProjectMenu({ bot }) {
   if (bot.remoteSource || !projects.length) {
     return null;
   }
-  return /* @__PURE__ */ jsxs42(sdk_compat_exports.DropdownMenu, { children: [
-    /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: b.bot.newTopicInProject, children: /* @__PURE__ */ jsx44(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx44(sdk_compat_exports.Button, { "aria-label": b.bot.newTopicInProject, size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "folder" }) }) }) }),
-    /* @__PURE__ */ jsx44(sdk_compat_exports.DropdownMenuContent, { align: "start", children: projects.map((project) => /* @__PURE__ */ jsxs42(sdk_compat_exports.DropdownMenuItem, { onSelect: () => newBotChat(bot, { cwd: project.cwd }), children: [
-      /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "folder" }),
+  return /* @__PURE__ */ jsxs43(sdk_compat_exports.DropdownMenu, { children: [
+    /* @__PURE__ */ jsx45(sdk_compat_exports.Tip, { label: b.bot.newTopicInProject, children: /* @__PURE__ */ jsx45(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx45(sdk_compat_exports.Button, { "aria-label": b.bot.newTopicInProject, size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "folder" }) }) }) }),
+    /* @__PURE__ */ jsx45(sdk_compat_exports.DropdownMenuContent, { align: "start", children: projects.map((project) => /* @__PURE__ */ jsxs43(sdk_compat_exports.DropdownMenuItem, { onSelect: () => newBotChat(bot, { cwd: project.cwd }), children: [
+      /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "folder" }),
       project.label
     ] }, project.id)) })
   ] });
@@ -23473,8 +23722,8 @@ init_i18n();
 // src/mcp-setup.tsx
 init_sdk_compat();
 init_i18n();
-import { useEffect as useEffect12, useRef as useRef8, useState as useState28 } from "react";
-import { jsx as jsx45, jsxs as jsxs43 } from "react/jsx-runtime";
+import { useEffect as useEffect13, useRef as useRef8, useState as useState28 } from "react";
+import { jsx as jsx46, jsxs as jsxs44 } from "react/jsx-runtime";
 async function mcpRpc(method, params, route) {
   try {
     const res = await (route && typeof host.requestProfile === "function" ? host.requestProfile(route, method, params) : host.request(method, params));
@@ -23530,7 +23779,7 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
     }
     return null;
   };
-  useEffect12(() => {
+  useEffect13(() => {
     const epoch = oauthEpoch;
     let alive = true;
     mcpSetupSupported(route).then((ok) => {
@@ -23657,14 +23906,14 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
     }
   };
   if (supported === false) {
-    return /* @__PURE__ */ jsx45("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.needsSetup(requires.join(", ")) });
+    return /* @__PURE__ */ jsx46("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.needsSetup(requires.join(", ")) });
   }
   if (phase === "done") {
-    return /* @__PURE__ */ jsx45("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-success)", children: b.tools.setUpDone });
+    return /* @__PURE__ */ jsx46("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-success)", children: b.tools.setUpDone });
   }
   if (phase === "keys") {
-    return /* @__PURE__ */ jsxs43("div", { className: "mt-1 grid gap-1", children: [
-      requires.map((k) => /* @__PURE__ */ jsx45(
+    return /* @__PURE__ */ jsxs44("div", { className: "mt-1 grid gap-1", children: [
+      requires.map((k) => /* @__PURE__ */ jsx46(
         sdk_compat_exports.Input,
         {
           className: "h-6 text-[0.7rem]",
@@ -23678,25 +23927,25 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
         },
         k
       )),
-      /* @__PURE__ */ jsxs43("div", { className: "flex gap-1", children: [
-        /* @__PURE__ */ jsx45(sdk_compat_exports.Button, { onClick: () => void submitKeys(), size: "xs", variant: "secondary", children: b.tools.saveTest }),
-        /* @__PURE__ */ jsx45(sdk_compat_exports.Button, { onClick: () => setPhase("idle"), size: "xs", variant: "ghost", children: t.common.cancel })
+      /* @__PURE__ */ jsxs44("div", { className: "flex gap-1", children: [
+        /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { onClick: () => void submitKeys(), size: "xs", variant: "secondary", children: b.tools.saveTest }),
+        /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { onClick: () => setPhase("idle"), size: "xs", variant: "ghost", children: t.common.cancel })
       ] })
     ] });
   }
   if (phase === "oauth") {
-    return /* @__PURE__ */ jsx45("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: message || b.tools.authorizing });
+    return /* @__PURE__ */ jsx46("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: message || b.tools.authorizing });
   }
   if (phase === "busy") {
-    return /* @__PURE__ */ jsx45("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.working });
+    return /* @__PURE__ */ jsx46("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.working });
   }
   if (phase === "error") {
-    return /* @__PURE__ */ jsxs43("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-danger,#f87171)", children: [
+    return /* @__PURE__ */ jsxs44("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-danger,#f87171)", children: [
       (message || b.tools.setupFailed) + " ",
-      /* @__PURE__ */ jsx45(sdk_compat_exports.Button, { className: "underline", onClick: () => setPhase("idle"), size: "inline", variant: "link", children: t.common.retry })
+      /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { className: "underline", onClick: () => setPhase("idle"), size: "inline", variant: "link", children: t.common.retry })
     ] });
   }
-  return /* @__PURE__ */ jsx45(
+  return /* @__PURE__ */ jsx46(
     sdk_compat_exports.Button,
     {
       className: "ml-1.5 text-[0.65rem] text-(--ui-accent) underline",
@@ -23715,8 +23964,8 @@ init_routing();
 init_sdk_compat();
 init_i18n();
 init_routing();
-import { useEffect as useEffect13, useRef as useRef9, useState as useState29 } from "react";
-import { jsx as jsx46, jsxs as jsxs44 } from "react/jsx-runtime";
+import { useEffect as useEffect14, useRef as useRef9, useState as useState29 } from "react";
+import { jsx as jsx47, jsxs as jsxs45 } from "react/jsx-runtime";
 var HUB_ORIGIN = "https://hermes-agent.nousresearch.com";
 var FALLBACK_HUB_ORIGIN = "https://nousresearch.github.io";
 var HUB_PICKER_URL = HUB_ORIGIN + "/docs/skills?embed=picker";
@@ -23738,7 +23987,7 @@ function HubSkillsSection({ bot, onInstalled }) {
   const [hubPickerUrl, setHubPickerUrl] = useState29(HUB_PICKER_URL);
   const installRef = useRef9(null);
   const frameRef = useRef9(null);
-  useEffect13(() => {
+  useEffect14(() => {
     if (!browseHub) {
       return void 0;
     }
@@ -23759,7 +24008,7 @@ function HubSkillsSection({ bot, onInstalled }) {
       mounted = false;
     };
   }, [browseHub]);
-  useEffect13(() => {
+  useEffect14(() => {
     if (!browseHub) {
       return void 0;
     }
@@ -23835,10 +24084,10 @@ function HubSkillsSection({ bot, onInstalled }) {
     }
   };
   installRef.current = install;
-  return /* @__PURE__ */ jsxs44("div", { className: "grid gap-1.5 border-t border-(--ui-stroke-secondary) pt-2", children: [
-    /* @__PURE__ */ jsxs44("div", { className: "flex items-baseline justify-between gap-2", children: [
-      /* @__PURE__ */ jsx46("div", { className: "text-[0.7rem] font-medium text-(--ui-text-secondary)", children: b.tools.skillsHub }),
-      /* @__PURE__ */ jsx46(
+  return /* @__PURE__ */ jsxs45("div", { className: "grid gap-1.5 border-t border-(--ui-stroke-secondary) pt-2", children: [
+    /* @__PURE__ */ jsxs45("div", { className: "flex items-baseline justify-between gap-2", children: [
+      /* @__PURE__ */ jsx47("div", { className: "text-[0.7rem] font-medium text-(--ui-text-secondary)", children: b.tools.skillsHub }),
+      /* @__PURE__ */ jsx47(
         sdk_compat_exports.Button,
         {
           className: "text-[0.65rem] text-(--ui-text-quaternary) hover:text-(--ui-text-secondary)",
@@ -23849,8 +24098,8 @@ function HubSkillsSection({ bot, onInstalled }) {
         }
       )
     ] }),
-    browseHub ? /* @__PURE__ */ jsxs44("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx46(
+    browseHub ? /* @__PURE__ */ jsxs45("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx47(
         "div",
         {
           className: "relative w-full max-w-full resize overflow-hidden border border-(--ui-stroke-secondary)",
@@ -23860,7 +24109,7 @@ function HubSkillsSection({ bot, onInstalled }) {
             minWidth: 320,
             borderRadius: 8
           },
-          children: /* @__PURE__ */ jsx46(
+          children: /* @__PURE__ */ jsx47(
             "iframe",
             {
               allow: "clipboard-write",
@@ -23880,10 +24129,10 @@ function HubSkillsSection({ bot, onInstalled }) {
           )
         }
       ),
-      /* @__PURE__ */ jsx46("div", { className: "px-1 text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: installing ? h.installStarted(installing) : `${h.pickerHint} ${b.tools.resizeHint}` })
+      /* @__PURE__ */ jsx47("div", { className: "px-1 text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: installing ? h.installStarted(installing) : `${h.pickerHint} ${b.tools.resizeHint}` })
     ] }) : null,
-    /* @__PURE__ */ jsxs44("div", { className: "flex gap-1.5", children: [
-      /* @__PURE__ */ jsx46(
+    /* @__PURE__ */ jsxs45("div", { className: "flex gap-1.5", children: [
+      /* @__PURE__ */ jsx47(
         sdk_compat_exports.Input,
         {
           className: "h-7 flex-1 text-xs",
@@ -23901,25 +24150,25 @@ function HubSkillsSection({ bot, onInstalled }) {
           value: query
         }
       ),
-      /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { disabled: searching || !query.trim(), onClick: () => void search(), size: "sm", variant: "secondary", children: searching ? h.searching : h.search })
+      /* @__PURE__ */ jsx47(sdk_compat_exports.Button, { disabled: searching || !query.trim(), onClick: () => void search(), size: "sm", variant: "secondary", children: searching ? h.searching : h.search })
     ] }),
-    searching ? /* @__PURE__ */ jsx46("div", { className: "px-1 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.searchHint }) : null,
-    results === null ? null : results.length === 0 ? /* @__PURE__ */ jsx46("div", { className: "px-1 py-1.5 text-[0.7rem] text-(--ui-text-quaternary)", children: h.noResults }) : /* @__PURE__ */ jsx46(
+    searching ? /* @__PURE__ */ jsx47("div", { className: "px-1 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.searchHint }) : null,
+    results === null ? null : results.length === 0 ? /* @__PURE__ */ jsx47("div", { className: "px-1 py-1.5 text-[0.7rem] text-(--ui-text-quaternary)", children: h.noResults }) : /* @__PURE__ */ jsx47(
       "div",
       {
         className: "overflow-y-auto overscroll-contain",
         style: {
           maxHeight: 150
         },
-        children: /* @__PURE__ */ jsx46("div", { className: "grid gap-1", children: results.map((r) => /* @__PURE__ */ jsxs44("div", { className: "flex items-center gap-2 text-xs", children: [
-          /* @__PURE__ */ jsxs44("div", { className: "min-w-0 flex-1", children: [
-            /* @__PURE__ */ jsx46("div", { className: "truncate font-medium", children: r.name }),
-            r.description ? /* @__PURE__ */ jsx46("div", { className: "truncate text-[0.65rem] text-(--ui-text-quaternary)", children: r.description }) : null
+        children: /* @__PURE__ */ jsx47("div", { className: "grid gap-1", children: results.map((r) => /* @__PURE__ */ jsxs45("div", { className: "flex items-center gap-2 text-xs", children: [
+          /* @__PURE__ */ jsxs45("div", { className: "min-w-0 flex-1", children: [
+            /* @__PURE__ */ jsx47("div", { className: "truncate font-medium", children: r.name }),
+            r.description ? /* @__PURE__ */ jsx47("div", { className: "truncate text-[0.65rem] text-(--ui-text-quaternary)", children: r.description }) : null
           ] }),
-          installed[r.name] ? /* @__PURE__ */ jsxs44("span", { className: "flex shrink-0 items-center gap-0.5 text-[0.65rem] text-(--ui-text-tertiary)", children: [
-            /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { name: "check", size: "0.65rem" }),
+          installed[r.name] ? /* @__PURE__ */ jsxs45("span", { className: "flex shrink-0 items-center gap-0.5 text-[0.65rem] text-(--ui-text-tertiary)", children: [
+            /* @__PURE__ */ jsx47(sdk_compat_exports.Codicon, { name: "check", size: "0.65rem" }),
             h.installed
-          ] }) : /* @__PURE__ */ jsx46(
+          ] }) : /* @__PURE__ */ jsx47(
             sdk_compat_exports.Button,
             {
               "aria-label": b.tools.installHint(r.name),
@@ -23938,12 +24187,12 @@ function HubSkillsSection({ bot, onInstalled }) {
 }
 
 // src/profile-config.tsx
-import { jsx as jsx47, jsxs as jsxs45 } from "react/jsx-runtime";
+import { jsx as jsx48, jsxs as jsxs46 } from "react/jsx-runtime";
 var { ConnectorsTab, ToolsetConfigPanel } = sdk_compat_exports;
 var CapabilitiesView2 = typeof sdk_compat_exports === "undefined" ? void 0 : sdk_compat_exports.CapabilitiesView;
 var capabilitiesViewRoutesConnections = Boolean(CapabilitiesView2 && CapabilitiesView2.supportsFixedConnection);
 function CheckList({ items, onToggle, columns = 2 }) {
-  return /* @__PURE__ */ jsx47(
+  return /* @__PURE__ */ jsx48(
     "div",
     {
       style: {
@@ -23951,15 +24200,15 @@ function CheckList({ items, onToggle, columns = 2 }) {
         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         gap: "2px 12px"
       },
-      children: items.map((item) => /* @__PURE__ */ jsxs45(
+      children: items.map((item) => /* @__PURE__ */ jsxs46(
         "label",
         {
           className: "flex min-w-0 cursor-pointer items-center gap-1.5 py-0.5 text-xs text-(--ui-text-secondary)",
           title: item.description || item.name,
           children: [
-            /* @__PURE__ */ jsx47(sdk_compat_exports.Checkbox, { checked: item.enabled, onCheckedChange: (value) => onToggle(item.name, Boolean(value)) }),
-            /* @__PURE__ */ jsx47("span", { className: "truncate", children: item.name }),
-            item.tool_count ? /* @__PURE__ */ jsx47("span", { className: "shrink-0 text-[0.6rem] text-(--ui-text-quaternary)", children: `${item.tool_count}` }) : null
+            /* @__PURE__ */ jsx48(sdk_compat_exports.Checkbox, { checked: item.enabled, onCheckedChange: (value) => onToggle(item.name, Boolean(value)) }),
+            /* @__PURE__ */ jsx48("span", { className: "truncate", children: item.name }),
+            item.tool_count ? /* @__PURE__ */ jsx48("span", { className: "shrink-0 text-[0.6rem] text-(--ui-text-quaternary)", children: `${item.tool_count}` }) : null
           ]
         },
         item.name
@@ -24028,10 +24277,10 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     }).catch(() => setUnsupported(true));
   }
   if (unsupported) {
-    return /* @__PURE__ */ jsx47("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.fullConfigHint });
+    return /* @__PURE__ */ jsx48("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.fullConfigHint });
   }
   if (!state.loaded) {
-    return /* @__PURE__ */ jsx47("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx47(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) });
+    return /* @__PURE__ */ jsx48("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx48(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) });
   }
   const visibleSkills = skillFilter.trim() ? state.skills.filter((s) => s.name.toLowerCase().includes(skillFilter.trim().toLowerCase())) : state.skills;
   const toggleSkill = (name, enabled) => setState((prev) => ({
@@ -24068,8 +24317,8 @@ function AdvancedProfileConfig({ bot, state, setState }) {
   const enabledToolsets = state.toolsets.filter((t) => t.enabled).length;
   const mcpList = state.mcp || [];
   if (CapabilitiesView2 && (!botRoute || capabilitiesViewRoutesConnections)) {
-    return /* @__PURE__ */ jsxs45("div", { className: "grid gap-4", children: [
-      /* @__PURE__ */ jsx47(
+    return /* @__PURE__ */ jsxs46("div", { className: "grid gap-4", children: [
+      /* @__PURE__ */ jsx48(
         ModelPicker,
         {
           bot,
@@ -24086,7 +24335,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
       ),
       labeled(
         b.editor.liveCapabilities,
-        /* @__PURE__ */ jsx47(ResizableFrame, { children: /* @__PURE__ */ jsx47(
+        /* @__PURE__ */ jsx48(ResizableFrame, { children: /* @__PURE__ */ jsx48(
           CapabilitiesView2,
           {
             embedded: true,
@@ -24099,7 +24348,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
       ),
       labeled(
         b.editor.editSoul,
-        /* @__PURE__ */ jsx47(
+        /* @__PURE__ */ jsx48(
           sdk_compat_exports.Textarea,
           {
             className: "min-h-28 font-mono text-xs leading-5",
@@ -24115,8 +24364,8 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ] });
   }
   if (bot?.sourceScoped && botRoute?.mode === "remote" && !capabilitiesViewRoutesConnections) {
-    return /* @__PURE__ */ jsxs45("div", { className: "grid gap-4", children: [
-      /* @__PURE__ */ jsx47(
+    return /* @__PURE__ */ jsxs46("div", { className: "grid gap-4", children: [
+      /* @__PURE__ */ jsx48(
         ModelPicker,
         {
           bot,
@@ -24131,10 +24380,10 @@ function AdvancedProfileConfig({ bot, state, setState }) {
           }
         }
       ),
-      /* @__PURE__ */ jsx47("div", { className: "rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-text-tertiary)", children: b.editor.remoteCapabilitiesHint }),
+      /* @__PURE__ */ jsx48("div", { className: "rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-text-tertiary)", children: b.editor.remoteCapabilitiesHint }),
       labeled(
         b.editor.editSoul,
-        /* @__PURE__ */ jsx47(
+        /* @__PURE__ */ jsx48(
           sdk_compat_exports.Textarea,
           {
             className: "min-h-28 font-mono text-xs leading-5",
@@ -24149,8 +24398,8 @@ function AdvancedProfileConfig({ bot, state, setState }) {
       )
     ] });
   }
-  return /* @__PURE__ */ jsxs45("div", { className: "grid gap-4", children: [
-    /* @__PURE__ */ jsx47(
+  return /* @__PURE__ */ jsxs46("div", { className: "grid gap-4", children: [
+    /* @__PURE__ */ jsx48(
       ModelPicker,
       {
         bot,
@@ -24167,8 +24416,8 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ),
     labeled(
       b.editor.skillsEnabled(enabledSkills, state.skills.length),
-      /* @__PURE__ */ jsxs45("div", { className: "grid gap-1.5 rounded-md border border-(--ui-stroke-secondary) p-2", children: [
-        /* @__PURE__ */ jsx47(
+      /* @__PURE__ */ jsxs46("div", { className: "grid gap-1.5 rounded-md border border-(--ui-stroke-secondary) p-2", children: [
+        /* @__PURE__ */ jsx48(
           sdk_compat_exports.Input,
           {
             className: "h-7 text-xs",
@@ -24177,17 +24426,17 @@ function AdvancedProfileConfig({ bot, state, setState }) {
             value: skillFilter
           }
         ),
-        /* @__PURE__ */ jsx47(
+        /* @__PURE__ */ jsx48(
           "div",
           {
             className: "overflow-y-auto overscroll-contain",
             style: {
               maxHeight: 180
             },
-            children: /* @__PURE__ */ jsx47(CheckList, { columns: 2, items: visibleSkills, onToggle: toggleSkill })
+            children: /* @__PURE__ */ jsx48(CheckList, { columns: 2, items: visibleSkills, onToggle: toggleSkill })
           }
         ),
-        /* @__PURE__ */ jsx47(
+        /* @__PURE__ */ jsx48(
           HubSkillsSection,
           {
             bot,
@@ -24209,32 +24458,32 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ),
     labeled(
       b.editor.toolsetsEnabled(enabledToolsets, state.toolsets.length),
-      /* @__PURE__ */ jsx47("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-2", children: /* @__PURE__ */ jsx47(
+      /* @__PURE__ */ jsx48("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-2", children: /* @__PURE__ */ jsx48(
         "div",
         {
           className: "overflow-y-auto overscroll-contain",
           style: {
             maxHeight: 320
           },
-          children: /* @__PURE__ */ jsx47("div", { className: "grid gap-1.5", children: state.toolsets.map((tset) => /* @__PURE__ */ jsxs45("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-2", children: [
-            /* @__PURE__ */ jsxs45("label", { className: "flex items-center gap-2 text-xs font-medium text-(--ui-text-secondary)", children: [
-              /* @__PURE__ */ jsx47(
+          children: /* @__PURE__ */ jsx48("div", { className: "grid gap-1.5", children: state.toolsets.map((tset) => /* @__PURE__ */ jsxs46("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-2", children: [
+            /* @__PURE__ */ jsxs46("label", { className: "flex items-center gap-2 text-xs font-medium text-(--ui-text-secondary)", children: [
+              /* @__PURE__ */ jsx48(
                 sdk_compat_exports.Checkbox,
                 {
                   checked: !!tset.enabled,
                   onCheckedChange: (value) => toggleToolset(tset.name, Boolean(value))
                 }
               ),
-              /* @__PURE__ */ jsx47("span", { children: tset.name })
+              /* @__PURE__ */ jsx48("span", { children: tset.name })
             ] }),
-            ToolsetConfigPanel ? /* @__PURE__ */ jsx47("div", { className: "mt-1.5 border-t border-(--ui-stroke-secondary) pt-1.5", children: /* @__PURE__ */ jsx47(ToolsetConfigPanel, { profile: backendScope, toolset: tset.name }) }) : null
+            ToolsetConfigPanel ? /* @__PURE__ */ jsx48("div", { className: "mt-1.5 border-t border-(--ui-stroke-secondary) pt-1.5", children: /* @__PURE__ */ jsx48(ToolsetConfigPanel, { profile: backendScope, toolset: tset.name }) }) : null
           ] }, tset.name)) })
         }
       ) })
     ),
     labeled(
       b.editor.mcpServers,
-      /* @__PURE__ */ jsx47("div", { className: "overflow-hidden rounded-md border border-(--ui-stroke-secondary)", children: ConnectorsTab && typeof host.getGateway === "function" ? /* @__PURE__ */ jsx47(
+      /* @__PURE__ */ jsx48("div", { className: "overflow-hidden rounded-md border border-(--ui-stroke-secondary)", children: ConnectorsTab && typeof host.getGateway === "function" ? /* @__PURE__ */ jsx48(
         "div",
         {
           className: "overflow-y-auto overscroll-contain",
@@ -24242,19 +24491,19 @@ function AdvancedProfileConfig({ bot, state, setState }) {
             minHeight: 220,
             maxHeight: 360
           },
-          children: /* @__PURE__ */ jsx47(ConnectorsTab, { gateway: host.getGateway(), profile: backendScope })
+          children: /* @__PURE__ */ jsx48(ConnectorsTab, { gateway: host.getGateway(), profile: backendScope })
         }
-      ) : mcpList.length === 0 ? /* @__PURE__ */ jsx47("div", { className: "px-1 py-2 text-center text-xs text-(--ui-text-tertiary)", children: b.tools.noMcpServers }) : /* @__PURE__ */ jsx47(
+      ) : mcpList.length === 0 ? /* @__PURE__ */ jsx48("div", { className: "px-1 py-2 text-center text-xs text-(--ui-text-tertiary)", children: b.tools.noMcpServers }) : /* @__PURE__ */ jsx48(
         "div",
         {
           className: "overflow-y-auto overscroll-contain",
           style: {
             maxHeight: 180
           },
-          children: /* @__PURE__ */ jsx47("div", { className: "grid gap-1 p-2", children: mcpList.map((m) => {
+          children: /* @__PURE__ */ jsx48("div", { className: "grid gap-1 p-2", children: mcpList.map((m) => {
             const needsSetup = m.fromCatalog && !m.installed && ((m.requires || []).length > 0 || (m.auth || "").toLowerCase() === "oauth");
-            return /* @__PURE__ */ jsxs45("label", { className: "flex items-start gap-2 text-xs text-(--ui-text-secondary)", children: [
-              /* @__PURE__ */ jsx47(
+            return /* @__PURE__ */ jsxs46("label", { className: "flex items-start gap-2 text-xs text-(--ui-text-secondary)", children: [
+              /* @__PURE__ */ jsx48(
                 sdk_compat_exports.Checkbox,
                 {
                   checked: !!m.enabled,
@@ -24262,10 +24511,10 @@ function AdvancedProfileConfig({ bot, state, setState }) {
                   onCheckedChange: (value) => toggleMcp(m.name, Boolean(value))
                 }
               ),
-              /* @__PURE__ */ jsxs45("span", { className: "min-w-0", children: [
-                /* @__PURE__ */ jsx47("span", { children: m.name }),
-                m.fromCatalog && !needsSetup ? /* @__PURE__ */ jsx47("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: m.installed ? b.editor.catalogInstalled : b.editor.catalog }) : null,
-                needsSetup ? /* @__PURE__ */ jsx47(
+              /* @__PURE__ */ jsxs46("span", { className: "min-w-0", children: [
+                /* @__PURE__ */ jsx48("span", { children: m.name }),
+                m.fromCatalog && !needsSetup ? /* @__PURE__ */ jsx48("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: m.installed ? b.editor.catalogInstalled : b.editor.catalog }) : null,
+                needsSetup ? /* @__PURE__ */ jsx48(
                   McpSetupButton,
                   {
                     entry: m,
@@ -24274,7 +24523,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
                     route: botRoute
                   }
                 ) : null,
-                m.description ? /* @__PURE__ */ jsx47("div", { className: "truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: m.description }) : null
+                m.description ? /* @__PURE__ */ jsx48("div", { className: "truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: m.description }) : null
               ] })
             ] }, m.name);
           }) })
@@ -24283,7 +24532,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ),
     labeled(
       b.editor.editSoul,
-      /* @__PURE__ */ jsx47(
+      /* @__PURE__ */ jsx48(
         sdk_compat_exports.Textarea,
         {
           className: "min-h-28 font-mono text-xs leading-5",
@@ -24389,7 +24638,7 @@ async function applyAdvancedConfig(bot, state) {
 
 // src/edit-profile-dialog.tsx
 init_routing();
-import { jsx as jsx48, jsxs as jsxs46 } from "react/jsx-runtime";
+import { jsx as jsx49, jsxs as jsxs47 } from "react/jsx-runtime";
 function EditProfileDialog({ bot, open, onClose }) {
   const { t } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
@@ -24515,7 +24764,7 @@ function EditProfileDialog({ bot, open, onClose }) {
     setBusy(false);
     onClose();
   };
-  return /* @__PURE__ */ jsx48(sdk_compat_exports.Dialog, { onOpenChange: (value) => !value && !busy && onClose(), open, children: /* @__PURE__ */ jsxs46(
+  return /* @__PURE__ */ jsx49(sdk_compat_exports.Dialog, { onOpenChange: (value) => !value && !busy && onClose(), open, children: /* @__PURE__ */ jsxs47(
     sdk_compat_exports.DialogContent,
     {
       className: advanced ? "max-w-3xl" : "max-w-sm",
@@ -24528,13 +24777,13 @@ function EditProfileDialog({ bot, open, onClose }) {
         maxHeight: "90vh"
       } : void 0,
       children: [
-        /* @__PURE__ */ jsxs46(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx48(sdk_compat_exports.DialogTitle, { children: b.bot.editTitle }),
-          /* @__PURE__ */ jsx48(sdk_compat_exports.DialogDescription, { children: b.editor.editDescription(displayName(bot, null), bot.name) })
+        /* @__PURE__ */ jsxs47(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx49(sdk_compat_exports.DialogTitle, { children: b.bot.editTitle }),
+          /* @__PURE__ */ jsx49(sdk_compat_exports.DialogDescription, { children: b.editor.editDescription(displayName(bot, null), bot.name) })
         ] }),
-        /* @__PURE__ */ jsxs46("div", { className: "grid gap-4", children: [
-          /* @__PURE__ */ jsx48("div", { className: "flex justify-center py-1", children: /* @__PURE__ */ jsx48(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 64 }) }),
-          /* @__PURE__ */ jsx48(
+        /* @__PURE__ */ jsxs47("div", { className: "grid gap-4", children: [
+          /* @__PURE__ */ jsx49("div", { className: "flex justify-center py-1", children: /* @__PURE__ */ jsx49(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 64 }) }),
+          /* @__PURE__ */ jsx49(
             AvatarPicker,
             {
               color,
@@ -24552,7 +24801,7 @@ function EditProfileDialog({ bot, open, onClose }) {
           ),
           labeled(
             b.editor.title,
-            /* @__PURE__ */ jsx48(
+            /* @__PURE__ */ jsx49(
               sdk_compat_exports.Input,
               {
                 onChange: (event) => setTitle(event.target.value),
@@ -24563,7 +24812,7 @@ function EditProfileDialog({ bot, open, onClose }) {
           ),
           labeled(
             b.editor.role,
-            /* @__PURE__ */ jsx48(
+            /* @__PURE__ */ jsx49(
               sdk_compat_exports.Input,
               {
                 onChange: (event) => setRole(event.target.value),
@@ -24574,7 +24823,7 @@ function EditProfileDialog({ bot, open, onClose }) {
           ),
           labeled(
             b.editor.description,
-            /* @__PURE__ */ jsx48(
+            /* @__PURE__ */ jsx49(
               sdk_compat_exports.Textarea,
               {
                 className: "min-h-16",
@@ -24584,7 +24833,7 @@ function EditProfileDialog({ bot, open, onClose }) {
               }
             )
           ),
-          /* @__PURE__ */ jsxs46(
+          /* @__PURE__ */ jsxs47(
             sdk_compat_exports.Button,
             {
               className: "flex items-center gap-1 text-xs font-medium text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)",
@@ -24592,17 +24841,17 @@ function EditProfileDialog({ bot, open, onClose }) {
               size: "inline",
               variant: "text",
               children: [
-                /* @__PURE__ */ jsx48(sdk_compat_exports.DisclosureCaret, { open: advanced }),
+                /* @__PURE__ */ jsx49(sdk_compat_exports.DisclosureCaret, { open: advanced }),
                 b.editor.capabilities,
-                /* @__PURE__ */ jsx48("span", { className: "font-normal text-(--ui-text-quaternary)", children: caps ? b.editor.capabilitiesSummary(caps.skills, caps.toolsets, caps.mcp) : b.editor.capabilitiesHint })
+                /* @__PURE__ */ jsx49("span", { className: "font-normal text-(--ui-text-quaternary)", children: caps ? b.editor.capabilitiesSummary(caps.skills, caps.toolsets, caps.mcp) : b.editor.capabilitiesHint })
               ]
             }
           ),
-          advanced ? /* @__PURE__ */ jsx48("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-3", children: /* @__PURE__ */ jsx48(AdvancedProfileConfig, { bot, setState: setAdv, state: adv }) }) : null
+          advanced ? /* @__PURE__ */ jsx49("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-3", children: /* @__PURE__ */ jsx49(AdvancedProfileConfig, { bot, setState: setAdv, state: adv }) }) : null
         ] }),
-        /* @__PURE__ */ jsxs46(sdk_compat_exports.DialogFooter, { children: [
-          /* @__PURE__ */ jsx48(sdk_compat_exports.Button, { disabled: busy, onClick: onClose, variant: "ghost", children: t.common.cancel }),
-          /* @__PURE__ */ jsx48(sdk_compat_exports.Button, { disabled: busy, onClick: submit, children: busy ? t.common.saving : t.common.save })
+        /* @__PURE__ */ jsxs47(sdk_compat_exports.DialogFooter, { children: [
+          /* @__PURE__ */ jsx49(sdk_compat_exports.Button, { disabled: busy, onClick: onClose, variant: "ghost", children: t.common.cancel }),
+          /* @__PURE__ */ jsx49(sdk_compat_exports.Button, { disabled: busy, onClick: submit, children: busy ? t.common.saving : t.common.save })
         ] })
       ]
     }
@@ -24683,7 +24932,7 @@ function setRailTab(id) {
 init_sdk_compat();
 init_i18n();
 import { useRef as useRef10 } from "react";
-import { jsx as jsx49, jsxs as jsxs47 } from "react/jsx-runtime";
+import { jsx as jsx50, jsxs as jsxs48 } from "react/jsx-runtime";
 var TAB_ICONS = {
   activity: "list-unordered",
   approvals: "shield",
@@ -24693,7 +24942,7 @@ var TAB_ICONS = {
 function RailTabs({ badges, onChange, value }) {
   const b = useBots();
   const buttons = useRef10({});
-  return /* @__PURE__ */ jsx49(
+  return /* @__PURE__ */ jsx50(
     "div",
     {
       "aria-label": b.rail.title,
@@ -24702,7 +24951,7 @@ function RailTabs({ badges, onChange, value }) {
       children: RAIL_TAB_IDS.map((id, index) => {
         const active = id === value;
         const badge = badges[id] ?? 0;
-        return /* @__PURE__ */ jsxs47(
+        return /* @__PURE__ */ jsxs48(
           "button",
           {
             "aria-controls": `rail-panel-${id}`,
@@ -24733,9 +24982,9 @@ function RailTabs({ badges, onChange, value }) {
             tabIndex: active ? 0 : -1,
             type: "button",
             children: [
-              /* @__PURE__ */ jsx49(sdk_compat_exports.Codicon, { "aria-hidden": true, name: TAB_ICONS[id], size: "0.875rem" }),
-              /* @__PURE__ */ jsx49("span", { className: "truncate", children: b.activity.tabs[id] }),
-              badge > 0 ? /* @__PURE__ */ jsx49("span", { className: "rounded bg-(--ui-accent)/12 px-1 text-xs tabular-nums text-(--ui-text-primary)", children: badge > 99 ? "99+" : badge }) : null
+              /* @__PURE__ */ jsx50(sdk_compat_exports.Codicon, { "aria-hidden": true, name: TAB_ICONS[id], size: "0.875rem" }),
+              /* @__PURE__ */ jsx50("span", { className: "truncate", children: b.activity.tabs[id] }),
+              badge > 0 ? /* @__PURE__ */ jsx50("span", { className: "rounded bg-(--ui-accent)/12 px-1 text-xs tabular-nums text-(--ui-text-primary)", children: badge > 99 ? "99+" : badge }) : null
             ]
           },
           id
@@ -24752,7 +25001,7 @@ init_routing();
 init_sdk_compat();
 init_data();
 init_i18n();
-import { useEffect as useEffect15, useRef as useRef11, useState as useState32 } from "react";
+import { useEffect as useEffect16, useRef as useRef11, useState as useState32 } from "react";
 
 // src/screen-actions.ts
 init_routing();
@@ -24853,8 +25102,8 @@ init_sdk_compat();
 init_data();
 init_i18n();
 init_routing();
-import { useEffect as useEffect14, useMemo as useMemo6 } from "react";
-import { jsx as jsx50, jsxs as jsxs48 } from "react/jsx-runtime";
+import { useEffect as useEffect15, useMemo as useMemo6 } from "react";
+import { jsx as jsx51, jsxs as jsxs49 } from "react/jsx-runtime";
 function portalTone(status, lease, viewer = null, unavailable = false) {
   if (unavailable) {
     return "unavailable";
@@ -24901,7 +25150,7 @@ function useScreenPortalState(bot) {
   const state = screenStateFor(all, bot);
   const status = state?.status ?? null;
   const profileKey = status?.profile_key;
-  useEffect14(() => {
+  useEffect15(() => {
     if (status || state?.unavailable) {
       return;
     }
@@ -24920,7 +25169,7 @@ function useScreenPortalState(bot) {
       cancelled = true;
     };
   }, [bot, state?.unavailable, status]);
-  useEffect14(
+  useEffect15(
     () => host.onEvent("display.lease", (event) => {
       const payload = event.payload;
       if (payload?.lease && isEventForBotScreen(bot, event, profileKey)) {
@@ -24929,7 +25178,7 @@ function useScreenPortalState(bot) {
     }),
     [bot, profileKey]
   );
-  useEffect14(
+  useEffect15(
     () => host.onEvent("display.status", (event) => {
       const payload = event.payload;
       if (payload?.profile_key && isEventForBotScreen(bot, event, profileKey)) {
@@ -24960,7 +25209,7 @@ function ScreenPortal({ bot }) {
   if (tone === "unsupported" || tone === "unavailable") {
     return null;
   }
-  return /* @__PURE__ */ jsxs48(
+  return /* @__PURE__ */ jsxs49(
     "button",
     {
       "aria-label": `${t.screen.portalTitle}: ${subtitle}`,
@@ -24968,23 +25217,23 @@ function ScreenPortal({ bot }) {
       onClick: () => openBotScreen(bot, null),
       type: "button",
       children: [
-        /* @__PURE__ */ jsxs48("span", { className: "relative grid size-7 shrink-0 place-items-center rounded bg-black/70 text-white/90", children: [
-          /* @__PURE__ */ jsx50(sdk_compat_exports.Codicon, { name: TONE_ICON[tone] }),
-          /* @__PURE__ */ jsx50(
+        /* @__PURE__ */ jsxs49("span", { className: "relative grid size-7 shrink-0 place-items-center rounded bg-black/70 text-white/90", children: [
+          /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: TONE_ICON[tone] }),
+          /* @__PURE__ */ jsx51(
             "span",
             {
               className: `absolute -right-0.5 -top-0.5 size-2 rounded-full ring-2 ring-(--ui-bg-primary) ${TONE_DOT[tone]}`
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs48("span", { className: "min-w-0 flex-1", children: [
-          /* @__PURE__ */ jsx50("span", { className: "block truncate text-xs font-medium", children: t.screen.portalTitle }),
-          subtitle ? /* @__PURE__ */ jsx50("span", { className: "block truncate text-[0.65rem] text-(--ui-text-tertiary)", children: subtitle }) : null
+        /* @__PURE__ */ jsxs49("span", { className: "min-w-0 flex-1", children: [
+          /* @__PURE__ */ jsx51("span", { className: "block truncate text-xs font-medium", children: t.screen.portalTitle }),
+          subtitle ? /* @__PURE__ */ jsx51("span", { className: "block truncate text-[0.65rem] text-(--ui-text-tertiary)", children: subtitle }) : null
         ] }),
-        /* @__PURE__ */ jsxs48("span", { className: "flex shrink-0 items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary) opacity-0 transition-opacity group-hover:opacity-100", children: [
+        /* @__PURE__ */ jsxs49("span", { className: "flex shrink-0 items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary) opacity-0 transition-opacity group-hover:opacity-100", children: [
           t.screen.portalOpen,
           " ",
-          /* @__PURE__ */ jsx50(sdk_compat_exports.Codicon, { name: "arrow-right" })
+          /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "arrow-right" })
         ] })
       ]
     }
@@ -25005,11 +25254,11 @@ function ProfileGroupScreenPortal({ route }) {
     } : { name: profile }),
     [connectionId, profile, roster]
   );
-  return /* @__PURE__ */ jsx50(ScreenPortal, { bot });
+  return /* @__PURE__ */ jsx51(ScreenPortal, { bot });
 }
 
 // src/screen-panel.tsx
-import { Fragment as Fragment10, jsx as jsx51, jsxs as jsxs49 } from "react/jsx-runtime";
+import { Fragment as Fragment10, jsx as jsx52, jsxs as jsxs50 } from "react/jsx-runtime";
 var REFRESH_MS = 4e3;
 var STALE_AFTER = 3;
 function useLiveThumbnail(bot, running) {
@@ -25017,7 +25266,7 @@ function useLiveThumbnail(bot, running) {
   const [misses, setMisses] = useState32(0);
   const [suppressed, setSuppressed] = useState32(false);
   const boxRef = useRef11(null);
-  useEffect15(() => {
+  useEffect16(() => {
     if (!running) {
       setDataUrl(null);
       setMisses(0);
@@ -25083,7 +25332,7 @@ var CHIP_CLASS = {
   unknown: "bg-muted text-muted-foreground"
 };
 function BotComputerPanel({ bot, meta }) {
-  return /* @__PURE__ */ jsx51(ComputerPanelContent, { bot, meta }, botSelectionKey(bot));
+  return /* @__PURE__ */ jsx52(ComputerPanelContent, { bot, meta }, botSelectionKey(bot));
 }
 function ComputerPanelContent({ bot, meta }) {
   const t = useBots();
@@ -25159,18 +25408,18 @@ function ComputerPanelContent({ bot, meta }) {
     handle.addEventListener("pointerup", onUp);
   };
   const unsupported = tone === "unsupported" || tone === "unavailable";
-  return /* @__PURE__ */ jsxs49(
+  return /* @__PURE__ */ jsxs50(
     "section",
     {
       "aria-label": t.screen.panelTitle,
       className: "overflow-hidden rounded-lg border border-(--ui-stroke-secondary)",
       children: [
-        /* @__PURE__ */ jsxs49("div", { className: "flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2 py-1", children: [
-          /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "device-desktop", size: "0.8rem" }),
-          /* @__PURE__ */ jsx51("span", { className: "text-[0.65rem] font-medium text-(--ui-text-secondary)", children: t.screen.panelTitle }),
-          /* @__PURE__ */ jsx51("span", { className: `shrink-0 rounded px-1.5 py-0.5 text-[0.6rem] font-medium ${CHIP_CLASS[tone]}`, children: chip }),
-          /* @__PURE__ */ jsx51("span", { className: "grow" }),
-          /* @__PURE__ */ jsx51(sdk_compat_exports.Tip, { label: t.screen.openFullPane, children: /* @__PURE__ */ jsx51(
+        /* @__PURE__ */ jsxs50("div", { className: "flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2 py-1", children: [
+          /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "device-desktop", size: "0.8rem" }),
+          /* @__PURE__ */ jsx52("span", { className: "text-[0.65rem] font-medium text-(--ui-text-secondary)", children: t.screen.panelTitle }),
+          /* @__PURE__ */ jsx52("span", { className: `shrink-0 rounded px-1.5 py-0.5 text-[0.6rem] font-medium ${CHIP_CLASS[tone]}`, children: chip }),
+          /* @__PURE__ */ jsx52("span", { className: "grow" }),
+          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.openFullPane, children: /* @__PURE__ */ jsx52(
             sdk_compat_exports.Button,
             {
               "aria-label": t.screen.openFullPane,
@@ -25178,10 +25427,10 @@ function ComputerPanelContent({ bot, meta }) {
               onClick: () => openBotScreen(bot, meta ?? null),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "screen-full" })
+              children: /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "screen-full" })
             }
           ) }),
-          /* @__PURE__ */ jsx51(sdk_compat_exports.Tip, { label: t.screen.copyScreenshot, children: /* @__PURE__ */ jsx51(
+          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.copyScreenshot, children: /* @__PURE__ */ jsx52(
             sdk_compat_exports.Button,
             {
               "aria-label": t.screen.copyScreenshot,
@@ -25189,10 +25438,10 @@ function ComputerPanelContent({ bot, meta }) {
               onClick: copyShot,
               size: "icon-xs",
               variant: "ghost",
-              children: busy === "copy" ? /* @__PURE__ */ jsx51(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "copy" })
+              children: busy === "copy" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "copy" })
             }
           ) }),
-          /* @__PURE__ */ jsx51(sdk_compat_exports.Tip, { label: t.screen.restartScreen, children: /* @__PURE__ */ jsx51(
+          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.restartScreen, children: /* @__PURE__ */ jsx52(
             sdk_compat_exports.Button,
             {
               "aria-label": t.screen.restartScreen,
@@ -25200,10 +25449,10 @@ function ComputerPanelContent({ bot, meta }) {
               onClick: restart,
               size: "icon-xs",
               variant: "ghost",
-              children: busy === "restart" ? /* @__PURE__ */ jsx51(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "debug-restart" })
+              children: busy === "restart" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "debug-restart" })
             }
           ) }),
-          canOpenBotWorkdir(bot) ? /* @__PURE__ */ jsx51(sdk_compat_exports.Tip, { label: t.screen.openWorkdir, children: /* @__PURE__ */ jsx51(
+          canOpenBotWorkdir(bot) ? /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.openWorkdir, children: /* @__PURE__ */ jsx52(
             sdk_compat_exports.Button,
             {
               "aria-label": t.screen.openWorkdir,
@@ -25211,13 +25460,13 @@ function ComputerPanelContent({ bot, meta }) {
               onClick: openWorkdir,
               size: "icon-xs",
               variant: "ghost",
-              children: busy === "workdir" ? /* @__PURE__ */ jsx51(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "folder-opened" })
+              children: busy === "workdir" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "folder-opened" })
             }
           ) }) : null
         ] }),
-        !unsupported ? /* @__PURE__ */ jsxs49(Fragment10, { children: [
-          /* @__PURE__ */ jsxs49("div", { className: "relative bg-black", style: { height }, children: [
-            /* @__PURE__ */ jsx51(
+        !unsupported ? /* @__PURE__ */ jsxs50(Fragment10, { children: [
+          /* @__PURE__ */ jsxs50("div", { className: "relative bg-black", style: { height }, children: [
+            /* @__PURE__ */ jsx52(
               "button",
               {
                 "aria-label": `${t.screen.portalTitle}: ${caption || chip}`,
@@ -25225,7 +25474,7 @@ function ComputerPanelContent({ bot, meta }) {
                 onClick: () => openBotScreen(bot, meta ?? null),
                 ref: boxRef,
                 type: "button",
-                children: dataUrl ? /* @__PURE__ */ jsx51(
+                children: dataUrl ? /* @__PURE__ */ jsx52(
                   "img",
                   {
                     alt: "",
@@ -25233,7 +25482,7 @@ function ComputerPanelContent({ bot, meta }) {
                     draggable: false,
                     src: dataUrl
                   }
-                ) : /* @__PURE__ */ jsx51("span", { className: "absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]", children: /* @__PURE__ */ jsx51(
+                ) : /* @__PURE__ */ jsx52("span", { className: "absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]", children: /* @__PURE__ */ jsx52(
                   sdk_compat_exports.Codicon,
                   {
                     className: "text-[2.25rem] text-white/30",
@@ -25242,9 +25491,9 @@ function ComputerPanelContent({ bot, meta }) {
                 ) })
               }
             ),
-            caption ? /* @__PURE__ */ jsx51("span", { className: "pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-black/0 px-2.5 pb-1.5 pt-4 text-[0.65rem] text-white/70", children: caption }) : null
+            caption ? /* @__PURE__ */ jsx52("span", { className: "pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-black/0 px-2.5 pb-1.5 pt-4 text-[0.65rem] text-white/70", children: caption }) : null
           ] }),
-          /* @__PURE__ */ jsx51(
+          /* @__PURE__ */ jsx52(
             "div",
             {
               "aria-label": t.screen.resizePanel,
@@ -25253,18 +25502,18 @@ function ComputerPanelContent({ bot, meta }) {
               role: "separator"
             }
           ),
-          /* @__PURE__ */ jsx51("div", { className: "flex items-center gap-2 border-t border-(--ui-stroke-secondary) px-2 py-1.5", children: iHold ? /* @__PURE__ */ jsxs49(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(), size: "sm", variant: "secondary", children: [
-            busy === "handback" ? /* @__PURE__ */ jsx51(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "debug-continue" }),
+          /* @__PURE__ */ jsx52("div", { className: "flex items-center gap-2 border-t border-(--ui-stroke-secondary) px-2 py-1.5", children: iHold ? /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(), size: "sm", variant: "secondary", children: [
+            busy === "handback" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "debug-continue" }),
             " ",
             t.screen.handBack
-          ] }) : /* @__PURE__ */ jsxs49(Fragment10, { children: [
-            humanOther ? /* @__PURE__ */ jsx51(sdk_compat_exports.Tip, { label: t.screen.handBackForceHint, children: /* @__PURE__ */ jsxs49(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(true), size: "sm", variant: "secondary", children: [
-              /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "debug-continue" }),
+          ] }) : /* @__PURE__ */ jsxs50(Fragment10, { children: [
+            humanOther ? /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.handBackForceHint, children: /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(true), size: "sm", variant: "secondary", children: [
+              /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "debug-continue" }),
               " ",
               t.screen.handBackForce
             ] }) }) : null,
-            /* @__PURE__ */ jsxs49(sdk_compat_exports.Button, { disabled: busy !== null || !running, onClick: takeOver, size: "sm", children: [
-              busy === "takeover" ? /* @__PURE__ */ jsx51(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "record-keys" }),
+            /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: busy !== null || !running, onClick: takeOver, size: "sm", children: [
+              busy === "takeover" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "record-keys" }),
               " ",
               t.screen.takeOver
             ] })
@@ -25277,7 +25526,7 @@ function ComputerPanelContent({ bot, meta }) {
 
 // src/share-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect16, useRef as useRef12, useState as useState33 } from "react";
+import { useEffect as useEffect17, useRef as useRef12, useState as useState33 } from "react";
 init_avatar_image();
 
 // src/bot-export.ts
@@ -25614,7 +25863,7 @@ function useShareText() {
 }
 
 // src/share-dialog.tsx
-import { jsx as jsx52, jsxs as jsxs50 } from "react/jsx-runtime";
+import { jsx as jsx53, jsxs as jsxs51 } from "react/jsx-runtime";
 function ShareBotDialog({
   bot,
   meta,
@@ -25632,7 +25881,7 @@ function ShareBotDialog({
   const { color, image, shape } = botAppearance(bot.name, meta);
   const accent = avatarColor(color, bot.name);
   const photo = image && !isBackfilledFacePng(image) ? image : null;
-  useEffect16(() => {
+  useEffect17(() => {
     if (!open) {
       return;
     }
@@ -25708,39 +25957,39 @@ function ShareBotDialog({
       host.notifyError(error, s.failed);
     }
   };
-  return /* @__PURE__ */ jsx52(sdk_compat_exports.Dialog, { onOpenChange, open, children: /* @__PURE__ */ jsxs50(sdk_compat_exports.DialogContent, { className: "max-w-2xl", children: [
-    /* @__PURE__ */ jsxs50(sdk_compat_exports.DialogHeader, { children: [
-      /* @__PURE__ */ jsx52(sdk_compat_exports.DialogTitle, { children: s.title(name) }),
-      /* @__PURE__ */ jsx52(sdk_compat_exports.DialogDescription, { children: s.subtitle })
+  return /* @__PURE__ */ jsx53(sdk_compat_exports.Dialog, { onOpenChange, open, children: /* @__PURE__ */ jsxs51(sdk_compat_exports.DialogContent, { className: "max-w-2xl", children: [
+    /* @__PURE__ */ jsxs51(sdk_compat_exports.DialogHeader, { children: [
+      /* @__PURE__ */ jsx53(sdk_compat_exports.DialogTitle, { children: s.title(name) }),
+      /* @__PURE__ */ jsx53(sdk_compat_exports.DialogDescription, { children: s.subtitle })
     ] }),
-    /* @__PURE__ */ jsx52("div", { "aria-hidden": true, className: "pointer-events-none fixed -left-[9999px] top-0", ref: faceRef, children: !photo && /* @__PURE__ */ jsx52(BotFace, { color: accent, name: bot.name, shape, size: 200 }) }),
-    /* @__PURE__ */ jsx52(
+    /* @__PURE__ */ jsx53("div", { "aria-hidden": true, className: "pointer-events-none fixed -left-[9999px] top-0", ref: faceRef, children: !photo && /* @__PURE__ */ jsx53(BotFace, { color: accent, name: bot.name, shape, size: 200 }) }),
+    /* @__PURE__ */ jsx53(
       "div",
       {
         className: "grid aspect-[1200/630] w-full place-items-center overflow-hidden rounded-xl bg-(--ui-bg-tertiary) shadow-[0_1px_0_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.25)]",
         "data-slot": "share-card-preview",
-        children: previewUrl ? /* @__PURE__ */ jsx52("img", { alt: s.title(name), className: "size-full", src: previewUrl }) : /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {})
+        children: previewUrl ? /* @__PURE__ */ jsx53("img", { alt: s.title(name), className: "size-full", src: previewUrl }) : /* @__PURE__ */ jsx53(sdk_compat_exports.GlyphSpinner, {})
       }
     ),
-    /* @__PURE__ */ jsxs50("div", { className: "flex flex-wrap items-center gap-1.5", children: [
-      /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: !png, onClick: () => void copyImage(), size: "sm", children: [
-        /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "copy" }),
+    /* @__PURE__ */ jsxs51("div", { className: "flex flex-wrap items-center gap-1.5", children: [
+      /* @__PURE__ */ jsxs51(sdk_compat_exports.Button, { disabled: !png, onClick: () => void copyImage(), size: "sm", children: [
+        /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { name: "copy" }),
         s.copyImage
       ] }),
-      /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: !previewUrl, onClick: saveImage, size: "sm", variant: "secondary", children: [
-        /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "desktop-download" }),
+      /* @__PURE__ */ jsxs51(sdk_compat_exports.Button, { disabled: !previewUrl, onClick: saveImage, size: "sm", variant: "secondary", children: [
+        /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { name: "desktop-download" }),
         s.saveImage
       ] }),
-      /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { onClick: () => void copyInvite(), size: "sm", variant: "secondary", children: [
-        /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "mention" }),
+      /* @__PURE__ */ jsxs51(sdk_compat_exports.Button, { onClick: () => void copyInvite(), size: "sm", variant: "secondary", children: [
+        /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { name: "mention" }),
         s.copyInvite
       ] }),
-      /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { className: "ml-auto", onClick: () => void exportBot(bot, meta), size: "sm", variant: "ghost", children: [
-        /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "package" }),
+      /* @__PURE__ */ jsxs51(sdk_compat_exports.Button, { className: "ml-auto", onClick: () => void exportBot(bot, meta), size: "sm", variant: "ghost", children: [
+        /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { name: "package" }),
         s.exportFile
       ] })
     ] }),
-    /* @__PURE__ */ jsx52("p", { className: "-mt-1 text-[0.6875rem] text-(--ui-text-tertiary)", children: s.exportHint })
+    /* @__PURE__ */ jsx53("p", { className: "-mt-1 text-[0.6875rem] text-(--ui-text-tertiary)", children: s.exportHint })
   ] }) });
 }
 
@@ -25750,9 +25999,9 @@ import { useMemo as useMemo8, useState as useState35 } from "react";
 
 // src/activity-detail.tsx
 init_sdk_compat();
-import { useEffect as useEffect17, useRef as useRef13, useState as useState34 } from "react";
+import { useEffect as useEffect18, useRef as useRef13, useState as useState34 } from "react";
 init_i18n();
-import { jsx as jsx53, jsxs as jsxs51 } from "react/jsx-runtime";
+import { jsx as jsx54, jsxs as jsxs52 } from "react/jsx-runtime";
 var SHELL_TOOLS2 = /* @__PURE__ */ new Set(["terminal", "process", "process_manage", "execute_code"]);
 function duration(seconds) {
   if (seconds < 10) {
@@ -25771,7 +26020,7 @@ var BADGE_TONE = {
 };
 function StepGlyph({ step }) {
   const status = step.action.status;
-  return /* @__PURE__ */ jsx53(
+  return /* @__PURE__ */ jsx54(
     "span",
     {
       "aria-hidden": true,
@@ -25779,7 +26028,7 @@ function StepGlyph({ step }) {
         "relative z-10 grid size-5 shrink-0 place-items-center rounded-full bg-(--ui-sidebar-surface-background)",
         status === "error" ? "text-destructive" : status === "running" ? "text-(--ui-accent)" : "text-(--ui-text-tertiary)"
       ),
-      children: status === "running" ? /* @__PURE__ */ jsx53(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { name: status === "error" ? "error" : "pass", size: "0.95rem" })
+      children: status === "running" ? /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: status === "error" ? "error" : "pass", size: "0.95rem" })
     }
   );
 }
@@ -25790,7 +26039,7 @@ function Timeline({
   task
 }) {
   const listRef = useRef13(null);
-  useEffect17(() => {
+  useEffect18(() => {
     if (!selectedId) {
       return;
     }
@@ -25807,7 +26056,7 @@ function Timeline({
       onSelect(next.id);
     }
   };
-  return /* @__PURE__ */ jsxs51(
+  return /* @__PURE__ */ jsxs52(
     "ol",
     {
       "aria-label": task.title || a.onItsOwn,
@@ -25815,14 +26064,14 @@ function Timeline({
       onKeyDown: move,
       ref: listRef,
       children: [
-        /* @__PURE__ */ jsxs51("li", { className: "flex items-center gap-2.5 px-3 py-1.5 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
-          /* @__PURE__ */ jsx53("span", { className: "relative z-10 grid size-5 place-items-center bg-(--ui-sidebar-surface-background)", children: /* @__PURE__ */ jsx53("span", { className: "size-1.5 rounded-full bg-(--ui-text-quaternary)" }) }),
-          /* @__PURE__ */ jsx53("span", { className: "min-w-0 flex-1", children: a.started }),
-          /* @__PURE__ */ jsx53("span", { className: "tabular-nums text-[0.6875rem] text-(--ui-text-quaternary)", children: clockTime(task.startedAt) })
+        /* @__PURE__ */ jsxs52("li", { className: "flex items-center gap-2.5 px-3 py-1.5 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
+          /* @__PURE__ */ jsx54("span", { className: "relative z-10 grid size-5 place-items-center bg-(--ui-sidebar-surface-background)", children: /* @__PURE__ */ jsx54("span", { className: "size-1.5 rounded-full bg-(--ui-text-quaternary)" }) }),
+          /* @__PURE__ */ jsx54("span", { className: "min-w-0 flex-1", children: a.started }),
+          /* @__PURE__ */ jsx54("span", { className: "tabular-nums text-[0.6875rem] text-(--ui-text-quaternary)", children: clockTime(task.startedAt) })
         ] }),
         task.steps.map((step) => {
           const selected = step.id === selectedId;
-          return /* @__PURE__ */ jsx53("li", { children: /* @__PURE__ */ jsxs51(
+          return /* @__PURE__ */ jsx54("li", { children: /* @__PURE__ */ jsxs52(
             "button",
             {
               "aria-current": selected ? "step" : void 0,
@@ -25834,14 +26083,14 @@ function Timeline({
               onClick: () => onSelect(step.id),
               type: "button",
               children: [
-                /* @__PURE__ */ jsx53(StepGlyph, { step }),
-                /* @__PURE__ */ jsx53("span", { className: "line-clamp-2 min-w-0 flex-1 [overflow-wrap:anywhere]", children: stepLabel(step, a) })
+                /* @__PURE__ */ jsx54(StepGlyph, { step }),
+                /* @__PURE__ */ jsx54("span", { className: "line-clamp-2 min-w-0 flex-1 [overflow-wrap:anywhere]", children: stepLabel(step, a) })
               ]
             }
           ) }, step.id);
         }),
-        /* @__PURE__ */ jsxs51("li", { className: "flex items-start gap-2.5 px-3 py-1.5 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
-          /* @__PURE__ */ jsx53("span", { className: "relative z-10 grid size-5 shrink-0 place-items-center bg-(--ui-sidebar-surface-background)", children: task.status === "running" ? /* @__PURE__ */ jsx53(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem] text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx53(
+        /* @__PURE__ */ jsxs52("li", { className: "flex items-start gap-2.5 px-3 py-1.5 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
+          /* @__PURE__ */ jsx54("span", { className: "relative z-10 grid size-5 shrink-0 place-items-center bg-(--ui-sidebar-surface-background)", children: task.status === "running" ? /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem] text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx54(
             sdk_compat_exports.Codicon,
             {
               className: task.status === "error" ? "text-destructive" : "text-(--ui-text-tertiary)",
@@ -25849,19 +26098,19 @@ function Timeline({
               size: "0.95rem"
             }
           ) }),
-          /* @__PURE__ */ jsx53("span", { className: "min-w-0 flex-1", children: task.status === "running" ? a.working : task.status === "done" ? a.finished : a.status[task.status] })
+          /* @__PURE__ */ jsx54("span", { className: "min-w-0 flex-1", children: task.status === "running" ? a.working : task.status === "done" ? a.finished : a.status[task.status] })
         ] })
       ]
     }
   );
 }
 function CodeBlock({ copyLabel, label, text: text2 }) {
-  return /* @__PURE__ */ jsxs51("div", { className: "overflow-hidden rounded-xl border border-(--ui-stroke-tertiary) bg-(--ui-inline-code-background)", children: [
-    /* @__PURE__ */ jsxs51("div", { className: "flex items-center justify-between px-3 pt-1.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
-      /* @__PURE__ */ jsx53("span", { className: "font-mono", children: label }),
-      /* @__PURE__ */ jsx53(sdk_compat_exports.CopyButton, { label: copyLabel, text: text2 })
+  return /* @__PURE__ */ jsxs52("div", { className: "overflow-hidden rounded-xl border border-(--ui-stroke-tertiary) bg-(--ui-inline-code-background)", children: [
+    /* @__PURE__ */ jsxs52("div", { className: "flex items-center justify-between px-3 pt-1.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
+      /* @__PURE__ */ jsx54("span", { className: "font-mono", children: label }),
+      /* @__PURE__ */ jsx54(sdk_compat_exports.CopyButton, { label: copyLabel, text: text2 })
     ] }),
-    /* @__PURE__ */ jsx53("pre", { className: "max-h-72 overflow-auto px-3 pb-3 pt-1 font-mono text-[0.75rem] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] text-foreground", children: text2 })
+    /* @__PURE__ */ jsx54("pre", { className: "max-h-72 overflow-auto px-3 pb-3 pt-1 font-mono text-[0.75rem] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] text-foreground", children: text2 })
   ] });
 }
 function StepDetail({ a, step }) {
@@ -25869,14 +26118,14 @@ function StepDetail({ a, step }) {
   const shell = SHELL_TOOLS2.has(action.tool);
   const took = action.completedAt !== null ? Math.max(0, action.completedAt - action.startedAt) : null;
   const body = shell ? action.target : [action.target, action.input].filter(Boolean).join("\n\n");
-  return /* @__PURE__ */ jsxs51("article", { className: "grid gap-4", "data-testid": "activity-step-detail", children: [
-    /* @__PURE__ */ jsxs51("header", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx53("h3", { className: "text-[1.0625rem] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]", children: stepLabel(step, a) }),
-      /* @__PURE__ */ jsxs51("div", { className: "flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.75rem] text-(--ui-text-tertiary)", children: [
-        /* @__PURE__ */ jsx53("span", { className: "rounded-md bg-(--ui-inline-code-background) px-1.5 py-px font-mono text-[0.6875rem]", children: action.tool }),
-        action.startedAt ? /* @__PURE__ */ jsx53("span", { className: "tabular-nums", children: clockTime(action.startedAt) }) : null,
-        took !== null ? /* @__PURE__ */ jsx53("span", { className: "tabular-nums", children: a.took(duration(took)) }) : null,
-        action.exitCode !== null ? /* @__PURE__ */ jsx53(
+  return /* @__PURE__ */ jsxs52("article", { className: "grid gap-4", "data-testid": "activity-step-detail", children: [
+    /* @__PURE__ */ jsxs52("header", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx54("h3", { className: "text-[1.0625rem] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]", children: stepLabel(step, a) }),
+      /* @__PURE__ */ jsxs52("div", { className: "flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.75rem] text-(--ui-text-tertiary)", children: [
+        /* @__PURE__ */ jsx54("span", { className: "rounded-md bg-(--ui-inline-code-background) px-1.5 py-px font-mono text-[0.6875rem]", children: action.tool }),
+        action.startedAt ? /* @__PURE__ */ jsx54("span", { className: "tabular-nums", children: clockTime(action.startedAt) }) : null,
+        took !== null ? /* @__PURE__ */ jsx54("span", { className: "tabular-nums", children: a.took(duration(took)) }) : null,
+        action.exitCode !== null ? /* @__PURE__ */ jsx54(
           "span",
           {
             className: (0, sdk_compat_exports.cn)(
@@ -25888,16 +26137,16 @@ function StepDetail({ a, step }) {
         ) : null
       ] })
     ] }),
-    body ? /* @__PURE__ */ jsxs51("section", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx53("h4", { className: "text-[0.8125rem] font-semibold text-foreground", children: shell ? a.command : a.input }),
-      /* @__PURE__ */ jsx53(CodeBlock, { copyLabel: a.copy, label: shell ? "bash" : action.tool, text: body })
+    body ? /* @__PURE__ */ jsxs52("section", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx54("h4", { className: "text-[0.8125rem] font-semibold text-foreground", children: shell ? a.command : a.input }),
+      /* @__PURE__ */ jsx54(CodeBlock, { copyLabel: a.copy, label: shell ? "bash" : action.tool, text: body })
     ] }) : null,
-    /* @__PURE__ */ jsxs51("section", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx53("h4", { className: "text-[0.8125rem] font-semibold text-foreground", children: a.result }),
-      action.status === "running" ? /* @__PURE__ */ jsxs51("p", { className: "flex items-center gap-2 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
-        /* @__PURE__ */ jsx53(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem] text-(--ui-accent)", spinner: "breathe" }),
+    /* @__PURE__ */ jsxs52("section", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx54("h4", { className: "text-[0.8125rem] font-semibold text-foreground", children: a.result }),
+      action.status === "running" ? /* @__PURE__ */ jsxs52("p", { className: "flex items-center gap-2 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
+        /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem] text-(--ui-accent)", spinner: "breathe" }),
         a.waiting
-      ] }) : action.output ? /* @__PURE__ */ jsx53(CodeBlock, { copyLabel: a.copy, label: action.status === "error" ? "stderr" : "output", text: action.output }) : /* @__PURE__ */ jsx53("p", { className: "text-[0.8125rem] text-(--ui-text-tertiary)", children: a.noOutput })
+      ] }) : action.output ? /* @__PURE__ */ jsx54(CodeBlock, { copyLabel: a.copy, label: action.status === "error" ? "stderr" : "output", text: action.output }) : /* @__PURE__ */ jsx54("p", { className: "text-[0.8125rem] text-(--ui-text-tertiary)", children: a.noOutput })
     ] })
   ] });
 }
@@ -25906,22 +26155,22 @@ function ActivityDetailDialog({ onClose, task }) {
   const a = b.activity;
   const [selectedId, setSelectedId] = useState34(null);
   const selected = selectedId && task?.steps.find((step) => step.id === selectedId) || (task ? currentStep(task) : null);
-  useEffect17(() => setSelectedId(null), [task?.id]);
-  return /* @__PURE__ */ jsx53(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open: Boolean(task), children: task ? /* @__PURE__ */ jsxs51(
+  useEffect18(() => setSelectedId(null), [task?.id]);
+  return /* @__PURE__ */ jsx54(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open: Boolean(task), children: task ? /* @__PURE__ */ jsxs52(
     sdk_compat_exports.DialogContent,
     {
       bodyClassName: "flex min-h-0 flex-1 flex-col overflow-hidden p-0",
       className: "h-[min(46rem,88vh)] max-h-[88vh] max-w-[min(64rem,94vw)]",
       "data-testid": "activity-detail",
       children: [
-        /* @__PURE__ */ jsxs51("header", { className: "grid gap-2 border-b border-(--ui-stroke-tertiary) px-6 pb-4 pt-5 pr-14", children: [
-          /* @__PURE__ */ jsx53("span", { className: (0, sdk_compat_exports.cn)("w-fit rounded-md px-2 py-0.5 text-[0.75rem] font-semibold", BADGE_TONE[task.status]), children: a.status[task.status] }),
-          /* @__PURE__ */ jsx53(sdk_compat_exports.DialogTitle, { className: "text-xl font-semibold leading-tight [overflow-wrap:anywhere]", children: task.title || a.onItsOwn }),
-          /* @__PURE__ */ jsx53(sdk_compat_exports.DialogDescription, { className: (0, sdk_compat_exports.cn)("text-[0.8125rem] text-(--ui-text-tertiary)", !task.outcome && "sr-only"), children: task.outcome || a.steps(task.steps.length) })
+        /* @__PURE__ */ jsxs52("header", { className: "grid gap-2 border-b border-(--ui-stroke-tertiary) px-6 pb-4 pt-5 pr-14", children: [
+          /* @__PURE__ */ jsx54("span", { className: (0, sdk_compat_exports.cn)("w-fit rounded-md px-2 py-0.5 text-[0.75rem] font-semibold", BADGE_TONE[task.status]), children: a.status[task.status] }),
+          /* @__PURE__ */ jsx54(sdk_compat_exports.DialogTitle, { className: "text-xl font-semibold leading-tight [overflow-wrap:anywhere]", children: task.title || a.onItsOwn }),
+          /* @__PURE__ */ jsx54(sdk_compat_exports.DialogDescription, { className: (0, sdk_compat_exports.cn)("text-[0.8125rem] text-(--ui-text-tertiary)", !task.outcome && "sr-only"), children: task.outcome || a.steps(task.steps.length) })
         ] }),
-        /* @__PURE__ */ jsxs51("div", { className: "grid min-h-0 flex-1 grid-cols-[minmax(13rem,18rem)_1fr] max-sm:grid-cols-1", children: [
-          /* @__PURE__ */ jsx53("nav", { className: "min-h-0 overflow-y-auto border-r border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background) p-2 max-sm:max-h-56 max-sm:border-b max-sm:border-r-0", children: /* @__PURE__ */ jsx53(Timeline, { a, onSelect: setSelectedId, selectedId: selected?.id ?? null, task }) }),
-          /* @__PURE__ */ jsx53("div", { className: "min-h-0 overflow-y-auto px-6 py-5", children: selected ? /* @__PURE__ */ jsx53(StepDetail, { a, step: selected }) : /* @__PURE__ */ jsx53("p", { className: "text-[0.8125rem] text-(--ui-text-tertiary)", children: a.pickStep }) })
+        /* @__PURE__ */ jsxs52("div", { className: "grid min-h-0 flex-1 grid-cols-[minmax(13rem,18rem)_1fr] max-sm:grid-cols-1", children: [
+          /* @__PURE__ */ jsx54("nav", { className: "min-h-0 overflow-y-auto border-r border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background) p-2 max-sm:max-h-56 max-sm:border-b max-sm:border-r-0", children: /* @__PURE__ */ jsx54(Timeline, { a, onSelect: setSelectedId, selectedId: selected?.id ?? null, task }) }),
+          /* @__PURE__ */ jsx54("div", { className: "min-h-0 overflow-y-auto px-6 py-5", children: selected ? /* @__PURE__ */ jsx54(StepDetail, { a, step: selected }) : /* @__PURE__ */ jsx54("p", { className: "text-[0.8125rem] text-(--ui-text-tertiary)", children: a.pickStep }) })
         ] })
       ]
     }
@@ -25930,7 +26179,7 @@ function ActivityDetailDialog({ onClose, task }) {
 
 // src/activity-subjects.ts
 init_sdk_compat();
-import { useEffect as useEffect18, useMemo as useMemo7 } from "react";
+import { useEffect as useEffect19, useMemo as useMemo7 } from "react";
 init_shared();
 var STORAGE_KEY3 = "activity-subjects-v1";
 var ENTRY_TTL_MS = 30 * 24 * 60 * 60 * 1e3;
@@ -26139,10 +26388,10 @@ function useActivitySubjects(tasks, messages, visible) {
     }),
     [layer.entries, requests, visible]
   );
-  useEffect18(() => {
+  useEffect19(() => {
     ensureActivitySubjects();
   }, []);
-  useEffect18(() => {
+  useEffect19(() => {
     if (!layer.ready) {
       return;
     }
@@ -26162,7 +26411,7 @@ function useActivitySubjects(tasks, messages, visible) {
 // src/work-board.tsx
 init_i18n();
 init_routing();
-import { Fragment as Fragment11, jsx as jsx54, jsxs as jsxs52 } from "react/jsx-runtime";
+import { Fragment as Fragment11, jsx as jsx55, jsxs as jsxs53 } from "react/jsx-runtime";
 var TILE_TONE = {
   done: "bg-(--ui-inline-code-background) text-(--ui-text-secondary)",
   error: "bg-destructive/10 text-destructive",
@@ -26175,13 +26424,13 @@ var TILE_ICON = {
   stopped: "debug-stop"
 };
 function StatusTile({ className, status }) {
-  return /* @__PURE__ */ jsx54(
+  return /* @__PURE__ */ jsx55(
     "span",
     {
       "aria-hidden": true,
       className: (0, sdk_compat_exports.cn)("grid size-9 shrink-0 place-items-center rounded-xl", TILE_TONE[status], className),
       "data-status": status,
-      children: status === "running" ? /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, { className: "text-[0.95rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: TILE_ICON[status], size: "1rem" })
+      children: status === "running" ? /* @__PURE__ */ jsx55(sdk_compat_exports.GlyphSpinner, { className: "text-[0.95rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: TILE_ICON[status], size: "1rem" })
     }
   );
 }
@@ -26225,10 +26474,10 @@ async function stopFocusedTurn(owner) {
   }
 }
 function BoardSection({ children, count, title }) {
-  return /* @__PURE__ */ jsxs52("section", { className: "grid min-w-0 gap-1.5", "data-testid": `work-section:${title}`, children: [
-    /* @__PURE__ */ jsxs52("h3", { className: "flex items-center gap-1.5 px-1 ui-section-label", children: [
+  return /* @__PURE__ */ jsxs53("section", { className: "grid min-w-0 gap-1.5", "data-testid": `work-section:${title}`, children: [
+    /* @__PURE__ */ jsxs53("h3", { className: "flex items-center gap-1.5 px-1 ui-section-label", children: [
       title,
-      count ? /* @__PURE__ */ jsx54("span", { className: "tabular-nums text-(--ui-text-quaternary)", children: count }) : null
+      count ? /* @__PURE__ */ jsx55("span", { className: "tabular-nums text-(--ui-text-quaternary)", children: count }) : null
     ] }),
     children
   ] });
@@ -26252,17 +26501,17 @@ function NowCard({
   const planText = planStep && plan ? plan.steps[planStep - 1] : null;
   const headline = planText || taskSubject(task, a);
   const progress = plan ? plan.doneSteps.size / plan.steps.length : null;
-  return /* @__PURE__ */ jsxs52(
+  return /* @__PURE__ */ jsxs53(
     "div",
     {
       className: "grid min-w-0 gap-2 rounded-xl border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) p-3 shadow-(--shadow-nous)",
       "data-testid": "work-now",
       children: [
-        /* @__PURE__ */ jsxs52("span", { className: "flex items-center gap-1.5 text-[0.75rem] font-medium text-(--ui-accent)", children: [
-          /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem]", spinner: "breathe" }),
+        /* @__PURE__ */ jsxs53("span", { className: "flex items-center gap-1.5 text-[0.75rem] font-medium text-(--ui-accent)", children: [
+          /* @__PURE__ */ jsx55(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem]", spinner: "breathe" }),
           planStep && plan ? w.stepOf(planStep, plan.steps.length) : a.working
         ] }),
-        /* @__PURE__ */ jsx54(
+        /* @__PURE__ */ jsx55(
           "span",
           {
             className: "text-[0.875rem] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]",
@@ -26271,8 +26520,8 @@ function NowCard({
             children: headline
           }
         ),
-        /* @__PURE__ */ jsx54("span", { className: "truncate text-[0.75rem] text-(--ui-text-tertiary)", "data-testid": "work-now-live", children: live }),
-        progress !== null ? /* @__PURE__ */ jsx54(
+        /* @__PURE__ */ jsx55("span", { className: "truncate text-[0.75rem] text-(--ui-text-tertiary)", "data-testid": "work-now-live", children: live }),
+        progress !== null ? /* @__PURE__ */ jsx55(
           "span",
           {
             "aria-label": b.plan.stepsDone(plan.doneSteps.size, plan.steps.length),
@@ -26281,7 +26530,7 @@ function NowCard({
             "aria-valuenow": plan.doneSteps.size,
             className: "h-1 overflow-hidden rounded-full bg-(--ui-inline-code-background)",
             role: "progressbar",
-            children: /* @__PURE__ */ jsx54(
+            children: /* @__PURE__ */ jsx55(
               "span",
               {
                 className: "block h-full rounded-full bg-(--ui-accent) transition-[width] duration-500 motion-reduce:transition-none",
@@ -26290,18 +26539,18 @@ function NowCard({
             )
           }
         ) : null,
-        /* @__PURE__ */ jsxs52("span", { className: "flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
-          /* @__PURE__ */ jsxs52("span", { className: "truncate tabular-nums", children: [
+        /* @__PURE__ */ jsxs53("span", { className: "flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
+          /* @__PURE__ */ jsxs53("span", { className: "truncate tabular-nums", children: [
             w.started((0, sdk_compat_exports.relativeTime)(task.startedAt * 1e3)),
             task.steps.length ? ` \xB7 ${a.steps(task.steps.length)}` : ""
           ] }),
-          /* @__PURE__ */ jsxs52("span", { className: "-mr-1.5 ml-auto flex shrink-0 items-center gap-0.5", children: [
-            onStop ? /* @__PURE__ */ jsxs52(sdk_compat_exports.Button, { onClick: onStop, size: "xs", variant: "ghost", children: [
-              /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "debug-stop" }),
+          /* @__PURE__ */ jsxs53("span", { className: "-mr-1.5 ml-auto flex shrink-0 items-center gap-0.5", children: [
+            onStop ? /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { onClick: onStop, size: "xs", variant: "ghost", children: [
+              /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "debug-stop" }),
               b.roster.stopRun
             ] }) : null,
-            /* @__PURE__ */ jsxs52(sdk_compat_exports.Button, { onClick: onOpen, size: "xs", variant: "ghost", children: [
-              /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "eye" }),
+            /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { onClick: onOpen, size: "xs", variant: "ghost", children: [
+              /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "eye" }),
               w.watch
             ] })
           ] })
@@ -26311,11 +26560,11 @@ function NowCard({
   );
 }
 function IdleNow({ name, w }) {
-  return /* @__PURE__ */ jsxs52("div", { className: "flex items-center gap-2.5 rounded-xl px-2 py-2", "data-testid": "work-idle", children: [
-    /* @__PURE__ */ jsx54("span", { "aria-hidden": true, className: "size-2 shrink-0 rounded-full bg-(--ui-text-quaternary)" }),
-    /* @__PURE__ */ jsxs52("span", { className: "grid min-w-0 gap-0.5", children: [
-      /* @__PURE__ */ jsx54("span", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: w.idleTitle }),
-      /* @__PURE__ */ jsx54("span", { className: "text-[0.75rem] leading-snug text-(--ui-text-tertiary)", children: w.idleBody(name) })
+  return /* @__PURE__ */ jsxs53("div", { className: "flex items-center gap-2.5 rounded-xl px-2 py-2", "data-testid": "work-idle", children: [
+    /* @__PURE__ */ jsx55("span", { "aria-hidden": true, className: "size-2 shrink-0 rounded-full bg-(--ui-text-quaternary)" }),
+    /* @__PURE__ */ jsxs53("span", { className: "grid min-w-0 gap-0.5", children: [
+      /* @__PURE__ */ jsx55("span", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: w.idleTitle }),
+      /* @__PURE__ */ jsx55("span", { className: "text-[0.75rem] leading-snug text-(--ui-text-tertiary)", children: w.idleBody(name) })
     ] })
   ] });
 }
@@ -26326,8 +26575,8 @@ function NextRow({
   title,
   warn
 }) {
-  const body = /* @__PURE__ */ jsxs52(Fragment11, { children: [
-    /* @__PURE__ */ jsx54(
+  const body = /* @__PURE__ */ jsxs53(Fragment11, { children: [
+    /* @__PURE__ */ jsx55(
       sdk_compat_exports.Codicon,
       {
         className: (0, sdk_compat_exports.cn)("mt-0.5 shrink-0", warn ? "hbp-fg-warn" : "text-(--ui-text-quaternary)"),
@@ -26335,9 +26584,9 @@ function NextRow({
         size: "0.85rem"
       }
     ),
-    /* @__PURE__ */ jsxs52("span", { className: "grid min-w-0 flex-1 gap-0.5", children: [
-      /* @__PURE__ */ jsx54("span", { className: "truncate text-[0.8125rem] text-foreground", children: title }),
-      /* @__PURE__ */ jsx54(
+    /* @__PURE__ */ jsxs53("span", { className: "grid min-w-0 flex-1 gap-0.5", children: [
+      /* @__PURE__ */ jsx55("span", { className: "truncate text-[0.8125rem] text-foreground", children: title }),
+      /* @__PURE__ */ jsx55(
         "span",
         {
           className: (0, sdk_compat_exports.cn)(
@@ -26349,7 +26598,7 @@ function NextRow({
       )
     ] })
   ] });
-  return /* @__PURE__ */ jsx54("li", { children: onOpen ? /* @__PURE__ */ jsx54(
+  return /* @__PURE__ */ jsx55("li", { children: onOpen ? /* @__PURE__ */ jsx55(
     "button",
     {
       className: "flex w-full min-w-0 gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)",
@@ -26357,7 +26606,7 @@ function NextRow({
       type: "button",
       children: body
     }
-  ) : /* @__PURE__ */ jsx54("div", { className: "flex min-w-0 gap-2.5 px-2 py-1.5", children: body }) });
+  ) : /* @__PURE__ */ jsx55("div", { className: "flex min-w-0 gap-2.5 px-2 py-1.5", children: body }) });
 }
 function routineWhen(job, w) {
   const at = job.next_run_at ? new Date(job.next_run_at).getTime() : NaN;
@@ -26370,7 +26619,7 @@ function DoneRow({ onOpen, task }) {
   const ended = task.completedAt ?? task.startedAt;
   const failed = task.status === "error" || task.status === "stopped";
   const subject = taskSubject(task, a);
-  return /* @__PURE__ */ jsx54("li", { children: /* @__PURE__ */ jsxs52(
+  return /* @__PURE__ */ jsx55("li", { children: /* @__PURE__ */ jsxs53(
     "button",
     {
       className: "group/done flex w-full min-w-0 items-start gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)",
@@ -26379,9 +26628,9 @@ function DoneRow({ onOpen, task }) {
       onClick: onOpen,
       type: "button",
       children: [
-        /* @__PURE__ */ jsx54(StatusTile, { className: "size-6 rounded-lg [&_.codicon]:text-[0.75rem]", status: task.status }),
-        /* @__PURE__ */ jsxs52("span", { className: "grid min-w-0 flex-1 gap-0.5", children: [
-          /* @__PURE__ */ jsx54(
+        /* @__PURE__ */ jsx55(StatusTile, { className: "size-6 rounded-lg [&_.codicon]:text-[0.75rem]", status: task.status }),
+        /* @__PURE__ */ jsxs53("span", { className: "grid min-w-0 flex-1 gap-0.5", children: [
+          /* @__PURE__ */ jsx55(
             "span",
             {
               className: "truncate text-[0.8125rem] font-medium leading-snug text-foreground",
@@ -26389,24 +26638,24 @@ function DoneRow({ onOpen, task }) {
               children: subject
             }
           ),
-          /* @__PURE__ */ jsxs52("span", { className: "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] tabular-nums", children: [
-            /* @__PURE__ */ jsx54("span", { className: failed ? "text-destructive" : "text-(--ui-text-quaternary)", children: [a.status[task.status], ended ? (0, sdk_compat_exports.relativeTime)(ended * 1e3) : ""].filter(Boolean).join(" \xB7 ") }),
-            receiptVerbs(task).map(([verb, count]) => /* @__PURE__ */ jsxs52(
+          /* @__PURE__ */ jsxs53("span", { className: "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] tabular-nums", children: [
+            /* @__PURE__ */ jsx55("span", { className: failed ? "text-destructive" : "text-(--ui-text-quaternary)", children: [a.status[task.status], ended ? (0, sdk_compat_exports.relativeTime)(ended * 1e3) : ""].filter(Boolean).join(" \xB7 ") }),
+            receiptVerbs(task).map(([verb, count]) => /* @__PURE__ */ jsxs53(
               "span",
               {
                 className: "inline-flex items-center gap-1 rounded-md bg-(--ui-inline-code-background) px-1.5 py-px text-(--ui-text-tertiary)",
                 "data-testid": "receipt-verb",
                 title: a.verbs[verb],
                 children: [
-                  /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: VERB_ICONS[verb], size: "0.7rem" }),
-                  /* @__PURE__ */ jsx54("span", { children: `${a.verbs[verb]} ${count}` })
+                  /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: VERB_ICONS[verb], size: "0.7rem" }),
+                  /* @__PURE__ */ jsx55("span", { children: `${a.verbs[verb]} ${count}` })
                 ]
               },
               verb
             ))
           ] })
         ] }),
-        /* @__PURE__ */ jsx54("span", { className: "shrink-0 pt-0.5 text-[0.6875rem] text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover/done:opacity-100 group-focus-visible/done:opacity-100", children: a.work.receipt })
+        /* @__PURE__ */ jsx55("span", { className: "shrink-0 pt-0.5 text-[0.6875rem] text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover/done:opacity-100 group-focus-visible/done:opacity-100", children: a.work.receipt })
       ]
     }
   ) });
@@ -26444,18 +26693,18 @@ function WorkBoard({
     [jobs]
   );
   if (!tasks.length && !routines.length) {
-    return /* @__PURE__ */ jsx54("div", { className: "grid place-items-center px-6 py-10 text-center", "data-testid": "activity-empty", children: /* @__PURE__ */ jsxs52("div", { className: "grid max-w-60 gap-1.5", children: [
-      /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { className: "mx-auto text-(--ui-text-quaternary)", name: "pulse", size: "1.25rem" }),
-      /* @__PURE__ */ jsx54("div", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: a.emptyTitle }),
-      /* @__PURE__ */ jsx54("div", { className: "text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)", children: a.emptyBody(name) }),
-      onAddRoutine ? /* @__PURE__ */ jsxs52(sdk_compat_exports.Button, { className: "mt-2 justify-self-center", onClick: onAddRoutine, size: "xs", variant: "secondary", children: [
-        /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "add" }),
+    return /* @__PURE__ */ jsx55("div", { className: "grid place-items-center px-6 py-10 text-center", "data-testid": "activity-empty", children: /* @__PURE__ */ jsxs53("div", { className: "grid max-w-60 gap-1.5", children: [
+      /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { className: "mx-auto text-(--ui-text-quaternary)", name: "pulse", size: "1.25rem" }),
+      /* @__PURE__ */ jsx55("div", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: a.emptyTitle }),
+      /* @__PURE__ */ jsx55("div", { className: "text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)", children: a.emptyBody(name) }),
+      onAddRoutine ? /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { className: "mt-2 justify-self-center", onClick: onAddRoutine, size: "xs", variant: "secondary", children: [
+        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "add" }),
         w.addRoutine
       ] }) : null
     ] }) });
   }
-  return /* @__PURE__ */ jsxs52("div", { className: "grid min-w-0 gap-5 px-3 pb-4 pt-1", "data-testid": "activity-feed", children: [
-    /* @__PURE__ */ jsx54(BoardSection, { title: w.now, children: running ? /* @__PURE__ */ jsx54(
+  return /* @__PURE__ */ jsxs53("div", { className: "grid min-w-0 gap-5 px-3 pb-4 pt-1", "data-testid": "activity-feed", children: [
+    /* @__PURE__ */ jsx55(BoardSection, { title: w.now, children: running ? /* @__PURE__ */ jsx55(
       NowCard,
       {
         onOpen: () => setOpenId(running.id),
@@ -26467,10 +26716,10 @@ function WorkBoard({
         plan: livePlan,
         task: running
       }
-    ) : /* @__PURE__ */ jsx54(IdleNow, { name, w }) }),
-    planNext.length || routines.length || onAddRoutine ? /* @__PURE__ */ jsxs52(BoardSection, { title: w.next, children: [
-      /* @__PURE__ */ jsxs52("ul", { className: "grid gap-0.5", children: [
-        planNext.map((step, i) => /* @__PURE__ */ jsx54(
+    ) : /* @__PURE__ */ jsx55(IdleNow, { name, w }) }),
+    planNext.length || routines.length || onAddRoutine ? /* @__PURE__ */ jsxs53(BoardSection, { title: w.next, children: [
+      /* @__PURE__ */ jsxs53("ul", { className: "grid gap-0.5", children: [
+        planNext.map((step, i) => /* @__PURE__ */ jsx55(
           NextRow,
           {
             detail: i === 0 ? w.afterThisStep : w.laterInPlan,
@@ -26479,7 +26728,7 @@ function WorkBoard({
           },
           `plan-${step.n}`
         )),
-        routines.map((job) => /* @__PURE__ */ jsx54(
+        routines.map((job) => /* @__PURE__ */ jsx55(
           NextRow,
           {
             detail: routineWhen(job, w),
@@ -26491,14 +26740,14 @@ function WorkBoard({
           job.job_id
         ))
       ] }),
-      onAddRoutine ? /* @__PURE__ */ jsxs52(sdk_compat_exports.Button, { className: "justify-self-start", onClick: onAddRoutine, size: "xs", variant: "ghost", children: [
-        /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "add" }),
+      onAddRoutine ? /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { className: "justify-self-start", onClick: onAddRoutine, size: "xs", variant: "ghost", children: [
+        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "add" }),
         w.addRoutine
       ] }) : null
     ] }) : null,
-    done.length ? /* @__PURE__ */ jsxs52(BoardSection, { count: done.length, title: w.done, children: [
-      /* @__PURE__ */ jsx54("ol", { className: "grid gap-0.5", children: shownDone.map((task) => /* @__PURE__ */ jsx54(DoneRow, { onOpen: () => setOpenId(task.id), task }, task.id)) }),
-      done.length > DONE_PREVIEW ? /* @__PURE__ */ jsx54(
+    done.length ? /* @__PURE__ */ jsxs53(BoardSection, { count: done.length, title: w.done, children: [
+      /* @__PURE__ */ jsx55("ol", { className: "grid gap-0.5", children: shownDone.map((task) => /* @__PURE__ */ jsx55(DoneRow, { onOpen: () => setOpenId(task.id), task }, task.id)) }),
+      done.length > DONE_PREVIEW ? /* @__PURE__ */ jsx55(
         sdk_compat_exports.Button,
         {
           className: "justify-self-start",
@@ -26509,12 +26758,12 @@ function WorkBoard({
         }
       ) : null
     ] }) : null,
-    /* @__PURE__ */ jsx54(ActivityDetailDialog, { onClose: () => setOpenId(null), task: open })
+    /* @__PURE__ */ jsx55(ActivityDetailDialog, { onClose: () => setOpenId(null), task: open })
   ] });
 }
 
 // src/mission-rail.tsx
-import { Fragment as Fragment12, jsx as jsx55, jsxs as jsxs53 } from "react/jsx-runtime";
+import { Fragment as Fragment12, jsx as jsx56, jsxs as jsxs54 } from "react/jsx-runtime";
 function RailSection({
   action,
   children,
@@ -26522,9 +26771,9 @@ function RailSection({
   title
 }) {
   const collapsed = Boolean((0, sdk_compat_exports.useValue)($railCollapsed)[id]);
-  return /* @__PURE__ */ jsxs53("section", { className: "border-t border-(--ui-stroke-secondary)", "data-testid": `rail-section:${id}`, children: [
-    /* @__PURE__ */ jsxs53("div", { className: "flex items-center", children: [
-      /* @__PURE__ */ jsxs53(
+  return /* @__PURE__ */ jsxs54("section", { className: "border-t border-(--ui-stroke-secondary)", "data-testid": `rail-section:${id}`, children: [
+    /* @__PURE__ */ jsxs54("div", { className: "flex items-center", children: [
+      /* @__PURE__ */ jsxs54(
         "button",
         {
           "aria-expanded": !collapsed,
@@ -26533,12 +26782,12 @@ function RailSection({
           onClick: () => setRailSectionCollapsed(id, !collapsed),
           type: "button",
           children: [
-            /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { className: "text-(--ui-text-quaternary)", name: collapsed ? "chevron-right" : "chevron-down" }),
-            /* @__PURE__ */ jsx55("span", { className: "truncate ui-section-label", children: title })
+            /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { className: "text-(--ui-text-quaternary)", name: collapsed ? "chevron-right" : "chevron-down" }),
+            /* @__PURE__ */ jsx56("span", { className: "truncate ui-section-label", children: title })
           ]
         }
       ),
-      action && !collapsed ? /* @__PURE__ */ jsx55("span", { className: "shrink-0 px-1", children: action }) : null
+      action && !collapsed ? /* @__PURE__ */ jsx56("span", { className: "shrink-0 px-1", children: action }) : null
     ] }),
     collapsed ? null : children
   ] });
@@ -26563,10 +26812,10 @@ function BotHero2({
   const mood = now ? inFlight2 ? "work" : "think" : WORKING_KINDS2.has(live.kind) ? "work" : "idle";
   const share = useShareText();
   const [sharing, setSharing] = useState36(false);
-  return /* @__PURE__ */ jsxs53("div", { className: "px-4 pb-4 pt-4", "data-testid": "rail-profile-card", children: [
-    /* @__PURE__ */ jsxs53("div", { className: "flex min-w-0 items-start gap-3", children: [
-      /* @__PURE__ */ jsxs53("div", { className: "relative shrink-0", children: [
-        /* @__PURE__ */ jsx55(
+  return /* @__PURE__ */ jsxs54("div", { className: "px-4 pb-4 pt-4", "data-testid": "rail-profile-card", children: [
+    /* @__PURE__ */ jsxs54("div", { className: "flex min-w-0 items-start gap-3", children: [
+      /* @__PURE__ */ jsxs54("div", { className: "relative shrink-0", children: [
+        /* @__PURE__ */ jsx56(
           BotFace,
           {
             color: avatarColor(color, bot.name),
@@ -26577,7 +26826,7 @@ function BotHero2({
             size: 48
           }
         ),
-        /* @__PURE__ */ jsx55(sdk_compat_exports.Tip, { label: b.bot.editTitle, children: /* @__PURE__ */ jsx55(
+        /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: b.bot.editTitle, children: /* @__PURE__ */ jsx56(
           sdk_compat_exports.Button,
           {
             "aria-label": b.bot.editTitle,
@@ -26585,13 +26834,13 @@ function BotHero2({
             onClick: onEdit,
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "edit", size: "0.8rem" })
+            children: /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: "edit", size: "0.8rem" })
           }
         ) })
       ] }),
-      /* @__PURE__ */ jsxs53("div", { className: "min-w-0 flex-1", children: [
-        /* @__PURE__ */ jsx55("h2", { className: "max-w-full truncate text-base font-semibold leading-tight text-foreground", children: name }),
-        /* @__PURE__ */ jsxs53(
+      /* @__PURE__ */ jsxs54("div", { className: "min-w-0 flex-1", children: [
+        /* @__PURE__ */ jsx56("h2", { className: "max-w-full truncate text-base font-semibold leading-tight text-foreground", children: name }),
+        /* @__PURE__ */ jsxs54(
           "p",
           {
             className: (0, sdk_compat_exports.cn)(
@@ -26601,7 +26850,7 @@ function BotHero2({
             "data-testid": "rail-live-line",
             "data-tone": tone,
             children: [
-              tone === "working" ? /* @__PURE__ */ jsx55(sdk_compat_exports.GlyphSpinner, { className: "shrink-0 text-[0.85rem] text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx55(
+              tone === "working" ? /* @__PURE__ */ jsx56(sdk_compat_exports.GlyphSpinner, { className: "shrink-0 text-[0.85rem] text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx56(
                 "span",
                 {
                   "aria-hidden": true,
@@ -26611,22 +26860,22 @@ function BotHero2({
                   )
                 }
               ),
-              /* @__PURE__ */ jsx55("span", { className: "min-w-0 wrap-anywhere", children: now ?? botLiveStatusLabel(live, b.roster) })
+              /* @__PURE__ */ jsx56("span", { className: "min-w-0 wrap-anywhere", children: now ?? botLiveStatusLabel(live, b.roster) })
             ]
           }
         ),
-        /* @__PURE__ */ jsx55("p", { className: "mt-1 max-w-full truncate text-xs text-(--ui-text-tertiary)", children: [subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : ""].filter(Boolean).join(" \xB7 ") })
+        /* @__PURE__ */ jsx56("p", { className: "mt-1 max-w-full truncate text-xs text-(--ui-text-tertiary)", children: [subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : ""].filter(Boolean).join(" \xB7 ") })
       ] })
     ] }),
-    /* @__PURE__ */ jsxs53("div", { className: "mt-4 flex flex-wrap items-center gap-1", children: [
-      /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { onClick: () => void newBotChat(bot), size: "xs", children: [
-        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "comment-add" }),
+    /* @__PURE__ */ jsxs54("div", { className: "mt-4 flex flex-wrap items-center gap-1", children: [
+      /* @__PURE__ */ jsxs54(sdk_compat_exports.Button, { onClick: () => void newBotChat(bot), size: "xs", children: [
+        /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: "comment-add" }),
         b.bot.newTopic
       ] }),
-      /* @__PURE__ */ jsx55(BotTopicProjectMenu, { bot }),
-      /* @__PURE__ */ jsx55(sdk_compat_exports.Tip, { label: b.roster.openChat, children: /* @__PURE__ */ jsx55(sdk_compat_exports.Button, { "aria-label": b.roster.openChat, onClick: () => void openRosterBot(bot), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "comment" }) }) }),
-      /* @__PURE__ */ jsx55(sdk_compat_exports.Tip, { label: share.title(name), children: /* @__PURE__ */ jsx55(sdk_compat_exports.Button, { "aria-label": share.title(name), onClick: () => setSharing(true), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "share" }) }) }),
-      /* @__PURE__ */ jsx55(ShareBotDialog, { bot, meta: meta ?? null, onOpenChange: setSharing, open: sharing })
+      /* @__PURE__ */ jsx56(BotTopicProjectMenu, { bot }),
+      /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: b.roster.openChat, children: /* @__PURE__ */ jsx56(sdk_compat_exports.Button, { "aria-label": b.roster.openChat, onClick: () => void openRosterBot(bot), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: "comment" }) }) }),
+      /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: share.title(name), children: /* @__PURE__ */ jsx56(sdk_compat_exports.Button, { "aria-label": share.title(name), onClick: () => setSharing(true), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: "share" }) }) }),
+      /* @__PURE__ */ jsx56(ShareBotDialog, { bot, meta: meta ?? null, onOpenChange: setSharing, open: sharing })
     ] })
   ] });
 }
@@ -26646,9 +26895,9 @@ function ApprovalsPanel({ bot, name }) {
   const items = (0, sdk_compat_exports.useValue)(host.state.attentionItems);
   const sessionId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
   const mine = sessionId ? items.filter((item) => item.sessionId === sessionId) : [];
-  return /* @__PURE__ */ jsxs53("div", { className: "grid gap-3 px-3 pb-3 pt-1", children: [
-    mine.length ? /* @__PURE__ */ jsx55("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs53("li", { className: "flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2", children: [
-      /* @__PURE__ */ jsx55(
+  return /* @__PURE__ */ jsxs54("div", { className: "grid gap-3 px-3 pb-3 pt-1", children: [
+    mine.length ? /* @__PURE__ */ jsx56("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs54("li", { className: "flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2", children: [
+      /* @__PURE__ */ jsx56(
         sdk_compat_exports.Codicon,
         {
           className: "mt-0.5 shrink-0 hbp-fg-warn",
@@ -26656,20 +26905,20 @@ function ApprovalsPanel({ bot, name }) {
           size: "0.95rem"
         }
       ),
-      /* @__PURE__ */ jsxs53("span", { className: "grid min-w-0 gap-0.5", children: [
-        /* @__PURE__ */ jsx55("span", { className: "text-[0.8125rem] font-medium leading-snug text-foreground [overflow-wrap:anywhere]", children: item.title }),
-        item.detail ? /* @__PURE__ */ jsx55("span", { className: "line-clamp-2 text-[0.75rem] text-(--ui-text-tertiary)", children: item.detail }) : null
+      /* @__PURE__ */ jsxs54("span", { className: "grid min-w-0 gap-0.5", children: [
+        /* @__PURE__ */ jsx56("span", { className: "text-[0.8125rem] font-medium leading-snug text-foreground [overflow-wrap:anywhere]", children: item.title }),
+        item.detail ? /* @__PURE__ */ jsx56("span", { className: "line-clamp-2 text-[0.75rem] text-(--ui-text-tertiary)", children: item.detail }) : null
       ] })
-    ] }, item.id)) }) : /* @__PURE__ */ jsxs53("div", { className: "grid gap-1 px-1 py-4 text-center", children: [
-      /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { className: "mx-auto text-(--ui-text-quaternary)", name: "shield", size: "1.2rem" }),
-      /* @__PURE__ */ jsx55("div", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: a.approvalsEmpty }),
-      /* @__PURE__ */ jsx55("div", { className: "text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)", children: a.approvalsBody })
+    ] }, item.id)) }) : /* @__PURE__ */ jsxs54("div", { className: "grid gap-1 px-1 py-4 text-center", children: [
+      /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { className: "mx-auto text-(--ui-text-quaternary)", name: "shield", size: "1.2rem" }),
+      /* @__PURE__ */ jsx56("div", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: a.approvalsEmpty }),
+      /* @__PURE__ */ jsx56("div", { className: "text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)", children: a.approvalsBody })
     ] }),
-    typeof host.navigate === "function" ? /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { className: "justify-self-center", onClick: () => host.navigate("/inbox"), size: "xs", variant: "ghost", children: [
-      /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "inbox" }),
+    typeof host.navigate === "function" ? /* @__PURE__ */ jsxs54(sdk_compat_exports.Button, { className: "justify-self-center", onClick: () => host.navigate("/inbox"), size: "xs", variant: "ghost", children: [
+      /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: "inbox" }),
       a.openInbox
     ] }) : null,
-    !bot.remoteSource && /* @__PURE__ */ jsx55(AskRulesCard, { name, profile: bot.name })
+    !bot.remoteSource && /* @__PURE__ */ jsx56(AskRulesCard, { name, profile: bot.name })
   ] });
 }
 function AutopilotChips({
@@ -26683,16 +26932,16 @@ function AutopilotChips({
   if (!presets.length) {
     return null;
   }
-  return /* @__PURE__ */ jsxs53("div", { className: "mx-2.5 mb-2 mt-1 rounded-xl bg-(--ui-widget-surface-background) p-2.5", "data-slot": "autopilot", children: [
-    /* @__PURE__ */ jsx55("p", { className: "text-[0.75rem] font-medium text-foreground", children: a.heading(name) }),
-    /* @__PURE__ */ jsx55("p", { className: "mb-2 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)", children: a.hint }),
-    /* @__PURE__ */ jsxs53("div", { className: "flex flex-wrap gap-1", children: [
-      presets.map(({ id, label, preset }) => /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { onClick: () => onPick(preset), size: "xs", variant: "secondary", children: [
-        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: AUTOPILOT_ICONS[id] }),
+  return /* @__PURE__ */ jsxs54("div", { className: "mx-2.5 mb-2 mt-1 rounded-xl bg-(--ui-widget-surface-background) p-2.5", "data-slot": "autopilot", children: [
+    /* @__PURE__ */ jsx56("p", { className: "text-[0.75rem] font-medium text-foreground", children: a.heading(name) }),
+    /* @__PURE__ */ jsx56("p", { className: "mb-2 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)", children: a.hint }),
+    /* @__PURE__ */ jsxs54("div", { className: "flex flex-wrap gap-1", children: [
+      presets.map(({ id, label, preset }) => /* @__PURE__ */ jsxs54(sdk_compat_exports.Button, { onClick: () => onPick(preset), size: "xs", variant: "secondary", children: [
+        /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: AUTOPILOT_ICONS[id] }),
         label
       ] }, id)),
-      onCustom && /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { onClick: onCustom, size: "xs", variant: "ghost", children: [
-        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "add" }),
+      onCustom && /* @__PURE__ */ jsxs54(sdk_compat_exports.Button, { onClick: onCustom, size: "xs", variant: "ghost", children: [
+        /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: "add" }),
         a.custom
       ] })
     ] })
@@ -26737,7 +26986,7 @@ function MissionRail() {
     setCreateOpen(true);
   };
   if (!owner) {
-    return /* @__PURE__ */ jsx55(sdk_compat_exports.PanelEmpty, { description: b.cron.needsRosterFirst, icon: "hubot", title: b.rail.title });
+    return /* @__PURE__ */ jsx56(sdk_compat_exports.PanelEmpty, { description: b.cron.needsRosterFirst, icon: "hubot", title: b.rail.title });
   }
   const view = selectRoutineJobs(data, error, $lastJobs.get(), bot);
   if (view.live) {
@@ -26747,10 +26996,10 @@ function MissionRail() {
   const detailJob = detailJobId ? jobs.find((job) => job.job_id === detailJobId) || null : null;
   const staleNotice = error && !view.live && view.all.length ? b.cron.staleNotice : null;
   const filterHint = routineFilterHint(view.all, jobs);
-  return /* @__PURE__ */ jsxs53("div", { className: "flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain", children: [
-    /* @__PURE__ */ jsx55(BotHero2, { bot: owner, meta, onEdit: () => setEditing(true) }),
-    /* @__PURE__ */ jsx55(RailTabs, { badges: { approvals: approvalCount }, onChange: setRailTab, value: tab }),
-    /* @__PURE__ */ jsxs53(
+  return /* @__PURE__ */ jsxs54("div", { className: "flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain", children: [
+    /* @__PURE__ */ jsx56(BotHero2, { bot: owner, meta, onEdit: () => setEditing(true) }),
+    /* @__PURE__ */ jsx56(RailTabs, { badges: { approvals: approvalCount }, onChange: setRailTab, value: tab }),
+    /* @__PURE__ */ jsxs54(
       "div",
       {
         "aria-labelledby": `rail-tab-${tab}`,
@@ -26760,7 +27009,7 @@ function MissionRail() {
         role: "tabpanel",
         tabIndex: 0,
         children: [
-          tab === "activity" ? /* @__PURE__ */ jsx55(
+          tab === "activity" ? /* @__PURE__ */ jsx56(
             WorkBoard,
             {
               jobs,
@@ -26770,21 +27019,21 @@ function MissionRail() {
               owner
             }
           ) : null,
-          tab === "approvals" ? /* @__PURE__ */ jsx55(ApprovalsPanel, { bot: owner, name: displayName(owner, meta) }) : null,
-          tab === "scheduled" ? /* @__PURE__ */ jsxs53(Fragment12, { children: [
-            /* @__PURE__ */ jsx55(RailSection, { id: "tasks", title: b.rail.tasks, children: /* @__PURE__ */ jsx55(BotTaskLog, { jobs, onOpenRoutine: setDetailJobId, owner }) }),
-            /* @__PURE__ */ jsxs53(
+          tab === "approvals" ? /* @__PURE__ */ jsx56(ApprovalsPanel, { bot: owner, name: displayName(owner, meta) }) : null,
+          tab === "scheduled" ? /* @__PURE__ */ jsxs54(Fragment12, { children: [
+            /* @__PURE__ */ jsx56(RailSection, { id: "tasks", title: b.rail.tasks, children: /* @__PURE__ */ jsx56(BotTaskLog, { jobs, onOpenRoutine: setDetailJobId, owner }) }),
+            /* @__PURE__ */ jsxs54(
               RailSection,
               {
-                action: /* @__PURE__ */ jsx55(sdk_compat_exports.Tip, { label: c.newCron, children: /* @__PURE__ */ jsx55(sdk_compat_exports.Button, { "aria-label": c.newCron, onClick: () => openCreate(), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "add" }) }) }),
+                action: /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: c.newCron, children: /* @__PURE__ */ jsx56(sdk_compat_exports.Button, { "aria-label": c.newCron, onClick: () => openCreate(), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: "add" }) }) }),
                 id: "routines",
                 title: c.title,
                 children: [
-                  staleNotice ? /* @__PURE__ */ jsx55("div", { className: "mx-3 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: staleNotice }) : null,
-                  isLoading && !view.all.length ? /* @__PURE__ */ jsx55("div", { className: "flex items-center justify-center py-4", children: /* @__PURE__ */ jsx55(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !view.all.length ? /* @__PURE__ */ jsx55(
+                  staleNotice ? /* @__PURE__ */ jsx56("div", { className: "mx-3 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: staleNotice }) : null,
+                  isLoading && !view.all.length ? /* @__PURE__ */ jsx56("div", { className: "flex items-center justify-center py-4", children: /* @__PURE__ */ jsx56(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !view.all.length ? /* @__PURE__ */ jsx56(
                     sdk_compat_exports.PanelEmpty,
                     {
-                      action: /* @__PURE__ */ jsx55(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t.common.retry }),
+                      action: /* @__PURE__ */ jsx56(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t.common.retry }),
                       description: b.cron.readFailure,
                       icon: "warning",
                       title: c.failedLoad
@@ -26792,7 +27041,7 @@ function MissionRail() {
                   ) : jobs.length === 0 && !filterHint ? (
                     // Nothing scheduled and nothing hidden by the filter: the autopilot
                     // card below IS the empty state, with a way to write one from scratch.
-                    /* @__PURE__ */ jsx55(
+                    /* @__PURE__ */ jsx56(
                       AutopilotChips,
                       {
                         name: displayName(owner, meta),
@@ -26804,16 +27053,16 @@ function MissionRail() {
                   ) : jobs.length === 0 ? (
                     // `filterHint` is the informative case (jobs exist on the profile but
                     // none are tagged for this bot), so it wins the description slot.
-                    /* @__PURE__ */ jsx55(
+                    /* @__PURE__ */ jsx56(
                       sdk_compat_exports.PanelEmpty,
                       {
-                        action: /* @__PURE__ */ jsx55(sdk_compat_exports.Button, { onClick: () => openCreate(), size: "sm", children: c.newCron }),
+                        action: /* @__PURE__ */ jsx56(sdk_compat_exports.Button, { onClick: () => openCreate(), size: "sm", children: c.newCron }),
                         description: filterHint || c.emptyDescNew,
                         icon: "watch",
                         title: c.emptyTitleNew
                       }
                     )
-                  ) : /* @__PURE__ */ jsx55("div", { className: "grid gap-1.5 px-2.5 pb-2 pt-1", children: jobs.map((job) => /* @__PURE__ */ jsx55(
+                  ) : /* @__PURE__ */ jsx56("div", { className: "grid gap-1.5 px-2.5 pb-2 pt-1", children: jobs.map((job) => /* @__PURE__ */ jsx56(
                     RoutineRow,
                     {
                       job,
@@ -26822,7 +27071,7 @@ function MissionRail() {
                     },
                     job.job_id
                   )) }),
-                  !isLoading && !error && jobs.length > 0 && /* @__PURE__ */ jsx55(
+                  !isLoading && !error && jobs.length > 0 && /* @__PURE__ */ jsx56(
                     AutopilotChips,
                     {
                       name: displayName(owner, meta),
@@ -26834,9 +27083,9 @@ function MissionRail() {
               }
             )
           ] }) : null,
-          tab === "bot" ? /* @__PURE__ */ jsxs53(Fragment12, { children: [
-            /* @__PURE__ */ jsx55(BotCardMeta, { bot: owner }),
-            !owner.remoteSource && /* @__PURE__ */ jsx55(
+          tab === "bot" ? /* @__PURE__ */ jsxs54(Fragment12, { children: [
+            /* @__PURE__ */ jsx56(BotCardMeta, { bot: owner }),
+            !owner.remoteSource && /* @__PURE__ */ jsx56(
               ReachCard,
               {
                 className: "mx-3 mb-3",
@@ -26845,13 +27094,13 @@ function MissionRail() {
                 profile: owner.name
               }
             ),
-            /* @__PURE__ */ jsx55(RailSection, { id: "computer", title: b.screen.panelTitle, children: /* @__PURE__ */ jsx55("div", { className: "px-3 pb-2 pt-1", children: /* @__PURE__ */ jsx55(BotComputerPanel, { bot: owner, meta }) }) }),
-            /* @__PURE__ */ jsx55("div", { className: "border-t border-(--ui-stroke-secondary)", children: /* @__PURE__ */ jsx55(BotDeliverablesSection, { owner }) })
+            /* @__PURE__ */ jsx56(RailSection, { id: "computer", title: b.screen.panelTitle, children: /* @__PURE__ */ jsx56("div", { className: "px-3 pb-2 pt-1", children: /* @__PURE__ */ jsx56(BotComputerPanel, { bot: owner, meta }) }) }),
+            /* @__PURE__ */ jsx56("div", { className: "border-t border-(--ui-stroke-secondary)", children: /* @__PURE__ */ jsx56(BotDeliverablesSection, { owner }) })
           ] }) : null
         ]
       }
     ),
-    /* @__PURE__ */ jsx55(
+    /* @__PURE__ */ jsx56(
       RoutineDetailDialog,
       {
         job: detailJob,
@@ -26860,7 +27109,7 @@ function MissionRail() {
         owner
       }
     ),
-    /* @__PURE__ */ jsx55(
+    /* @__PURE__ */ jsx56(
       CreateRoutineDialog,
       {
         bot: createTarget,
@@ -26874,13 +27123,13 @@ function MissionRail() {
       },
       typeof createTarget === "string" ? createTarget : botRosterKey(createTarget)
     ),
-    /* @__PURE__ */ jsx55(EditProfileDialog, { bot: editing ? owner : null, onClose: () => setEditing(false), open: editing })
+    /* @__PURE__ */ jsx56(EditProfileDialog, { bot: editing ? owner : null, onClose: () => setEditing(false), open: editing })
   ] });
 }
 
 // src/roster-pane.tsx
 init_sdk_compat();
-import { useEffect as useEffect25, useRef as useRef16, useState as useState45 } from "react";
+import { useEffect as useEffect26, useRef as useRef16, useState as useState45 } from "react";
 
 // src/bot-card.tsx
 init_sdk_compat();
@@ -27182,7 +27431,7 @@ function groupRowsBySection(rows, sections, metaByName, groupRooms = {}) {
 var BOT_DRAG_MIME = "application/x-hermes-bot-key";
 
 // src/bot-menu.tsx
-import { jsx as jsx56, jsxs as jsxs54 } from "react/jsx-runtime";
+import { jsx as jsx57, jsxs as jsxs55 } from "react/jsx-runtime";
 function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, onNewSection }) {
   const { t } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
@@ -27216,16 +27465,16 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
   const notifyMode = ownerNotifyModes[notifyKey];
   const sections = (0, sdk_compat_exports.useValue)($botSections);
   const currentSectionId = botSectionId(bot, allMeta);
-  return /* @__PURE__ */ jsxs54(sdk_compat_exports.ContextMenu, { children: [
-    /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children }),
-    /* @__PURE__ */ jsxs54(sdk_compat_exports.ContextMenuContent, { children: [
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { onSelect: () => void openRosterBot(bot), children: b.bot.openBotChat }),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { disabled: !canStop, onSelect: stopRun, children: b.roster.stopRun }),
-      deliveryInflight || attention.reason ? /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { onSelect: () => retryBotDeliveries(), children: b.roster.retryDeliveries }) : null,
-      onAssignTask ? /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { onSelect: () => onAssignTask(bot), children: b.mailbox.assignTask }) : null,
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { onSelect: () => openBotScreen(bot, meta), children: b.screen.menu }),
-      !bot.remoteSource && typeof host.navigate === "function" && /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { onSelect: () => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`), children: b.bot.continueOnPhone }),
-      /* @__PURE__ */ jsx56(
+  return /* @__PURE__ */ jsxs55(sdk_compat_exports.ContextMenu, { children: [
+    /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children }),
+    /* @__PURE__ */ jsxs55(sdk_compat_exports.ContextMenuContent, { children: [
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => void openRosterBot(bot), children: b.bot.openBotChat }),
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { disabled: !canStop, onSelect: stopRun, children: b.roster.stopRun }),
+      deliveryInflight || attention.reason ? /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => retryBotDeliveries(), children: b.roster.retryDeliveries }) : null,
+      onAssignTask ? /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => onAssignTask(bot), children: b.mailbox.assignTask }) : null,
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => openBotScreen(bot, meta), children: b.screen.menu }),
+      !bot.remoteSource && typeof host.navigate === "function" && /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`), children: b.bot.continueOnPhone }),
+      /* @__PURE__ */ jsx57(
         sdk_compat_exports.ContextMenuCheckboxItem,
         {
           checked: Boolean(meta?.screenAutoOpen),
@@ -27242,8 +27491,8 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: b.screen.autoOpenMenu
         }
       ),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx56(
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx57(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -27261,7 +27510,7 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: pinned ? b.bot.unpin : b.bot.pinToTop
         }
       ),
-      /* @__PURE__ */ jsx56(
+      /* @__PURE__ */ jsx57(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -27282,7 +27531,7 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: hidden ? b.bot.unhide : b.bot.hide
         }
       ),
-      typeof toggleSessionWatched === "function" ? /* @__PURE__ */ jsx56(
+      typeof toggleSessionWatched === "function" ? /* @__PURE__ */ jsx57(
         sdk_compat_exports.ContextMenuCheckboxItem,
         {
           checked: watched,
@@ -27300,10 +27549,10 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: b.bot.watch
         }
       ) : null,
-      /* @__PURE__ */ jsxs54(sdk_compat_exports.ContextMenuSub, { children: [
-        /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuSubTrigger, { children: b.bot.notifications }),
-        /* @__PURE__ */ jsxs54(sdk_compat_exports.ContextMenuSubContent, { children: [
-          /* @__PURE__ */ jsx56(
+      /* @__PURE__ */ jsxs55(sdk_compat_exports.ContextMenuSub, { children: [
+        /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSubTrigger, { children: b.bot.notifications }),
+        /* @__PURE__ */ jsxs55(sdk_compat_exports.ContextMenuSubContent, { children: [
+          /* @__PURE__ */ jsx57(
             sdk_compat_exports.ContextMenuCheckboxItem,
             {
               checked: notifyMode === "muted",
@@ -27311,7 +27560,7 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
               children: b.bot.muteAll
             }
           ),
-          /* @__PURE__ */ jsx56(
+          /* @__PURE__ */ jsx57(
             sdk_compat_exports.ContextMenuCheckboxItem,
             {
               checked: notifyMode === "quiet",
@@ -27321,23 +27570,23 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx56(
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx57(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => void ensureBotMetadata(bot).then(() => onEdit(bot)).catch((error) => host.notifyError?.(error, b.bot.loadFailed)),
           children: b.bot.editMenu
         }
       ),
-      /* @__PURE__ */ jsx56(
+      /* @__PURE__ */ jsx57(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => void ensureBotMetadata(bot).then(() => onGroup(bot)).catch((error) => host.notifyError?.(error, b.bot.groupsLoadFailed)),
           children: groups.length ? b.bot.groupsMenu(groups.join(", ")) : b.bot.manageGroups
         }
       ),
-      /* @__PURE__ */ jsx56(BotModelMenu, { bot }),
-      /* @__PURE__ */ jsx56(
+      /* @__PURE__ */ jsx57(BotModelMenu, { bot }),
+      /* @__PURE__ */ jsx57(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -27358,9 +27607,9 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: b.bot.duplicate
         }
       ),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { onSelect: () => void exportBot(bot, meta), children: b.bot.exportBotMenu }),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx56(
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => void exportBot(bot, meta), children: b.bot.exportBotMenu }),
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx57(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -27371,36 +27620,36 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: b.bot.newChatWith
         }
       ),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { disabled: !botRecentSession(bot), onSelect: () => void openBotRecentSession(bot), children: "Open recent session" }),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsxs54(sdk_compat_exports.ContextMenuSub, { children: [
-        /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuSubTrigger, { children: b.sections.moveTo }),
-        /* @__PURE__ */ jsxs54(sdk_compat_exports.ContextMenuSubContent, { children: [
-          sections.map((section) => /* @__PURE__ */ jsxs54(
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { disabled: !botRecentSession(bot), onSelect: () => void openBotRecentSession(bot), children: "Open recent session" }),
+      /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsxs55(sdk_compat_exports.ContextMenuSub, { children: [
+        /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSubTrigger, { children: b.sections.moveTo }),
+        /* @__PURE__ */ jsxs55(sdk_compat_exports.ContextMenuSubContent, { children: [
+          sections.map((section) => /* @__PURE__ */ jsxs55(
             sdk_compat_exports.ContextMenuItem,
             {
               disabled: section.id === currentSectionId,
               onSelect: () => void moveBotsToSection([bot], section.id),
               children: [
-                /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "folder" }),
+                /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "folder" }),
                 section.name
               ]
             },
             section.id
           )),
-          sections.length ? /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuSeparator, {}) : null,
-          /* @__PURE__ */ jsxs54(sdk_compat_exports.ContextMenuItem, { onSelect: () => onNewSection(bot), children: [
-            /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
+          sections.length ? /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSeparator, {}) : null,
+          /* @__PURE__ */ jsxs55(sdk_compat_exports.ContextMenuItem, { onSelect: () => onNewSection(bot), children: [
+            /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
             b.sections.newSectionEllipsis
           ] }),
-          currentSectionId ? /* @__PURE__ */ jsxs54(sdk_compat_exports.ContextMenuItem, { onSelect: () => void moveBotsToSection([bot], null), children: [
-            /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "inbox" }),
+          currentSectionId ? /* @__PURE__ */ jsxs55(sdk_compat_exports.ContextMenuItem, { onSelect: () => void moveBotsToSection([bot], null), children: [
+            /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "inbox" }),
             b.sections.removeFromSection
           ] }) : null
         ] })
       ] }),
-      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuSeparator, {}),
-      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx56(sdk_compat_exports.ContextMenuItem, { onSelect: () => onDelete(bot), variant: "destructive", children: t.common.delete })
+      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSeparator, {}),
+      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => onDelete(bot), variant: "destructive", children: t.common.delete })
     ] })
   ] });
 }
@@ -27412,19 +27661,19 @@ init_bot_state();
 init_sdk_compat();
 init_data();
 init_i18n();
-import { jsx as jsx57, jsxs as jsxs55 } from "react/jsx-runtime";
+import { jsx as jsx58, jsxs as jsxs56 } from "react/jsx-runtime";
 function CardAttention({ count, reason }) {
   const b = useBots();
   if (count <= 0) {
     return null;
   }
-  return /* @__PURE__ */ jsx57(sdk_compat_exports.Tip, { label: reason ? botAttentionHint(reason) : b.roster.attentionItems(count), children: /* @__PURE__ */ jsxs55(
+  return /* @__PURE__ */ jsx58(sdk_compat_exports.Tip, { label: reason ? botAttentionHint(reason) : b.roster.attentionItems(count), children: /* @__PURE__ */ jsxs56(
     "span",
     {
       "aria-label": b.roster.needsAttention,
       className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums hbp-fg-warn",
       children: [
-        /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { name: "warning" }),
+        /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "warning" }),
         count
       ]
     }
@@ -27436,7 +27685,7 @@ init_data();
 init_i18n();
 init_labels();
 init_routing();
-import { jsx as jsx58, jsxs as jsxs56 } from "react/jsx-runtime";
+import { jsx as jsx59, jsxs as jsxs57 } from "react/jsx-runtime";
 function BotCard({
   bot,
   onAssignTask,
@@ -27486,7 +27735,7 @@ function BotCard({
   const open = () => void openRosterBot(bot);
   const warm = () => warmRosterBot(bot);
   const liveTone = live.kind === "needs-input" || live.kind === "stalled" ? "amber" : liveText ? "live" : null;
-  return /* @__PURE__ */ jsx58(
+  return /* @__PURE__ */ jsx59(
     BotRowMenu,
     {
       bot,
@@ -27495,7 +27744,7 @@ function BotCard({
       onEdit,
       onGroup,
       onNewSection,
-      children: /* @__PURE__ */ jsxs56(
+      children: /* @__PURE__ */ jsxs57(
         "article",
         {
           "aria-busy": isOpening || void 0,
@@ -27508,7 +27757,7 @@ function BotCard({
           "data-roster-key": botRosterKey(bot),
           onPointerEnter: warm,
           children: [
-            /* @__PURE__ */ jsxs56(
+            /* @__PURE__ */ jsxs57(
               "button",
               {
                 "aria-label": `${b.roster.openChat}: ${displayName(bot, meta)}`,
@@ -27518,8 +27767,8 @@ function BotCard({
                 onFocus: warm,
                 type: "button",
                 children: [
-                  /* @__PURE__ */ jsxs56("div", { className: "flex min-w-0 items-center gap-2", children: [
-                    /* @__PURE__ */ jsx58("div", { className: (0, sdk_compat_exports.cn)("shrink-0 rounded-lg", !sourceStatus.available && "grayscale opacity-60"), children: /* @__PURE__ */ jsx58(
+                  /* @__PURE__ */ jsxs57("div", { className: "flex min-w-0 items-center gap-2", children: [
+                    /* @__PURE__ */ jsx59("div", { className: (0, sdk_compat_exports.cn)("shrink-0 rounded-lg", !sourceStatus.available && "grayscale opacity-60"), children: /* @__PURE__ */ jsx59(
                       BotFace,
                       {
                         color: accent,
@@ -27530,17 +27779,17 @@ function BotCard({
                         size: 30
                       }
                     ) }),
-                    /* @__PURE__ */ jsxs56("div", { className: "min-w-0 flex-1", children: [
-                      /* @__PURE__ */ jsxs56("div", { className: "flex min-w-0 items-center gap-1", children: [
-                        /* @__PURE__ */ jsx58(sdk_compat_exports.SessionStatusDot, { storedSessionId: canonicalSessionId }),
-                        watched ? /* @__PURE__ */ jsx58(sdk_compat_exports.Tip, { label: b.bot.watching, children: /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-accent)", name: "eye" }) }) : null,
-                        /* @__PURE__ */ jsx58("span", { className: "min-w-0 truncate text-[0.8125rem] font-medium", children: displayName(bot, meta) }),
-                        /* @__PURE__ */ jsx58(CardAttention, { count: attention.count, reason: attention.reason })
+                    /* @__PURE__ */ jsxs57("div", { className: "min-w-0 flex-1", children: [
+                      /* @__PURE__ */ jsxs57("div", { className: "flex min-w-0 items-center gap-1", children: [
+                        /* @__PURE__ */ jsx59(sdk_compat_exports.SessionStatusDot, { storedSessionId: canonicalSessionId }),
+                        watched ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: b.bot.watching, children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-accent)", name: "eye" }) }) : null,
+                        /* @__PURE__ */ jsx59("span", { className: "min-w-0 truncate text-[0.8125rem] font-medium", children: displayName(bot, meta) }),
+                        /* @__PURE__ */ jsx59(CardAttention, { count: attention.count, reason: attention.reason })
                       ] }),
-                      role ? /* @__PURE__ */ jsx58("div", { className: "min-w-0 truncate text-xs leading-snug text-(--ui-text-tertiary)", children: role }) : null
+                      role ? /* @__PURE__ */ jsx59("div", { className: "min-w-0 truncate text-xs leading-snug text-(--ui-text-tertiary)", children: role }) : null
                     ] })
                   ] }),
-                  detailText ? /* @__PURE__ */ jsxs56(
+                  detailText ? /* @__PURE__ */ jsxs57(
                     "div",
                     {
                       className: (0, sdk_compat_exports.cn)(
@@ -27549,22 +27798,22 @@ function BotCard({
                         !liveText && fromBot && "italic"
                       ),
                       children: [
-                        liveTone === "live" && /* @__PURE__ */ jsx58("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-primary animate-pulse" }),
-                        /* @__PURE__ */ jsx58("span", { className: "truncate", children: detailText })
+                        liveTone === "live" && /* @__PURE__ */ jsx59("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-primary animate-pulse" }),
+                        /* @__PURE__ */ jsx59("span", { className: "truncate", children: detailText })
                       ]
                     }
                   ) : null,
-                  /* @__PURE__ */ jsxs56("span", { className: "flex items-center gap-1.5 text-xs font-medium text-(--ui-text-secondary)", children: [
-                    isOpening ? /* @__PURE__ */ jsx58(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "text-xs" }) : null,
+                  /* @__PURE__ */ jsxs57("span", { className: "flex items-center gap-1.5 text-xs font-medium text-(--ui-text-secondary)", children: [
+                    isOpening ? /* @__PURE__ */ jsx59(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "text-xs" }) : null,
                     b.roster.openChat,
-                    /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { "aria-hidden": true, name: "arrow-right", size: "0.75rem" })
+                    /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { "aria-hidden": true, name: "arrow-right", size: "0.75rem" })
                   ] })
                 ]
               }
             ),
-            /* @__PURE__ */ jsxs56("div", { className: "mt-auto flex min-w-0 flex-col gap-1", children: [
-              /* @__PURE__ */ jsx58("div", { className: "flex min-w-0", children: /* @__PURE__ */ jsx58("span", { className: "min-w-0 max-w-full", children: /* @__PURE__ */ jsx58(BotModelChip, { bot }) }) }),
-              rowAge ? /* @__PURE__ */ jsx58("div", { className: "flex min-w-0 justify-end", children: /* @__PURE__ */ jsx58("span", { className: "text-xs text-(--ui-text-tertiary)", children: rowAge === t.sidebar.row.ageNow ? b.roster.activeNow : b.roster.cardActive(rowAge) }) }) : null
+            /* @__PURE__ */ jsxs57("div", { className: "mt-auto flex min-w-0 flex-col gap-1", children: [
+              /* @__PURE__ */ jsx59("div", { className: "flex min-w-0", children: /* @__PURE__ */ jsx59("span", { className: "min-w-0 max-w-full", children: /* @__PURE__ */ jsx59(BotModelChip, { bot }) }) }),
+              rowAge ? /* @__PURE__ */ jsx59("div", { className: "flex min-w-0 justify-end", children: /* @__PURE__ */ jsx59("span", { className: "text-xs text-(--ui-text-tertiary)", children: rowAge === t.sidebar.row.ageNow ? b.roster.activeNow : b.roster.cardActive(rowAge) }) }) : null
             ] })
           ]
         }
@@ -27594,7 +27843,7 @@ function toggleGroupChatPinned(name) {
 init_i18n();
 init_labels();
 init_routing();
-import { jsx as jsx59, jsxs as jsxs57 } from "react/jsx-runtime";
+import { jsx as jsx60, jsxs as jsxs58 } from "react/jsx-runtime";
 function BotRow({
   bot,
   onAssignTask,
@@ -27675,7 +27924,7 @@ function BotRow({
   const open = () => void openRosterBot(bot);
   const rosterKey = botRosterKey(bot);
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot) === rosterKey;
-  const row = /* @__PURE__ */ jsxs57(
+  const row = /* @__PURE__ */ jsxs58(
     sdk_compat_exports.RowButton,
     {
       "aria-busy": isOpening || void 0,
@@ -27699,25 +27948,25 @@ function BotRow({
       },
       onPointerEnter: warm,
       children: [
-        /* @__PURE__ */ jsxs57(
+        /* @__PURE__ */ jsxs58(
           "div",
           {
             className: (0, sdk_compat_exports.cn)("relative shrink-0 rounded-lg", !sourceStatus.available && "grayscale opacity-60"),
             children: [
-              /* @__PURE__ */ jsx59(BotFace, { color: accent, image: photo ? image : null, mood: botMood, name: bot.name, shape, size: 34 }),
-              /* @__PURE__ */ jsx59(sdk_compat_exports.SessionStatusDot, { className: "absolute -right-0.5 -bottom-0.5", storedSessionId: canonicalSessionId })
+              /* @__PURE__ */ jsx60(BotFace, { color: accent, image: photo ? image : null, mood: botMood, name: bot.name, shape, size: 34 }),
+              /* @__PURE__ */ jsx60(sdk_compat_exports.SessionStatusDot, { className: "absolute -right-0.5 -bottom-0.5", storedSessionId: canonicalSessionId })
             ]
           }
         ),
-        /* @__PURE__ */ jsxs57("div", { className: "min-w-0 flex-1", children: [
-          /* @__PURE__ */ jsxs57("div", { className: "flex items-baseline justify-between gap-2", children: [
-            /* @__PURE__ */ jsxs57("div", { className: "flex min-w-0 items-baseline gap-1.5", children: [
-              pinned ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
-              hidden ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: b.roster.hiddenFromRoster, children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "eye-closed" }) }) : null,
-              watched ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: b.bot.watching, children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-accent)", name: "eye" }) }) : null,
-              /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: rowTooltip, children: /* @__PURE__ */ jsx59("span", { className: "min-w-0 shrink truncate text-[0.8125rem] font-medium", children: displayName(bot, meta) }) })
+        /* @__PURE__ */ jsxs58("div", { className: "min-w-0 flex-1", children: [
+          /* @__PURE__ */ jsxs58("div", { className: "flex items-baseline justify-between gap-2", children: [
+            /* @__PURE__ */ jsxs58("div", { className: "flex min-w-0 items-baseline gap-1.5", children: [
+              pinned ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
+              hidden ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.roster.hiddenFromRoster, children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "eye-closed" }) }) : null,
+              watched ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.bot.watching, children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-accent)", name: "eye" }) }) : null,
+              /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: rowTooltip, children: /* @__PURE__ */ jsx60("span", { className: "min-w-0 shrink truncate text-[0.8125rem] font-medium", children: displayName(bot, meta) }) })
             ] }),
-            canStop ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: b.roster.stopRun, children: /* @__PURE__ */ jsx59(
+            canStop ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.roster.stopRun, children: /* @__PURE__ */ jsx60(
               "span",
               {
                 "aria-label": b.roster.stopRun,
@@ -27727,10 +27976,10 @@ function BotRow({
                   stopRun();
                 },
                 role: "button",
-                children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { name: "debug-stop" })
+                children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { name: "debug-stop" })
               }
             ) }) : null,
-            health.kind !== "ok" ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: healthLabel, children: /* @__PURE__ */ jsx59(
+            health.kind !== "ok" ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: healthLabel, children: /* @__PURE__ */ jsx60(
               "span",
               {
                 "aria-label": healthLabel,
@@ -27738,14 +27987,14 @@ function BotRow({
                   "flex shrink-0 items-center text-[0.6875rem]",
                   health.kind === "unreachable" ? "text-destructive" : "hbp-fg-warn"
                 ),
-                children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { name: health.kind === "unreachable" ? "debug-disconnect" : "warning" })
+                children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { name: health.kind === "unreachable" ? "debug-disconnect" : "warning" })
               }
             ) }) : null,
-            attention.count > 0 ? /* @__PURE__ */ jsx59(
+            attention.count > 0 ? /* @__PURE__ */ jsx60(
               sdk_compat_exports.Tip,
               {
                 label: attention.reason ? botAttentionHint(attention.reason) : b.roster.attentionItems(attention.count),
-                children: /* @__PURE__ */ jsxs57(
+                children: /* @__PURE__ */ jsxs58(
                   "span",
                   {
                     "aria-label": attention.reason ? `${b.roster.needsAttention}: ${botAttentionHint(attention.reason)}` : b.roster.attentionItems(attention.count),
@@ -27755,24 +28004,24 @@ function BotRow({
                       open();
                     },
                     children: [
-                      /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { name: "warning" }),
+                      /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { name: "warning" }),
                       attention.count
                     ]
                   }
                 )
               }
             ) : null,
-            openTasks ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: b.mailbox.openTasks(openTasks), children: /* @__PURE__ */ jsxs57("span", { className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: [
-              /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { "aria-label": b.mailbox.section, name: "inbox" }),
+            openTasks ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.mailbox.openTasks(openTasks), children: /* @__PURE__ */ jsxs58("span", { className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: [
+              /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { "aria-label": b.mailbox.section, name: "inbox" }),
               openTasks
             ] }) }) : null,
-            isOpening ? /* @__PURE__ */ jsx59(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "shrink-0 text-xs text-(--ui-text-secondary)" }) : null,
-            rowAgeTs ? /* @__PURE__ */ jsx59("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(rowAgeTs * 1e3, t.sidebar.row) }) : null
+            isOpening ? /* @__PURE__ */ jsx60(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "shrink-0 text-xs text-(--ui-text-secondary)" }) : null,
+            rowAgeTs ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(rowAgeTs * 1e3, t.sidebar.row) }) : null
           ] }),
-          showDetailsRow ? /* @__PURE__ */ jsxs57("div", { className: "mt-1 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-secondary)", children: [
-            showHandle ? /* @__PURE__ */ jsx59("span", { className: "shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)", children: `@${handle}` }) : null,
-            showHandle && detailText ? /* @__PURE__ */ jsx59("span", { className: "shrink-0 text-(--ui-text-quaternary)", children: "\xB7" }) : null,
-            detailText ? /* @__PURE__ */ jsxs57(
+          showDetailsRow ? /* @__PURE__ */ jsxs58("div", { className: "mt-1 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-secondary)", children: [
+            showHandle ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)", children: `@${handle}` }) : null,
+            showHandle && detailText ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 text-(--ui-text-quaternary)", children: "\xB7" }) : null,
+            detailText ? /* @__PURE__ */ jsxs58(
               "span",
               {
                 className: (0, sdk_compat_exports.cn)(
@@ -27782,8 +28031,8 @@ function BotRow({
                   !liveText && fromBot && "italic"
                 ),
                 children: [
-                  liveTone === "live" && /* @__PURE__ */ jsx59("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-primary animate-pulse" }),
-                  /* @__PURE__ */ jsx59("span", { className: "truncate", children: detailText })
+                  liveTone === "live" && /* @__PURE__ */ jsx60("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-primary animate-pulse" }),
+                  /* @__PURE__ */ jsx60("span", { className: "truncate", children: detailText })
                 ]
               }
             ) : null
@@ -27792,7 +28041,7 @@ function BotRow({
       ]
     }
   );
-  return /* @__PURE__ */ jsx59(
+  return /* @__PURE__ */ jsx60(
     BotRowMenu,
     {
       bot,
@@ -27832,7 +28081,7 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
   const availabilityLabel = b.group.availableCount(availableMembers, members.length);
   const dragKey = groupDragKey(group);
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot) === dragKey;
-  const row = /* @__PURE__ */ jsxs57(
+  const row = /* @__PURE__ */ jsxs58(
     sdk_compat_exports.RowButton,
     {
       "aria-label": `${group}, ${b.group.memberCount(members.length)}, ${availabilityLabel}`,
@@ -27854,8 +28103,8 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
         $draggingBot.set(dragKey);
       },
       children: [
-        /* @__PURE__ */ jsxs57("div", { className: "relative flex w-[34px] shrink-0 items-center justify-center", children: [
-          room.image ? /* @__PURE__ */ jsx59(
+        /* @__PURE__ */ jsxs58("div", { className: "relative flex w-[34px] shrink-0 items-center justify-center", children: [
+          room.image ? /* @__PURE__ */ jsx60(
             "img",
             {
               alt: "",
@@ -27865,44 +28114,44 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
               ),
               src: room.image
             }
-          ) : /* @__PURE__ */ jsx59(
+          ) : /* @__PURE__ */ jsx60(
             "span",
             {
               className: (0, sdk_compat_exports.cn)(
                 "flex size-8 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-tertiary)",
                 availableMembers === 0 && "opacity-60"
               ),
-              children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { name: "organization" })
+              children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { name: "organization" })
             }
           ),
-          members.length > 0 && availableMembers < members.length ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: availabilityLabel, children: /* @__PURE__ */ jsx59(
+          members.length > 0 && availableMembers < members.length ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: availabilityLabel, children: /* @__PURE__ */ jsx60(
             "span",
             {
               "aria-label": availabilityLabel,
               className: "absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] hbp-fg-warn ring-1 ring-(--ui-stroke-tertiary) hbp-fg-warn",
-              children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { name: "debug-disconnect" })
+              children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { name: "debug-disconnect" })
             }
           ) }) : null
         ] }),
-        /* @__PURE__ */ jsxs57("div", { className: "min-w-0 flex-1", children: [
-          /* @__PURE__ */ jsxs57("div", { className: "flex items-baseline justify-between gap-2", children: [
-            /* @__PURE__ */ jsx59("span", { className: "min-w-0 flex-1 truncate text-[0.8125rem] font-medium", title: group, children: group }),
-            room.pinned ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
-            needsYou ? /* @__PURE__ */ jsx59(sdk_compat_exports.Tip, { label: b.group.needsYourInput, children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { "aria-label": b.roster.needsInput, className: "shrink-0 text-(--ui-accent)", name: "question" }) }) : null,
-            unread > 0 ? /* @__PURE__ */ jsx59(sdk_compat_exports.Badge, { "aria-label": b.group.unreadCount(unread), className: "shrink-0", size: "xs", variant: "solid", children: unread > 99 ? "99+" : unread }) : null,
-            lastAt ? /* @__PURE__ */ jsx59("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(lastAt, t.sidebar.row) }) : null
+        /* @__PURE__ */ jsxs58("div", { className: "min-w-0 flex-1", children: [
+          /* @__PURE__ */ jsxs58("div", { className: "flex items-baseline justify-between gap-2", children: [
+            /* @__PURE__ */ jsx60("span", { className: "min-w-0 flex-1 truncate text-[0.8125rem] font-medium", title: group, children: group }),
+            room.pinned ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
+            needsYou ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.group.needsYourInput, children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { "aria-label": b.roster.needsInput, className: "shrink-0 text-(--ui-accent)", name: "question" }) }) : null,
+            unread > 0 ? /* @__PURE__ */ jsx60(sdk_compat_exports.Badge, { "aria-label": b.group.unreadCount(unread), className: "shrink-0", size: "xs", variant: "solid", children: unread > 99 ? "99+" : unread }) : null,
+            lastAt ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(lastAt, t.sidebar.row) }) : null
           ] }),
-          /* @__PURE__ */ jsx59("div", { className: "mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)", title: previewTitle || void 0, children: preview })
+          /* @__PURE__ */ jsx60("div", { className: "mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)", title: previewTitle || void 0, children: preview })
         ] })
       ]
     }
   );
-  return /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenu, { children: [
-    /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children: row }),
-    /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuContent, { children: [
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { onSelect: () => onOpen(group), children: "Open Group Chat" }),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx59(
+  return /* @__PURE__ */ jsxs58(sdk_compat_exports.ContextMenu, { children: [
+    /* @__PURE__ */ jsx60(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children: row }),
+    /* @__PURE__ */ jsxs58(sdk_compat_exports.ContextMenuContent, { children: [
+      /* @__PURE__ */ jsx60(sdk_compat_exports.ContextMenuItem, { onSelect: () => onOpen(group), children: "Open Group Chat" }),
+      /* @__PURE__ */ jsx60(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx60(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -27914,34 +28163,34 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
           children: room.pinned ? "Unpin" : "Pin to top"
         }
       ),
-      /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuSub, { children: [
-        /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSubTrigger, { children: b.sections.moveTo }),
-        /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuSubContent, { children: [
-          sections.map((section) => /* @__PURE__ */ jsxs57(
+      /* @__PURE__ */ jsxs58(sdk_compat_exports.ContextMenuSub, { children: [
+        /* @__PURE__ */ jsx60(sdk_compat_exports.ContextMenuSubTrigger, { children: b.sections.moveTo }),
+        /* @__PURE__ */ jsxs58(sdk_compat_exports.ContextMenuSubContent, { children: [
+          sections.map((section) => /* @__PURE__ */ jsxs58(
             sdk_compat_exports.ContextMenuItem,
             {
               disabled: section.id === currentSectionId,
               onSelect: () => moveGroupChatsToSection([group], section.id),
               children: [
-                /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "folder" }),
+                /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "folder" }),
                 section.name
               ]
             },
             section.id
           )),
-          sections.length ? /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}) : null,
-          /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuItem, { onSelect: () => onNewSection(group), children: [
-            /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
+          sections.length ? /* @__PURE__ */ jsx60(sdk_compat_exports.ContextMenuSeparator, {}) : null,
+          /* @__PURE__ */ jsxs58(sdk_compat_exports.ContextMenuItem, { onSelect: () => onNewSection(group), children: [
+            /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
             b.sections.newSectionEllipsis
           ] }),
-          currentSectionId ? /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuItem, { onSelect: () => moveGroupChatsToSection([group], null), children: [
-            /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "inbox" }),
+          currentSectionId ? /* @__PURE__ */ jsxs58(sdk_compat_exports.ContextMenuItem, { onSelect: () => moveGroupChatsToSection([group], null), children: [
+            /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "inbox" }),
             b.sections.removeFromSection
           ] }) : null
         ] })
       ] }),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx59(
+      /* @__PURE__ */ jsx60(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx60(
         sdk_compat_exports.ContextMenuItem,
         {
           className: "text-destructive focus:text-destructive",
@@ -27961,7 +28210,7 @@ init_bot_state();
 
 // src/broadcast-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect19, useState as useState37 } from "react";
+import { useEffect as useEffect20, useState as useState37 } from "react";
 
 // src/broadcast.ts
 init_sdk_compat();
@@ -28146,19 +28395,19 @@ init_data();
 init_i18n();
 init_labels();
 init_routing();
-import { jsx as jsx60, jsxs as jsxs58 } from "react/jsx-runtime";
+import { jsx as jsx61, jsxs as jsxs59 } from "react/jsx-runtime";
 function BroadcastStatusGlyph({ status }) {
   const b = useBots();
   if (status === "sending") {
-    return /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "loading", spinning: true });
+    return /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "loading", spinning: true });
   }
   if (status === "working") {
-    return /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "text-(--ui-accent)", name: "sync", spinning: true });
+    return /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { className: "text-(--ui-accent)", name: "sync", spinning: true });
   }
   if (status === "error") {
-    return /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "text-destructive", name: "error" });
+    return /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { className: "text-destructive", name: "error" });
   }
-  return /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { "aria-label": b.broadcast.title, className: "hbp-fg-ok", name: "check" });
+  return /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { "aria-label": b.broadcast.title, className: "hbp-fg-ok", name: "check" });
 }
 function BroadcastResultCard({ entry }) {
   const b = useBots();
@@ -28167,14 +28416,14 @@ function BroadcastResultCard({ entry }) {
   const { shape, color, image } = botAppearance(entry.bot.name, meta);
   const name = displayName(entry.bot, meta);
   const statusLabel2 = entry.status === "sending" ? b.broadcast.statusSending : entry.status === "working" ? b.broadcast.statusWorking : entry.status === "error" ? b.broadcast.statusFailed : null;
-  return /* @__PURE__ */ jsxs58(
+  return /* @__PURE__ */ jsxs59(
     "div",
     {
       className: "rounded-md border border-(--ui-stroke-secondary) px-2.5 py-2",
       "data-testid": `broadcast-result:${entry.key}`,
       children: [
-        /* @__PURE__ */ jsxs58("div", { className: "flex items-center gap-1.5", children: [
-          /* @__PURE__ */ jsx60(
+        /* @__PURE__ */ jsxs59("div", { className: "flex items-center gap-1.5", children: [
+          /* @__PURE__ */ jsx61(
             BotFace,
             {
               color: avatarColor(color, entry.bot.name),
@@ -28184,13 +28433,13 @@ function BroadcastResultCard({ entry }) {
               size: 16
             }
           ),
-          /* @__PURE__ */ jsx60("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: name }),
-          statusLabel2 ? /* @__PURE__ */ jsxs58("span", { className: "flex items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary)", children: [
-            /* @__PURE__ */ jsx60(BroadcastStatusGlyph, { status: entry.status }),
+          /* @__PURE__ */ jsx61("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: name }),
+          statusLabel2 ? /* @__PURE__ */ jsxs59("span", { className: "flex items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary)", children: [
+            /* @__PURE__ */ jsx61(BroadcastStatusGlyph, { status: entry.status }),
             statusLabel2
-          ] }) : /* @__PURE__ */ jsx60(BroadcastStatusGlyph, { status: entry.status })
+          ] }) : /* @__PURE__ */ jsx61(BroadcastStatusGlyph, { status: entry.status })
         ] }),
-        entry.status === "error" ? /* @__PURE__ */ jsx60("div", { className: "mt-1 truncate text-[0.6875rem] text-destructive", children: entry.error }) : entry.status === "done" ? /* @__PURE__ */ jsx60("div", { className: "mt-1 whitespace-pre-wrap break-words text-[0.75rem] text-(--ui-text-secondary)", children: entry.reply || b.broadcast.emptyReply }) : null
+        entry.status === "error" ? /* @__PURE__ */ jsx61("div", { className: "mt-1 truncate text-[0.6875rem] text-destructive", children: entry.error }) : entry.status === "done" ? /* @__PURE__ */ jsx61("div", { className: "mt-1 whitespace-pre-wrap break-words text-[0.75rem] text-(--ui-text-secondary)", children: entry.reply || b.broadcast.emptyReply }) : null
       ]
     }
   );
@@ -28202,7 +28451,7 @@ function BroadcastDialog({ bots, onClose, open }) {
   const eligible = bots.filter((bot) => !bot?.ghost);
   const [checked, setChecked] = useState37(/* @__PURE__ */ new Set());
   const [prompt, setPrompt] = useState37("");
-  useEffect19(() => {
+  useEffect20(() => {
     if (open) {
       setChecked(new Set(eligible.map((bot) => botRosterKey(bot) || bot.name)));
       setPrompt("");
@@ -28227,7 +28476,7 @@ function BroadcastDialog({ bots, onClose, open }) {
     }
     broadcastPrompt(selected, prompt);
   };
-  return /* @__PURE__ */ jsx60(
+  return /* @__PURE__ */ jsx61(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -28236,16 +28485,16 @@ function BroadcastDialog({ bots, onClose, open }) {
         }
       },
       open,
-      children: /* @__PURE__ */ jsxs58(sdk_compat_exports.DialogContent, { className: "max-w-lg", children: [
-        /* @__PURE__ */ jsxs58(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx60(sdk_compat_exports.DialogTitle, { children: b.broadcast.title }),
-          /* @__PURE__ */ jsx60(sdk_compat_exports.DialogDescription, { children: b.broadcast.desc })
+      children: /* @__PURE__ */ jsxs59(sdk_compat_exports.DialogContent, { className: "max-w-lg", children: [
+        /* @__PURE__ */ jsxs59(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx61(sdk_compat_exports.DialogTitle, { children: b.broadcast.title }),
+          /* @__PURE__ */ jsx61(sdk_compat_exports.DialogDescription, { children: b.broadcast.desc })
         ] }),
-        /* @__PURE__ */ jsxs58("div", { className: "flex min-h-0 flex-col gap-2", children: [
-          /* @__PURE__ */ jsxs58("div", { className: "flex items-center justify-between", children: [
-            /* @__PURE__ */ jsx60("span", { className: "ui-section-label", children: b.broadcast.send(selected.length) }),
-            /* @__PURE__ */ jsxs58("div", { className: "flex items-center gap-1", children: [
-              /* @__PURE__ */ jsx60(
+        /* @__PURE__ */ jsxs59("div", { className: "flex min-h-0 flex-col gap-2", children: [
+          /* @__PURE__ */ jsxs59("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsx61("span", { className: "ui-section-label", children: b.broadcast.send(selected.length) }),
+            /* @__PURE__ */ jsxs59("div", { className: "flex items-center gap-1", children: [
+              /* @__PURE__ */ jsx61(
                 sdk_compat_exports.Button,
                 {
                   onClick: () => setChecked(new Set(eligible.map((bot) => botRosterKey(bot) || bot.name))),
@@ -28254,19 +28503,19 @@ function BroadcastDialog({ bots, onClose, open }) {
                   children: b.broadcast.selectAll
                 }
               ),
-              /* @__PURE__ */ jsx60(sdk_compat_exports.Button, { onClick: () => setChecked(/* @__PURE__ */ new Set()), size: "xs", variant: "ghost", children: b.broadcast.clearAll })
+              /* @__PURE__ */ jsx61(sdk_compat_exports.Button, { onClick: () => setChecked(/* @__PURE__ */ new Set()), size: "xs", variant: "ghost", children: b.broadcast.clearAll })
             ] })
           ] }),
-          /* @__PURE__ */ jsx60("ul", { className: "flex max-h-44 min-h-0 flex-col gap-0.5 overflow-y-auto", "data-testid": "broadcast-bots", children: eligible.map((bot) => {
+          /* @__PURE__ */ jsx61("ul", { className: "flex max-h-44 min-h-0 flex-col gap-0.5 overflow-y-auto", "data-testid": "broadcast-bots", children: eligible.map((bot) => {
             const key = botRosterKey(bot) || bot.name;
             const meta = botRosterMeta(bot, allMeta);
             const { shape, color, image } = botAppearance(bot.name, meta);
-            return /* @__PURE__ */ jsxs58(
+            return /* @__PURE__ */ jsxs59(
               "li",
               {
                 className: "flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-(--chrome-action-hover)",
                 children: [
-                  /* @__PURE__ */ jsx60(
+                  /* @__PURE__ */ jsx61(
                     sdk_compat_exports.Checkbox,
                     {
                       "aria-label": displayName(bot, meta),
@@ -28274,16 +28523,16 @@ function BroadcastDialog({ bots, onClose, open }) {
                       onCheckedChange: () => toggle(key)
                     }
                   ),
-                  /* @__PURE__ */ jsx60(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 18 }),
-                  /* @__PURE__ */ jsx60("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)", children: displayName(bot, meta) })
+                  /* @__PURE__ */ jsx61(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 18 }),
+                  /* @__PURE__ */ jsx61("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)", children: displayName(bot, meta) })
                 ]
               },
               key
             );
           }) }),
-          /* @__PURE__ */ jsxs58("label", { className: "flex flex-col gap-1", children: [
-            /* @__PURE__ */ jsx60("span", { className: "ui-section-label", children: b.broadcast.promptLabel }),
-            /* @__PURE__ */ jsx60(
+          /* @__PURE__ */ jsxs59("label", { className: "flex flex-col gap-1", children: [
+            /* @__PURE__ */ jsx61("span", { className: "ui-section-label", children: b.broadcast.promptLabel }),
+            /* @__PURE__ */ jsx61(
               sdk_compat_exports.Textarea,
               {
                 "aria-label": b.broadcast.promptLabel,
@@ -28294,13 +28543,13 @@ function BroadcastDialog({ bots, onClose, open }) {
               }
             )
           ] }),
-          !selected.length ? /* @__PURE__ */ jsx60("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: b.broadcast.noBotSelected }) : null,
-          run ? /* @__PURE__ */ jsxs58("div", { className: "flex min-h-0 max-h-64 flex-col gap-1.5 overflow-y-auto", "data-testid": "broadcast-results", children: [
-            /* @__PURE__ */ jsx60("div", { className: "truncate text-[0.6875rem] italic text-(--ui-text-quaternary)", children: run.prompt }),
-            run.entries.map((entry) => /* @__PURE__ */ jsx60(BroadcastResultCard, { entry }, entry.key))
+          !selected.length ? /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: b.broadcast.noBotSelected }) : null,
+          run ? /* @__PURE__ */ jsxs59("div", { className: "flex min-h-0 max-h-64 flex-col gap-1.5 overflow-y-auto", "data-testid": "broadcast-results", children: [
+            /* @__PURE__ */ jsx61("div", { className: "truncate text-[0.6875rem] italic text-(--ui-text-quaternary)", children: run.prompt }),
+            run.entries.map((entry) => /* @__PURE__ */ jsx61(BroadcastResultCard, { entry }, entry.key))
           ] }) : null
         ] }),
-        /* @__PURE__ */ jsx60(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: sending ? b.broadcast.statusWorking : "", children: /* @__PURE__ */ jsx60(sdk_compat_exports.Button, { disabled: !selected.length || !prompt.trim() || sending, onClick: send, size: "sm", children: b.broadcast.send(selected.length) }) }) })
+        /* @__PURE__ */ jsx61(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx61(sdk_compat_exports.Tip, { label: sending ? b.broadcast.statusWorking : "", children: /* @__PURE__ */ jsx61(sdk_compat_exports.Button, { disabled: !selected.length || !prompt.trim() || sending, onClick: send, size: "sm", children: b.broadcast.send(selected.length) }) }) })
       ] })
     }
   );
@@ -28403,7 +28652,7 @@ var BUILTIN_TEAM_PACKS = [
 var importTeamPack = (pack) => mutateTeam("bots_team.pack.import", { pack });
 
 // src/hire-gallery.tsx
-import { jsx as jsx61, jsxs as jsxs59 } from "react/jsx-runtime";
+import { jsx as jsx62, jsxs as jsxs60 } from "react/jsx-runtime";
 var SHELF_CLASS = "flex h-7 w-full items-center justify-between rounded-md px-2 text-left text-xs text-(--ui-text-secondary) hover:bg-(--chrome-action-hover) data-[active=true]:bg-(--ui-row-active-background) data-[active=true]:font-medium data-[active=true]:text-foreground";
 var CARD_CLASS = "flex min-w-0 flex-col gap-1.5 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-card,transparent) p-3 text-left transition-colors hover:border-(--ui-stroke-primary) data-[picked=true]:border-(--ui-accent) data-[picked=true]:ring-1 data-[picked=true]:ring-(--ui-accent)";
 function starterMatches(starter, query) {
@@ -28414,7 +28663,7 @@ function presetTags(draft) {
   return (BOT_TEMPLATES[draft.preset]?.skills ?? []).slice(0, 4);
 }
 function Face({ name, blob, size }) {
-  return /* @__PURE__ */ jsx61(
+  return /* @__PURE__ */ jsx62(
     BotFace,
     {
       color: avatarColor(null, name),
@@ -28426,16 +28675,16 @@ function Face({ name, blob, size }) {
 }
 function StarterCard({ picked, onPick, starter }) {
   const tags = presetTags(starterDraft(starter));
-  return /* @__PURE__ */ jsxs59(sdk_compat_exports.RowButton, { className: CARD_CLASS, "data-picked": picked, "data-slot": "hire-card", onClick: onPick, children: [
-    /* @__PURE__ */ jsxs59("span", { className: "flex min-w-0 items-center gap-2.5", children: [
-      /* @__PURE__ */ jsx61(Face, { blob: starter.blob, name: starter.name, size: 34 }),
-      /* @__PURE__ */ jsxs59("span", { className: "min-w-0", children: [
-        /* @__PURE__ */ jsx61("span", { className: "block truncate text-[0.8125rem] font-semibold text-foreground", children: starter.name }),
-        /* @__PURE__ */ jsx61("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: starter.title })
+  return /* @__PURE__ */ jsxs60(sdk_compat_exports.RowButton, { className: CARD_CLASS, "data-picked": picked, "data-slot": "hire-card", onClick: onPick, children: [
+    /* @__PURE__ */ jsxs60("span", { className: "flex min-w-0 items-center gap-2.5", children: [
+      /* @__PURE__ */ jsx62(Face, { blob: starter.blob, name: starter.name, size: 34 }),
+      /* @__PURE__ */ jsxs60("span", { className: "min-w-0", children: [
+        /* @__PURE__ */ jsx62("span", { className: "block truncate text-[0.8125rem] font-semibold text-foreground", children: starter.name }),
+        /* @__PURE__ */ jsx62("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: starter.title })
       ] })
     ] }),
-    /* @__PURE__ */ jsx61("span", { className: "line-clamp-2 text-xs leading-snug text-(--ui-text-secondary)", children: starter.tagline }),
-    tags.length ? /* @__PURE__ */ jsx61("span", { className: "flex flex-wrap gap-1", children: tags.map((tag) => /* @__PURE__ */ jsx61(
+    /* @__PURE__ */ jsx62("span", { className: "line-clamp-2 text-xs leading-snug text-(--ui-text-secondary)", children: starter.tagline }),
+    tags.length ? /* @__PURE__ */ jsx62("span", { className: "flex flex-wrap gap-1", children: tags.map((tag) => /* @__PURE__ */ jsx62(
       "span",
       {
         className: "rounded bg-(--ui-inline-code-background) px-1.5 py-px text-[0.625rem] text-(--ui-text-tertiary)",
@@ -28446,11 +28695,11 @@ function StarterCard({ picked, onPick, starter }) {
   ] });
 }
 function PackCard({ onPick, pack, picked }) {
-  return /* @__PURE__ */ jsx61(sdk_compat_exports.RowButton, { className: CARD_CLASS, "data-picked": picked, "data-slot": "hire-pack", onClick: onPick, children: /* @__PURE__ */ jsxs59("span", { className: "flex min-w-0 items-center gap-2.5", children: [
-    /* @__PURE__ */ jsx61("span", { className: "flex shrink-0 items-center gap-0.5", children: pack.faces.map((face) => /* @__PURE__ */ jsx61(Face, { name: face, size: 22 }, face)) }),
-    /* @__PURE__ */ jsxs59("span", { className: "min-w-0", children: [
-      /* @__PURE__ */ jsx61("span", { className: "block truncate text-[0.8125rem] font-semibold text-foreground", children: pack.pack.name }),
-      /* @__PURE__ */ jsx61("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: pack.pack.seats.map((seat) => seat.role).join(" \xB7 ") })
+  return /* @__PURE__ */ jsx62(sdk_compat_exports.RowButton, { className: CARD_CLASS, "data-picked": picked, "data-slot": "hire-pack", onClick: onPick, children: /* @__PURE__ */ jsxs60("span", { className: "flex min-w-0 items-center gap-2.5", children: [
+    /* @__PURE__ */ jsx62("span", { className: "flex shrink-0 items-center gap-0.5", children: pack.faces.map((face) => /* @__PURE__ */ jsx62(Face, { name: face, size: 22 }, face)) }),
+    /* @__PURE__ */ jsxs60("span", { className: "min-w-0", children: [
+      /* @__PURE__ */ jsx62("span", { className: "block truncate text-[0.8125rem] font-semibold text-foreground", children: pack.pack.name }),
+      /* @__PURE__ */ jsx62("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: pack.pack.seats.map((seat) => seat.role).join(" \xB7 ") })
     ] })
   ] }) });
 }
@@ -28459,27 +28708,27 @@ function BotDetail({ draft, onHire }) {
   const [name, setName] = useState38(draft.name);
   const tags = presetTags(draft);
   const hired = { ...draft, name: name.trim() || draft.name };
-  return /* @__PURE__ */ jsxs59("div", { className: "flex min-h-0 flex-1 flex-col gap-4", "data-slot": "hire-detail", children: [
-    /* @__PURE__ */ jsxs59("div", { className: "flex items-center gap-3", children: [
-      /* @__PURE__ */ jsx61(Face, { name: hired.name, size: 44 }),
-      /* @__PURE__ */ jsxs59("div", { className: "min-w-0", children: [
-        /* @__PURE__ */ jsx61("div", { className: "truncate text-sm font-semibold text-foreground", children: hired.name }),
-        /* @__PURE__ */ jsx61("div", { className: "truncate text-xs text-(--ui-text-tertiary)", children: draft.title })
+  return /* @__PURE__ */ jsxs60("div", { className: "flex min-h-0 flex-1 flex-col gap-4", "data-slot": "hire-detail", children: [
+    /* @__PURE__ */ jsxs60("div", { className: "flex items-center gap-3", children: [
+      /* @__PURE__ */ jsx62(Face, { name: hired.name, size: 44 }),
+      /* @__PURE__ */ jsxs60("div", { className: "min-w-0", children: [
+        /* @__PURE__ */ jsx62("div", { className: "truncate text-sm font-semibold text-foreground", children: hired.name }),
+        /* @__PURE__ */ jsx62("div", { className: "truncate text-xs text-(--ui-text-tertiary)", children: draft.title })
       ] })
     ] }),
-    draft.templateId ? null : /* @__PURE__ */ jsx61("div", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: h.drafted }),
-    /* @__PURE__ */ jsxs59("label", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.name }),
-      /* @__PURE__ */ jsx61(sdk_compat_exports.Input, { "aria-label": h.name, onChange: (event) => setName(event.target.value), value: name })
+    draft.templateId ? null : /* @__PURE__ */ jsx62("div", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: h.drafted }),
+    /* @__PURE__ */ jsxs60("label", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx62("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.name }),
+      /* @__PURE__ */ jsx62(sdk_compat_exports.Input, { "aria-label": h.name, onChange: (event) => setName(event.target.value), value: name })
     ] }),
-    /* @__PURE__ */ jsxs59("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.brain }),
-      /* @__PURE__ */ jsx61("span", { className: "text-xs text-(--ui-text-secondary)", children: h.brainDefault }),
-      /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: h.brainHint })
+    /* @__PURE__ */ jsxs60("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx62("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.brain }),
+      /* @__PURE__ */ jsx62("span", { className: "text-xs text-(--ui-text-secondary)", children: h.brainDefault }),
+      /* @__PURE__ */ jsx62("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: h.brainHint })
     ] }),
-    tags.length ? /* @__PURE__ */ jsxs59("div", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.startsWith }),
-      /* @__PURE__ */ jsx61("span", { className: "flex flex-wrap gap-1", children: tags.map((tag) => /* @__PURE__ */ jsx61(
+    tags.length ? /* @__PURE__ */ jsxs60("div", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx62("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.startsWith }),
+      /* @__PURE__ */ jsx62("span", { className: "flex flex-wrap gap-1", children: tags.map((tag) => /* @__PURE__ */ jsx62(
         "span",
         {
           className: "rounded bg-(--ui-inline-code-background) px-1.5 py-px text-[0.625rem] text-(--ui-text-tertiary)",
@@ -28488,17 +28737,17 @@ function BotDetail({ draft, onHire }) {
         tag
       )) })
     ] }) : null,
-    draft.starters.length ? /* @__PURE__ */ jsxs59("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.firstThings }),
-      /* @__PURE__ */ jsx61("ul", { className: "grid gap-0.5 text-xs text-(--ui-text-secondary)", children: draft.starters.map((line) => /* @__PURE__ */ jsxs59("li", { className: "truncate", children: [
+    draft.starters.length ? /* @__PURE__ */ jsxs60("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx62("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.firstThings }),
+      /* @__PURE__ */ jsx62("ul", { className: "grid gap-0.5 text-xs text-(--ui-text-secondary)", children: draft.starters.map((line) => /* @__PURE__ */ jsxs60("li", { className: "truncate", children: [
         "\u201C",
         line,
         "\u201D"
       ] }, line)) })
     ] }) : null,
-    /* @__PURE__ */ jsxs59("div", { className: "mt-auto grid gap-2", children: [
-      /* @__PURE__ */ jsx61(sdk_compat_exports.Button, { className: "w-full justify-center", "data-slot": "hire-button", onClick: () => onHire(hired), children: h.hire(hired.name) }),
-      /* @__PURE__ */ jsx61(sdk_compat_exports.Button, { className: "w-full justify-center", onClick: () => onHire(hired), size: "xs", variant: "ghost", children: h.customize })
+    /* @__PURE__ */ jsxs60("div", { className: "mt-auto grid gap-2", children: [
+      /* @__PURE__ */ jsx62(sdk_compat_exports.Button, { className: "w-full justify-center", "data-slot": "hire-button", onClick: () => onHire(hired), children: h.hire(hired.name) }),
+      /* @__PURE__ */ jsx62(sdk_compat_exports.Button, { className: "w-full justify-center", onClick: () => onHire(hired), size: "xs", variant: "ghost", children: h.customize })
     ] })
   ] });
 }
@@ -28514,13 +28763,13 @@ function PackDetail({ onDone, pack }) {
       void host.navigate("/team");
     }).catch((error) => host.notifyError(error, h.packFailed)).finally(() => setBusy(false));
   };
-  return /* @__PURE__ */ jsxs59("div", { className: "flex min-h-0 flex-1 flex-col gap-4", "data-slot": "hire-detail", children: [
-    /* @__PURE__ */ jsxs59("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx61("div", { className: "text-sm font-semibold text-foreground", children: pack.pack.name }),
-      /* @__PURE__ */ jsx61("div", { className: "text-xs text-(--ui-text-secondary)", children: pack.pack.mission })
+  return /* @__PURE__ */ jsxs60("div", { className: "flex min-h-0 flex-1 flex-col gap-4", "data-slot": "hire-detail", children: [
+    /* @__PURE__ */ jsxs60("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx62("div", { className: "text-sm font-semibold text-foreground", children: pack.pack.name }),
+      /* @__PURE__ */ jsx62("div", { className: "text-xs text-(--ui-text-secondary)", children: pack.pack.mission })
     ] }),
-    /* @__PURE__ */ jsx61("ul", { className: "grid gap-2", children: pack.pack.seats.map((seat) => /* @__PURE__ */ jsxs59("li", { className: "flex items-start gap-2.5", children: [
-      /* @__PURE__ */ jsx61(
+    /* @__PURE__ */ jsx62("ul", { className: "grid gap-2", children: pack.pack.seats.map((seat) => /* @__PURE__ */ jsxs60("li", { className: "flex items-start gap-2.5", children: [
+      /* @__PURE__ */ jsx62(
         sdk_compat_exports.Codicon,
         {
           className: "mt-0.5 shrink-0 text-(--ui-text-quaternary)",
@@ -28528,14 +28777,14 @@ function PackDetail({ onDone, pack }) {
           size: "0.8rem"
         }
       ),
-      /* @__PURE__ */ jsxs59("span", { className: "min-w-0", children: [
-        /* @__PURE__ */ jsx61("span", { className: "block text-xs font-medium text-foreground", children: seat.role }),
-        /* @__PURE__ */ jsx61("span", { className: "block text-[0.6875rem] text-(--ui-text-tertiary)", children: seat.title })
+      /* @__PURE__ */ jsxs60("span", { className: "min-w-0", children: [
+        /* @__PURE__ */ jsx62("span", { className: "block text-xs font-medium text-foreground", children: seat.role }),
+        /* @__PURE__ */ jsx62("span", { className: "block text-[0.6875rem] text-(--ui-text-tertiary)", children: seat.title })
       ] })
     ] }, seat.slot)) }),
-    /* @__PURE__ */ jsxs59("div", { className: "mt-auto grid gap-2", children: [
-      /* @__PURE__ */ jsx61(sdk_compat_exports.Button, { className: "w-full justify-center", disabled: busy, onClick: hire, children: h.hirePack(pack.pack.name) }),
-      /* @__PURE__ */ jsx61("p", { className: "text-center text-[0.6875rem] text-(--ui-text-quaternary)", children: h.packHint })
+    /* @__PURE__ */ jsxs60("div", { className: "mt-auto grid gap-2", children: [
+      /* @__PURE__ */ jsx62(sdk_compat_exports.Button, { className: "w-full justify-center", disabled: busy, onClick: hire, children: h.hirePack(pack.pack.name) }),
+      /* @__PURE__ */ jsx62("p", { className: "text-center text-[0.6875rem] text-(--ui-text-quaternary)", children: h.packHint })
     ] })
   ] });
 }
@@ -28566,19 +28815,19 @@ function HireGallery({ open, onClose, onHire }) {
   };
   const pickedStarterId = pick2?.kind === "bot" ? pick2.draft.templateId : void 0;
   const pickedPackId = pick2?.kind === "pack" ? pick2.pack.id : void 0;
-  return /* @__PURE__ */ jsx61(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open, children: /* @__PURE__ */ jsxs59(
+  return /* @__PURE__ */ jsx62(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open, children: /* @__PURE__ */ jsxs60(
     sdk_compat_exports.DialogContent,
     {
       bodyClassName: "p-0",
       className: "h-[min(40rem,calc(100vh-4rem))] max-w-[min(68rem,calc(100vw-2rem))]",
       "data-slot": "hire-gallery",
       children: [
-        /* @__PURE__ */ jsxs59("div", { className: "flex items-center gap-3 border-b border-(--ui-stroke-tertiary) px-4 py-3 pr-12", children: [
-          /* @__PURE__ */ jsxs59("div", { className: "min-w-0 flex-1", children: [
-            /* @__PURE__ */ jsx61(sdk_compat_exports.DialogTitle, { className: "text-sm", children: h.title }),
-            /* @__PURE__ */ jsx61(sdk_compat_exports.DialogDescription, { className: "text-xs", children: h.subtitle })
+        /* @__PURE__ */ jsxs60("div", { className: "flex items-center gap-3 border-b border-(--ui-stroke-tertiary) px-4 py-3 pr-12", children: [
+          /* @__PURE__ */ jsxs60("div", { className: "min-w-0 flex-1", children: [
+            /* @__PURE__ */ jsx62(sdk_compat_exports.DialogTitle, { className: "text-sm", children: h.title }),
+            /* @__PURE__ */ jsx62(sdk_compat_exports.DialogDescription, { className: "text-xs", children: h.subtitle })
           ] }),
-          /* @__PURE__ */ jsx61(
+          /* @__PURE__ */ jsx62(
             sdk_compat_exports.SearchField,
             {
               "aria-label": h.search,
@@ -28590,9 +28839,9 @@ function HireGallery({ open, onClose, onHire }) {
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs59("div", { className: "grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[11rem_minmax(0,1fr)_17rem]", children: [
-          /* @__PURE__ */ jsxs59("nav", { className: "hidden min-h-0 flex-col gap-0.5 overflow-y-auto border-r border-(--ui-stroke-tertiary) p-2 md:flex", children: [
-            /* @__PURE__ */ jsx61(
+        /* @__PURE__ */ jsxs60("div", { className: "grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[11rem_minmax(0,1fr)_17rem]", children: [
+          /* @__PURE__ */ jsxs60("nav", { className: "hidden min-h-0 flex-col gap-0.5 overflow-y-auto border-r border-(--ui-stroke-tertiary) p-2 md:flex", children: [
+            /* @__PURE__ */ jsx62(
               "button",
               {
                 className: SHELF_CLASS,
@@ -28604,7 +28853,7 @@ function HireGallery({ open, onClose, onHire }) {
             ),
             STARTER_CATEGORIES.map((category) => {
               const count = BOT_STARTERS.filter((starter) => starter.category === category).length;
-              return /* @__PURE__ */ jsxs59(
+              return /* @__PURE__ */ jsxs60(
                 "button",
                 {
                   className: SHELF_CLASS,
@@ -28613,14 +28862,14 @@ function HireGallery({ open, onClose, onHire }) {
                   type: "button",
                   children: [
                     h.category[category],
-                    /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: count })
+                    /* @__PURE__ */ jsx62("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: count })
                   ]
                 },
                 category
               );
             }),
-            /* @__PURE__ */ jsx61("div", { className: "px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-(--ui-text-quaternary)", children: h.packsNav }),
-            /* @__PURE__ */ jsxs59(
+            /* @__PURE__ */ jsx62("div", { className: "px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-(--ui-text-quaternary)", children: h.packsNav }),
+            /* @__PURE__ */ jsxs60(
               "button",
               {
                 className: SHELF_CLASS,
@@ -28628,16 +28877,16 @@ function HireGallery({ open, onClose, onHire }) {
                 onClick: () => setShelf("packs"),
                 type: "button",
                 children: [
-                  /* @__PURE__ */ jsxs59("span", { className: "flex items-center gap-1.5", children: [
-                    /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { name: "organization", size: "0.75rem" }),
+                  /* @__PURE__ */ jsxs60("span", { className: "flex items-center gap-1.5", children: [
+                    /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "organization", size: "0.75rem" }),
                     h.packsNav
                   ] }),
-                  /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: BUILTIN_TEAM_PACKS.length })
+                  /* @__PURE__ */ jsx62("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: BUILTIN_TEAM_PACKS.length })
                 ]
               }
             ),
-            /* @__PURE__ */ jsx61("div", { className: "px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-(--ui-text-quaternary)", children: h.yours }),
-            /* @__PURE__ */ jsx61(
+            /* @__PURE__ */ jsx62("div", { className: "px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-(--ui-text-quaternary)", children: h.yours }),
+            /* @__PURE__ */ jsx62(
               "button",
               {
                 className: SHELF_CLASS,
@@ -28649,18 +28898,18 @@ function HireGallery({ open, onClose, onHire }) {
                   });
                 },
                 type: "button",
-                children: /* @__PURE__ */ jsxs59("span", { className: "flex items-center gap-1.5", children: [
-                  /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { name: "cloud-download", size: "0.75rem" }),
+                children: /* @__PURE__ */ jsxs60("span", { className: "flex items-center gap-1.5", children: [
+                  /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "cloud-download", size: "0.75rem" }),
                   h.importBot
                 ] })
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs59("div", { className: pick2 ? "hidden min-h-0 overflow-y-auto p-4 md:block" : "min-h-0 overflow-y-auto p-4", children: [
-            /* @__PURE__ */ jsxs59("div", { className: "mb-5 grid gap-1.5", children: [
-              /* @__PURE__ */ jsx61("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.describeLabel }),
-              /* @__PURE__ */ jsxs59("div", { className: "flex items-start gap-2", children: [
-                /* @__PURE__ */ jsx61(
+          /* @__PURE__ */ jsxs60("div", { className: pick2 ? "hidden min-h-0 overflow-y-auto p-4 md:block" : "min-h-0 overflow-y-auto p-4", children: [
+            /* @__PURE__ */ jsxs60("div", { className: "mb-5 grid gap-1.5", children: [
+              /* @__PURE__ */ jsx62("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.describeLabel }),
+              /* @__PURE__ */ jsxs60("div", { className: "flex items-start gap-2", children: [
+                /* @__PURE__ */ jsx62(
                   sdk_compat_exports.Textarea,
                   {
                     className: "min-h-9 flex-1 resize-none text-xs",
@@ -28677,15 +28926,15 @@ function HireGallery({ open, onClose, onHire }) {
                     value: describe
                   }
                 ),
-                /* @__PURE__ */ jsxs59(sdk_compat_exports.Button, { disabled: !describe.trim(), onClick: draftIt, size: "sm", variant: "secondary", children: [
-                  /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { name: "sparkle", size: "0.75rem" }),
+                /* @__PURE__ */ jsxs60(sdk_compat_exports.Button, { disabled: !describe.trim(), onClick: draftIt, size: "sm", variant: "secondary", children: [
+                  /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "sparkle", size: "0.75rem" }),
                   h.describeAction
                 ] })
               ] })
             ] }),
-            showPacks ? /* @__PURE__ */ jsxs59("section", { className: "mb-5 grid gap-2", children: [
-              /* @__PURE__ */ jsx61("h3", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.packsHeading }),
-              /* @__PURE__ */ jsx61("div", { className: "grid grid-cols-1 gap-2 sm:grid-cols-2", children: BUILTIN_TEAM_PACKS.map((pack) => /* @__PURE__ */ jsx61(
+            showPacks ? /* @__PURE__ */ jsxs60("section", { className: "mb-5 grid gap-2", children: [
+              /* @__PURE__ */ jsx62("h3", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.packsHeading }),
+              /* @__PURE__ */ jsx62("div", { className: "grid grid-cols-1 gap-2 sm:grid-cols-2", children: BUILTIN_TEAM_PACKS.map((pack) => /* @__PURE__ */ jsx62(
                 PackCard,
                 {
                   onPick: () => setPick({ kind: "pack", pack }),
@@ -28695,10 +28944,10 @@ function HireGallery({ open, onClose, onHire }) {
                 pack.id
               )) })
             ] }) : null,
-            showStarters ? /* @__PURE__ */ jsxs59("section", { className: "grid gap-2", children: [
-              /* @__PURE__ */ jsx61("h3", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.teammatesHeading }),
-              starters.length === 0 ? /* @__PURE__ */ jsx61("p", { className: "py-6 text-center text-xs text-(--ui-text-tertiary)", children: h.noMatch(query.trim()) }) : /* @__PURE__ */ jsxs59("div", { className: "grid grid-cols-1 gap-2 sm:grid-cols-2", children: [
-                starters.map((starter) => /* @__PURE__ */ jsx61(
+            showStarters ? /* @__PURE__ */ jsxs60("section", { className: "grid gap-2", children: [
+              /* @__PURE__ */ jsx62("h3", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.teammatesHeading }),
+              starters.length === 0 ? /* @__PURE__ */ jsx62("p", { className: "py-6 text-center text-xs text-(--ui-text-tertiary)", children: h.noMatch(query.trim()) }) : /* @__PURE__ */ jsxs60("div", { className: "grid grid-cols-1 gap-2 sm:grid-cols-2", children: [
+                starters.map((starter) => /* @__PURE__ */ jsx62(
                   StarterCard,
                   {
                     onPick: () => setPick({ kind: "bot", draft: starterDraft(starter) }),
@@ -28707,17 +28956,17 @@ function HireGallery({ open, onClose, onHire }) {
                   },
                   starter.id
                 )),
-                /* @__PURE__ */ jsx61(
+                /* @__PURE__ */ jsx62(
                   sdk_compat_exports.RowButton,
                   {
                     className: `${CARD_CLASS} border-dashed`,
                     "data-slot": "hire-blank",
                     onClick: () => hire(null),
-                    children: /* @__PURE__ */ jsxs59("span", { className: "flex items-center gap-2.5", children: [
-                      /* @__PURE__ */ jsx61("span", { className: "grid size-[34px] place-items-center rounded-lg border border-dashed border-(--ui-stroke-secondary) text-(--ui-text-tertiary)", children: /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { name: "add" }) }),
-                      /* @__PURE__ */ jsxs59("span", { className: "min-w-0", children: [
-                        /* @__PURE__ */ jsx61("span", { className: "block text-[0.8125rem] font-semibold text-foreground", children: h.blankTitle }),
-                        /* @__PURE__ */ jsx61("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: h.blankBody })
+                    children: /* @__PURE__ */ jsxs60("span", { className: "flex items-center gap-2.5", children: [
+                      /* @__PURE__ */ jsx62("span", { className: "grid size-[34px] place-items-center rounded-lg border border-dashed border-(--ui-stroke-secondary) text-(--ui-text-tertiary)", children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "add" }) }),
+                      /* @__PURE__ */ jsxs60("span", { className: "min-w-0", children: [
+                        /* @__PURE__ */ jsx62("span", { className: "block text-[0.8125rem] font-semibold text-foreground", children: h.blankTitle }),
+                        /* @__PURE__ */ jsx62("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: h.blankBody })
                       ] })
                     ] })
                   }
@@ -28725,16 +28974,16 @@ function HireGallery({ open, onClose, onHire }) {
               ] })
             ] }) : null
           ] }),
-          /* @__PURE__ */ jsxs59(
+          /* @__PURE__ */ jsxs60(
             "aside",
             {
               className: pick2 ? "flex min-h-0 flex-col overflow-y-auto p-4 md:border-l md:border-(--ui-stroke-tertiary)" : "hidden min-h-0 flex-col overflow-y-auto border-l border-(--ui-stroke-tertiary) p-4 md:flex",
               children: [
-                pick2 ? /* @__PURE__ */ jsxs59(sdk_compat_exports.Button, { className: "mb-3 self-start md:hidden", onClick: () => setPick(null), size: "xs", variant: "ghost", children: [
-                  /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { name: "chevron-left", size: "0.75rem" }),
+                pick2 ? /* @__PURE__ */ jsxs60(sdk_compat_exports.Button, { className: "mb-3 self-start md:hidden", onClick: () => setPick(null), size: "xs", variant: "ghost", children: [
+                  /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "chevron-left", size: "0.75rem" }),
                   h.back
                 ] }) : null,
-                pick2?.kind === "bot" ? /* @__PURE__ */ jsx61(BotDetail, { draft: pick2.draft, onHire: hire }, pick2.draft.templateId || pick2.draft.name) : pick2?.kind === "pack" ? /* @__PURE__ */ jsx61(PackDetail, { onDone: onClose, pack: pick2.pack }) : /* @__PURE__ */ jsx61("div", { className: "grid flex-1 place-items-center text-center text-xs text-(--ui-text-tertiary)", children: h.pickOne })
+                pick2?.kind === "bot" ? /* @__PURE__ */ jsx62(BotDetail, { draft: pick2.draft, onHire: hire }, pick2.draft.templateId || pick2.draft.name) : pick2?.kind === "pack" ? /* @__PURE__ */ jsx62(PackDetail, { onDone: onClose, pack: pick2.pack }) : /* @__PURE__ */ jsx62("div", { className: "grid flex-1 place-items-center text-center text-xs text-(--ui-text-tertiary)", children: h.pickOne })
               ]
             }
           )
@@ -28754,7 +29003,7 @@ init_i18n();
 init_labels();
 import { useState as useState39 } from "react";
 init_routing();
-import { jsx as jsx62, jsxs as jsxs60 } from "react/jsx-runtime";
+import { jsx as jsx63, jsxs as jsxs61 } from "react/jsx-runtime";
 var STATUS_ICONS = {
   accepted: "check",
   declined: "circle-slash",
@@ -28796,11 +29045,11 @@ function MailboxNoteCard({ note, members }) {
     setBusy(true);
     void updateMailboxNote(note, next).catch((error) => host.notify({ kind: "error", message: b.mailbox.updateFailed(String(error instanceof Error ? error.message : error)) })).finally(() => setBusy(false));
   };
-  return /* @__PURE__ */ jsxs60("div", { className: "rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-surface-secondary) px-2.5 py-2 text-xs", children: [
-    /* @__PURE__ */ jsxs60("div", { className: "flex items-center gap-1.5", children: [
-      /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "mail" }),
-      /* @__PURE__ */ jsx62("span", { className: "min-w-0 truncate font-medium text-(--ui-text-secondary)", children: note.title }),
-      /* @__PURE__ */ jsxs60(
+  return /* @__PURE__ */ jsxs61("div", { className: "rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-surface-secondary) px-2.5 py-2 text-xs", children: [
+    /* @__PURE__ */ jsxs61("div", { className: "flex items-center gap-1.5", children: [
+      /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "mail" }),
+      /* @__PURE__ */ jsx63("span", { className: "min-w-0 truncate font-medium text-(--ui-text-secondary)", children: note.title }),
+      /* @__PURE__ */ jsxs61(
         "span",
         {
           className: (0, sdk_compat_exports.cn)(
@@ -28811,23 +29060,23 @@ function MailboxNoteCard({ note, members }) {
             status === "done" && "bg-(--chrome-action-hover) text-(--ui-text-tertiary)"
           ),
           children: [
-            /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: STATUS_ICONS[status] }),
+            /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: STATUS_ICONS[status] }),
             statusLabel(b, status)
           ]
         }
       )
     ] }),
-    /* @__PURE__ */ jsx62("div", { className: "mt-0.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: b.mailbox.cardRoute(partyLabel(note.sender, members, b.group.you), partyLabel(note.to, members, b.group.you)) }),
-    note.body ? /* @__PURE__ */ jsx62("div", { className: "mt-1 whitespace-pre-wrap break-words text-(--ui-text-tertiary)", children: note.body }) : null,
-    note.reply ? /* @__PURE__ */ jsxs60("div", { className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1 text-(--ui-text-tertiary)", children: [
+    /* @__PURE__ */ jsx63("div", { className: "mt-0.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: b.mailbox.cardRoute(partyLabel(note.sender, members, b.group.you), partyLabel(note.to, members, b.group.you)) }),
+    note.body ? /* @__PURE__ */ jsx63("div", { className: "mt-1 whitespace-pre-wrap break-words text-(--ui-text-tertiary)", children: note.body }) : null,
+    note.reply ? /* @__PURE__ */ jsxs61("div", { className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1 text-(--ui-text-tertiary)", children: [
       b.mailbox.replyPrefix,
       ": ",
       note.reply
     ] }) : null,
-    open ? /* @__PURE__ */ jsxs60("div", { className: "mt-1.5 flex gap-1", children: [
-      /* @__PURE__ */ jsx62(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("accepted"), size: "sm", variant: "secondary", children: b.mailbox.accept }),
-      /* @__PURE__ */ jsx62(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("done"), size: "sm", variant: "secondary", children: b.mailbox.markDone }),
-      /* @__PURE__ */ jsx62(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("declined"), size: "sm", variant: "ghost", children: b.mailbox.decline })
+    open ? /* @__PURE__ */ jsxs61("div", { className: "mt-1.5 flex gap-1", children: [
+      /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("accepted"), size: "sm", variant: "secondary", children: b.mailbox.accept }),
+      /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("done"), size: "sm", variant: "secondary", children: b.mailbox.markDone }),
+      /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("declined"), size: "sm", variant: "ghost", children: b.mailbox.decline })
     ] }) : null
   ] });
 }
@@ -28849,13 +29098,13 @@ function MailboxTaskDialog({ member, onClose }) {
       onClose();
     }).catch((error) => host.notify({ kind: "error", message: b.mailbox.sendFailed(String(error instanceof Error ? error.message : error)) })).finally(() => setSending(false));
   };
-  return /* @__PURE__ */ jsx62(sdk_compat_exports.Dialog, { onOpenChange: (open) => !open && onClose(), open: Boolean(member), children: /* @__PURE__ */ jsxs60(sdk_compat_exports.DialogContent, { className: "sm:max-w-md", children: [
-    /* @__PURE__ */ jsxs60(sdk_compat_exports.DialogHeader, { children: [
-      /* @__PURE__ */ jsx62(sdk_compat_exports.DialogTitle, { children: label ? b.mailbox.assignTitle(label) : b.mailbox.assignTitleGeneric }),
-      /* @__PURE__ */ jsx62(sdk_compat_exports.DialogDescription, { children: b.mailbox.assignDescription })
+  return /* @__PURE__ */ jsx63(sdk_compat_exports.Dialog, { onOpenChange: (open) => !open && onClose(), open: Boolean(member), children: /* @__PURE__ */ jsxs61(sdk_compat_exports.DialogContent, { className: "sm:max-w-md", children: [
+    /* @__PURE__ */ jsxs61(sdk_compat_exports.DialogHeader, { children: [
+      /* @__PURE__ */ jsx63(sdk_compat_exports.DialogTitle, { children: label ? b.mailbox.assignTitle(label) : b.mailbox.assignTitleGeneric }),
+      /* @__PURE__ */ jsx63(sdk_compat_exports.DialogDescription, { children: b.mailbox.assignDescription })
     ] }),
-    /* @__PURE__ */ jsxs60("div", { className: "grid gap-2 py-1", children: [
-      /* @__PURE__ */ jsx62(
+    /* @__PURE__ */ jsxs61("div", { className: "grid gap-2 py-1", children: [
+      /* @__PURE__ */ jsx63(
         sdk_compat_exports.Input,
         {
           autoFocus: true,
@@ -28864,7 +29113,7 @@ function MailboxTaskDialog({ member, onClose }) {
           value: title
         }
       ),
-      /* @__PURE__ */ jsx62(
+      /* @__PURE__ */ jsx63(
         sdk_compat_exports.Textarea,
         {
           className: "min-h-20",
@@ -28874,9 +29123,9 @@ function MailboxTaskDialog({ member, onClose }) {
         }
       )
     ] }),
-    /* @__PURE__ */ jsxs60(sdk_compat_exports.DialogFooter, { children: [
-      /* @__PURE__ */ jsx62(sdk_compat_exports.Button, { onClick: onClose, size: "sm", variant: "ghost", children: t.common.cancel }),
-      /* @__PURE__ */ jsx62(sdk_compat_exports.Button, { disabled: !title.trim() || sending, onClick: send, size: "sm", children: b.mailbox.send })
+    /* @__PURE__ */ jsxs61(sdk_compat_exports.DialogFooter, { children: [
+      /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { onClick: onClose, size: "sm", variant: "ghost", children: t.common.cancel }),
+      /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { disabled: !title.trim() || sending, onClick: send, size: "sm", children: b.mailbox.send })
     ] })
   ] }) });
 }
@@ -28890,8 +29139,8 @@ function RosterMailboxSection({
   if (!notes.length) {
     return null;
   }
-  return /* @__PURE__ */ jsxs60("div", { className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1", children: [
-    /* @__PURE__ */ jsxs60(
+  return /* @__PURE__ */ jsxs61("div", { className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1", children: [
+    /* @__PURE__ */ jsxs61(
       "button",
       {
         "aria-expanded": !collapsed,
@@ -28899,13 +29148,13 @@ function RosterMailboxSection({
         onClick: onToggle,
         type: "button",
         children: [
-          /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: collapsed ? "chevron-right" : "chevron-down" }),
-          /* @__PURE__ */ jsx62("span", { children: b.mailbox.section }),
-          /* @__PURE__ */ jsx62("span", { className: "text-(--ui-text-quaternary)", children: notes.length })
+          /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: collapsed ? "chevron-right" : "chevron-down" }),
+          /* @__PURE__ */ jsx63("span", { children: b.mailbox.section }),
+          /* @__PURE__ */ jsx63("span", { className: "text-(--ui-text-quaternary)", children: notes.length })
         ]
       }
     ),
-    !collapsed ? /* @__PURE__ */ jsx62("div", { className: "grid gap-1 px-1 pb-1", children: notes.map((note) => /* @__PURE__ */ jsx62(MailboxNoteCard, { members: roster, note }, `${note.connectionId || ""}:${note.id}`)) }) : null
+    !collapsed ? /* @__PURE__ */ jsx63("div", { className: "grid gap-1 px-1 pb-1", children: notes.map((note) => /* @__PURE__ */ jsx63(MailboxNoteCard, { members: roster, note }, `${note.connectionId || ""}:${note.id}`)) }) : null
   ] }, "mailbox-section");
 }
 
@@ -28915,7 +29164,7 @@ init_sdk_compat();
 // src/bots-explainer.tsx
 init_sdk_compat();
 init_i18n();
-import { jsx as jsx63, jsxs as jsxs61 } from "react/jsx-runtime";
+import { jsx as jsx64, jsxs as jsxs62 } from "react/jsx-runtime";
 var EXPLAINER_LINES = [
   { icon: "inbox", key: "howInbox" },
   { icon: "comment-add", key: "howTopic" },
@@ -28924,17 +29173,17 @@ var EXPLAINER_LINES = [
 ];
 function BotsHowItWorks() {
   const b = useBots();
-  return /* @__PURE__ */ jsxs61("div", { className: "mt-1.5 flex w-full max-w-64 flex-col gap-1.5 text-left", "data-testid": "bots-how-it-works", children: [
-    /* @__PURE__ */ jsx63("p", { className: "text-[0.625rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)", children: b.roster.howTitle }),
-    EXPLAINER_LINES.map((line) => /* @__PURE__ */ jsxs61("p", { className: "flex items-start gap-1.5 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)", children: [
-      /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { className: "mt-px shrink-0 text-(--ui-text-quaternary)", name: line.icon }),
-      /* @__PURE__ */ jsx63("span", { children: b.roster[line.key] })
+  return /* @__PURE__ */ jsxs62("div", { className: "mt-1.5 flex w-full max-w-64 flex-col gap-1.5 text-left", "data-testid": "bots-how-it-works", children: [
+    /* @__PURE__ */ jsx64("p", { className: "text-[0.625rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)", children: b.roster.howTitle }),
+    EXPLAINER_LINES.map((line) => /* @__PURE__ */ jsxs62("p", { className: "flex items-start gap-1.5 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)", children: [
+      /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { className: "mt-px shrink-0 text-(--ui-text-quaternary)", name: line.icon }),
+      /* @__PURE__ */ jsx64("span", { children: b.roster[line.key] })
     ] }, line.key))
   ] });
 }
 
 // src/roster-pane-content.tsx
-import { Fragment as Fragment13, jsx as jsx64, jsxs as jsxs62 } from "react/jsx-runtime";
+import { Fragment as Fragment13, jsx as jsx65, jsxs as jsxs63 } from "react/jsx-runtime";
 function renderRosterContent({
   b,
   onNewBot,
@@ -28971,20 +29220,20 @@ function renderRosterContent({
   renderUserSections,
   renderHiddenGatewaySection
 }) {
-  return /* @__PURE__ */ jsxs62(Fragment13, { children: [
-    staleNotice ? /* @__PURE__ */ jsx64("div", { className: "mx-2.5 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: staleNotice }) : null,
-    (isLoading || initialRosterLoading) && !roster.length ? /* @__PURE__ */ jsx64("div", { className: "flex flex-1 items-center justify-center", children: /* @__PURE__ */ jsx64(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !roster.length ? /* @__PURE__ */ jsxs62("div", { className: "grid gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)", children: [
-      /* @__PURE__ */ jsx64("div", { children: gatewayUp ? b.roster.rosterUnavailable(error instanceof Error ? error.message : "gateway error") : b.roster.waitingForGateway }),
-      /* @__PURE__ */ jsx64(sdk_compat_exports.Button, { className: "justify-self-start", onClick: () => void refetch(), size: "sm", variant: "secondary", children: b.roster.retryNow })
-    ] }) : roster.length === 0 ? /* @__PURE__ */ jsx64(
+  return /* @__PURE__ */ jsxs63(Fragment13, { children: [
+    staleNotice ? /* @__PURE__ */ jsx65("div", { className: "mx-2.5 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: staleNotice }) : null,
+    (isLoading || initialRosterLoading) && !roster.length ? /* @__PURE__ */ jsx65("div", { className: "flex flex-1 items-center justify-center", children: /* @__PURE__ */ jsx65(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !roster.length ? /* @__PURE__ */ jsxs63("div", { className: "grid gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)", children: [
+      /* @__PURE__ */ jsx65("div", { children: gatewayUp ? b.roster.rosterUnavailable(error instanceof Error ? error.message : "gateway error") : b.roster.waitingForGateway }),
+      /* @__PURE__ */ jsx65(sdk_compat_exports.Button, { className: "justify-self-start", onClick: () => void refetch(), size: "sm", variant: "secondary", children: b.roster.retryNow })
+    ] }) : roster.length === 0 ? /* @__PURE__ */ jsx65(
       sdk_compat_exports.PanelEmpty,
       {
-        action: /* @__PURE__ */ jsxs62("div", { className: "flex flex-col items-center gap-2.5", children: [
-          /* @__PURE__ */ jsxs62(sdk_compat_exports.Button, { onClick: () => onNewBot(), size: "sm", children: [
-            /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { className: "mr-1 text-[0.75rem]", name: "add" }),
+        action: /* @__PURE__ */ jsxs63("div", { className: "flex flex-col items-center gap-2.5", children: [
+          /* @__PURE__ */ jsxs63(sdk_compat_exports.Button, { onClick: () => onNewBot(), size: "sm", children: [
+            /* @__PURE__ */ jsx65(sdk_compat_exports.Codicon, { className: "mr-1 text-[0.75rem]", name: "add" }),
             b.bot.newTitle
           ] }),
-          /* @__PURE__ */ jsx64("div", { className: "flex flex-wrap items-center justify-center gap-1", children: QUICK_STARTERS.map((template) => /* @__PURE__ */ jsxs62(
+          /* @__PURE__ */ jsx65("div", { className: "flex flex-wrap items-center justify-center gap-1", children: QUICK_STARTERS.map((template) => /* @__PURE__ */ jsxs63(
             sdk_compat_exports.RowButton,
             {
               className: (0, sdk_compat_exports.cn)(
@@ -28993,7 +29242,7 @@ function renderRosterContent({
               ),
               onClick: () => onNewBot(template),
               children: [
-                creatingStarter === template.id ? /* @__PURE__ */ jsx64(sdk_compat_exports.GlyphSpinner, { className: "text-[0.75rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx64(
+                creatingStarter === template.id ? /* @__PURE__ */ jsx65(sdk_compat_exports.GlyphSpinner, { className: "text-[0.75rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx65(
                   BotFace,
                   {
                     color: avatarColor(null, template.name),
@@ -29007,19 +29256,19 @@ function renderRosterContent({
             },
             template.id
           )) }),
-          /* @__PURE__ */ jsx64(BotsHowItWorks, {})
+          /* @__PURE__ */ jsx65(BotsHowItWorks, {})
         ] }),
         description: b.roster.emptyDesc,
         icon: "hubot",
         title: b.roster.emptyTitle
       }
-    ) : allBotsHidden && !hiddenExpanded ? /* @__PURE__ */ jsxs62("div", { className: "grid content-start gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)", children: [
-      /* @__PURE__ */ jsxs62("div", { className: "flex items-center gap-1.5 font-medium text-(--ui-text-secondary)", children: [
-        /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { className: "text-(--ui-text-quaternary)", name: "eye-closed" }),
+    ) : allBotsHidden && !hiddenExpanded ? /* @__PURE__ */ jsxs63("div", { className: "grid content-start gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)", children: [
+      /* @__PURE__ */ jsxs63("div", { className: "flex items-center gap-1.5 font-medium text-(--ui-text-secondary)", children: [
+        /* @__PURE__ */ jsx65(sdk_compat_exports.Codicon, { className: "text-(--ui-text-quaternary)", name: "eye-closed" }),
         b.roster.allHidden
       ] }),
-      /* @__PURE__ */ jsx64("p", { className: "leading-relaxed", children: b.roster.allHiddenDesc }),
-      /* @__PURE__ */ jsx64(
+      /* @__PURE__ */ jsx65("p", { className: "leading-relaxed", children: b.roster.allHiddenDesc }),
+      /* @__PURE__ */ jsx65(
         sdk_compat_exports.Button,
         {
           className: "justify-self-start",
@@ -29029,18 +29278,18 @@ function renderRosterContent({
           children: b.roster.showHidden
         }
       )
-    ] }) : rosterRows.length === 0 && matchingHiddenBots.length === 0 ? /* @__PURE__ */ jsx64("div", { "aria-live": "polite", className: "flex min-h-0 flex-1 flex-col", role: "status", children: /* @__PURE__ */ jsx64(
+    ] }) : rosterRows.length === 0 && matchingHiddenBots.length === 0 ? /* @__PURE__ */ jsx65("div", { "aria-live": "polite", className: "flex min-h-0 flex-1 flex-col", role: "status", children: /* @__PURE__ */ jsx65(
       sdk_compat_exports.PanelEmpty,
       {
         description: query.trim() ? selectedGateway ? b.roster.noMatchQueryOn(query.trim(), String(selectedGateway.label)) : b.roster.noMatchQuery(query.trim()) : selectedGateway ? b.roster.noMatchFiltersOn(String(selectedGateway.label)) : b.roster.noMatchFilters,
         icon: "search"
       }
-    ) }) : /* @__PURE__ */ jsx64("div", { className: "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain", "data-slot": "bots-roster", children: /* @__PURE__ */ jsxs62("div", { className: "grid w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5 px-1.5 pb-2", children: [
+    ) }) : /* @__PURE__ */ jsx65("div", { className: "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain", "data-slot": "bots-roster", children: /* @__PURE__ */ jsxs63("div", { className: "grid w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5 px-1.5 pb-2", children: [
       showGatewaySections ? [
         sortedGroupRows.length ? renderGroupChatSection() : null,
         ...gatewaySections.sections.map(renderGatewaySection)
       ].filter(Boolean) : renderUserSections(rosterRows),
-      /* @__PURE__ */ jsx64(
+      /* @__PURE__ */ jsx65(
         RosterMailboxSection,
         {
           collapsed: mailboxCollapsed,
@@ -29049,30 +29298,30 @@ function renderRosterContent({
           roster
         }
       ),
-      showHiddenSection ? /* @__PURE__ */ jsxs62(
+      showHiddenSection ? /* @__PURE__ */ jsxs63(
         "div",
         {
           className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1",
           ref: hiddenSectionRef,
           children: [
-            hasRosterConstraint ? /* @__PURE__ */ jsxs62("div", { className: "flex w-full items-center gap-1 px-2 py-1.5 text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: [
-              /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "eye-closed" }),
-              /* @__PURE__ */ jsx64("span", { children: "Hidden" }),
-              /* @__PURE__ */ jsx64("span", { className: "text-(--ui-text-quaternary)", children: matchingHiddenBots.length })
-            ] }) : /* @__PURE__ */ jsxs62(
+            hasRosterConstraint ? /* @__PURE__ */ jsxs63("div", { className: "flex w-full items-center gap-1 px-2 py-1.5 text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: [
+              /* @__PURE__ */ jsx65(sdk_compat_exports.Codicon, { name: "eye-closed" }),
+              /* @__PURE__ */ jsx65("span", { children: "Hidden" }),
+              /* @__PURE__ */ jsx65("span", { className: "text-(--ui-text-quaternary)", children: matchingHiddenBots.length })
+            ] }) : /* @__PURE__ */ jsxs63(
               sdk_compat_exports.RowButton,
               {
                 "aria-expanded": hiddenExpanded,
                 className: "flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-[0.6875rem] font-medium text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground",
                 onClick: () => $showHiddenBots.set(!hiddenExpanded),
                 children: [
-                  /* @__PURE__ */ jsx64(sdk_compat_exports.DisclosureCaret, { open: hiddenExpanded }),
-                  /* @__PURE__ */ jsx64("span", { children: "Hidden" }),
-                  /* @__PURE__ */ jsx64("span", { className: "text-(--ui-text-quaternary)", children: hiddenBots.length })
+                  /* @__PURE__ */ jsx65(sdk_compat_exports.DisclosureCaret, { open: hiddenExpanded }),
+                  /* @__PURE__ */ jsx65("span", { children: "Hidden" }),
+                  /* @__PURE__ */ jsx65("span", { className: "text-(--ui-text-quaternary)", children: hiddenBots.length })
                 ]
               }
             ),
-            showHiddenRows ? matchingHiddenBots.length ? hiddenGatewaySections.sectioned ? hiddenGatewaySections.sections.map(renderHiddenGatewaySection) : cardMode ? /* @__PURE__ */ jsx64("div", { className: "grid min-w-0 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5 px-1.5 py-1", children: matchingHiddenBots.map((bot) => renderBotRow(bot, "hidden:")) }) : matchingHiddenBots.map((bot) => renderBotRow(bot, "hidden:")) : /* @__PURE__ */ jsx64("div", { className: "px-2 py-2 text-xs text-(--ui-text-quaternary)", children: b.roster.noHiddenMatch }) : null
+            showHiddenRows ? matchingHiddenBots.length ? hiddenGatewaySections.sectioned ? hiddenGatewaySections.sections.map(renderHiddenGatewaySection) : cardMode ? /* @__PURE__ */ jsx65("div", { className: "grid min-w-0 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5 px-1.5 py-1", children: matchingHiddenBots.map((bot) => renderBotRow(bot, "hidden:")) }) : matchingHiddenBots.map((bot) => renderBotRow(bot, "hidden:")) : /* @__PURE__ */ jsx65("div", { className: "px-2 py-2 text-xs text-(--ui-text-quaternary)", children: b.roster.noHiddenMatch }) : null
           ]
         },
         "hidden-section"
@@ -29086,14 +29335,14 @@ init_sdk_compat();
 
 // src/create-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect22, useRef as useRef14, useState as useState42 } from "react";
+import { useEffect as useEffect23, useRef as useRef14, useState as useState42 } from "react";
 init_avatar_image();
 init_bot_state();
 init_canonical_chat();
 
 // src/canonical-group-capabilities.ts
 init_sdk_compat();
-import { useEffect as useEffect20, useState as useState40 } from "react";
+import { useEffect as useEffect21, useState as useState40 } from "react";
 
 // src/canonical-groups.ts
 init_sdk_compat();
@@ -29188,7 +29437,7 @@ function useGroupCapability(active) {
   const activationEpoch = (0, sdk_compat_exports.gatewayActivationEpoch)();
   const source = JSON.stringify([connectionId, profile, gateway, activationEpoch]);
   const [capability, setCapability] = useState40(null);
-  useEffect20(() => {
+  useEffect21(() => {
     let cancelled = false;
     setCapability(null);
     if (!active || gateway !== "open" || !connectionId) {
@@ -29248,14 +29497,14 @@ function seatableGroupBots(roster, { connectionId, mode, seatable }) {
 
 // src/canonical-group-registry.tsx
 init_sdk_compat();
-import { useEffect as useEffect21, useState as useState41 } from "react";
+import { useEffect as useEffect22, useState as useState41 } from "react";
 
 // src/canonical-group-labels.ts
 init_sdk_compat();
 init_i18n();
 
 // src/canonical-group-registry.tsx
-import { jsx as jsx65, jsxs as jsxs63 } from "react/jsx-runtime";
+import { jsx as jsx66, jsxs as jsxs64 } from "react/jsx-runtime";
 var $canonicalGroupBindings = (0, sdk_compat_exports.atom)({});
 function registerCanonicalGroup(route, room) {
   const key = `canonical:${encodeURIComponent(route.connectionId)}:${encodeURIComponent(route.profile)}:${room.room_id}`;
@@ -29269,7 +29518,7 @@ init_i18n();
 init_labels();
 init_profile_ops();
 init_routing();
-import { jsx as jsx66, jsxs as jsxs64 } from "react/jsx-runtime";
+import { jsx as jsx67, jsxs as jsxs65 } from "react/jsx-runtime";
 var NAME_RE2 = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 function singleFlight(ref, start) {
   if (ref.current) {
@@ -29316,7 +29565,7 @@ function discardDraftProfile(draft, target) {
 function useCapabilitiesDraft(ready, slug, draft, materialize) {
   const latest = useRef14(materialize);
   latest.current = materialize;
-  useEffect22(() => {
+  useEffect23(() => {
     if (!ready || draft === slug) {
       return;
     }
@@ -29328,15 +29577,15 @@ function CapabilitiesTab({ connection: connection2, draft, hint }) {
   const b = useBots();
   const note = "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)";
   if (hint) {
-    return /* @__PURE__ */ jsx66("div", { className: note, children: hint });
+    return /* @__PURE__ */ jsx67("div", { className: note, children: hint });
   }
   if (!draft) {
-    return /* @__PURE__ */ jsx66("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx66(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) });
+    return /* @__PURE__ */ jsx67("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx67(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) });
   }
   if (!CapabilitiesView2) {
-    return /* @__PURE__ */ jsx66("div", { className: note, children: b.editor.newerDesktop });
+    return /* @__PURE__ */ jsx67("div", { className: note, children: b.editor.newerDesktop });
   }
-  return /* @__PURE__ */ jsx66(ResizableFrame, { children: /* @__PURE__ */ jsx66(CapabilitiesView2, { embedded: true, fixedProfile: draft, ...connection2 ? { fixedConnection: connection2 } : {} }) });
+  return /* @__PURE__ */ jsx67(ResizableFrame, { children: /* @__PURE__ */ jsx67(CapabilitiesView2, { embedded: true, fixedProfile: draft, ...connection2 ? { fixedConnection: connection2 } : {} }) });
 }
 function slugTaken(roster, slug, target, draft) {
   return roster.some(
@@ -29354,7 +29603,7 @@ function useDraftProfile(createdRef, flightRef) {
       discardDraftProfile(draft, draftTargetRef.current);
     }
   };
-  useEffect22(
+  useEffect23(
     () => () => {
       draftGenRef.current += 1;
     },
@@ -29384,7 +29633,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
   const [advTab, setAdvTab] = useState42("general");
   const [targetConnection, setTargetConnection] = useState42("");
   const [connections, setConnections] = useState42(null);
-  useEffect22(() => {
+  useEffect23(() => {
     if (!open || connections !== null || typeof host.connections !== "function" || typeof host.requestProfile !== "function") {
       return;
     }
@@ -29655,7 +29904,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
       setError(err instanceof Error ? err.message : String(err));
     }
   };
-  return /* @__PURE__ */ jsx66(
+  return /* @__PURE__ */ jsx67(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -29666,7 +29915,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
         }
       },
       open,
-      children: /* @__PURE__ */ jsxs64(
+      children: /* @__PURE__ */ jsxs65(
         sdk_compat_exports.DialogContent,
         {
           className: advanced ? "max-w-3xl" : "max-w-md",
@@ -29679,12 +29928,12 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
             maxHeight: "90vh"
           } : void 0,
           children: [
-            /* @__PURE__ */ jsxs64(sdk_compat_exports.DialogHeader, { children: [
-              /* @__PURE__ */ jsx66(sdk_compat_exports.DialogTitle, { children: b.bot.newTitle }),
-              /* @__PURE__ */ jsx66(sdk_compat_exports.DialogDescription, { children: b.editor.newDescription })
+            /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogHeader, { children: [
+              /* @__PURE__ */ jsx67(sdk_compat_exports.DialogTitle, { children: b.bot.newTitle }),
+              /* @__PURE__ */ jsx67(sdk_compat_exports.DialogDescription, { children: b.editor.newDescription })
             ] }),
-            /* @__PURE__ */ jsxs64("div", { className: "grid gap-3.5", children: [
-              /* @__PURE__ */ jsx66("div", { className: "flex justify-center py-1", children: /* @__PURE__ */ jsx66(
+            /* @__PURE__ */ jsxs65("div", { className: "grid gap-3.5", children: [
+              /* @__PURE__ */ jsx67("div", { className: "flex justify-center py-1", children: /* @__PURE__ */ jsx67(
                 BotFace,
                 {
                   color: avatarColor(color, slug || "agent"),
@@ -29694,7 +29943,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   size: 56
                 }
               ) }),
-              /* @__PURE__ */ jsx66(
+              /* @__PURE__ */ jsx67(
                 AvatarPicker,
                 {
                   color,
@@ -29712,12 +29961,12 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
               ),
               labeled(
                 b.editor.name,
-                /* @__PURE__ */ jsx66(sdk_compat_exports.Input, { autoFocus: true, onChange: (event) => setName(event.target.value), placeholder: "inbox-triage", value: name })
+                /* @__PURE__ */ jsx67(sdk_compat_exports.Input, { autoFocus: true, onChange: (event) => setName(event.target.value), placeholder: "inbox-triage", value: name })
               ),
-              taken ? /* @__PURE__ */ jsx66("div", { className: "text-xs text-(--ui-accent)", children: remoteTarget ? b.editor.nameTakenOn(slug, targetLabel) : b.editor.nameTaken(slug) }) : null,
+              taken ? /* @__PURE__ */ jsx67("div", { className: "text-xs text-(--ui-accent)", children: remoteTarget ? b.editor.nameTakenOn(slug, targetLabel) : b.editor.nameTaken(slug) }) : null,
               Array.isArray(connections) && connections.length > 1 ? labeled(
                 b.editor.createOn,
-                /* @__PURE__ */ jsxs64(
+                /* @__PURE__ */ jsxs65(
                   sdk_compat_exports.Select,
                   {
                     onValueChange: (value) => {
@@ -29730,20 +29979,20 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                     },
                     value: targetConnection || activeConnectionId || "local",
                     children: [
-                      /* @__PURE__ */ jsx66(sdk_compat_exports.SelectTrigger, { className: "h-8 rounded-md", children: /* @__PURE__ */ jsx66(sdk_compat_exports.SelectValue, {}) }),
-                      /* @__PURE__ */ jsx66(sdk_compat_exports.SelectContent, { children: connections.map((connection2) => /* @__PURE__ */ jsx66(sdk_compat_exports.SelectItem, { value: connection2.id, children: connection2.id === (activeConnectionId || "local") ? b.editor.currentConnection(connection2.label || connection2.id) : connection2.label || connection2.id }, connection2.id)) })
+                      /* @__PURE__ */ jsx67(sdk_compat_exports.SelectTrigger, { className: "h-8 rounded-md", children: /* @__PURE__ */ jsx67(sdk_compat_exports.SelectValue, {}) }),
+                      /* @__PURE__ */ jsx67(sdk_compat_exports.SelectContent, { children: connections.map((connection2) => /* @__PURE__ */ jsx67(sdk_compat_exports.SelectItem, { value: connection2.id, children: connection2.id === (activeConnectionId || "local") ? b.editor.currentConnection(connection2.label || connection2.id) : connection2.label || connection2.id }, connection2.id)) })
                     ]
                   }
                 )
               ) : null,
-              remoteTarget ? /* @__PURE__ */ jsx66("div", { className: "text-[0.7rem] leading-5 text-(--ui-text-tertiary)", children: b.editor.remoteHint(targetLabel) }) : null,
+              remoteTarget ? /* @__PURE__ */ jsx67("div", { className: "text-[0.7rem] leading-5 text-(--ui-text-tertiary)", children: b.editor.remoteHint(targetLabel) }) : null,
               labeled(
                 b.editor.title,
-                /* @__PURE__ */ jsx66(sdk_compat_exports.Input, { onChange: (event) => setTitle(event.target.value), placeholder: "Inbox Triage", value: title })
+                /* @__PURE__ */ jsx67(sdk_compat_exports.Input, { onChange: (event) => setTitle(event.target.value), placeholder: "Inbox Triage", value: title })
               ),
               labeled(
                 b.editor.description,
-                /* @__PURE__ */ jsx66(
+                /* @__PURE__ */ jsx67(
                   sdk_compat_exports.Textarea,
                   {
                     className: "min-h-16",
@@ -29753,7 +30002,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   }
                 )
               ),
-              /* @__PURE__ */ jsxs64(
+              /* @__PURE__ */ jsxs65(
                 sdk_compat_exports.Button,
                 {
                   className: "flex items-center gap-1 text-xs font-medium text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)",
@@ -29768,13 +30017,13 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   size: "inline",
                   variant: "text",
                   children: [
-                    /* @__PURE__ */ jsx66(sdk_compat_exports.DisclosureCaret, { open: advanced }),
+                    /* @__PURE__ */ jsx67(sdk_compat_exports.DisclosureCaret, { open: advanced }),
                     b.bot.advanced
                   ]
                 }
               ),
-              advanced ? /* @__PURE__ */ jsxs64("div", { className: "grid gap-3 rounded-md border border-(--ui-stroke-secondary) p-3", children: [
-                /* @__PURE__ */ jsx66(
+              advanced ? /* @__PURE__ */ jsxs65("div", { className: "grid gap-3 rounded-md border border-(--ui-stroke-secondary) p-3", children: [
+                /* @__PURE__ */ jsx67(
                   sdk_compat_exports.SegmentedControl,
                   {
                     onChange: (id) => {
@@ -29798,10 +30047,10 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                     value: advTab
                   }
                 ),
-                advTab === "general" ? /* @__PURE__ */ jsxs64("div", { className: "grid gap-3.5", children: [
+                advTab === "general" ? /* @__PURE__ */ jsxs65("div", { className: "grid gap-3.5", children: [
                   labeled(
                     remoteTarget ? b.editor.cloneFromOn(targetLabel) : b.editor.cloneFrom,
-                    /* @__PURE__ */ jsxs64(
+                    /* @__PURE__ */ jsxs65(
                       sdk_compat_exports.Select,
                       {
                         onValueChange: (value) => {
@@ -29811,16 +30060,16 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                         },
                         value: remoteTarget && cloneFrom !== "__none__" ? "default" : cloneFrom,
                         children: [
-                          /* @__PURE__ */ jsx66(sdk_compat_exports.SelectTrigger, { className: "h-8 rounded-md", children: /* @__PURE__ */ jsx66(sdk_compat_exports.SelectValue, {}) }),
-                          /* @__PURE__ */ jsxs64(sdk_compat_exports.SelectContent, { children: [
-                            /* @__PURE__ */ jsx66(sdk_compat_exports.SelectItem, { value: "__none__", children: b.editor.freshProfile }),
-                            (remoteTarget ? [{ name: "default" }] : roster).map((b2) => /* @__PURE__ */ jsx66(sdk_compat_exports.SelectItem, { value: b2.name, children: b2.name }, b2.name))
+                          /* @__PURE__ */ jsx67(sdk_compat_exports.SelectTrigger, { className: "h-8 rounded-md", children: /* @__PURE__ */ jsx67(sdk_compat_exports.SelectValue, {}) }),
+                          /* @__PURE__ */ jsxs65(sdk_compat_exports.SelectContent, { children: [
+                            /* @__PURE__ */ jsx67(sdk_compat_exports.SelectItem, { value: "__none__", children: b.editor.freshProfile }),
+                            (remoteTarget ? [{ name: "default" }] : roster).map((b2) => /* @__PURE__ */ jsx67(sdk_compat_exports.SelectItem, { value: b2.name, children: b2.name }, b2.name))
                           ] })
                         ]
                       }
                     )
                   ),
-                  /* @__PURE__ */ jsx66(
+                  /* @__PURE__ */ jsx67(
                     ModelPicker,
                     {
                       onChange: (patch) => {
@@ -29840,7 +30089,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   ),
                   labeled(
                     b.editor.soul,
-                    /* @__PURE__ */ jsx66(
+                    /* @__PURE__ */ jsx67(
                       sdk_compat_exports.Textarea,
                       {
                         className: "min-h-24 font-mono text-xs leading-5",
@@ -29850,24 +30099,24 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       }
                     )
                   ),
-                  /* @__PURE__ */ jsxs64("label", { className: "flex items-center gap-2 text-xs text-(--ui-text-secondary)", children: [
-                    /* @__PURE__ */ jsx66(sdk_compat_exports.Checkbox, { checked: shareAuth, onCheckedChange: (value) => setShareAuth(Boolean(value)) }),
+                  /* @__PURE__ */ jsxs65("label", { className: "flex items-center gap-2 text-xs text-(--ui-text-secondary)", children: [
+                    /* @__PURE__ */ jsx67(sdk_compat_exports.Checkbox, { checked: shareAuth, onCheckedChange: (value) => setShareAuth(Boolean(value)) }),
                     remoteTarget ? b.editor.shareKeysOn(targetLabel) : b.editor.shareKeys
                   ] }),
-                  /* @__PURE__ */ jsx66("div", { className: "pl-6 pt-0.5 text-[0.7rem] leading-5 text-(--ui-text-tertiary)", children: b.editor.shareKeysHint }),
-                  /* @__PURE__ */ jsxs64("label", { className: "flex items-center gap-2 text-xs text-(--ui-text-secondary)", children: [
-                    /* @__PURE__ */ jsx66(sdk_compat_exports.Checkbox, { checked: noSkills, onCheckedChange: (value) => setNoSkills(Boolean(value)) }),
+                  /* @__PURE__ */ jsx67("div", { className: "pl-6 pt-0.5 text-[0.7rem] leading-5 text-(--ui-text-tertiary)", children: b.editor.shareKeysHint }),
+                  /* @__PURE__ */ jsxs65("label", { className: "flex items-center gap-2 text-xs text-(--ui-text-secondary)", children: [
+                    /* @__PURE__ */ jsx67(sdk_compat_exports.Checkbox, { checked: noSkills, onCheckedChange: (value) => setNoSkills(Boolean(value)) }),
                     b.editor.createEmpty
                   ] })
-                ] }) : advTab === "capabilities" ? /* @__PURE__ */ jsx66(
+                ] }) : advTab === "capabilities" ? /* @__PURE__ */ jsx67(
                   CapabilitiesTab,
                   {
                     connection: remoteTarget ? targetConnection : void 0,
                     draft: createdForCaps === slug ? createdForCaps : null,
                     hint: !valid ? b.editor.nameFirstHint : taken ? b.editor.nameTakenHint : null
                   }
-                ) : capsFailed ? /* @__PURE__ */ jsx66("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.newerGateway }) : !caps ? /* @__PURE__ */ jsx66("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx66(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : advTab === "skills" ? noSkills ? /* @__PURE__ */ jsx66("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.emptySkillsHint }) : /* @__PURE__ */ jsxs64("div", { className: "grid gap-1.5", children: [
-                  /* @__PURE__ */ jsx66(
+                ) : capsFailed ? /* @__PURE__ */ jsx67("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.newerGateway }) : !caps ? /* @__PURE__ */ jsx67("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx67(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : advTab === "skills" ? noSkills ? /* @__PURE__ */ jsx67("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.emptySkillsHint }) : /* @__PURE__ */ jsxs65("div", { className: "grid gap-1.5", children: [
+                  /* @__PURE__ */ jsx67(
                     sdk_compat_exports.Input,
                     {
                       className: "h-7 text-xs",
@@ -29876,14 +30125,14 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       value: capFilter
                     }
                   ),
-                  /* @__PURE__ */ jsx66(
+                  /* @__PURE__ */ jsx67(
                     "div",
                     {
                       className: "overflow-y-auto overscroll-contain",
                       style: {
                         maxHeight: 200
                       },
-                      children: /* @__PURE__ */ jsx66(
+                      children: /* @__PURE__ */ jsx67(
                         CheckList,
                         {
                           columns: 2,
@@ -29893,8 +30142,8 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       )
                     }
                   ),
-                  /* @__PURE__ */ jsx66("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.catalogHint(caps.source) }),
-                  /* @__PURE__ */ jsx66(
+                  /* @__PURE__ */ jsx67("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.catalogHint(caps.source) }),
+                  /* @__PURE__ */ jsx67(
                     HubSkillsSection,
                     {
                       onInstalled: (name2) => setCaps(
@@ -29911,15 +30160,15 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       )
                     }
                   )
-                ] }) : advTab === "toolsets" ? /* @__PURE__ */ jsxs64("div", { className: "grid gap-1.5", children: [
-                  /* @__PURE__ */ jsx66(
+                ] }) : advTab === "toolsets" ? /* @__PURE__ */ jsxs65("div", { className: "grid gap-1.5", children: [
+                  /* @__PURE__ */ jsx67(
                     "div",
                     {
                       className: "overflow-y-auto overscroll-contain",
                       style: {
                         maxHeight: 200
                       },
-                      children: /* @__PURE__ */ jsx66(
+                      children: /* @__PURE__ */ jsx67(
                         CheckList,
                         {
                           columns: 2,
@@ -29929,19 +30178,19 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       )
                     }
                   ),
-                  /* @__PURE__ */ jsx66("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.defaultToolsHint })
-                ] }) : caps.mcp.length === 0 ? /* @__PURE__ */ jsx66("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.tools.noMcpServers }) : /* @__PURE__ */ jsxs64("div", { className: "grid gap-1.5", children: [
-                  /* @__PURE__ */ jsx66(
+                  /* @__PURE__ */ jsx67("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.defaultToolsHint })
+                ] }) : caps.mcp.length === 0 ? /* @__PURE__ */ jsx67("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.tools.noMcpServers }) : /* @__PURE__ */ jsxs65("div", { className: "grid gap-1.5", children: [
+                  /* @__PURE__ */ jsx67(
                     "div",
                     {
                       className: "overflow-y-auto overscroll-contain",
                       style: {
                         maxHeight: 200
                       },
-                      children: /* @__PURE__ */ jsx66("div", { className: "grid gap-1", children: caps.mcp.map((m) => {
+                      children: /* @__PURE__ */ jsx67("div", { className: "grid gap-1", children: caps.mcp.map((m) => {
                         const needsSetup = m.fromCatalog && !m.installed && ((m.requires || []).length > 0 || (m.auth || "").toLowerCase() === "oauth");
-                        return /* @__PURE__ */ jsxs64("label", { className: "flex items-start gap-2 text-xs text-(--ui-text-secondary)", children: [
-                          /* @__PURE__ */ jsx66(
+                        return /* @__PURE__ */ jsxs65("label", { className: "flex items-start gap-2 text-xs text-(--ui-text-secondary)", children: [
+                          /* @__PURE__ */ jsx67(
                             sdk_compat_exports.Checkbox,
                             {
                               checked: !!m.enabled,
@@ -29949,10 +30198,10 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                               onCheckedChange: (value) => toggleCap("mcp", m.name, Boolean(value))
                             }
                           ),
-                          /* @__PURE__ */ jsxs64("span", { className: "min-w-0", children: [
-                            /* @__PURE__ */ jsx66("span", { children: m.name }),
-                            m.fromCatalog && !needsSetup ? /* @__PURE__ */ jsx66("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: m.installed ? b.editor.catalogInstalled : b.editor.catalog }) : null,
-                            needsSetup ? /* @__PURE__ */ jsx66(
+                          /* @__PURE__ */ jsxs65("span", { className: "min-w-0", children: [
+                            /* @__PURE__ */ jsx67("span", { children: m.name }),
+                            m.fromCatalog && !needsSetup ? /* @__PURE__ */ jsx67("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: m.installed ? b.editor.catalogInstalled : b.editor.catalog }) : null,
+                            needsSetup ? /* @__PURE__ */ jsx67(
                               McpSetupButton,
                               {
                                 ensureProfile: ensureAgentCreated,
@@ -29978,19 +30227,19 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                                 profile: createdRef.current
                               }
                             ) : null,
-                            m.description ? /* @__PURE__ */ jsx66("div", { className: "truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: m.description }) : null
+                            m.description ? /* @__PURE__ */ jsx67("div", { className: "truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: m.description }) : null
                           ] })
                         ] }, m.name);
                       }) })
                     }
                   ),
-                  /* @__PURE__ */ jsx66("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.mcpHint })
+                  /* @__PURE__ */ jsx67("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.mcpHint })
                 ] })
               ] }) : null,
-              error ? /* @__PURE__ */ jsx66("div", { className: "rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-accent)", children: error }) : null
+              error ? /* @__PURE__ */ jsx67("div", { className: "rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-accent)", children: error }) : null
             ] }),
-            /* @__PURE__ */ jsxs64(sdk_compat_exports.DialogFooter, { children: [
-              /* @__PURE__ */ jsx66(
+            /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogFooter, { children: [
+              /* @__PURE__ */ jsx67(
                 sdk_compat_exports.Button,
                 {
                   disabled: busy,
@@ -30003,7 +30252,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   children: t.common.cancel
                 }
               ),
-              /* @__PURE__ */ jsx66(sdk_compat_exports.Button, { disabled: busy || !valid || taken, onClick: submit, children: busy ? b.editor.creating : b.editor.createBot })
+              /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { disabled: busy || !valid || taken, onClick: submit, children: busy ? b.editor.creating : b.editor.createBot })
             ] })
           ]
         }
@@ -30024,7 +30273,7 @@ function GroupDialog({ bot, onClose }) {
       message: enabled ? `${displayName(bot, botRosterMeta(bot, meta))} added to \u201C${group}\u201D` : `${displayName(bot, botRosterMeta(bot, meta))} removed from \u201C${group}\u201D`
     });
   };
-  return /* @__PURE__ */ jsx66(
+  return /* @__PURE__ */ jsx67(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -30033,26 +30282,26 @@ function GroupDialog({ bot, onClose }) {
         }
       },
       open: Boolean(bot),
-      children: /* @__PURE__ */ jsxs64(sdk_compat_exports.DialogContent, { className: "max-w-sm", children: [
-        /* @__PURE__ */ jsxs64(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx66(sdk_compat_exports.DialogTitle, { children: b.group.manageTitle }),
-          /* @__PURE__ */ jsx66(sdk_compat_exports.DialogDescription, { children: b.group.manageDesc })
+      children: /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogContent, { className: "max-w-sm", children: [
+        /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx67(sdk_compat_exports.DialogTitle, { children: b.group.manageTitle }),
+          /* @__PURE__ */ jsx67(sdk_compat_exports.DialogDescription, { children: b.group.manageDesc })
         ] }),
-        groups.length ? /* @__PURE__ */ jsx66("div", { className: "grid gap-1.5", children: groups.map((group) => {
+        groups.length ? /* @__PURE__ */ jsx67("div", { className: "grid gap-1.5", children: groups.map((group) => {
           const enabled = current.includes(group);
-          return /* @__PURE__ */ jsxs64(
+          return /* @__PURE__ */ jsxs65(
             "label",
             {
               className: "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-(--chrome-action-hover)",
               children: [
-                /* @__PURE__ */ jsx66(sdk_compat_exports.Checkbox, { checked: enabled, onCheckedChange: (checked) => setMembership(group, checked === true) }),
-                /* @__PURE__ */ jsx66("span", { children: group })
+                /* @__PURE__ */ jsx67(sdk_compat_exports.Checkbox, { checked: enabled, onCheckedChange: (checked) => setMembership(group, checked === true) }),
+                /* @__PURE__ */ jsx67("span", { children: group })
               ]
             },
             group
           );
         }) }) : null,
-        /* @__PURE__ */ jsxs64(
+        /* @__PURE__ */ jsxs65(
           "form",
           {
             className: "flex items-center gap-1.5",
@@ -30065,7 +30314,7 @@ function GroupDialog({ bot, onClose }) {
               }
             },
             children: [
-              /* @__PURE__ */ jsx66(
+              /* @__PURE__ */ jsx67(
                 sdk_compat_exports.Input,
                 {
                   autoFocus: true,
@@ -30074,11 +30323,11 @@ function GroupDialog({ bot, onClose }) {
                   value: name
                 }
               ),
-              /* @__PURE__ */ jsx66(sdk_compat_exports.Button, { disabled: !name.trim(), size: "sm", type: "submit", children: "Create & join" })
+              /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { disabled: !name.trim(), size: "sm", type: "submit", children: "Create & join" })
             ]
           }
         ),
-        current.length ? /* @__PURE__ */ jsx66(
+        current.length ? /* @__PURE__ */ jsx67(
           sdk_compat_exports.Button,
           {
             className: "justify-self-start",
@@ -30120,7 +30369,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
   const [checked, setChecked] = useState42({});
   const [name, setName] = useState42("");
   const [image, setImage] = useState42(null);
-  useEffect22(() => {
+  useEffect23(() => {
     if (open) {
       setQuery("");
       setChecked({});
@@ -30201,7 +30450,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
       creating.current = false;
     }
   };
-  return /* @__PURE__ */ jsx66(
+  return /* @__PURE__ */ jsx67(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -30210,13 +30459,13 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
         }
       },
       open,
-      children: /* @__PURE__ */ jsxs64(sdk_compat_exports.DialogContent, { className: "max-w-md", children: [
-        /* @__PURE__ */ jsxs64(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx66(sdk_compat_exports.DialogTitle, { children: b.group.newTitle }),
-          /* @__PURE__ */ jsx66(sdk_compat_exports.DialogDescription, { children: `Pick 2\u2013${GROUP_CHAT_MAX_MEMBERS} bots. Local memberships sync through each Bot profile; cross-machine members stay scoped to this room.` })
+      children: /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogContent, { className: "max-w-md", children: [
+        /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx67(sdk_compat_exports.DialogTitle, { children: b.group.newTitle }),
+          /* @__PURE__ */ jsx67(sdk_compat_exports.DialogDescription, { children: `Pick 2\u2013${GROUP_CHAT_MAX_MEMBERS} bots. Local memberships sync through each Bot profile; cross-machine members stay scoped to this room.` })
         ] }),
-        mode === "unavailable" && /* @__PURE__ */ jsx66("p", { role: "status", children: b.canonical.driverUnavailable }),
-        /* @__PURE__ */ jsx66(
+        mode === "unavailable" && /* @__PURE__ */ jsx67("p", { role: "status", children: b.canonical.driverUnavailable }),
+        /* @__PURE__ */ jsx67(
           sdk_compat_exports.SearchField,
           {
             "aria-label": b.group.searchToAdd,
@@ -30227,13 +30476,13 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
             value: query
           }
         ),
-        selected.length ? /* @__PURE__ */ jsx66("div", { className: "flex flex-wrap gap-1", children: selected.map((bot) => /* @__PURE__ */ jsx66(
+        selected.length ? /* @__PURE__ */ jsx67("div", { className: "flex flex-wrap gap-1", children: selected.map((bot) => /* @__PURE__ */ jsx67(
           sdk_compat_exports.Badge,
           {
             asChild: true,
             className: "rounded-full bg-(--chrome-action-hover) pl-2 pr-1.5 text-[0.6875rem] text-(--ui-text-secondary) transition-colors hover:text-foreground",
             variant: "muted",
-            children: /* @__PURE__ */ jsx66(sdk_compat_exports.Tip, { label: b.group.removeFromSelection, children: /* @__PURE__ */ jsxs64(
+            children: /* @__PURE__ */ jsx67(sdk_compat_exports.Tip, { label: b.group.removeFromSelection, children: /* @__PURE__ */ jsxs65(
               sdk_compat_exports.RowButton,
               {
                 onClick: () => setChecked((prev) => ({
@@ -30242,20 +30491,20 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
                 })),
                 children: [
                   displayName(bot, botRosterMeta(bot, allMeta)),
-                  /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { className: "text-[0.6rem]", name: "close" })
+                  /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { className: "text-[0.6rem]", name: "close" })
                 ]
               }
             ) })
           },
           botRosterKey(bot)
         )) }) : null,
-        /* @__PURE__ */ jsx66("div", { className: "max-h-64 min-h-0 overflow-y-auto overscroll-contain", children: /* @__PURE__ */ jsx66("div", { className: "grid gap-0.5 pr-2", children: visible.length ? visible.map((bot) => {
+        /* @__PURE__ */ jsx67("div", { className: "max-h-64 min-h-0 overflow-y-auto overscroll-contain", children: /* @__PURE__ */ jsx67("div", { className: "grid gap-0.5 pr-2", children: visible.length ? visible.map((bot) => {
           const meta = botRosterMeta(bot, allMeta);
           const { shape, color, image: image2 } = botAppearance(bot.name, meta);
           const isChecked = Boolean(checked[botRosterKey(bot)]);
           const disabled = !isChecked && atCap;
           const currentGroups = botGroups(meta);
-          return /* @__PURE__ */ jsxs64(
+          return /* @__PURE__ */ jsxs65(
             "label",
             {
               className: (0, sdk_compat_exports.cn)(
@@ -30263,7 +30512,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
                 disabled && "cursor-not-allowed opacity-50"
               ),
               children: [
-                /* @__PURE__ */ jsx66(
+                /* @__PURE__ */ jsx67(
                   BotFace,
                   {
                     color: avatarColor(color, bot.name),
@@ -30273,14 +30522,14 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
                     size: 24
                   }
                 ),
-                /* @__PURE__ */ jsxs64("div", { className: "min-w-0 flex-1", children: [
-                  /* @__PURE__ */ jsx66("div", { className: "truncate text-xs text-foreground", children: displayName(bot, meta) }),
-                  /* @__PURE__ */ jsx66("div", { className: "truncate text-[0.625rem] text-(--ui-text-quaternary)", children: [
+                /* @__PURE__ */ jsxs65("div", { className: "min-w-0 flex-1", children: [
+                  /* @__PURE__ */ jsx67("div", { className: "truncate text-xs text-foreground", children: displayName(bot, meta) }),
+                  /* @__PURE__ */ jsx67("div", { className: "truncate text-[0.625rem] text-(--ui-text-quaternary)", children: [
                     currentGroups.length ? `@${botHandle(bot.name, bot)} \xB7 in ${currentGroups.map((group) => `\u201C${group}\u201D`).join(", ")}` : `@${botHandle(bot.name, bot)}`,
                     bot.remoteSource && bot.connectionLabel ? ` \xB7 ${bot.connectionLabel}` : ""
                   ].join("") })
                 ] }),
-                /* @__PURE__ */ jsx66(
+                /* @__PURE__ */ jsx67(
                   sdk_compat_exports.Checkbox,
                   {
                     checked: isChecked,
@@ -30295,9 +30544,9 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
             },
             botRosterKey(bot)
           );
-        }) : /* @__PURE__ */ jsx66("div", { className: "px-1.5 py-3 text-center text-xs text-(--ui-text-tertiary)", children: query.trim() ? `No bots match \u201C${query.trim()}\u201D` : "No bots yet \u2014 create one first." }) }) }),
-        /* @__PURE__ */ jsxs64("div", { className: "grid gap-2", children: [
-          /* @__PURE__ */ jsx66(
+        }) : /* @__PURE__ */ jsx67("div", { className: "px-1.5 py-3 text-center text-xs text-(--ui-text-tertiary)", children: query.trim() ? `No bots match \u201C${query.trim()}\u201D` : "No bots yet \u2014 create one first." }) }) }),
+        /* @__PURE__ */ jsxs65("div", { className: "grid gap-2", children: [
+          /* @__PURE__ */ jsx67(
             GroupImageControls,
             {
               image,
@@ -30306,14 +30555,14 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
               seedName: name.trim() || (selected.length ? placeholder : "")
             }
           ),
-          /* @__PURE__ */ jsx66(
+          /* @__PURE__ */ jsx67(
             "form",
             {
               onSubmit: (event) => {
                 event.preventDefault();
                 create();
               },
-              children: /* @__PURE__ */ jsx66(
+              children: /* @__PURE__ */ jsx67(
                 sdk_compat_exports.Input,
                 {
                   "aria-label": b.group.nameLabel,
@@ -30326,9 +30575,9 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs64(sdk_compat_exports.DialogFooter, { children: [
-          /* @__PURE__ */ jsx66(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t.common.cancel }),
-          /* @__PURE__ */ jsx66(
+        /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogFooter, { children: [
+          /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t.common.cancel }),
+          /* @__PURE__ */ jsx67(
             sdk_compat_exports.Button,
             {
               disabled: !canCreate,
@@ -30348,14 +30597,14 @@ init_profile_ops();
 // src/user-sections-ui.tsx
 init_sdk_compat();
 init_i18n();
-import { useEffect as useEffect23, useRef as useRef15, useState as useState43 } from "react";
-import { jsx as jsx67, jsxs as jsxs65 } from "react/jsx-runtime";
+import { useEffect as useEffect24, useRef as useRef15, useState as useState43 } from "react";
+import { jsx as jsx68, jsxs as jsxs66 } from "react/jsx-runtime";
 function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) {
   const { t } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const [value, setValue] = useState43(initialName);
   const inputRef = useRef15(null);
-  useEffect23(() => {
+  useEffect24(() => {
     if (open) {
       setValue(initialName);
       window.setTimeout(() => inputRef.current?.select(), 0);
@@ -30371,9 +30620,9 @@ function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) 
       onSubmit(next);
     }
   };
-  return /* @__PURE__ */ jsx67(sdk_compat_exports.Dialog, { onOpenChange, open, children: /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogContent, { className: "max-w-sm", children: [
-    /* @__PURE__ */ jsx67(sdk_compat_exports.DialogHeader, { children: /* @__PURE__ */ jsx67(sdk_compat_exports.DialogTitle, { children: mode === "create" ? b.sections.newTitle : b.sections.renameTitle }) }),
-    /* @__PURE__ */ jsx67(
+  return /* @__PURE__ */ jsx68(sdk_compat_exports.Dialog, { onOpenChange, open, children: /* @__PURE__ */ jsxs66(sdk_compat_exports.DialogContent, { className: "max-w-sm", children: [
+    /* @__PURE__ */ jsx68(sdk_compat_exports.DialogHeader, { children: /* @__PURE__ */ jsx68(sdk_compat_exports.DialogTitle, { children: mode === "create" ? b.sections.newTitle : b.sections.renameTitle }) }),
+    /* @__PURE__ */ jsx68(
       sdk_compat_exports.Input,
       {
         "aria-label": b.sections.nameLabel,
@@ -30391,9 +30640,9 @@ function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) 
         value
       }
     ),
-    /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogFooter, { children: [
-      /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { onClick: () => onOpenChange(false), type: "button", variant: "ghost", children: t.common.cancel }),
-      /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { disabled: !value.trim(), onClick: submit, type: "button", children: mode === "create" ? b.sections.create : t.common.save })
+    /* @__PURE__ */ jsxs66(sdk_compat_exports.DialogFooter, { children: [
+      /* @__PURE__ */ jsx68(sdk_compat_exports.Button, { onClick: () => onOpenChange(false), type: "button", variant: "ghost", children: t.common.cancel }),
+      /* @__PURE__ */ jsx68(sdk_compat_exports.Button, { disabled: !value.trim(), onClick: submit, type: "button", children: mode === "create" ? b.sections.create : t.common.save })
     ] })
   ] }) });
 }
@@ -30412,7 +30661,7 @@ function UserSectionHeader({
   const b = useBots();
   const { t } = (0, sdk_compat_exports.useI18n)();
   if (!id) {
-    return /* @__PURE__ */ jsx67(
+    return /* @__PURE__ */ jsx68(
       RosterSectionHeader,
       {
         collapsed,
@@ -30428,30 +30677,30 @@ function UserSectionHeader({
     { disabled: !canMoveUp, icon: "arrow-up", label: b.sections.moveUp, onSelect: () => onMove(-1) },
     { disabled: !canMoveDown, icon: "arrow-down", label: b.sections.moveDown, onSelect: () => onMove(1) }
   ];
-  const action = /* @__PURE__ */ jsxs65(sdk_compat_exports.DropdownMenu, { children: [
-    /* @__PURE__ */ jsx67(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx67(
+  const action = /* @__PURE__ */ jsxs66(sdk_compat_exports.DropdownMenu, { children: [
+    /* @__PURE__ */ jsx68(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx68(
       "button",
       {
         "aria-label": b.sections.options(name),
         className: "shrink-0 rounded-md p-0.5 text-(--ui-text-quaternary) opacity-0 transition hover:text-foreground group-hover/section:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100",
         type: "button",
-        children: /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "ellipsis" })
+        children: /* @__PURE__ */ jsx68(sdk_compat_exports.Codicon, { name: "ellipsis" })
       }
     ) }),
-    /* @__PURE__ */ jsxs65(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
-      items.map((item) => /* @__PURE__ */ jsxs65(sdk_compat_exports.DropdownMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: [
-        /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { className: "mr-1.5", name: item.icon }),
+    /* @__PURE__ */ jsxs66(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
+      items.map((item) => /* @__PURE__ */ jsxs66(sdk_compat_exports.DropdownMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: [
+        /* @__PURE__ */ jsx68(sdk_compat_exports.Codicon, { className: "mr-1.5", name: item.icon }),
         item.label
       ] }, item.label)),
-      /* @__PURE__ */ jsx67(sdk_compat_exports.DropdownMenuSeparator, {}),
-      /* @__PURE__ */ jsxs65(sdk_compat_exports.DropdownMenuItem, { onSelect: onDelete, variant: "destructive", children: [
-        /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "trash" }),
+      /* @__PURE__ */ jsx68(sdk_compat_exports.DropdownMenuSeparator, {}),
+      /* @__PURE__ */ jsxs66(sdk_compat_exports.DropdownMenuItem, { onSelect: onDelete, variant: "destructive", children: [
+        /* @__PURE__ */ jsx68(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "trash" }),
         t.common.delete
       ] })
     ] })
   ] });
-  return /* @__PURE__ */ jsxs65(sdk_compat_exports.ContextMenu, { children: [
-    /* @__PURE__ */ jsx67(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx67("div", { "data-section-id": id, "data-slot": "bots-section-heading", children: /* @__PURE__ */ jsx67(
+  return /* @__PURE__ */ jsxs66(sdk_compat_exports.ContextMenu, { children: [
+    /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx68("div", { "data-section-id": id, "data-slot": "bots-section-heading", children: /* @__PURE__ */ jsx68(
       RosterSectionHeader,
       {
         action,
@@ -30464,16 +30713,16 @@ function UserSectionHeader({
         tip: b.sections.headingTip
       }
     ) }) }),
-    /* @__PURE__ */ jsxs65(sdk_compat_exports.ContextMenuContent, { children: [
-      items.map((item) => /* @__PURE__ */ jsx67(sdk_compat_exports.ContextMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: item.label }, item.label)),
-      /* @__PURE__ */ jsx67(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx67(sdk_compat_exports.ContextMenuItem, { onSelect: onDelete, variant: "destructive", children: t.common.delete })
+    /* @__PURE__ */ jsxs66(sdk_compat_exports.ContextMenuContent, { children: [
+      items.map((item) => /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: item.label }, item.label)),
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: onDelete, variant: "destructive", children: t.common.delete })
     ] })
   ] });
 }
 function useEscapeCancelsBotDrag() {
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot);
-  useEffect23(() => {
+  useEffect24(() => {
     if (!dragging) {
       return;
     }
@@ -30491,13 +30740,13 @@ function SectionDropZone({ children, isSource, nested, onDropBot }) {
   const [over, setOver] = useState43(false);
   const armed = Boolean(dragging) && !isSource;
   const lit = armed && over;
-  useEffect23(() => {
+  useEffect24(() => {
     if (!dragging) {
       setOver(false);
     }
   }, [dragging]);
   const accepts = (event) => armed && event.dataTransfer.types.includes(BOT_DRAG_MIME);
-  return /* @__PURE__ */ jsx67(
+  return /* @__PURE__ */ jsx68(
     "div",
     {
       className: (0, sdk_compat_exports.cn)(
@@ -30547,7 +30796,7 @@ function SectionDropZone({ children, isSource, nested, onDropBot }) {
 }
 
 // src/roster-pane-dialogs.tsx
-import { Fragment as Fragment14, jsx as jsx68, jsxs as jsxs66 } from "react/jsx-runtime";
+import { Fragment as Fragment14, jsx as jsx69, jsxs as jsxs67 } from "react/jsx-runtime";
 function renderRosterDialogs({
   b,
   t,
@@ -30569,8 +30818,8 @@ function renderRosterDialogs({
   activeSourceRoster,
   refetch
 }) {
-  return /* @__PURE__ */ jsxs66(Fragment14, { children: [
-    /* @__PURE__ */ jsx68(
+  return /* @__PURE__ */ jsxs67(Fragment14, { children: [
+    /* @__PURE__ */ jsx69(
       CreateAgentDialog,
       {
         onClose: () => {
@@ -30582,7 +30831,7 @@ function renderRosterDialogs({
         roster: activeSourceRoster
       }
     ),
-    /* @__PURE__ */ jsx68(
+    /* @__PURE__ */ jsx69(
       CreateGroupChatDialog,
       {
         onClose: () => setGroupCreateOpen(false),
@@ -30591,7 +30840,7 @@ function renderRosterDialogs({
         roster
       }
     ),
-    /* @__PURE__ */ jsx68(
+    /* @__PURE__ */ jsx69(
       SectionNameDialog,
       {
         initialName: sectionDialog?.mode === "rename" ? sectionDialog.name : "",
@@ -30614,7 +30863,7 @@ function renderRosterDialogs({
         open: Boolean(sectionDialog)
       }
     ),
-    /* @__PURE__ */ jsx68(
+    /* @__PURE__ */ jsx69(
       EditProfileDialog,
       {
         bot: editing,
@@ -30625,17 +30874,17 @@ function renderRosterDialogs({
         open: Boolean(editing)
       }
     ),
-    grouping ? /* @__PURE__ */ jsx68(GroupDialog, { bot: grouping, onClose: () => setGrouping(null) }) : null,
-    /* @__PURE__ */ jsx68(
+    grouping ? /* @__PURE__ */ jsx69(GroupDialog, { bot: grouping, onClose: () => setGrouping(null) }) : null,
+    /* @__PURE__ */ jsx69(
       sdk_compat_exports.ConfirmDialog,
       {
         busyLabel: "Deleting\u2026",
         confirmLabel: t.common.delete,
-        description: deleting ? /* @__PURE__ */ jsxs66("span", { children: [
+        description: deleting ? /* @__PURE__ */ jsxs67("span", { children: [
           "This will permanently delete the bot ",
-          /* @__PURE__ */ jsx68("span", { className: "font-medium text-foreground", children: deleting.name }),
+          /* @__PURE__ */ jsx69("span", { className: "font-medium text-foreground", children: deleting.name }),
           " and its associated Hermes profile at ",
-          /* @__PURE__ */ jsx68("span", { className: "font-mono text-xs", children: deleting.path }),
+          /* @__PURE__ */ jsx69("span", { className: "font-mono text-xs", children: deleting.path }),
           ". This cannot be undone."
         ] }) : null,
         destructive: true,
@@ -30657,7 +30906,7 @@ function renderRosterDialogs({
         title: b.bot.deleteTitle
       }
     ),
-    /* @__PURE__ */ jsx68(
+    /* @__PURE__ */ jsx69(
       sdk_compat_exports.ConfirmDialog,
       {
         busyLabel: "Deleting\u2026",
@@ -30686,7 +30935,7 @@ function renderRosterDialogs({
 // src/roster-pane-groups.tsx
 init_sdk_compat();
 init_data();
-import { jsx as jsx69, jsxs as jsxs67 } from "react/jsx-runtime";
+import { jsx as jsx70, jsxs as jsxs68 } from "react/jsx-runtime";
 function RosterGroupRowView({
   b,
   groupClarify,
@@ -30716,15 +30965,15 @@ function RosterGroupRowView({
       updateGroupChat(name2, (room) => ({ ...room, rosterOrder }), { sync: false });
     });
   };
-  return /* @__PURE__ */ jsxs67("div", { className: "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center", children: [
-    /* @__PURE__ */ jsx69(
+  return /* @__PURE__ */ jsxs68("div", { className: "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center", children: [
+    /* @__PURE__ */ jsx70(
       GroupRow,
       {
         ...rowProps,
         needsYou: Boolean(groupNeedsYou[rowProps.group]) || groupHasPendingClarify(groupClarify, rowProps.group)
       }
     ),
-    /* @__PURE__ */ jsx69("div", { className: "flex flex-col", children: [-1, 1].map((delta) => /* @__PURE__ */ jsx69(sdk_compat_exports.Tip, { label: delta === -1 ? b.sections.moveUp : b.sections.moveDown, children: /* @__PURE__ */ jsx69(
+    /* @__PURE__ */ jsx70("div", { className: "flex flex-col", children: [-1, 1].map((delta) => /* @__PURE__ */ jsx70(sdk_compat_exports.Tip, { label: delta === -1 ? b.sections.moveUp : b.sections.moveDown, children: /* @__PURE__ */ jsx70(
       sdk_compat_exports.Button,
       {
         "aria-label": `${rowProps.group}: ${delta === -1 ? b.sections.moveUp : b.sections.moveDown}`,
@@ -30732,7 +30981,7 @@ function RosterGroupRowView({
         onClick: () => moveRoom(rowProps.group, delta),
         size: "icon-xs",
         variant: "ghost",
-        children: /* @__PURE__ */ jsx69(sdk_compat_exports.Codicon, { name: delta === -1 ? "chevron-up" : "chevron-down" })
+        children: /* @__PURE__ */ jsx70(sdk_compat_exports.Codicon, { name: delta === -1 ? "chevron-up" : "chevron-down" })
       }
     ) }, delta)) })
   ] });
@@ -30741,7 +30990,7 @@ function RosterGroupRowView({
 // src/roster-pane-sections.tsx
 init_sdk_compat();
 init_data();
-import { jsx as jsx70, jsxs as jsxs68 } from "react/jsx-runtime";
+import { jsx as jsx71, jsxs as jsxs69 } from "react/jsx-runtime";
 function rosterSectionRenderers({
   b,
   userSections,
@@ -30773,8 +31022,8 @@ function rosterSectionRenderers({
       if (!cardMode) {
         return rows.map((row) => row.kind === "group" ? renderGroupRow(row) : renderBotRow(row.bot, keyPrefix));
       }
-      return /* @__PURE__ */ jsx70("div", { className: rowsClass, children: rows.map(
-        (row) => row.kind === "group" ? /* @__PURE__ */ jsx70("div", { className: "col-span-full", children: renderGroupRow(row) }, row.name) : renderBotRow(row.bot, keyPrefix)
+      return /* @__PURE__ */ jsx71("div", { className: rowsClass, children: rows.map(
+        (row) => row.kind === "group" ? /* @__PURE__ */ jsx71("div", { className: "col-span-full", children: renderGroupRow(row) }, row.name) : renderBotRow(row.bot, keyPrefix)
       ) });
     }
     const nested = Boolean(keyPrefix);
@@ -30783,7 +31032,7 @@ function rosterSectionRenderers({
       const key = `${keyPrefix}${block.id ? `user-section:${block.id}` : UNASSIGNED_SECTION_KEY}`;
       const collapsed = rosterSectionCollapsed(key);
       const order = userSections.findIndex((section) => section.id === block.id);
-      return /* @__PURE__ */ jsxs68(
+      return /* @__PURE__ */ jsxs69(
         SectionDropZone,
         {
           isSource: Boolean(dragging) && block.rows.some(
@@ -30801,7 +31050,7 @@ function rosterSectionRenderers({
             }
           },
           children: [
-            /* @__PURE__ */ jsx70(
+            /* @__PURE__ */ jsx71(
               UserSectionHeader,
               {
                 canMoveDown: order >= 0 && order < userSections.length - 1,
@@ -30816,12 +31065,12 @@ function rosterSectionRenderers({
                 onToggle: () => toggleRosterSection(key)
               }
             ),
-            collapsed ? null : block.rows.length ? /* @__PURE__ */ jsx70("div", { className: rowsClass, children: block.rows.map(
-              (row) => row.kind === "group" ? /* @__PURE__ */ jsx70("div", { className: cardMode ? "col-span-full" : "", children: renderGroupRow(row) }, row.name) : renderBotRow(row.bot, `${key}:`)
+            collapsed ? null : block.rows.length ? /* @__PURE__ */ jsx71("div", { className: rowsClass, children: block.rows.map(
+              (row) => row.kind === "group" ? /* @__PURE__ */ jsx71("div", { className: cardMode ? "col-span-full" : "", children: renderGroupRow(row) }, row.name) : renderBotRow(row.bot, `${key}:`)
             ) }) : (
               // Empty section: a quiet dashed slot that says what it is for,
               // and doubles as a roomy drop target.
-              /* @__PURE__ */ jsx70("div", { className: "mx-1 mb-1 rounded-md border border-dashed border-(--ui-stroke-secondary) px-2 py-2 text-center text-[0.6875rem] text-(--ui-text-quaternary)", children: b.sections.emptyHint })
+              /* @__PURE__ */ jsx71("div", { className: "mx-1 mb-1 rounded-md border border-dashed border-(--ui-stroke-secondary) px-2 py-2 text-center text-[0.6875rem] text-(--ui-text-quaternary)", children: b.sections.emptyHint })
             )
           ]
         },
@@ -30832,8 +31081,8 @@ function rosterSectionRenderers({
   const renderGatewaySection = (section) => {
     const sectionId = `gateway:${section.id}`;
     const collapsed = rosterSectionCollapsed(sectionId);
-    return /* @__PURE__ */ jsxs68("div", { className: "min-w-0", children: [
-      /* @__PURE__ */ jsx70(
+    return /* @__PURE__ */ jsxs69("div", { className: "min-w-0", children: [
+      /* @__PURE__ */ jsx71(
         GatewaySectionHeading,
         {
           collapsed,
@@ -30842,14 +31091,14 @@ function rosterSectionRenderers({
           option: section.option
         }
       ),
-      collapsed ? null : /* @__PURE__ */ jsx70("div", { className: "min-w-0", children: renderUserSections(section.rows, `${section.id}:`) })
+      collapsed ? null : /* @__PURE__ */ jsx71("div", { className: "min-w-0", children: renderUserSections(section.rows, `${section.id}:`) })
     ] }, sectionId);
   };
   const renderGroupChatSection = () => {
     const sectionId = "group-chats";
     const collapsed = rosterSectionCollapsed(sectionId);
-    return /* @__PURE__ */ jsxs68("div", { className: "min-w-0", children: [
-      /* @__PURE__ */ jsx70(
+    return /* @__PURE__ */ jsxs69("div", { className: "min-w-0", children: [
+      /* @__PURE__ */ jsx71(
         RosterSectionHeader,
         {
           collapsed,
@@ -30860,16 +31109,16 @@ function rosterSectionRenderers({
           tip: `${sortedGroupRows.length} global group chat${sortedGroupRows.length === 1 ? "" : "s"}`
         }
       ),
-      collapsed ? null : /* @__PURE__ */ jsx70("div", { className: "min-w-0", children: renderUserSections(sortedGroupRows, "groups:") })
+      collapsed ? null : /* @__PURE__ */ jsx71("div", { className: "min-w-0", children: renderUserSections(sortedGroupRows, "groups:") })
     ] }, sectionId);
   };
-  const renderHiddenGatewaySection = (section) => /* @__PURE__ */ jsxs68("div", { className: "min-w-0", children: [
-    /* @__PURE__ */ jsxs68("div", { className: "flex min-w-0 items-center gap-1.5 px-2 py-1 ui-section-label", children: [
-      /* @__PURE__ */ jsx70(GatewayKindGlyph, { kind: section.option?.kind }),
-      /* @__PURE__ */ jsx70("span", { className: "min-w-0 flex-1 truncate", children: section.option?.label || section.option?.connectionId || "Current gateway" }),
-      /* @__PURE__ */ jsx70("span", { className: "shrink-0 font-normal tabular-nums", children: section.rows.length })
+  const renderHiddenGatewaySection = (section) => /* @__PURE__ */ jsxs69("div", { className: "min-w-0", children: [
+    /* @__PURE__ */ jsxs69("div", { className: "flex min-w-0 items-center gap-1.5 px-2 py-1 ui-section-label", children: [
+      /* @__PURE__ */ jsx71(GatewayKindGlyph, { kind: section.option?.kind }),
+      /* @__PURE__ */ jsx71("span", { className: "min-w-0 flex-1 truncate", children: section.option?.label || section.option?.connectionId || "Current gateway" }),
+      /* @__PURE__ */ jsx71("span", { className: "shrink-0 font-normal tabular-nums", children: section.rows.length })
     ] }),
-    cardMode ? /* @__PURE__ */ jsx70("div", { className: rowsClass, children: section.rows.map((row) => renderBotRow(row.bot, `hidden:${section.id}:`)) }) : section.rows.map((row) => renderBotRow(row.bot, `hidden:${section.id}:`))
+    cardMode ? /* @__PURE__ */ jsx71("div", { className: rowsClass, children: section.rows.map((row) => renderBotRow(row.bot, `hidden:${section.id}:`)) }) : section.rows.map((row) => renderBotRow(row.bot, `hidden:${section.id}:`))
   ] }, `hidden-gateway:${section.id}`);
   return { renderUserSections, renderGatewaySection, renderGroupChatSection, renderHiddenGatewaySection };
 }
@@ -30877,11 +31126,11 @@ function rosterSectionRenderers({
 // src/roster-pane-toolbar.tsx
 init_sdk_compat();
 init_data();
-import { Fragment as Fragment15, jsx as jsx71, jsxs as jsxs69 } from "react/jsx-runtime";
+import { Fragment as Fragment15, jsx as jsx72, jsxs as jsxs70 } from "react/jsx-runtime";
 function NewGroupChatItem({ label, onSelect, roster }) {
   const { connectionId, mode, seatable } = useGroupCapability(true);
-  return /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuItem, { disabled: seatableGroupBots(roster, { connectionId, mode, seatable }).length < 2, onSelect, children: [
-    /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "organization" }),
+  return /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuItem, { disabled: seatableGroupBots(roster, { connectionId, mode, seatable }).length < 2, onSelect, children: [
+    /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "organization" }),
     label
   ] });
 }
@@ -30913,11 +31162,11 @@ function renderRosterToolbar({
   viewMode,
   setViewMode
 }) {
-  return /* @__PURE__ */ jsxs69(Fragment15, { children: [
-    /* @__PURE__ */ jsxs69("div", { className: "flex items-center justify-between gap-2 px-2.5 pt-2.5 pb-1.5", children: [
-      /* @__PURE__ */ jsx71("span", { className: "ui-section-label", children: "Bots" }),
-      /* @__PURE__ */ jsxs69("div", { className: "flex items-center gap-0.5", children: [
-        /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: viewMode === "cards" ? b.roster.listView : b.roster.cardView, children: /* @__PURE__ */ jsx71(
+  return /* @__PURE__ */ jsxs70(Fragment15, { children: [
+    /* @__PURE__ */ jsxs70("div", { className: "flex items-center justify-between gap-2 px-2.5 pt-2.5 pb-1.5", children: [
+      /* @__PURE__ */ jsx72("span", { className: "ui-section-label", children: "Bots" }),
+      /* @__PURE__ */ jsxs70("div", { className: "flex items-center gap-0.5", children: [
+        /* @__PURE__ */ jsx72(sdk_compat_exports.Tip, { label: viewMode === "cards" ? b.roster.listView : b.roster.cardView, children: /* @__PURE__ */ jsx72(
           sdk_compat_exports.Button,
           {
             "aria-label": viewMode === "cards" ? b.roster.listView : b.roster.cardView,
@@ -30929,14 +31178,14 @@ function renderRosterToolbar({
             onClick: () => setViewMode(viewMode === "cards" ? "list" : "cards"),
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: viewMode === "cards" ? "list-flat" : "layout" })
+            children: /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: viewMode === "cards" ? "list-flat" : "layout" })
           }
         ) }),
-        /* @__PURE__ */ jsx71(
+        /* @__PURE__ */ jsx72(
           sdk_compat_exports.Tip,
           {
             label: activityToasts ? "Activity toasts on \u2014 click to silence" : "Activity toasts off \u2014 click to enable",
-            children: /* @__PURE__ */ jsx71(
+            children: /* @__PURE__ */ jsx72(
               sdk_compat_exports.Button,
               {
                 "aria-label": "Activity toasts",
@@ -30945,12 +31194,12 @@ function renderRosterToolbar({
                 onClick: () => setActivityToasts(!activityToasts),
                 size: "icon-xs",
                 variant: "ghost",
-                children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: activityToasts ? "bell" : "bell-slash" })
+                children: /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: activityToasts ? "bell" : "bell-slash" })
               }
             )
           }
         ),
-        window.hermesDesktop?.botroom ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: "Bot Room on desktop", children: /* @__PURE__ */ jsx71(
+        window.hermesDesktop?.botroom ? /* @__PURE__ */ jsx72(sdk_compat_exports.Tip, { label: "Bot Room on desktop", children: /* @__PURE__ */ jsx72(
           sdk_compat_exports.Button,
           {
             "aria-label": "Bot Room on desktop",
@@ -30958,63 +31207,63 @@ function renderRosterToolbar({
             onClick: () => void window.hermesDesktop?.botroom?.open(),
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "device-desktop" })
+            children: /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "device-desktop" })
           }
         ) }) : null,
-        /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenu, { children: [
-          /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.roster.newBotOrGroup, children: /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx71(
+        /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenu, { children: [
+          /* @__PURE__ */ jsx72(sdk_compat_exports.Tip, { label: b.roster.newBotOrGroup, children: /* @__PURE__ */ jsx72(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx72(
             sdk_compat_exports.Button,
             {
               "aria-label": b.roster.newBotOrGroup,
               className: "rounded-md text-(--ui-text-tertiary) hover:text-foreground",
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "add" })
+              children: /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "add" })
             }
           ) }) }),
-          /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
-            /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setCreateOpen(true), children: [
-              /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "hubot" }),
+          /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
+            /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setCreateOpen(true), children: [
+              /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "hubot" }),
               b.bot.newTitle
             ] }),
-            /* @__PURE__ */ jsx71(NewGroupChatItem, { label: b.group.newTitle, onSelect: () => setGroupCreateOpen(true), roster }),
-            /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuSeparator, {}),
-            /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setSectionDialog({ mode: "create" }), children: [
-              /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
+            /* @__PURE__ */ jsx72(NewGroupChatItem, { label: b.group.newTitle, onSelect: () => setGroupCreateOpen(true), roster }),
+            /* @__PURE__ */ jsx72(sdk_compat_exports.DropdownMenuSeparator, {}),
+            /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setSectionDialog({ mode: "create" }), children: [
+              /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
               b.sections.newSection
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenu, { children: [
-          /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.broadcast.title, children: /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx71(
+        /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenu, { children: [
+          /* @__PURE__ */ jsx72(sdk_compat_exports.Tip, { label: b.broadcast.title, children: /* @__PURE__ */ jsx72(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx72(
             sdk_compat_exports.Button,
             {
               "aria-label": b.broadcast.title,
               className: "rounded-md text-(--ui-text-tertiary) hover:text-foreground",
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "broadcast" })
+              children: /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "broadcast" })
             }
           ) }) }),
-          /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
-            /* @__PURE__ */ jsxs69(
+          /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
+            /* @__PURE__ */ jsxs70(
               sdk_compat_exports.DropdownMenuItem,
               {
                 disabled: !roster.filter((bot) => !bot?.ghost).length,
                 onSelect: () => setBroadcastOpen(true),
                 children: [
-                  /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "broadcast" }),
+                  /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "broadcast" }),
                   b.broadcast.menuItem
                 ]
               }
             ),
-            /* @__PURE__ */ jsxs69(
+            /* @__PURE__ */ jsxs70(
               sdk_compat_exports.DropdownMenuItem,
               {
                 disabled: !roster.filter((bot) => !bot?.ghost).length,
                 onSelect: () => setCalendarOpen(true),
                 children: [
-                  /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "calendar" }),
+                  /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "calendar" }),
                   b.calendar.menuItem
                 ]
               }
@@ -31023,8 +31272,8 @@ function renderRosterToolbar({
         ] })
       ] })
     ] }),
-    showRosterTools ? /* @__PURE__ */ jsxs69("div", { className: "flex min-w-0 items-center gap-1 px-2.5 pb-1.5", children: [
-      showRosterSearch ? /* @__PURE__ */ jsx71(
+    showRosterTools ? /* @__PURE__ */ jsxs70("div", { className: "flex min-w-0 items-center gap-1 px-2.5 pb-1.5", children: [
+      showRosterSearch ? /* @__PURE__ */ jsx72(
         sdk_compat_exports.SearchField,
         {
           "aria-label": b.roster.search,
@@ -31035,9 +31284,9 @@ function renderRosterToolbar({
           value: query
         },
         "roster-search"
-      ) : /* @__PURE__ */ jsx71("span", { className: "min-w-0 flex-1" }, "roster-search-spacer"),
-      showRosterFilters ? /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenu, { children: [
-        /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filter roster", children: /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx71(
+      ) : /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1" }, "roster-search-spacer"),
+      showRosterFilters ? /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenu, { children: [
+        /* @__PURE__ */ jsx72(sdk_compat_exports.Tip, { label: activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filter roster", children: /* @__PURE__ */ jsx72(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx72(
           sdk_compat_exports.Button,
           {
             "aria-label": activeFilterCount ? `Filter roster, ${activeFilterCount} active` : "Filter roster",
@@ -31047,70 +31296,70 @@ function renderRosterToolbar({
             ),
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "list-filter" })
+            children: /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "list-filter" })
           }
         ) }) }),
-        /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
+        /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
           [
             ["all", b.roster.botsAndGroups],
             ["bots", b.roster.botsOnly],
             ["groups", b.roster.groupsOnly]
-          ].map(([value, label]) => /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setRowKindFilter(value), children: [
-            /* @__PURE__ */ jsx71("span", { className: "min-w-0 flex-1", children: label }),
-            rowKindFilter === value ? /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "check" }) : null
+          ].map(([value, label]) => /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setRowKindFilter(value), children: [
+            /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1", children: label }),
+            rowKindFilter === value ? /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "check" }) : null
           ] }, `kind:${value}`)),
-          /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuSeparator, {}),
+          /* @__PURE__ */ jsx72(sdk_compat_exports.DropdownMenuSeparator, {}),
           [
             ["all", b.roster.anyActivity],
             ["active", b.roster.activeNow],
             ["recent", b.roster.recentlyActive],
             ["older", b.roster.older]
-          ].map(([value, label]) => /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setActivityFilter(value), children: [
-            /* @__PURE__ */ jsx71("span", { className: "min-w-0 flex-1", children: label }),
-            activityFilter === value ? /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "check" }) : null
+          ].map(([value, label]) => /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setActivityFilter(value), children: [
+            /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1", children: label }),
+            activityFilter === value ? /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "check" }) : null
           ] }, `activity:${value}`)),
-          /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuSeparator, {}),
+          /* @__PURE__ */ jsx72(sdk_compat_exports.DropdownMenuSeparator, {}),
           [
             ["recent", b.roster.sortRecent],
             ["attention", b.roster.sortAttention],
             ["alpha", b.roster.sortAlpha]
-          ].map(([value, label]) => /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setSortMode(value), children: [
-            /* @__PURE__ */ jsx71("span", { className: "min-w-0 flex-1", children: label }),
-            sortMode === value ? /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "check" }) : null
+          ].map(([value, label]) => /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setSortMode(value), children: [
+            /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1", children: label }),
+            sortMode === value ? /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "check" }) : null
           ] }, `sort:${value}`)),
-          gatewayOptions.length > 1 ? /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuSeparator, {}) : null,
-          gatewayOptions.length > 1 ? /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setGatewayFilter("all"), children: [
-            /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "globe" }),
-            /* @__PURE__ */ jsx71("span", { className: "min-w-0 flex-1", children: "All gateways" }),
-            gatewayFilter === "all" ? /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "check" }) : null
+          gatewayOptions.length > 1 ? /* @__PURE__ */ jsx72(sdk_compat_exports.DropdownMenuSeparator, {}) : null,
+          gatewayOptions.length > 1 ? /* @__PURE__ */ jsxs70(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setGatewayFilter("all"), children: [
+            /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "globe" }),
+            /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1", children: "All gateways" }),
+            gatewayFilter === "all" ? /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "check" }) : null
           ] }) : null,
           gatewayOptions.length > 1 ? gatewayOptions.map((option) => {
             const status = botSourceStatus({
               sourceError: option.error,
               sourceReachable: option.reachable
             });
-            return /* @__PURE__ */ jsxs69(
+            return /* @__PURE__ */ jsxs70(
               sdk_compat_exports.DropdownMenuItem,
               {
                 onSelect: () => setGatewayFilter(option.connectionId),
                 children: [
-                  /* @__PURE__ */ jsx71(
+                  /* @__PURE__ */ jsx72(
                     GatewayKindGlyph,
                     {
                       className: (0, sdk_compat_exports.cn)("mr-1.5", !status.available && "hbp-fg-warn"),
                       kind: option.kind
                     }
                   ),
-                  /* @__PURE__ */ jsx71("span", { className: "min-w-0 flex-1 truncate", children: option.label || option.connectionId }),
-                  /* @__PURE__ */ jsx71("span", { className: "text-[0.625rem] tabular-nums text-(--ui-text-quaternary)", children: option.count }),
-                  gatewayFilter === option.connectionId ? /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "check" }) : null
+                  /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1 truncate", children: option.label || option.connectionId }),
+                  /* @__PURE__ */ jsx72("span", { className: "text-[0.625rem] tabular-nums text-(--ui-text-quaternary)", children: option.count }),
+                  gatewayFilter === option.connectionId ? /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "check" }) : null
                 ]
               },
               option.connectionId
             );
           }) : [],
-          activeFilterCount ? /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuSeparator, {}) : null,
-          activeFilterCount ? /* @__PURE__ */ jsx71(
+          activeFilterCount ? /* @__PURE__ */ jsx72(sdk_compat_exports.DropdownMenuSeparator, {}) : null,
+          activeFilterCount ? /* @__PURE__ */ jsx72(
             sdk_compat_exports.DropdownMenuItem,
             {
               onSelect: () => {
@@ -31152,7 +31401,7 @@ function setRosterViewMode(mode) {
 
 // src/routines-calendar.tsx
 init_sdk_compat();
-import { useEffect as useEffect24, useState as useState44 } from "react";
+import { useEffect as useEffect25, useState as useState44 } from "react";
 init_data();
 
 // src/fleet-schedule.ts
@@ -31188,7 +31437,7 @@ function groupFleetRoutines(items) {
 init_i18n();
 init_labels();
 init_routing();
-import { Fragment as Fragment16, jsx as jsx72, jsxs as jsxs70 } from "react/jsx-runtime";
+import { Fragment as Fragment16, jsx as jsx73, jsxs as jsxs71 } from "react/jsx-runtime";
 function FleetJobRow({ bot, job }) {
   const b = useBots();
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
@@ -31199,11 +31448,11 @@ function FleetJobRow({ bot, job }) {
   const overdue = (0, sdk_compat_exports.nextRunOverdueMs)(job) !== null;
   const paused = job.enabled === false || job.state === "paused";
   const jobTitle = String(job.name || job.prompt || job.prompt_preview || "").trim() || b.calendar.untitledJob;
-  return /* @__PURE__ */ jsxs70("div", { className: "flex items-center gap-2 rounded-md px-1.5 py-1", children: [
-    /* @__PURE__ */ jsx72(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 16 }),
-    /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)", children: jobTitle }),
-    /* @__PURE__ */ jsx72("span", { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", children: name }),
-    paused ? /* @__PURE__ */ jsx72("span", { className: "shrink-0 text-[0.65rem] text-(--ui-text-quaternary)", children: "\u2014" }) : Number.isFinite(fireAt) ? /* @__PURE__ */ jsxs70(
+  return /* @__PURE__ */ jsxs71("div", { className: "flex items-center gap-2 rounded-md px-1.5 py-1", children: [
+    /* @__PURE__ */ jsx73(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 16 }),
+    /* @__PURE__ */ jsx73("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)", children: jobTitle }),
+    /* @__PURE__ */ jsx73("span", { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", children: name }),
+    paused ? /* @__PURE__ */ jsx73("span", { className: "shrink-0 text-[0.65rem] text-(--ui-text-quaternary)", children: "\u2014" }) : Number.isFinite(fireAt) ? /* @__PURE__ */ jsxs71(
       "span",
       {
         className: (0, sdk_compat_exports.cn)(
@@ -31227,7 +31476,7 @@ function RoutinesCalendarDialog({
   const [items, setItems] = useState44([]);
   const [partial, setPartial] = useState44(false);
   const [loading, setLoading] = useState44(false);
-  useEffect24(() => {
+  useEffect25(() => {
     if (!open) {
       return;
     }
@@ -31261,7 +31510,7 @@ function RoutinesCalendarDialog({
   }, [open, bots]);
   const groups = groupFleetRoutines(items);
   const hasAny = groups.nextUp.length > 0 || groups.days.length > 0 || groups.dormant.length > 0;
-  return /* @__PURE__ */ jsx72(
+  return /* @__PURE__ */ jsx73(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -31270,28 +31519,28 @@ function RoutinesCalendarDialog({
         }
       },
       open,
-      children: /* @__PURE__ */ jsxs70(sdk_compat_exports.DialogContent, { className: "max-w-lg", children: [
-        /* @__PURE__ */ jsxs70(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx72(sdk_compat_exports.DialogTitle, { children: b.calendar.title }),
-          /* @__PURE__ */ jsx72(sdk_compat_exports.DialogDescription, { children: b.calendar.desc })
+      children: /* @__PURE__ */ jsxs71(sdk_compat_exports.DialogContent, { className: "max-w-lg", children: [
+        /* @__PURE__ */ jsxs71(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx73(sdk_compat_exports.DialogTitle, { children: b.calendar.title }),
+          /* @__PURE__ */ jsx73(sdk_compat_exports.DialogDescription, { children: b.calendar.desc })
         ] }),
-        /* @__PURE__ */ jsxs70("div", { className: "flex max-h-[60vh] min-h-0 flex-col gap-2 overflow-y-auto", children: [
-          partial ? /* @__PURE__ */ jsx72("div", { className: "rounded-md border hbp-bd-warn-40 hbp-bg-warn-10 px-2.5 py-1.5 text-[0.6875rem] hbp-fg-warn", children: b.calendar.loadFailed }) : null,
-          loading ? /* @__PURE__ */ jsxs70("div", { className: "flex items-center gap-1.5 px-1 py-3 text-[0.75rem] text-(--ui-text-tertiary)", children: [
-            /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "loading", spinning: true }),
+        /* @__PURE__ */ jsxs71("div", { className: "flex max-h-[60vh] min-h-0 flex-col gap-2 overflow-y-auto", children: [
+          partial ? /* @__PURE__ */ jsx73("div", { className: "rounded-md border hbp-bd-warn-40 hbp-bg-warn-10 px-2.5 py-1.5 text-[0.6875rem] hbp-fg-warn", children: b.calendar.loadFailed }) : null,
+          loading ? /* @__PURE__ */ jsxs71("div", { className: "flex items-center gap-1.5 px-1 py-3 text-[0.75rem] text-(--ui-text-tertiary)", children: [
+            /* @__PURE__ */ jsx73(sdk_compat_exports.Codicon, { name: "loading", spinning: true }),
             b.calendar.title
-          ] }) : !hasAny ? /* @__PURE__ */ jsx72("div", { className: "px-1 py-4 text-center text-[0.75rem] text-(--ui-text-tertiary)", children: b.calendar.empty }) : /* @__PURE__ */ jsxs70(Fragment16, { children: [
-            groups.nextUp.length ? /* @__PURE__ */ jsxs70("div", { children: [
-              /* @__PURE__ */ jsx72("div", { className: "px-1 pb-0.5 ui-section-label", children: b.calendar.nextUp }),
-              groups.nextUp.map((item) => /* @__PURE__ */ jsx72(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}`))
+          ] }) : !hasAny ? /* @__PURE__ */ jsx73("div", { className: "px-1 py-4 text-center text-[0.75rem] text-(--ui-text-tertiary)", children: b.calendar.empty }) : /* @__PURE__ */ jsxs71(Fragment16, { children: [
+            groups.nextUp.length ? /* @__PURE__ */ jsxs71("div", { children: [
+              /* @__PURE__ */ jsx73("div", { className: "px-1 pb-0.5 ui-section-label", children: b.calendar.nextUp }),
+              groups.nextUp.map((item) => /* @__PURE__ */ jsx73(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}`))
             ] }) : null,
-            groups.days.map((group) => /* @__PURE__ */ jsxs70("div", { children: [
-              /* @__PURE__ */ jsx72("div", { className: "px-1 pb-0.5 pt-1 ui-section-label", children: group.label }),
-              group.items.map((item) => /* @__PURE__ */ jsx72(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}`))
+            groups.days.map((group) => /* @__PURE__ */ jsxs71("div", { children: [
+              /* @__PURE__ */ jsx73("div", { className: "px-1 pb-0.5 pt-1 ui-section-label", children: group.label }),
+              group.items.map((item) => /* @__PURE__ */ jsx73(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}`))
             ] }, group.label)),
-            groups.dormant.length ? /* @__PURE__ */ jsxs70("div", { children: [
-              /* @__PURE__ */ jsx72("div", { className: "px-1 pb-0.5 pt-1 ui-section-label", children: b.calendar.paused }),
-              groups.dormant.map((item) => /* @__PURE__ */ jsx72(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}:d`))
+            groups.dormant.length ? /* @__PURE__ */ jsxs71("div", { children: [
+              /* @__PURE__ */ jsx73("div", { className: "px-1 pb-0.5 pt-1 ui-section-label", children: b.calendar.paused }),
+              groups.dormant.map((item) => /* @__PURE__ */ jsx73(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}:d`))
             ] }) : null
           ] })
         ] })
@@ -31369,7 +31618,7 @@ function deriveTriageItems(bots, signals) {
 }
 
 // src/triage-strip.tsx
-import { jsx as jsx73, jsxs as jsxs71 } from "react/jsx-runtime";
+import { jsx as jsx74, jsxs as jsxs72 } from "react/jsx-runtime";
 function triageLabel(b, item, name) {
   switch (item.kind) {
     case "unreachable":
@@ -31464,16 +31713,16 @@ function TriageStrip({
   if (!items.length) {
     return null;
   }
-  return /* @__PURE__ */ jsxs71("section", { className: "mb-1 px-2", "data-testid": "bot-triage-strip", children: [
-    /* @__PURE__ */ jsxs71("div", { className: "flex items-center justify-between px-1 pt-1 pb-1.5", children: [
-      /* @__PURE__ */ jsx73("span", { className: "ui-section-label", children: b.triage.title }),
-      /* @__PURE__ */ jsx73("span", { className: "rounded-full hbp-bg-warn-15 px-1.5 text-[0.625rem] font-semibold tabular-nums hbp-fg-warn", children: items.length })
+  return /* @__PURE__ */ jsxs72("section", { className: "mb-1 px-2", "data-testid": "bot-triage-strip", children: [
+    /* @__PURE__ */ jsxs72("div", { className: "flex items-center justify-between px-1 pt-1 pb-1.5", children: [
+      /* @__PURE__ */ jsx74("span", { className: "ui-section-label", children: b.triage.title }),
+      /* @__PURE__ */ jsx74("span", { className: "rounded-full hbp-bg-warn-15 px-1.5 text-[0.625rem] font-semibold tabular-nums hbp-fg-warn", children: items.length })
     ] }),
-    /* @__PURE__ */ jsx73("div", { className: "grid gap-0.5 rounded-lg hbp-bg-warn-6 p-1", children: items.map((item) => {
+    /* @__PURE__ */ jsx74("div", { className: "grid gap-0.5 rounded-lg hbp-bg-warn-6 p-1", children: items.map((item) => {
       const meta = botRosterMeta(item.bot, allMeta);
       const { shape, color, image } = botAppearance(item.bot.name, meta);
       const name = displayName(item.bot, meta);
-      return /* @__PURE__ */ jsxs71(
+      return /* @__PURE__ */ jsxs72(
         "button",
         {
           "aria-label": b.triage.openItem(name),
@@ -31485,7 +31734,7 @@ function TriageStrip({
           onClick: () => onOpen(item.bot),
           type: "button",
           children: [
-            /* @__PURE__ */ jsx73("span", { className: "shrink-0 rounded-md ring-1 hbp-ring-warn-50", children: /* @__PURE__ */ jsx73(
+            /* @__PURE__ */ jsx74("span", { className: "shrink-0 rounded-md ring-1 hbp-ring-warn-50", children: /* @__PURE__ */ jsx74(
               BotFace,
               {
                 color: avatarColor(color, item.bot.name),
@@ -31495,9 +31744,9 @@ function TriageStrip({
                 size: 26
               }
             ) }),
-            /* @__PURE__ */ jsxs71("span", { className: "min-w-0 flex-1", children: [
-              /* @__PURE__ */ jsxs71("span", { className: "flex min-w-0 items-center gap-1 text-xs font-medium text-foreground", children: [
-                /* @__PURE__ */ jsx73(
+            /* @__PURE__ */ jsxs72("span", { className: "min-w-0 flex-1", children: [
+              /* @__PURE__ */ jsxs72("span", { className: "flex min-w-0 items-center gap-1 text-xs font-medium text-foreground", children: [
+                /* @__PURE__ */ jsx74(
                   sdk_compat_exports.Codicon,
                   {
                     className: "shrink-0 hbp-fg-warn",
@@ -31505,11 +31754,11 @@ function TriageStrip({
                     size: "0.7rem"
                   }
                 ),
-                /* @__PURE__ */ jsx73("span", { className: "truncate", children: triageLabel(b, item, name) })
+                /* @__PURE__ */ jsx74("span", { className: "truncate", children: triageLabel(b, item, name) })
               ] }),
-              /* @__PURE__ */ jsx73("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: triageMeta(item, name) })
+              /* @__PURE__ */ jsx74("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: triageMeta(item, name) })
             ] }),
-            /* @__PURE__ */ jsx73("span", { className: "shrink-0 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary) group-hover/triage:border-(--ui-stroke-primary) group-hover/triage:text-foreground", children: TRIAGE_ACTION[item.kind](b) })
+            /* @__PURE__ */ jsx74("span", { className: "shrink-0 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary) group-hover/triage:border-(--ui-stroke-primary) group-hover/triage:text-foreground", children: TRIAGE_ACTION[item.kind](b) })
           ]
         },
         item.key
@@ -31519,7 +31768,7 @@ function TriageStrip({
 }
 
 // src/roster-pane.tsx
-import { jsx as jsx74, jsxs as jsxs72 } from "react/jsx-runtime";
+import { jsx as jsx75, jsxs as jsxs73 } from "react/jsx-runtime";
 function selectedRosterBot(roster, key) {
   return (Array.isArray(roster) ? roster : []).find((bot) => botRosterKey(bot) === key) || null;
 }
@@ -31595,7 +31844,7 @@ function releaseStaleOpenBotChat(focusedStoredId2) {
   }
 }
 function useReconcileRosterOwner(data, error, selectionHydrated, roster, sourceSnapshot, allMeta) {
-  useEffect25(() => {
+  useEffect26(() => {
     if (!data && !error) {
       return;
     }
@@ -31667,7 +31916,7 @@ function BotsPane() {
   const rosterHydrated = (0, sdk_compat_exports.useValue)($rosterHydrated);
   const selectionHydrated = (0, sdk_compat_exports.useValue)($selectedRosterHydrated);
   const selectedRosterKey = (0, sdk_compat_exports.useValue)($selectedRosterKey);
-  useEffect25(() => {
+  useEffect26(() => {
     if (gatewayUp) {
       void refetch();
     }
@@ -31686,7 +31935,7 @@ function BotsPane() {
     attentionOf,
     mode: sortMode
   });
-  useEffect25(() => {
+  useEffect26(() => {
     adoptBotSectionsFromMeta(roster, allMeta);
     backfillBotSectionNames(roster, allMeta);
   }, [roster, allMeta]);
@@ -31698,7 +31947,7 @@ function BotsPane() {
   const gatewayOptions = rosterGatewayOptions(sourceSnapshot, roster);
   const selectedGateway = gatewayOptions.find((option) => option.connectionId === gatewayFilter);
   const gatewayFilterExists = gatewayFilter === "all" || Boolean(selectedGateway);
-  useEffect25(() => {
+  useEffect26(() => {
     if (!gatewayFilterExists) {
       setGatewayFilter("all");
     }
@@ -31754,7 +32003,7 @@ function BotsPane() {
   });
   const rosterSectionCollapsed = (id) => !hasRosterConstraint && collapsedRosterSections.has(id);
   const toggleRosterSection = toggleBotSectionCollapsed;
-  useEffect25(() => {
+  useEffect26(() => {
     if (!hiddenExpanded || hasRosterConstraint) {
       return;
     }
@@ -31770,9 +32019,9 @@ function BotsPane() {
   const staleNotice = error && !live && roster.length ? "Roster refresh failed \u2014 showing the last good list." + (gatewayUp ? "" : " Waiting for the gateway to reconnect\u2026") : null;
   const groupChatMembers = groupChatName ? groupChatMemberBots(groupChatName, roster, allMeta) : [];
   if (shouldRenderGroupChatInPane(groupChatName) && groupChatMembers.length) {
-    return /* @__PURE__ */ jsx74(GroupChatWorkspace, { group: groupChatName, members: groupChatMembers });
+    return /* @__PURE__ */ jsx75(GroupChatWorkspace, { group: groupChatName, members: groupChatMembers });
   }
-  const renderBotRow = (bot, keyPrefix = "") => cardMode ? /* @__PURE__ */ jsx74(
+  const renderBotRow = (bot, keyPrefix = "") => cardMode ? /* @__PURE__ */ jsx75(
     BotCard,
     {
       bot,
@@ -31783,7 +32032,7 @@ function BotsPane() {
       onNewSection: (target) => setSectionDialog({ bot: target, mode: "create" })
     },
     `${keyPrefix}${botRosterKey(bot)}`
-  ) : /* @__PURE__ */ jsx74(
+  ) : /* @__PURE__ */ jsx75(
     BotRow,
     {
       bot,
@@ -31797,7 +32046,7 @@ function BotsPane() {
     },
     `${keyPrefix}${botRosterKey(bot)}`
   );
-  const renderGroupRow = (row) => /* @__PURE__ */ jsx74(
+  const renderGroupRow = (row) => /* @__PURE__ */ jsx75(
     RosterGroupRowView,
     {
       active: groupChatName === row.name,
@@ -31829,7 +32078,7 @@ function BotsPane() {
     renderGroupRow,
     sortedGroupRows
   });
-  return /* @__PURE__ */ jsxs72("div", { className: "flex h-full flex-col", children: [
+  return /* @__PURE__ */ jsxs73("div", { className: "flex h-full flex-col", children: [
     renderRosterToolbar({
       b,
       activityToasts,
@@ -31862,7 +32111,7 @@ function BotsPane() {
       viewMode,
       setViewMode: setRosterViewMode
     }),
-    /* @__PURE__ */ jsx74(TriageStrip, { bots: roster, onOpen: (bot) => void openRosterBot(bot) }),
+    /* @__PURE__ */ jsx75(TriageStrip, { bots: roster, onOpen: (bot) => void openRosterBot(bot) }),
     renderRosterContent({
       b,
       onNewBot: (starter) => starter ? quickStarter(starter) : setQuickOpen(true),
@@ -31899,10 +32148,10 @@ function BotsPane() {
       renderUserSections,
       renderHiddenGatewaySection
     }),
-    /* @__PURE__ */ jsx74(MailboxTaskDialog, { member: assigningTask, onClose: () => setAssigningTask(null) }),
-    /* @__PURE__ */ jsx74(BroadcastDialog, { bots: roster, onClose: () => setBroadcastOpen(false), open: broadcastOpen }),
-    /* @__PURE__ */ jsx74(RoutinesCalendarDialog, { bots: roster, onClose: () => setCalendarOpen(false), open: calendarOpen }),
-    /* @__PURE__ */ jsx74(
+    /* @__PURE__ */ jsx75(MailboxTaskDialog, { member: assigningTask, onClose: () => setAssigningTask(null) }),
+    /* @__PURE__ */ jsx75(BroadcastDialog, { bots: roster, onClose: () => setBroadcastOpen(false), open: broadcastOpen }),
+    /* @__PURE__ */ jsx75(RoutinesCalendarDialog, { bots: roster, onClose: () => setCalendarOpen(false), open: calendarOpen }),
+    /* @__PURE__ */ jsx75(
       HireGallery,
       {
         onClose: () => setHireOpen(false),
@@ -31913,7 +32162,7 @@ function BotsPane() {
         open: hireOpen
       }
     ),
-    /* @__PURE__ */ jsx74(
+    /* @__PURE__ */ jsx75(
       QuickCreateDialog,
       {
         onBrowseGallery: () => {
@@ -32186,9 +32435,9 @@ function mountPluginStyles(utilities = "") {
 }
 
 // src/plugin.tsx
-import { Fragment as Fragment17, jsx as jsx75 } from "react/jsx-runtime";
+import { Fragment as Fragment17, jsx as jsx76 } from "react/jsx-runtime";
 function RailTabTitle() {
-  return /* @__PURE__ */ jsx75(Fragment17, { children: useBots().rail.title });
+  return /* @__PURE__ */ jsx76(Fragment17, { children: useBots().rail.title });
 }
 var plugin_default = {
   id: "hermes-bots-plus",
@@ -32412,17 +32661,17 @@ var plugin_default = {
     ctx.register({
       id: "screen-portal",
       area: sdk_compat_exports.SIDEBAR_PROFILE_GROUP_HEADER_AREA,
-      data: { render: (route) => /* @__PURE__ */ jsx75(ProfileGroupScreenPortal, { route }) }
+      data: { render: (route) => /* @__PURE__ */ jsx76(ProfileGroupScreenPortal, { route }) }
     });
     ctx.register({
       id: "agents-section",
       area: SIDEBAR_LIST_TOP_AREA,
-      data: { render: () => /* @__PURE__ */ jsx75(AgentsSection, {}), searchable: true }
+      data: { render: () => /* @__PURE__ */ jsx76(AgentsSection, {}), searchable: true }
     });
     ctx.register({
       id: "bot-header-identity",
       area: CHAT_HEADER_AREAS.title,
-      data: { render: (props) => /* @__PURE__ */ jsx75(BotHeaderIdentity, { ...props }) }
+      data: { render: (props) => /* @__PURE__ */ jsx76(BotHeaderIdentity, { ...props }) }
     });
     ctx.register({
       id: "pane",
@@ -32457,7 +32706,7 @@ var plugin_default = {
         width: "260px",
         collapsible: true,
         hideOnly: true,
-        tabTitle: () => /* @__PURE__ */ jsx75(sdk_compat_exports.LocalizedTabTitle, { select: (t) => t.common.bots }),
+        tabTitle: () => /* @__PURE__ */ jsx76(sdk_compat_exports.LocalizedTabTitle, { select: (t) => t.common.bots }),
         tabTitleText: () => (0, sdk_compat_exports.translateNow)("common.bots"),
         dock: {
           pane: "sessions",
@@ -32465,7 +32714,7 @@ var plugin_default = {
           enforce: true
         }
       },
-      render: () => /* @__PURE__ */ jsx75(BotsPane, {})
+      render: () => /* @__PURE__ */ jsx76(BotsPane, {})
     });
     const registerRoutinesPane = (restoreDismissed) => {
       const dispose = ctx.register({
@@ -32477,7 +32726,7 @@ var plugin_default = {
         // not `useI18n`: a pane title is read at registration, outside React.
         title: botsText().rail.title,
         data: {
-          tabTitle: () => /* @__PURE__ */ jsx75(RailTabTitle, {}),
+          tabTitle: () => /* @__PURE__ */ jsx76(RailTabTitle, {}),
           tabTitleText: () => botsText().rail.title,
           placement: "main",
           // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
@@ -32492,7 +32741,7 @@ var plugin_default = {
           defaultCollapsed: true,
           width: "320px"
         },
-        render: () => /* @__PURE__ */ jsx75(MissionRail, {})
+        render: () => /* @__PURE__ */ jsx76(MissionRail, {})
       });
       if (restoreDismissed && typeof host.undismissPane === "function") {
         host.undismissPane(`${ID}:routines`);
@@ -32603,30 +32852,30 @@ var plugin_default = {
       id: "chat-empty",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx75(BotChatEmpty, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx76(BotChatEmpty, { sessionId })
       }
     });
     ctx.register({
       id: "chat-empty-tips",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx75(BotChatTips, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx76(BotChatTips, { sessionId })
       }
     });
     ctx.register({
       id: "bot-inbound-cards",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx75(BotInboundCards, {})
+      render: () => /* @__PURE__ */ jsx76(BotInboundCards, {})
     });
     ctx.register({
       id: "bot-context-nudge",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx75(BotContextNudge, {})
+      render: () => /* @__PURE__ */ jsx76(BotContextNudge, {})
     });
     ctx.register({
       id: "bot-delegate-hint",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx75(BotDelegateHint, {})
+      render: () => /* @__PURE__ */ jsx76(BotDelegateHint, {})
     });
     ctx.register({
       id: "new-agent",
@@ -32665,7 +32914,7 @@ var plugin_default = {
             label: displayName(bot, botRosterMeta(bot, meta)),
             keywords: ["bot", "agent", "chat", bot.name, botHandle(bot.name, bot)].filter(Boolean),
             detail: () => bot.remoteSource ? "remote" : "local",
-            icon: (props) => /* @__PURE__ */ jsx75(sdk_compat_exports.Codicon, { name: "robot", ...props }),
+            icon: (props) => /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "robot", ...props }),
             run: () => void openRosterBot(bot)
           }));
         }
@@ -32689,13 +32938,13 @@ var plugin_default = {
       area: sdk_compat_exports.TRANSCRIPT_DIRECTIVE_AREA,
       data: {
         name: BOT_PLAN_DIRECTIVE,
-        render: (props) => /* @__PURE__ */ jsx75(BotPlanCard, { ...props })
+        render: (props) => /* @__PURE__ */ jsx76(BotPlanCard, { ...props })
       }
     });
     ctx.register({
       id: "bot-plan-checklist",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx75(BotPlanChecklist, {})
+      render: () => /* @__PURE__ */ jsx76(BotPlanChecklist, {})
     });
     ctx.register({
       id: "mention-middleware",
@@ -32767,12 +33016,37 @@ var plugin_default = {
         }
       }
     });
+    if (wireInstantAck((dispose) => ctx.onDispose?.(dispose))) {
+      ctx.register({
+        id: "instant-ack-middleware",
+        area: sdk_compat_exports.COMPOSER_AREAS.middleware,
+        data: {
+          handler: (draft) => {
+            const storedId = host.state.focusedStoredSessionId.get();
+            if (canonicalBotChatOnScreen(storedId)) {
+              armInstantAck(
+                host.state.focusedSessionId.get(),
+                storedId,
+                draft.displayText ?? draft.text ?? "",
+                host.state.busy.get()
+              );
+            }
+            return draft;
+          }
+        }
+      });
+      ctx.register({
+        id: "instant-ack",
+        area: sdk_compat_exports.COMPOSER_AREAS.top,
+        render: () => /* @__PURE__ */ jsx76(InstantAckLine, {})
+      });
+    }
     for (const contribution of [
       {
         id: "team-page",
         area: sdk_compat_exports.ROUTES_AREA,
         data: { path: "/team" },
-        render: () => /* @__PURE__ */ jsx75(TeamPage, {})
+        render: () => /* @__PURE__ */ jsx76(TeamPage, {})
       },
       {
         id: "team-nav",
