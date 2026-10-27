@@ -139,6 +139,7 @@ import { TEAM_LOCALES } from './team-i18n'
 import { TeamPage } from './team-page'
 import { mountPluginStyles } from './tones'
 import { BotChatMark, mountReactionPillStyles } from './reaction-pills'
+import { installReactionsDefault } from './reactions-default'
 import { mountSidePagesStyles, SIDE_PAGE_DIRECTIVE, SidePageCard, SidePagesChip } from './side-pages'
 import { SIDE_PAGES_LOCALES } from './side-pages-i18n'
 import { ToolRunCards } from './tool-card'
@@ -186,6 +187,9 @@ export default {
     const unmountStyles = mountPluginStyles(pluginUtilities)
     // b1: landed reactions read as pills inside a canonical Bot Chat.
     const unmountReactionPills = mountReactionPillStyles()
+    // b2: reactions default to on (an unset preference only; the user's
+    // Settings › Appearance › Reactions choice still wins).
+    const disposeReactionsDefault = installReactionsDefault()
     const unmountSidePages = mountSidePagesStyles()
     // The user's own roster sections. Read once at register; every mutation
     // writes through.
@@ -213,6 +217,7 @@ export default {
     if (typeof ctx.onDispose === 'function') {
       ctx.onDispose(unmountStyles)
       ctx.onDispose(unmountReactionPills)
+      ctx.onDispose(disposeReactionsDefault)
       ctx.onDispose(unmountSidePages)
       ctx.onDispose(disposeSidePagesLocales)
       ctx.onDispose(disposeLocales)

@@ -6412,7 +6412,7 @@ var init_rfb = __esm({
 init_sdk_compat();
 
 // plugin-utilities:css
-var css_default = '@layer utilities{.-left-\\[9999px\\]{left:-9999px}.aspect-\\[1200\\/630\\]{aspect-ratio:1200/630}.size-\\[18px\\]{width:18px;height:18px}.size-\\[34px\\]{width:34px;height:34px}.h-\\[min\\(40rem\\,calc\\(100vh-4rem\\)\\)\\]{height:min(40rem,100vh - 4rem)}.h-\\[min\\(46rem\\,88vh\\)\\]{height:min(46rem,88vh)}.max-h-\\[88vh\\]{max-height:88vh}.max-w-\\[11rem\\]{max-width:11rem}.max-w-\\[85\\%\\]{max-width:85%}.max-w-\\[min\\(14rem\\,100\\%\\)\\]{max-width:min(14rem,100%)}.max-w-\\[min\\(64rem\\,94vw\\)\\]{max-width:min(64rem,94vw)}.max-w-\\[min\\(68rem\\,calc\\(100vw-2rem\\)\\)\\]{max-width:min(68rem,100vw - 2rem)}.grid-cols-\\[minmax\\(13rem\\,18rem\\)_1fr\\]{grid-template-columns:minmax(13rem,18rem) 1fr}.grid-cols-\\[repeat\\(auto-fill\\,minmax\\(9\\.5rem\\,1fr\\)\\)\\]{grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr))}.rounded-\\[22\\%\\]{border-radius:22%}.border-\\(--dt-composer-ring\\)\\/20{border-color:var(--dt-composer-ring)}@supports (color:color-mix(in lab, red, red)){.border-\\(--dt-composer-ring\\)\\/20{border-color:color-mix(in oklab, var(--dt-composer-ring) 20%, transparent)}}.border-\\(--dt-composer-ring\\)\\/25{border-color:var(--dt-composer-ring)}@supports (color:color-mix(in lab, red, red)){.border-\\(--dt-composer-ring\\)\\/25{border-color:color-mix(in oklab, var(--dt-composer-ring) 25%, transparent)}}.border-\\(--dt-user-bubble-border\\){border-color:var(--dt-user-bubble-border)}.border-\\(--ui-accent\\)\\/20{border-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.border-\\(--ui-accent\\)\\/20{border-color:color-mix(in oklab, var(--ui-accent) 20%, transparent)}}.border-\\(--ui-accent\\)\\/25{border-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.border-\\(--ui-accent\\)\\/25{border-color:color-mix(in oklab, var(--ui-accent) 25%, transparent)}}.border-\\(--ui-accent\\)\\/30{border-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.border-\\(--ui-accent\\)\\/30{border-color:color-mix(in oklab, var(--ui-accent) 30%, transparent)}}.border-l-\\(--ui-accent\\){border-left-color:var(--ui-accent)}.bg-\\(--chrome-action-hover\\)\\/60{background-color:var(--chrome-action-hover)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--chrome-action-hover\\)\\/60{background-color:color-mix(in oklab, var(--chrome-action-hover) 60%, transparent)}}.bg-\\(--speaker-color\\){background-color:var(--speaker-color)}.bg-\\(--ui-accent\\)\\/6{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-accent\\)\\/6{background-color:color-mix(in oklab, var(--ui-accent) 6%, transparent)}}.bg-\\(--ui-accent\\)\\/8{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-accent\\)\\/8{background-color:color-mix(in oklab, var(--ui-accent) 8%, transparent)}}.bg-\\(--ui-accent\\)\\/12{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-accent\\)\\/12{background-color:color-mix(in oklab, var(--ui-accent) 12%, transparent)}}.bg-\\(--ui-accent\\)\\/18{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-accent\\)\\/18{background-color:color-mix(in oklab, var(--ui-accent) 18%, transparent)}}.bg-\\(--ui-bg-card\\,transparent\\){background-color:var(--ui-bg-card,transparent)}.bg-\\(--ui-bg-secondary\\)\\/40{background-color:var(--ui-bg-secondary)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-bg-secondary\\)\\/40{background-color:color-mix(in oklab, var(--ui-bg-secondary) 40%, transparent)}}.bg-\\(--ui-control-background\\){background-color:var(--ui-control-background)}.bg-\\(--ui-danger\\,\\#e5484d\\){background-color:var(--ui-danger,#e5484d)}.bg-\\(--ui-green\\)\\/12{background-color:var(--ui-green)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-green\\)\\/12{background-color:color-mix(in oklab, var(--ui-green) 12%, transparent)}}.bg-\\(--ui-green\\)\\/15{background-color:var(--ui-green)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-green\\)\\/15{background-color:color-mix(in oklab, var(--ui-green) 15%, transparent)}}.bg-\\(--ui-inline-code-background\\){background-color:var(--ui-inline-code-background)}.bg-\\(--ui-surface-secondary\\){background-color:var(--ui-surface-secondary)}.bg-\\(--ui-warning\\,\\#f5a524\\){background-color:var(--ui-warning,#f5a524)}.text-\\[0\\.55rem\\]{font-size:.55rem}.text-\\[1\\.0625rem\\]{font-size:1.0625rem}.text-\\(--speaker-color\\){color:var(--speaker-color)}.shadow-\\(--shadow-nous\\){--tw-shadow:var(--shadow-nous);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.shadow-\\[0_1px_0_rgba\\(0\\,0\\,0\\,0\\.04\\)\\,0_12px_32px_-12px_rgba\\(0\\,0\\,0\\,0\\.25\\)\\]{--tw-shadow:0 1px 0 var(--tw-shadow-color,#0000000a), 0 12px 32px -12px var(--tw-shadow-color,#00000040);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.group-hover\\/triage\\:border-\\(--ui-stroke-primary\\):is(:where(.group\\/triage):hover *){border-color:var(--ui-stroke-primary)}.placeholder\\:text-\\(--ui-text-quaternary\\)::placeholder{color:var(--ui-text-quaternary)}.before\\:left-\\[1\\.375rem\\]:before{content:var(--tw-content);left:1.375rem}.before\\:bg-\\(--ui-stroke-secondary\\):before,.after\\:bg-\\(--ui-stroke-secondary\\):after{content:var(--tw-content);background-color:var(--ui-stroke-secondary)}.focus-within\\:border-\\(--ui-accent\\):focus-within{border-color:var(--ui-accent)}.hover\\:bg-\\(--ui-accent\\)\\/90:hover{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.hover\\:bg-\\(--ui-accent\\)\\/90:hover{background-color:color-mix(in oklab, var(--ui-accent) 90%, transparent)}}.focus-visible\\:ring-\\(--ui-accent\\):focus-visible{--tw-ring-color:var(--ui-accent)}.data-\\[active\\=true\\]\\:bg-\\(--ui-row-active-background\\)[data-active=true]{background-color:var(--ui-row-active-background)}.data-\\[picked\\=true\\]\\:border-\\(--ui-accent\\)[data-picked=true]{border-color:var(--ui-accent)}.data-\\[picked\\=true\\]\\:ring-1[data-picked=true]{--tw-ring-shadow:var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color,currentcolor);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.data-\\[picked\\=true\\]\\:ring-\\(--ui-accent\\)[data-picked=true]{--tw-ring-color:var(--ui-accent)}@media (min-width:48rem){.md\\:grid-cols-\\[11rem_minmax\\(0\\,1fr\\)_17rem\\]{grid-template-columns:11rem minmax(0,1fr) 17rem}.md\\:border-\\(--ui-stroke-tertiary\\){border-color:var(--ui-stroke-tertiary)}}@container (min-width:32rem){.\\@lg\\:grid-cols-\\[minmax\\(0\\,2fr\\)_minmax\\(0\\,1fr\\)\\]{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}}.\\[\\&_\\.codicon\\]\\:text-\\[0\\.75rem\\] .codicon{font-size:.75rem}}@property --tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-shadow-color{syntax:"*";inherits:false}@property --tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-shadow-color{syntax:"*";inherits:false}@property --tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-ring-color{syntax:"*";inherits:false}@property --tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-ring-color{syntax:"*";inherits:false}@property --tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-ring-inset{syntax:"*";inherits:false}@property --tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}@property --tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}@property --tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-content{syntax:"*";inherits:false;initial-value:""}@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-shadow:0 0 #0000;--tw-shadow-color:initial;--tw-shadow-alpha:100%;--tw-inset-shadow:0 0 #0000;--tw-inset-shadow-color:initial;--tw-inset-shadow-alpha:100%;--tw-ring-color:initial;--tw-ring-shadow:0 0 #0000;--tw-inset-ring-color:initial;--tw-inset-ring-shadow:0 0 #0000;--tw-ring-inset:initial;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-offset-shadow:0 0 #0000;--tw-content:""}}}';
+var css_default = "@layer utilities;";
 
 // src/agents-section.tsx
 init_sdk_compat();
@@ -34520,6 +34520,44 @@ function mountReactionPillStyles() {
   return () => el?.remove();
 }
 
+// src/reactions-default.ts
+var REACTIONS_KEY = "hermes.desktop.reactions.v1";
+function seedReactionsDefault(store) {
+  if (!store) {
+    return false;
+  }
+  try {
+    if (store.getItem(REACTIONS_KEY) !== null) {
+      return false;
+    }
+    store.setItem(REACTIONS_KEY, "on");
+    return true;
+  } catch {
+    return false;
+  }
+}
+function installReactionsDefault(win = typeof window === "undefined" ? void 0 : window) {
+  if (!win) {
+    return () => {
+    };
+  }
+  const seed = () => {
+    let store;
+    try {
+      store = win.localStorage;
+    } catch {
+      store = void 0;
+    }
+    seedReactionsDefault(store);
+  };
+  win.addEventListener("pagehide", seed);
+  win.addEventListener("beforeunload", seed);
+  return () => {
+    win.removeEventListener("pagehide", seed);
+    win.removeEventListener("beforeunload", seed);
+  };
+}
+
 // src/side-pages.tsx
 init_sdk_compat();
 init_sdk_compat();
@@ -36065,6 +36103,7 @@ var plugin_default = {
     setPluginCtx(ctx);
     const unmountStyles = mountPluginStyles(css_default);
     const unmountReactionPills = mountReactionPillStyles();
+    const disposeReactionsDefault = installReactionsDefault();
     const unmountSidePages = mountSidePagesStyles();
     loadBotSections();
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES);
@@ -36084,6 +36123,7 @@ var plugin_default = {
     if (typeof ctx.onDispose === "function") {
       ctx.onDispose(unmountStyles);
       ctx.onDispose(unmountReactionPills);
+      ctx.onDispose(disposeReactionsDefault);
       ctx.onDispose(unmountSidePages);
       ctx.onDispose(disposeSidePagesLocales);
       ctx.onDispose(disposeLocales);
