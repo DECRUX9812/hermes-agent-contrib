@@ -71,6 +71,7 @@ import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
 import { BotChatEmpty } from './chat-empty'
 import { hydrateDismissedNudges } from './context-nudge'
 import { BotContextNudge } from './context-nudge-view'
+import { CONTEXT_PANEL_LOCALES } from './context-panel-i18n'
 import { bindProfileSync } from './cron'
 import {
   $botMeta,
@@ -186,6 +187,7 @@ export default {
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES)
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
     const disposeLiveViewLocales = ctx.i18n.register(LIVE_VIEW_LOCALES)
+    const disposeContextPanelLocales = ctx.i18n.register(CONTEXT_PANEL_LOCALES)
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
     const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
@@ -206,6 +208,7 @@ export default {
       ctx.onDispose(disposeLocales)
       ctx.onDispose(disposeTeamLocales)
       ctx.onDispose(disposeLiveViewLocales)
+      ctx.onDispose(disposeContextPanelLocales)
       ctx.onDispose(disposeHireLocales)
       ctx.onDispose(disposeShareLocales)
       ctx.onDispose(disposeAutopilotLocales)

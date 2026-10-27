@@ -35,6 +35,7 @@ import { BotDeliverablesSection } from './bot-deliverables'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
 import { BotTaskLog } from './bot-task-log'
 import { BotTopicProjectMenu } from './bot-topic-project-menu'
+import { ContextPanel } from './context-panel'
 import {
   $lastJobs,
   CreateRoutineDialog,
@@ -400,15 +401,12 @@ export function MissionRail() {
   const staleNotice = error && !view.live && view.all.length ? b.cron.staleNotice : null
 
   const filterHint = routineFilterHint(view.all, jobs)
+  const ownsFocus = !!focusedOwner && isActiveRosterBot(owner, focusedOwner)
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain">
-      <BotHero
-        bot={owner}
-        focused={!!focusedOwner && isActiveRosterBot(owner, focusedOwner)}
-        meta={meta}
-        onEdit={() => setEditing(true)}
-      />
+      <BotHero bot={owner} focused={ownsFocus} meta={meta} onEdit={() => setEditing(true)} />
+      {ownsFocus ? <ContextPanel bot={owner} /> : null}
       <RailTabs
         alerts={{ scheduled: jobs.some(routineNeedsAttention) }}
         badges={{ approvals: approvalCount }}

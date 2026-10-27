@@ -49,6 +49,15 @@ export function toneStyleSheet(): string {
     '@media (prefers-reduced-motion: reduce){.hbp-enter{animation:none}}'
   )
 
+  // The same easing for things that grow in place: a meter's fill and a
+  // section that folds open (grid rows 0fr → 1fr, so no height is measured).
+  rules.push(
+    '.hbp-fill{transition:width 240ms ease-out,background-color 240ms ease-out}',
+    '.hbp-fold{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows 200ms ease-out,opacity 160ms ease-out}',
+    '.hbp-fold[data-state=open]{grid-template-rows:1fr;opacity:1}',
+    '@media (prefers-reduced-motion: reduce){.hbp-fill,.hbp-fold{transition:none}}'
+  )
+
   return `@layer utilities{${rules.join('')}}`
 }
 
