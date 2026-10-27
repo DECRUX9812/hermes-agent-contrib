@@ -3753,6 +3753,8 @@ catalog: CatalogTranslations
       address: string
       addressPlaceholder: string
       blankPageBody: string
+      blankPageShortcuts: string
+      blankPageTitle: string
       finishedRestarting: (message?: string) => string
       failedRestarting: (message: string) => string
       unknownError: string

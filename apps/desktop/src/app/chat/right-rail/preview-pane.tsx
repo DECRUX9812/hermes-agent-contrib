@@ -9,6 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { requestComposerAttachImages, requestComposerFocus, requestComposerInsert } from '@/app/chat/composer/focus'
 import { openGuestContextMenu } from '@/app/context-menu/store'
 import { PanelEmpty } from '@/app/overlays/panel'
+import { Codicon } from '@/components/ui/codicon'
 import { PreviewDocumentFrame } from '@/components/ui/preview-document-frame'
 import { Tip } from '@/components/ui/tooltip'
 import { type Translations, useI18n } from '@/i18n'
@@ -49,6 +50,7 @@ import {
 import { $selectedStoredSessionId } from '@/store/session'
 import { canOpenBrowserWindow, isBrowserWindow } from '@/store/windows'
 
+import { START_SHORTCUTS, startShortcutAddress } from './preview-address'
 import { placeAnnotateCard, PreviewAnnotateCard } from './preview-annotate-card'
 import {
   bindPreviewExecuteJavaScript,
@@ -273,7 +275,42 @@ function PreviewLoadError({
   )
 }
 
-/** The body of a tab that is not a web page: a generated artifact or a file. */
+/**
+ * The blank page's shortcuts: the dev servers a person is most often here to
+ * look at, one click instead of typing an address. They go through the same
+ * address parsing the bar uses, so a chip can never navigate somewhere the bar
+ * would have refused.
+ */
+function PreviewStartShortcuts({ onNavigate }: { onNavigate: (url: string) => void }) {
+  const { t } = useI18n()
+
+  return (
+    <div
+      aria-label={t.preview.web.blankPageShortcuts}
+      className="flex flex-wrap items-center justify-center gap-1.5"
+      role="group"
+    >
+      {START_SHORTCUTS.map(shortcut => (
+        <button
+          className="flex items-center gap-1 rounded-full border border-(--ui-stroke-tertiary) px-2.5 py-1 font-mono text-xs text-(--ui-text-secondary) transition-colors hover:border-(--ui-stroke-secondary) hover:bg-(--ui-control-hover-background) hover:text-foreground"
+          key={shortcut}
+          onClick={() => {
+            const address = startShortcutAddress(shortcut)
+
+            if (address) {
+              onNavigate(address)
+            }
+          }}
+          type="button"
+        >
+          <Codicon className="opacity-60" name="server-environment" size={12} />
+          {shortcut}
+        </button>
+      ))}
+    </div>
+  )
+}
+
 function PreviewDocumentBody(props: ComponentProps<typeof LocalFilePreview>) {
   return props.target.kind === 'artifact' ? (
     <ArtifactPreview onClose={props.onClose} target={props.target} />
@@ -1497,40 +1534,43 @@ export function PreviewPane({
 
         {usesBrowserIframe && !isBlankPage && <PreviewBrowserFrameHint target={target} />}
 
-        {usesWebview && (
+        {(usesWebview || usesBrowserIframe) && (
           <PreviewBrowserBar
-            annotateMode={annotate.mode}
-            canGoBack={history.back}
-            canGoForward={history.forward}
-            commentCount={annotate.stack.pins.length}
-            consoleOpen={consoleOpen}
-            devToolsOpen={devtoolsOpen}
+            annotateMode={usesWebview && annotate.mode}
+            canGoBack={usesWebview && history.back}
+            canGoForward={usesWebview && history.forward}
+            commentCount={usesWebview ? annotate.stack.pins.length : 0}
+            consoleOpen={usesWebview && consoleOpen}
+            devToolsOpen={usesWebview && devtoolsOpen}
             loading={loading}
             onBack={goBack}
             onClose={onClose}
             onFloat={
-              target.kind !== 'url' || isBrowserWindow() || !tabId || floatingTabId === tabId
+              !usesWebview || target.kind !== 'url' || isBrowserWindow() || !tabId || floatingTabId === tabId
                 ? undefined
                 : () => floatBrowserTab(tabId)
             }
-            onFlushComments={() => void flushComments()}
+            onFlushComments={usesWebview ? () => void flushComments() : undefined}
             onForward={goForward}
             onNavigate={navigateTo}
             onOpenExternal={
-              !isBrowserWindow() && !canOpenBrowserWindow()
-                ? () => void window.hermesDesktop?.openExternal(currentUrl)
-                : undefined
+              // The browser-hosted pane already offers this in the frame hint
+              // above the iframe; the bar's copy would be a second button for
+              // the same act, in the same column.
+              !usesWebview || isBrowserWindow() || canOpenBrowserWindow()
+                ? undefined
+                : () => void window.hermesDesktop?.openExternal(currentUrl)
             }
             onPopIn={isBrowserWindow() ? () => window.close() : undefined}
             onPopOut={
-              target.kind !== 'url' || isBrowserWindow() || !tabId || !canOpenBrowserWindow()
+              !usesWebview || target.kind !== 'url' || isBrowserWindow() || !tabId || !canOpenBrowserWindow()
                 ? undefined
                 : () => popOutBrowserTab(tabId)
             }
             onReload={reloadPreview}
-            onToggleAnnotate={toggleAnnotate}
-            onToggleConsole={() => consoleState.setOpen(open => !open)}
-            onToggleDevTools={toggleDevTools}
+            onToggleAnnotate={usesWebview ? toggleAnnotate : undefined}
+            onToggleConsole={usesWebview ? () => consoleState.setOpen(open => !open) : undefined}
+            onToggleDevTools={usesWebview ? toggleDevTools : undefined}
             url={currentUrl}
           />
         )}
@@ -1570,7 +1610,12 @@ export function PreviewPane({
           )}
           {isBlankPage && (
             <div className="absolute inset-0 grid bg-background">
-              <PanelEmpty description={copy.blankPageBody} icon="globe" />
+              <PanelEmpty
+                action={<PreviewStartShortcuts onNavigate={navigateTo} />}
+                description={copy.blankPageBody}
+                icon="globe"
+                title={copy.blankPageTitle}
+              />
             </div>
           )}
           {isWebPreview && loadError && (

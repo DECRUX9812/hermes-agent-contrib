@@ -28,6 +28,8 @@ export const jaPreviewWeb: TranslationOverride<Translations['preview']['web']> =
   address: 'アドレス',
   addressPlaceholder: 'アドレスを入力',
   blankPageBody: '上のアドレス欄に入力するか、Hermes にページを開くよう頼んでください。',
+  blankPageShortcuts: 'ローカルサーバーを試す',
+  blankPageTitle: 'Hermes を離れずにブラウズ',
   finishedRestarting: message => `Hermes がプレビューサーバーの再起動を完了しました${message ? `: ${message}` : ''}`,
   failedRestarting: message => `サーバーの再起動に失敗しました: ${message}`,
   unknownError: '不明なエラー',

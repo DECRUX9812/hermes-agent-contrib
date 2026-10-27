@@ -28,6 +28,8 @@ export const zhPreviewWeb: TranslationOverride<Translations['preview']['web']> =
   address: '地址',
   addressPlaceholder: '输入地址',
   blankPageBody: '在上方输入地址开始浏览，或让 Hermes 打开一个页面。',
+  blankPageShortcuts: '试试本地服务器',
+  blankPageTitle: '无需离开 Hermes 即可浏览',
   finishedRestarting: message => `Hermes 已完成预览服务器重启${message ? `: ${message}` : ''}`,
   failedRestarting: message => `服务器重启失败：${message}`,
   unknownError: '未知错误',

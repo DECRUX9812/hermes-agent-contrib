@@ -29,6 +29,8 @@ export const dePreviewWeb: TranslationOverride<Translations['preview']['web']> =
   address: 'Adresse',
   addressPlaceholder: 'Adresse eingeben',
   blankPageBody: 'Geben Sie oben eine Adresse ein, um zu browsen, oder bitten Sie Hermes, eine Seite zu öffnen.',
+  blankPageShortcuts: 'Lokalen Server ausprobieren',
+  blankPageTitle: 'Stöbern, ohne Hermes zu verlassen',
   finishedRestarting: message => `Hermes hat den Vorschau-Server neu gestartet${message ? `: ${message}` : ''}`,
   failedRestarting: message => `Server-Neustart fehlgeschlagen: ${message}`,
   unknownError: 'unbekannter Fehler',

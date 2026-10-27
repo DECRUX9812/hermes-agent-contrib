@@ -26,6 +26,8 @@ export const enPreviewWeb: Translations['preview']['web'] = {
   address: 'Address',
   addressPlaceholder: 'Enter address',
   blankPageBody: 'Type an address above to browse, or ask Hermes to open a page.',
+  blankPageShortcuts: 'Try a local server',
+  blankPageTitle: 'Browse without leaving Hermes',
   finishedRestarting: message => `Hermes finished restarting the preview server${message ? `: ${message}` : ''}`,
   failedRestarting: message => `Server restart failed: ${message}`,
   unknownError: 'unknown error',
