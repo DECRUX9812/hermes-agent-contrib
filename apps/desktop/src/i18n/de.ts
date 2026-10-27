@@ -5068,7 +5068,8 @@ export const deOverrides = {
       alwaysAllow: 'Immer erlauben',
       alwaysConfirmPrompt: pattern => `„${pattern}“ immer erlauben?`,
       decisionRecorded: choice => `Entscheidung gespeichert: ${choice}`,
-      noLongerPending: 'Diese Freigabe ist nicht mehr ausstehend.'
+      noLongerPending: 'Diese Freigabe ist nicht mehr ausstehend.',
+      deniedSessionStopped: 'Abgelehnt, Sitzung gestoppt.'
     },
     clarify: deClarify,
     toolCards: deToolCards,

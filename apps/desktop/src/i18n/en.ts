@@ -4524,7 +4524,8 @@ export const en: Translations = {
       alwaysAllow: 'Always allow',
       alwaysConfirmPrompt: pattern => `Always allow “${pattern}”?`,
       decisionRecorded: choice => `Decision recorded: ${choice}`,
-      noLongerPending: 'This approval is no longer pending.'
+      noLongerPending: 'This approval is no longer pending.',
+      deniedSessionStopped: 'Denied, session stopped.'
     },
     clarify: enClarify,
     toolCards: enToolCards,

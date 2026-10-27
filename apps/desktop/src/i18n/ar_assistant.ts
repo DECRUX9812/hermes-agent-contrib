@@ -146,7 +146,8 @@ export const arAssistant = {
       commandDetails: 'تفاصيل الأمر',
       alwaysConfirmPrompt: pattern => `السماح دائمًا بـ ${pattern}؟`,
       decisionRecorded: choice => `تم تسجيل القرار: ${choice}`,
-      noLongerPending: 'لم تعد هذه الموافقة معلّقة.'
+      noLongerPending: 'لم تعد هذه الموافقة معلّقة.',
+      deniedSessionStopped: 'تم الرفض، توقفت الجلسة.'
     },
     toolCards: {
       activityLabel: 'نشاط الأدوات',

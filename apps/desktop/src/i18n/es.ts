@@ -5054,7 +5054,8 @@ export const esOverrides = {
       alwaysAllow: 'Permitir siempre',
       alwaysConfirmPrompt: pattern => `¿Permitir siempre “${pattern}”?`,
       decisionRecorded: choice => `Decisión registrada: ${choice}`,
-      noLongerPending: 'Esta aprobación ya no está pendiente.'
+      noLongerPending: 'Esta aprobación ya no está pendiente.',
+      deniedSessionStopped: 'Denegado, sesión detenida.'
     },
     clarify: esClarify,
     toolCards: esToolCards,

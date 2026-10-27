@@ -4366,7 +4366,8 @@ export const zhOverrides = {
       alwaysAllow: '始终允许',
       alwaysConfirmPrompt: pattern => `始终允许“${pattern}”？`,
       decisionRecorded: choice => `已记录决定：${choice}`,
-      noLongerPending: '此审批已不再等待处理。'
+      noLongerPending: '此审批已不再等待处理。',
+      deniedSessionStopped: '已拒绝，会话已停止。'
     },
     clarify: zhClarify,
     toolCards: zhToolCards,
