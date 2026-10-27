@@ -1,0 +1,176 @@
+{
+ "advance-mode-toggle/plugin.js": {
+  "arbitrary value": 7,
+  "hex colour": 34
+ },
+ "artifact-lab/plugin.js": {
+  "arbitrary value": 22,
+  "non-theme var": 52,
+  "uppercase class": 5
+ },
+ "attention-radar/plugin.js": {
+  "hex colour": 3,
+  "uppercase class": 2
+ },
+ "better-session-appearance/plugin.js": {
+  "hex colour": 1,
+  "non-theme var": 2,
+  "rgb()/hsl()": 5
+ },
+ "bot-sections/plugin.js": {
+  "hex colour": 9,
+  "rgb()/hsl()": 13
+ },
+ "bubble-mode/plugin.js": {
+  "hex colour": 22
+ },
+ "code-workspace/plugin.js": {
+  "hex colour": 2
+ },
+ "computer-viewer/plugin.js": {
+  "arbitrary value": 38,
+  "hex colour": 2,
+  "non-theme var": 1,
+  "palette colour": 45,
+  "rgb()/hsl()": 2,
+  "uppercase class": 1
+ },
+ "context-xray/plugin.js": {
+  "arbitrary value": 29,
+  "non-theme var": 45,
+  "uppercase class": 3
+ },
+ "cost-analytics/plugin.js": {
+  "uppercase class": 1
+ },
+ "cpa-quota/plugin.js": {
+  "arbitrary value": 32,
+  "hex colour": 28,
+  "uppercase class": 2
+ },
+ "delegation-reports/plugin.js": {
+  "hex colour": 1
+ },
+ "file-manager/plugin.js": {
+  "arbitrary value": 10,
+  "hex colour": 51,
+  "palette colour": 4,
+  "uppercase class": 2
+ },
+ "floating-preview/plugin.js": {
+  "arbitrary value": 13,
+  "hex colour": 34
+ },
+ "forkwatch/plugin.js": {
+  "hex colour": 5,
+  "rgb()/hsl()": 1,
+  "uppercase class": 3
+ },
+ "grok-ui/plugin.js": {
+  "arbitrary value": 7,
+  "hex colour": 29,
+  "rgb()/hsl()": 7
+ },
+ "handflow/plugin.js": {
+  "arbitrary value": 13,
+  "palette colour": 4,
+  "uppercase class": 1
+ },
+ "hermes-bots-plus/plugin.js": {
+  "arbitrary value": 373,
+  "hex colour": 42,
+  "non-theme var": 32,
+  "palette colour": 19,
+  "rgb()/hsl()": 14,
+  "uppercase class": 5
+ },
+ "hermes-day/plugin.js": {
+  "arbitrary value": 328,
+  "hex colour": 145,
+  "non-theme var": 37,
+  "palette colour": 11,
+  "rgb()/hsl()": 9,
+  "uppercase class": 41
+ },
+ "hermes-rss/plugin.js": {
+  "non-theme var": 4
+ },
+ "jev-gate/plugin.js": {
+  "arbitrary value": 43,
+  "non-theme var": 70,
+  "palette colour": 20,
+  "uppercase class": 14
+ },
+ "jev-hud/plugin.js": {
+  "arbitrary value": 26,
+  "non-theme var": 39,
+  "palette colour": 6,
+  "uppercase class": 2
+ },
+ "jump/plugin.js": {
+  "arbitrary value": 2,
+  "uppercase class": 1
+ },
+ "langchain-rag/plugin.js": {
+  "arbitrary value": 9,
+  "palette colour": 6
+ },
+ "local-model-deck/plugin.js": {
+  "arbitrary value": 18,
+  "non-theme var": 30,
+  "uppercase class": 4
+ },
+ "machine-mesh/plugin.js": {
+  "arbitrary value": 25,
+  "non-theme var": 31,
+  "palette colour": 10,
+  "uppercase class": 6
+ },
+ "master-harness/plugin.js": {
+  "arbitrary value": 8,
+  "uppercase class": 3
+ },
+ "pixel-office/plugin.js": {
+  "arbitrary value": 10,
+  "hex colour": 11,
+  "non-theme var": 7,
+  "rgb()/hsl()": 1
+ },
+ "plugin-dock/plugin.js": {
+  "uppercase class": 2
+ },
+ "quota/plugin.js": {
+  "arbitrary value": 15,
+  "uppercase class": 1
+ },
+ "subscription-hub/plugin.js": {
+  "arbitrary value": 20,
+  "hex colour": 38
+ },
+ "swarm-cockpit/plugin.js": {
+  "arbitrary value": 10,
+  "non-theme var": 2,
+  "uppercase class": 1
+ },
+ "task-dock/plugin.js": {
+  "hex colour": 9,
+  "non-theme var": 2,
+  "rgb()/hsl()": 3
+ },
+ "tokenpulse/plugin.js": {
+  "arbitrary value": 2,
+  "uppercase class": 1
+ },
+ "triage-lens/plugin.js": {
+  "arbitrary value": 1,
+  "hex colour": 36,
+  "non-theme var": 9
+ },
+ "usage-dashboard/plugin.js": {
+  "arbitrary value": 17,
+  "hex colour": 5,
+  "non-theme var": 5,
+  "palette colour": 21,
+  "uppercase class": 5
+ }
+}

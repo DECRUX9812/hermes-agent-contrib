@@ -271,7 +271,7 @@ const captionClass = 'mt-1.5 truncate px-0.5 text-[length:var(--conversation-cap
 const newBadge = () =>
   jsx('span', {
     className:
-      'absolute left-2 top-2 rounded px-1 py-px text-[length:0.5625rem] font-semibold uppercase tracking-wide bg-(--ui-bg-elevated)/85 text-(--ui-accent) backdrop-blur-sm',
+      'absolute left-2 top-2 rounded px-1 py-px text-xs font-semibold bg-(--ui-bg-elevated)/85 text-(--ui-accent) backdrop-blur-sm',
     children: 'New'
   })
 
@@ -528,7 +528,7 @@ function QuickPick({ ctx }) {
           title: 'Pick a chat backdrop',
           'aria-label': 'Pick a chat backdrop',
           className: cn(
-            'inline-flex h-full items-center gap-1.5 px-1.5 text-[0.6875rem] hover:bg-(--chrome-action-hover) hover:text-foreground',
+            'inline-flex h-full items-center gap-1.5 px-1.5 text-xs hover:bg-(--chrome-action-hover) hover:text-foreground',
             live ? 'text-foreground' : 'text-(--ui-text-tertiary)'
           ),
           children: jsx(icons.ImageIcon, { className: 'size-3.5' })
