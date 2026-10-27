@@ -285,6 +285,13 @@ const PAPER_CSS = `
   color: var(--ui-text-secondary);
 }
 
+/* Sidebar sections (consistency L4): "Pinned" and "Sessions" were indigo while
+   date groups ("Yesterday") were grey; every section label is one quiet ink. */
+:root[data-hermes-theme='paper'] .group\\/section-label > span,
+:root[data-hermes-theme='paper'] .group\\/workspace > button > span.shrink-0 {
+  color: var(--ui-text-tertiary);
+}
+
 /* Flat panels: a hairline reads as intentional, a drop shadow reads as 2016. */
 :root[data-hermes-theme='paper'] [data-slot='sidebar-container'] {
   box-shadow: none;
@@ -322,11 +329,15 @@ const OVERRIDES = `
 :is([class*='text-[0.8125'], [class*='text-[0.82'], [class*='text-[0.85'], [class*='text-[13p']) {
   font-size: var(--text-ui-sm);
 }
-:is(.rounded-\[3px\], .rounded-\[4px\], .rounded-\[5px\], .rounded-\[6px\],
-  .rounded-\[0\.25rem\], .rounded-\[0\.3125rem\], .rounded-\[0\.375rem\]) {
-  border-radius: var(--radius-control);
+/* Radius drift (consistency L5): small arbitrary radii (badges, chips, kbd) snap to the theme's own control step,
+   --radius-md, which scales with its radius scalar. Backslashes are doubled: this is a template literal, and a
+   single one is dropped, which left these selectors invalid (and ignored) before. Card-size radii stay as authored. */
+:is(.rounded-\\[2\\.5px\\], .rounded-\\[3px\\], .rounded-\\[4px\\], .rounded-\\[5px\\], .rounded-\\[6px\\],
+  .rounded-\\[0\\.25rem\\], .rounded-\\[0\\.3125rem\\], .rounded-\\[0\\.375rem\\]) {
+  border-radius: var(--radius-md);
 }
-:is(.rounded-\[8px\], .rounded-\[9px\], .rounded-\[0\.625rem\], .composer-human-message) {
+/* The human turn keeps the card radius (the only live part of the old card-size snap). */
+.composer-human-message {
   border-radius: var(--radius-card);
 }
 /* Sentence case: tracked caps labels render as written. */
@@ -381,10 +392,6 @@ const OVERRIDES = `
   background: transparent;
   font-weight: 500;
 }
-/* Arc rings on a card-radius host stay concentric (audit m5): the ring defaults to rounded-md. */
-:is(.rounded-\[8px\], .rounded-\[9px\], .rounded-\[0\.625rem\]) > .arc-border {
-  --arc-radius: var(--radius-card);
-}
 /* Failed-turn banner (consistency M4): its text and Retry action mixed the error red two ways (78% and 80%);
    both read the one danger ink token now. */
 [class*='var(--dt-destructive)_78%'],
@@ -417,6 +424,8 @@ const TOKENS = `
   --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-standard: cubic-bezier(0.2, 0, 0, 1);
   --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  /* One easing (consistency L6): utilities with no explicit ease use the standard curve. */
+  --default-transition-timing-function: var(--ease-standard); /* raw-style-ok: token layer */
   --dur-instant: 80ms;
   --dur-fast: 120ms;
   --dur-base: 180ms;
