@@ -45,7 +45,7 @@ const PAPER_LIGHT = {
   cardForeground: '#26231e',
   muted: '#efece4',
   mutedForeground: '#6b665c',
-  popover: '#ffffff',
+  popover: '#fcfbf8',
   popoverForeground: '#26231e',
   primary: '#4a5bd0',
   primaryForeground: '#ffffff',

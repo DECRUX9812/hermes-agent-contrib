@@ -1,5 +1,4 @@
 import { useStore } from '@nanostores/react'
-import { useState } from 'react'
 
 import { requestComposerInsert } from '@/app/chat/composer/focus'
 import { useI18n } from '@/i18n'
@@ -164,7 +163,8 @@ function resolveCopy(personality?: string, seed?: number): IntroCopy {
 }
 
 export function Intro({ personality, seed }: IntroProps) {
-  const [mountSeed] = useState(() => Math.floor(Math.random() * 100000))
+  // One stable line per personality (audit M13); `seed` still lets a caller vary it.
+  const mountSeed = 0
   const { t } = useI18n()
   const rotationSeed = mountSeed + (seed ?? 0)
   const copy = resolveCopy(personality, rotationSeed)

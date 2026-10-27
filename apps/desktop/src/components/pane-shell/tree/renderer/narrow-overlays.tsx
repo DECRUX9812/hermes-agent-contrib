@@ -85,6 +85,24 @@ export function NarrowOverlays() {
   const revealActive = reveal !== null
   useEffect(() => (revealActive ? pushEscapeLayer(ESCAPE_PRIORITY.narrowOverlay) : undefined), [revealActive])
 
+  // Picking a route from the drawer dismisses it, pinned or not. HashRouter navigates
+  // with pushState (no hashchange event), so compare the hash after each click.
+  useEffect(() => {
+    if (!reveal) {
+      return
+    }
+
+    const from = window.location.hash
+    const check = () => requestAnimationFrame(() => window.location.hash !== from && setReveal(null))
+    window.addEventListener('click', check, true)
+    window.addEventListener('hashchange', check)
+
+    return () => {
+      window.removeEventListener('click', check, true)
+      window.removeEventListener('hashchange', check)
+    }
+  }, [reveal])
+
   const inTree = useMemo(() => new Set(tree ? allPaneIds(tree) : []), [tree])
 
   const collapsibles = useMemo(
