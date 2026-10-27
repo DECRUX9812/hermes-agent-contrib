@@ -75,7 +75,7 @@ export const BROWSER_EN = {
   pageKeys: 'Keys for the page',
   cloudWatching: 'Watching a cloud browser, take-over not available',
   cloudWatchingShort: 'Cloud browser',
-  cloudTip: 'This bot browses in a cloud browser, which only it can drive. To take over, switch it to a local headed browser in Settings, Plugins, Browser.',
+  cloudTip: 'This bot browses in a cloud browser, which only it can drive. To take over, switch it to a local headed browser in Settings › Plugins › Bot browsers.',
   settingsTitle: 'Bot browsers',
   settingsIntro:
     "Where each bot's browser runs. Cloud browsers can be watched but not taken over. A local headed browser opens on this machine's desktop, so you can take over and hand back.",
