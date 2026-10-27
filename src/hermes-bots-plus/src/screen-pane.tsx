@@ -66,7 +66,7 @@ const MAX_RAPID_EVICTIONS = 3
  *  socket on any ClientCutText over this, so an oversized paste must never reach the client. */
 const MAX_PASTE_CUT_TEXT = 256 * 1024
 
-async function loadRfb(): Promise<
+export async function loadRfb(): Promise<
   new (target: HTMLElement, socket: WebSocket, options?: Record<string, unknown>) => RfbLike
 > {
   const mod = (await import('@novnc/novnc')) as unknown as { default: new (...args: never[]) => RfbLike }

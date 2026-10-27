@@ -9,12 +9,18 @@
  * jumping.
  */
 
-import { cn, Codicon, Favicon, hostPathLabel, openPreview, useMediaImage } from '@hermes/plugin-sdk'
+import { cn, Codicon, Favicon, hostPathLabel, openPreview, useMediaImage, useValue } from '@hermes/plugin-sdk'
 import { type JSX, useContext, useEffect, useRef, useState } from 'react'
 
+import { botForChat } from './chat-empty'
+import { $botMeta, $lastRoster, botRosterKey } from './data'
 import { useLiveViewText } from './live-view-i18n'
+import { botRosterMeta } from './routing'
+import { useScreenPortalState } from './screen-portal'
 import { isPublicHost, type ToolCardGroup, type ToolCardView } from './tool-card-model'
+import { CardScreenStream, ScreenExpandButton } from './tool-card-screen'
 import { PreviewSessionContext } from './tool-card-session'
+import type { RosterRow } from './types'
 
 const MORPH_NAME = 'hbp-shot-morph'
 const FADE_MS = 180
@@ -305,6 +311,47 @@ export function ExpandableShot({
   )
 }
 
+/** The bot's real screen over the screenshot frame, while its desktop runs.
+ *  It fades in once the stream paints and steps aside for good if the stream
+ *  ends, leaving the screenshot frame (and its preview expand) in charge. */
+function ScreenLayer({ bot }: { bot: RosterRow }): JSX.Element | null {
+  const text = useLiveViewText()
+  const { tone } = useScreenPortalState(bot)
+  const allMeta = useValue($botMeta)
+  const [painted, setPainted] = useState(false)
+  const [ended, setEnded] = useState(false)
+  const streamable = tone === 'live' || tone === 'human' || tone === 'other'
+
+  if (!streamable || ended) {
+    return null
+  }
+
+  return (
+    <>
+      <CardScreenStream
+        bot={bot}
+        botKey={botRosterKey(bot)}
+        onLive={live => {
+          setPainted(live)
+
+          if (!live) {
+            setEnded(true)
+          }
+        }}
+      />
+      {painted ? <ScreenExpandButton bot={bot} label={text.expandScreen} meta={botRosterMeta(bot, allMeta)} /> : null}
+    </>
+  )
+}
+
+/** The Bot Chat this card sits in, when it is one. */
+function useCardBot(): null | RosterRow {
+  const session = useContext(PreviewSessionContext)
+  const roster = useValue($lastRoster)
+
+  return session.storedId || session.runtimeId ? botForChat(roster, session.storedId ?? '') : null
+}
+
 /** The live frame under a running browser card. Mounted open when the run is
  *  live and folds shut (same grid-row collapse as the details panel) when it
  *  settles or when the details panel takes over. */
@@ -314,6 +361,7 @@ export function LiveFrame({ group, open }: { group: ToolCardGroup; open: boolean
   const pageUrl = latestPage(group.cards)
   const host = safeHost(shot ? (group.cards[shot.index]?.thumb?.url ?? pageUrl) : pageUrl)
   const running = group.state === 'running'
+  const bot = useCardBot()
 
   return (
     <div className="hbp-tc-collapse" data-live-frame="" data-open={open} inert={!open}>
@@ -337,6 +385,7 @@ export function LiveFrame({ group, open }: { group: ToolCardGroup; open: boolean
                 <span>{text.waiting}</span>
               </div>
             )}
+            {bot && running && open ? <ScreenLayer bot={bot} /> : null}
             {running ? (
               <span className="pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 text-ui-2xs hbp-lv-badge">
                 <span aria-hidden className="hbp-lv-dot size-1.5 rounded-full" />

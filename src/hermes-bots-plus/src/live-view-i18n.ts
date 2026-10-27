@@ -10,6 +10,7 @@ import { bindTree } from './team-i18n'
 
 export const LIVE_VIEW_EN = {
   expand: 'Open screenshot in the preview',
+  expandScreen: "Open the bot's live screen",
   live: 'Live',
   waiting: 'Waiting for the first screenshot…',
   shotLabel: (host: string, step: number) => (host ? `${host} · step ${step}` : `Screenshot · step ${step}`)
