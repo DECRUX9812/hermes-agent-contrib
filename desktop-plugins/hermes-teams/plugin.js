@@ -40,6 +40,17 @@ const LANE_TONE = {
   blocked: tone('blocked', 'var(--ui-red)'),
 }
 
+// A service that never answers must not leave the panel on skeletons forever:
+// bound each read and fall through to the error state, which keeps retrying.
+const ANSWER_MS = 10_000
+function withinAnswer(promise) {
+  let timer = 0
+  const late = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error('the Teams service did not answer. It may be busy or not running.')), ANSWER_MS)
+  })
+  return Promise.race([promise, late]).finally(() => clearTimeout(timer))
+}
+
 // A backend without the hermes-teams gateway plugin answers "unknown method".
 // That is a version gap, not an error, so the pane says so once and stops polling (audit M11).
 const isMissingMethod = (err) => (err && err.code === -32601) || /unknown method/i.test(String(err && err.message))
@@ -67,11 +78,13 @@ function TeamsPane() {
 
   const refreshAll = useCallback(async () => {
     try {
-      const [rRes, tRes, lRes] = await Promise.all([
-        host.request('teams.roles.list', {}),
-        host.request('teams.templates.list', {}),
-        host.request('teams.run.list', { limit: 15 }),
-      ])
+      const [rRes, tRes, lRes] = await withinAnswer(
+        Promise.all([
+          host.request('teams.roles.list', {}),
+          host.request('teams.templates.list', {}),
+          host.request('teams.run.list', { limit: 15 }),
+        ])
+      )
       if (rRes && Array.isArray(rRes.roles)) setRoles(rRes.roles)
       if (tRes && Array.isArray(tRes.templates)) setTemplates(tRes.templates)
       if (lRes && Array.isArray(lRes.runs)) {
