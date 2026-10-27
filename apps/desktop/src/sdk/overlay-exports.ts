@@ -1,5 +1,5 @@
 /**
- * Plugin SDK exports this overlay adds on top of stock Hermes.
+ * Plugin SDK exports (names and plugin areas) this overlay adds on top of stock Hermes.
  *
  * They live here rather than in `./index` so upstream edits to the SDK barrel
  * never collide with them: `./index` re-exports this module in one line
@@ -28,6 +28,15 @@ export const navigate = (path: string): void => host.navigate(path)
 
 /** The inline approval card core's composer mounts, for plugin surfaces that show pending approvals. */
 export { ApprovalCard, type ApprovalCardProps } from '@/components/assistant-ui/tool/approval'
+/** Draw a Bot Chat's plain tool activity runs (reads, commands, browser
+ *  steps) in place of core's rows. Core picks the calls; you draw them. */
+export {
+  isPlainToolActivity,
+  TOOL_RUN_RENDERER_AREA,
+  type ToolRunPart,
+  type ToolRunRendererContribution,
+  type ToolRunRendererProps
+} from '@/components/assistant-ui/tool/fallback'
 /** Tool-run renderer building blocks: the tool view model core's rows read,
  *  a media loader that resolves backend image paths, and the side preview. */
 export {
@@ -39,6 +48,9 @@ export {
   type ToolPart,
   type ToolView
 } from '@/components/assistant-ui/tool/fallback-model'
+/** Under the empty-chat intro: starter prompts, first-run cards. Every
+ *  registration mounts; make clickable content `pointer-events-auto`. */
+export { CHAT_INTRO_AREA } from '@/components/chat/intro'
 /** A site's favicon with a fallback while it loads or when it has none. */
 export { Favicon } from '@/components/ui/favicon'
 /** The icon a tool's rows use, by tool icon name. */
