@@ -20,3 +20,29 @@ def test_desktop_plugins_add_no_raw_style():
         text=True,
     )
     assert run.returncode == 0, run.stdout + run.stderr
+
+
+def _scan(tmp_path, body):
+    plugin = tmp_path / "p"
+    plugin.mkdir()
+    (plugin / "plugin.js").write_text(body)
+    tool = ROOT / "tools" / "no-raw-style.py"
+    base = tmp_path / "base.json"
+    base.write_text("{}")
+    return subprocess.run(
+        [sys.executable, str(tool), "plugins", str(tmp_path), "--baseline", str(base)],
+        capture_output=True,
+        text=True,
+    )
+
+
+def test_theme_palette_fence_allows_colour_values(tmp_path):
+    body = "// no-raw-style: palette-start\nconst c = { background: '#f6f1e7' }\n// no-raw-style: palette-end\n"
+    run = _scan(tmp_path, body)
+    assert run.returncode == 0, run.stdout + run.stderr
+
+
+def test_colour_outside_palette_fence_still_fails(tmp_path):
+    body = "// no-raw-style: palette-start\n// no-raw-style: palette-end\nconst c = { color: '#f6f1e7' }\n"
+    run = _scan(tmp_path, body)
+    assert run.returncode != 0

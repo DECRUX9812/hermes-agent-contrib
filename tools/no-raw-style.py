@@ -5,7 +5,8 @@ Bans, in plugin sources and in lines our desktop patch adds:
   hex colours, rgb()/rgba()/hsl()/hsla(), Tailwind palette colours (bg-red-500, text-white ...),
   arbitrary text-[..] rounded-[..] duration-[..] z-[..] tracking-[..] leading-[..], the `uppercase` class,
   and (plugins only) CSS vars outside the theme families.
-Escape one line with a trailing `raw-style-ok: <reason>` comment.
+Escape one line with a trailing `raw-style-ok: <reason>` comment; fence a theme palette with
+`no-raw-style: palette-start` / `no-raw-style: palette-end` comments.
 
   no-raw-style.py plugins <desktop-plugins dir>   [--baseline F] [--write-baseline]
   no-raw-style.py diff <git dir> <base> <ref>     [--baseline F] [--write-baseline]
@@ -22,10 +23,10 @@ RULES = [
     ('hex colour', re.compile(r'(?<![\w&/])#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\b(?![-/])')),
     ('rgb()/hsl()', re.compile(r'\b(?:rgba?|hsla?)\(')),
     ('palette colour', re.compile(rf'(?<![\w-])(?:{UTIL})-(?:(?:{PALETTE})-\d{{2,3}}|white|black)(?![\w-])')),
-    ('arbitrary value', re.compile(r'(?<![\w-])(?:text|rounded(?:-[trbl]{1,2})?|duration|z|tracking|leading)-\[(?!(?:length:)?var\(--)[^\]]+\]')),
+    ('arbitrary value', re.compile(r'(?<![\w-])(?<!\*=\')(?:text|rounded(?:-[trbl]{1,2})?|duration|z|tracking|leading)-\[(?!(?:length:)?var\(--)[^\]]+\]')),
     ('uppercase class', re.compile(r'''(?<=['"` ])uppercase(?=['"` ])''')),
 ]
-PLUGIN_VAR = re.compile(r'var\(--(?!hx-|ds-|ui-|color-|radius|font-|shadow-|chrome-|conversation-|speaker-color)([\w-]+)')
+PLUGIN_VAR = re.compile(r'var\(--(?!hx-|ds-|ui-|color-|radius|font-|shadow-|chrome-|conversation-|speaker-color|dt-|text-ui-|titlebar-)([\w-]+)')
 ESCAPE = 'raw-style-ok'
 
 def strip_comments(line):
@@ -34,9 +35,13 @@ def strip_comments(line):
     return line[:m.start()] if m else line
 
 def scan(text, plugin):
-    hits, in_block = [], False
+    hits, in_block, palette = [], False, False
     for n, raw in enumerate(text.split('\n'), 1):
-        if ESCAPE in raw:
+        # A theme's own palette is the token source, fenced by palette-start/-end comments.
+        if 'no-raw-style: palette-' in raw:
+            palette = 'palette-start' in raw
+            continue
+        if ESCAPE in raw or palette:
             continue
         line = raw
         if in_block:
