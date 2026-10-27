@@ -23,6 +23,7 @@ import {
   botRosterMeta,
   groupTranscriptSpeakerMeta,
   indexAliasRoutes,
+  legacyRetryParams,
   requestForBot,
   resolveBotConnectionRoute
 } from './routing'
@@ -229,6 +230,30 @@ describe('a row without a reachable owner', () => {
 })
 
 describe('requestForBot rides the bot’s own source', () => {
+
+  it('retries a create once without the canonical-only request_id an older source refuses', async () => {
+    const scoped = { connectionId: 'old', name: 'default', remoteSource: true, sourceScoped: true } as RosterRow
+
+    hostMock.requestProfile = vi
+      .fn()
+      .mockRejectedValueOnce(
+        new Error('invalid params for session.create: request_id: Extra inputs are not permitted — out of sync')
+      )
+      .mockResolvedValueOnce({ session_id: 's1' })
+
+    await expect(requestForBot(scoped, 'session.create', { request_id: 'r1', title: 't' })).resolves.toEqual({
+      session_id: 's1'
+    })
+    expect((hostMock.requestProfile as ReturnType<typeof vi.fn>).mock.calls[1][2]).toEqual({ title: 't' })
+    hostMock.requestProfile = vi.fn()
+  })
+
+  it('does not retry other refusals', () => {
+    expect(legacyRetryParams('session.create', { request_id: 'r' }, new Error('boom'))).toBeNull()
+    expect(
+      legacyRetryParams('prompt.submit', { request_id: 'r' }, new Error('invalid params for prompt.submit: request_id: Extra inputs are not permitted'))
+    ).toBeNull()
+  })
   it('pins same-name bots to their own connection under concurrent requests', async () => {
     hostMock.requestProfile.mockImplementation(async (route: ProfileRoute) => ({ from: route.connectionId }))
 

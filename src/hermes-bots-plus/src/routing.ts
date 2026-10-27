@@ -212,6 +212,31 @@ export interface BotRequestOptions {
  *  for foreground dials only, so a write left at the background default
  *  queues behind warm bot backends, times out after 30 s, then backs off —
  *  the write is lost. They dial foreground unless the caller says otherwise. */
+/** Canonical-only identity keys an older `hermes serve` refuses as an unknown
+ *  param (4000 "Extra inputs are not permitted"). The app's own client strips
+ *  them on a non-canonical dial; a bot's routed request cannot see which
+ *  protocol its source speaks, so it retries ONCE without the refused key. */
+const LEGACY_ONLY_KEYS: Record<string, readonly string[]> = {
+  'session.branch_stored': ['request_id'],
+  'session.create': ['request_id']
+}
+
+export function legacyRetryParams(
+  method: string,
+  params: Record<string, unknown>,
+  error: unknown
+): Record<string, unknown> | null {
+  const keys = LEGACY_ONLY_KEYS[method]
+  const text = String((error as RpcErrorLike | null)?.message ?? error ?? '')
+  const refused = text.match(/invalid params for [\w.]+: (\w+): Extra inputs are not permitted/)?.[1]
+
+  if (!keys || !refused || !keys.includes(refused) || !(refused in params)) {
+    return null
+  }
+
+  return Object.fromEntries(Object.entries(params).filter(([key]) => key !== refused))
+}
+
 const PROFILE_WRITE_METHODS = new Set(['profiles.configure', 'profiles.create', 'profiles.set_asset'])
 
 export async function requestForBot<T = unknown>(
@@ -235,11 +260,24 @@ export async function requestForBot<T = unknown>(
 
       // Keep the three-argument shape when no options were given so older
       // desktop shells (and the arity-pinning tests) see the same call.
-      return await (spawnPriority
-        ? host.requestProfile(route, method, routedParams, options?.timeoutMs, { spawnPriority })
-        : options?.timeoutMs === undefined
-          ? host.requestProfile(route, method, routedParams)
-          : host.requestProfile(route, method, routedParams, options.timeoutMs))
+      const send = (wire: Record<string, unknown>) =>
+        spawnPriority
+          ? host.requestProfile!(route, method, wire, options?.timeoutMs, { spawnPriority })
+          : options?.timeoutMs === undefined
+            ? host.requestProfile!(route, method, wire)
+            : host.requestProfile!(route, method, wire, options.timeoutMs)
+
+      try {
+        return await send(routedParams)
+      } catch (error) {
+        const legacy = legacyRetryParams(method, routedParams, error)
+
+        if (!legacy) {
+          throw error
+        }
+
+        return await send(legacy)
+      }
     } catch (error) {
       // React 19 formats query errors with `(error.name || '').trim()`. IPC /
       // JSON-RPC rejections are often plain objects whose `name` is a number,

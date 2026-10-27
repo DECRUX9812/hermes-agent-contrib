@@ -4514,6 +4514,15 @@ function botBackendProfileScope(route, fallbackProfile = "default") {
     profile: backendTargetProfile(route, fallbackProfile)
   };
 }
+function legacyRetryParams(method, params, error) {
+  const keys = LEGACY_ONLY_KEYS[method];
+  const text2 = String(error?.message ?? error ?? "");
+  const refused = text2.match(/invalid params for [\w.]+: (\w+): Extra inputs are not permitted/)?.[1];
+  if (!keys || !refused || !keys.includes(refused) || !(refused in params)) {
+    return null;
+  }
+  return Object.fromEntries(Object.entries(params).filter(([key]) => key !== refused));
+}
 async function requestForBot(bot, method, params = {}, options) {
   const route = botConnectionRoute(bot);
   if (route) {
@@ -4523,7 +4532,16 @@ async function requestForBot(bot, method, params = {}, options) {
     try {
       const routedParams = scopedBotParams(route, method, params);
       const spawnPriority = options?.spawnPriority ?? (PROFILE_WRITE_METHODS.has(method) ? "foreground" : void 0);
-      return await (spawnPriority ? host.requestProfile(route, method, routedParams, options?.timeoutMs, { spawnPriority }) : options?.timeoutMs === void 0 ? host.requestProfile(route, method, routedParams) : host.requestProfile(route, method, routedParams, options.timeoutMs));
+      const send = (wire) => spawnPriority ? host.requestProfile(route, method, wire, options?.timeoutMs, { spawnPriority }) : options?.timeoutMs === void 0 ? host.requestProfile(route, method, wire) : host.requestProfile(route, method, wire, options.timeoutMs);
+      try {
+        return await send(routedParams);
+      } catch (error) {
+        const legacy = legacyRetryParams(method, routedParams, error);
+        if (!legacy) {
+          throw error;
+        }
+        return await send(legacy);
+      }
     } catch (error) {
       throw asRpcError(error, `Gateway request ${method} failed`);
     }
@@ -4644,10 +4662,14 @@ function groupTranscriptSpeakerMeta(entry, members, allMeta) {
   }
   return allMeta?.[entry.from.name] || null;
 }
-var PROFILE_WRITE_METHODS, aliasRouteIndex, aliasRouteEpoch;
+var LEGACY_ONLY_KEYS, PROFILE_WRITE_METHODS, aliasRouteIndex, aliasRouteEpoch;
 var init_routing = __esm({
   "src/routing.ts"() {
     init_sdk_compat();
+    LEGACY_ONLY_KEYS = {
+      "session.branch_stored": ["request_id"],
+      "session.create": ["request_id"]
+    };
     PROFILE_WRITE_METHODS = /* @__PURE__ */ new Set(["profiles.configure", "profiles.create", "profiles.set_asset"]);
     aliasRouteIndex = /* @__PURE__ */ new Map();
     aliasRouteEpoch = 0;
