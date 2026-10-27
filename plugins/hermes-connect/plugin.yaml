@@ -1,0 +1,5 @@
+name: hermes-connect
+version: "0.1.0"
+description: "First-run connections without a terminal: GitHub sign-in through gh and a Cloudflare Quick Tunnel behind Web Access. Dashboard API only (/api/plugins/hermes-connect/*)."
+author: "DECRUX9812"
+entrypoint: "__init__.py"

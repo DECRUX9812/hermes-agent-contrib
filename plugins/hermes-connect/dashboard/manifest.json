@@ -1,0 +1,9 @@
+{
+  "name": "hermes-connect",
+  "label": "Connect",
+  "description": "GitHub sign-in and a Cloudflare Quick Tunnel for the onboarding Connect step",
+  "icon": "Link",
+  "version": "0.1.0",
+  "tab": { "hidden": true },
+  "api": "plugin_api.py"
+}
