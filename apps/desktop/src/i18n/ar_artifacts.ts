@@ -147,6 +147,8 @@ export const arArtifacts = {
       address: 'العنوان',
       addressPlaceholder: 'أدخل العنوان',
       blankPageBody: 'اكتب عنوانًا في الأعلى للتصفح، أو اطلب من Hermes فتح صفحة.',
+      blankPageShortcuts: 'جرّب خادمًا محليًا',
+      blankPageTitle: 'تصفّح دون مغادرة Hermes',
       finishedRestarting: message => `أنهى Hermes إعادة تشغيل خادم المعاينة${message ? `: ${message}` : ''}`,
       failedRestarting: message => `فشلت إعادة تشغيل الخادم: ${message}`,
       unknownError: 'خطأ غير معروف',

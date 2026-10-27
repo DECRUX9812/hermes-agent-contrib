@@ -149,6 +149,8 @@ export const zhHantArtifacts = {
       address: '網址',
       addressPlaceholder: '輸入網址',
       blankPageBody: '在上方輸入網址開始瀏覽，或請 Hermes 開啟頁面。',
+      blankPageShortcuts: '試試本機伺服器',
+      blankPageTitle: '無需離開 Hermes 即可瀏覽',
       finishedRestarting: message => `Hermes 已完成預覽伺服器重新啟動${message ? `：${message}` : ''}`,
       failedRestarting: message => `伺服器重新啟動失敗：${message}`,
       unknownError: '未知錯誤',

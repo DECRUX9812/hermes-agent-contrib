@@ -29,6 +29,8 @@ export const frPreviewWeb: TranslationOverride<Translations['preview']['web']> =
   address: 'Adresse',
   addressPlaceholder: 'Saisir une adresse',
   blankPageBody: "Saisissez une adresse ci-dessus pour naviguer, ou demandez à Hermes d'ouvrir une page.",
+  blankPageShortcuts: 'Essayez un serveur local',
+  blankPageTitle: 'Naviguez sans quitter Hermes',
   finishedRestarting: message => `Hermes a terminé le redémarrage du serveur d'aperçu${message ? `: ${message}` : ''}`,
   failedRestarting: message => `Échec du redémarrage du serveur : ${message}`,
   unknownError: 'erreur inconnue',

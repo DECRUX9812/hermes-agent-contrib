@@ -30,6 +30,8 @@ export const ruPreviewWeb: TranslationOverride<Translations['preview']['web']> =
   address: 'Адрес',
   addressPlaceholder: 'Введите адрес',
   blankPageBody: 'Введите адрес выше, чтобы просматривать, или попросите Hermes открыть страницу.',
+  blankPageShortcuts: 'Попробуйте локальный сервер',
+  blankPageTitle: 'Просматривайте сайты, не покидая Hermes',
   finishedRestarting: message => `Hermes завершил перезапуск сервера предпросмотра${message ? `: ${message}` : ''}`,
   failedRestarting: message => `Перезапуск сервера не удался: ${message}`,
   unknownError: 'неизвестная ошибка',

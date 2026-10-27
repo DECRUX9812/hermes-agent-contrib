@@ -29,6 +29,8 @@ export const esPreviewWeb: TranslationOverride<Translations['preview']['web']> =
   address: 'Dirección',
   addressPlaceholder: 'Introduce una dirección',
   blankPageBody: 'Escribe una dirección arriba para navegar o pide a Hermes que abra una página.',
+  blankPageShortcuts: 'Prueba un servidor local',
+  blankPageTitle: 'Navega sin salir de Hermes',
   finishedRestarting: message =>
     `Hermes terminó de reiniciar el servidor de vista previa${message ? `: ${message}` : ''}`,
   failedRestarting: message => `Falló el reinicio del servidor: ${message}`,
