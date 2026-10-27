@@ -8,45 +8,50 @@ import { translateNow } from '@/i18n'
 import { isMetaClose, middleClickHandlers } from '@/lib/middle-click'
 import { cn } from '@/lib/utils'
 
-/** Inset stroke for a vertical tab rail — content-facing edge. */
+// Inset stroke for a vertical tab rail — content-facing edge.
 export const PANE_TAB_STRIP_LINE_LEFT = 'shadow-[inset_1px_0_0_var(--ui-stroke-tertiary)]'
 export const PANE_TAB_STRIP_LINE_RIGHT = 'shadow-[inset_-1px_0_0_var(--ui-stroke-tertiary)]'
 
-// Surface tokens become transparent under glass; the body owns the tint.
-// The close-button fade masks the label, so it needs no second surface fill.
+// The tab is a soft pill that owns its own surface, not a slash of gutter
+// between hard rules: sentence case, a real hover wash, and an elevated card
+// for the tab you are actually looking at. Tabs sit INSIDE a padded bar, so
+// their height comes from the strip and the pill never touches the edges.
 const TAB =
-  'group/tab relative flex shrink-0 items-center border-transparent bg-(--tab-bg) text-[0.6875rem] font-medium [-webkit-app-region:no-drag]'
+  'group/tab relative flex shrink-0 items-center select-none rounded-[7px] [-webkit-app-region:no-drag] transition-[background-color,color,box-shadow] duration-[120ms] ease-out'
 
-// Full height: with the strip's rule removed there is no last-pixel row to
-// leave uncovered, so tabs fill the bar and no sliver of gutter shows through.
-const TAB_HORIZONTAL = 'h-full min-w-0 max-w-48 not-first:border-l not-first:border-l-(--ui-stroke-quaternary)'
+// Full height of the padded row: the strip's own vertical padding is the gap.
+const TAB_HORIZONTAL = 'h-full min-w-0 max-w-52 text-[0.78125rem] font-medium tracking-[-0.005em]'
 
-// A closeable tab's floor keeps short labels left of the close button.
-// A floor, not padding — a tab already wider than it pays nothing.
-const TAB_CLOSEABLE = 'min-w-13'
+// Room for the close chip at the right edge — a floor, so a short label pays
+// nothing and a long one ellipsizes before it reaches the chip.
+const TAB_CLOSEABLE = 'min-w-20 pr-1'
 
 const TAB_VERTICAL =
-  'w-full max-h-48 justify-center not-first:border-t not-first:border-t-(--ui-stroke-quaternary) [writing-mode:vertical-rl]'
+  'w-full max-h-48 justify-center rounded-none not-first:border-t not-first:border-t-(--ui-stroke-quaternary) [writing-mode:vertical-rl]'
 
-const TAB_ACTIVE = 'h-full text-foreground [--tab-bg:var(--pane-tab-active-bg,var(--ui-editor-surface-background))]'
+// Selected: the elevated card. `--pane-tab-active-bg` lets a strip pick what
+// the card merges into (a preview rail merges it into the editor surface); the
+// default is the raised surface, so selection never reads as "same as the bar".
+const TAB_ACTIVE =
+  'text-(--ui-text-primary) [--tab-bg:var(--pane-tab-active-bg,var(--ui-bg-elevated))] bg-(--tab-bg) shadow-[var(--shadow-sm),0_0_0_1px_var(--ui-stroke-tertiary)]'
 
-// Horizontal only: the active tab is the sole seam on the strip — a
-// theme-primary underline drawn as an inset shadow in its own last pixel row,
-// so it costs no layout and can't shift the tab.
-const TAB_ACTIVE_UNDERLINE = 'shadow-[inset_0_-2px_0_var(--pane-tab-active-accent,var(--theme-primary))]'
-
-// Inactive = gutter, defaulting to the shared chrome surface so a strip that
-// sets no vars still matches the sidebar/titlebar instead of falling through to
-// the raw (unmixed) card seed. Hover DARKENS: surfaces this close in value need
-// a darkening wash to register at all.
+// Idle: no surface at all — the bar reads as one piece until a tab is picked.
 const TAB_IDLE =
-  'text-(--ui-text-tertiary) [--tab-bg:var(--pane-tab-strip-bg,var(--ui-sidebar-surface-background))] hover:shadow-[inset_0_0_0_100vmax_color-mix(in_srgb,#000_var(--ui-tab-hover-darken),transparent)] hover:text-(--ui-text-secondary)'
+  'text-(--ui-text-tertiary) [--tab-bg:var(--pane-tab-strip-bg,var(--ui-sidebar-surface-background))] hover:bg-(--ui-control-hover-background) hover:text-(--ui-text-secondary)'
+
 
 // A tab riding a multi-tab selection: an accent wash over whatever surface the
 // tab sits on. A background-image gradient (not a shadow) so it stacks cleanly
 // over `--tab-bg` without fighting the active underline / hover shadows.
 const TAB_SELECTED =
   '[background-image:linear-gradient(color-mix(in_srgb,var(--ui-accent)_14%,transparent),color-mix(in_srgb,var(--ui-accent)_14%,transparent))] text-foreground'
+
+// Segmented control (a sidebar's mode switcher): a small inset pill on a
+// recessed track. Same primitive, quieter voice — so a view switcher never
+// reads as a second row of document tabs beside the real ones.
+const SEGMENT = 'h-5.5 min-w-0 flex-1 justify-center rounded-[5px] px-2 text-[0.71875rem] font-medium'
+const SEGMENT_ACTIVE = 'bg-(--ui-bg-elevated) text-(--ui-text-primary) shadow-[var(--shadow-xs)]'
+const SEGMENT_IDLE = 'text-(--ui-text-secondary) hover:text-(--ui-text-primary)'
 
 interface PaneTabProps extends React.ComponentProps<'div'> {
   active?: boolean
@@ -63,6 +68,10 @@ interface PaneTabProps extends React.ComponentProps<'div'> {
   selected?: boolean
   /** Vertical rail form (collapsed sidebar zones). */
   vertical?: boolean
+  /** Segmented-control form: the small mode switcher a sidebar group wears
+   *  (Sessions / Bots). Same primitive, different voice — an inset pill on a
+   *  recessed track, never a second row of document tabs. */
+  segmented?: boolean
   /** Content-facing edge of a vertical rail — the strip line the active tab cuts. */
   side?: 'left' | 'right'
 }
@@ -83,6 +92,7 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
     onPointerDown,
     onPointerUp,
     onClickCapture,
+    segmented = false,
     selected = false,
     vertical = false,
     side = 'left',
@@ -101,16 +111,21 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
     <div
       className={cn(
         TAB,
-        vertical ? TAB_VERTICAL : TAB_HORIZONTAL,
-        !vertical && onClose && TAB_CLOSEABLE,
+        vertical ? TAB_VERTICAL : segmented ? SEGMENT : TAB_HORIZONTAL,
+        segmented
+          ? active
+            ? SEGMENT_ACTIVE
+            : SEGMENT_IDLE
+          : active
+            ? TAB_ACTIVE
+            : cn(TAB_IDLE, edge && `${edge}-(--ui-stroke-tertiary)`),
+        !vertical && !segmented && onClose && TAB_CLOSEABLE,
         edge,
-        active
-          ? cn(TAB_ACTIVE, !vertical && TAB_ACTIVE_UNDERLINE)
-          : cn(TAB_IDLE, edge && `${edge}-(--ui-stroke-tertiary)`),
         selected && TAB_SELECTED,
         className
       )}
       data-active={active}
+      data-segmented={segmented || undefined}
       data-closeable={(onClose && !vertical) || undefined}
       data-selected={selected || undefined}
       data-slot="pane-tab"
@@ -170,12 +185,12 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
         </span>
       )}
       {onClose && !vertical && (
-        // Mask the content beneath the close button instead of painting over it.
-        // Geometry stays fixed; the same fade works on solid and glass surfaces.
-        <span className="pointer-events-none absolute inset-y-0 right-0 flex items-stretch opacity-0 transition-opacity group-hover/tab:pointer-events-auto group-hover/tab:opacity-100">
+        // A real flex child, not an overlay: it reserves its own lane, so the
+        // label ellipsizes before it instead of sliding underneath a fade.
+        <span className="flex shrink-0 items-center pr-1">
           <button
             aria-label={translateNow('common.close')}
-            className="grid w-(--pane-tab-close-width) cursor-pointer place-items-center bg-transparent text-(--ui-text-tertiary) outline-none hover:text-foreground"
+            className="grid size-4.5 cursor-pointer place-items-center rounded-[4px] bg-transparent text-(--ui-text-tertiary) opacity-0 outline-none transition-[opacity,background-color,color] duration-[120ms] group-hover/tab:opacity-100 group-data-[active=true]/tab:opacity-100 hover:bg-(--ui-control-hover-background) hover:text-(--ui-text-primary) focus-visible:opacity-100"
             onClick={event => {
               event.preventDefault()
               event.stopPropagation()
@@ -192,7 +207,7 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
             tabIndex={-1}
             type="button"
           >
-            <Codicon name="close" size="0.6875rem" />
+            <Codicon name="close" size="0.625rem" />
           </button>
         </span>
       )}
@@ -207,8 +222,8 @@ interface PaneTabLabelProps extends React.ComponentProps<'button'> {
 }
 
 /** Truncating label inside a `PaneTab`. `className` merges into the text span
- *  (e.g. `normal-case tracking-normal` for filenames). On a closeable tab the
- *  text clips instead of ellipsizing, so the hover mask can fade its right edge. */
+ *  (e.g. `normal-case tracking-normal` for filenames). Sentence case, ellipsis
+ *  on overflow: a tab title is prose, not a section header. */
 export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(function PaneTabLabel(
   { as = 'span', className, children, ...props },
   ref
@@ -217,18 +232,11 @@ export const PaneTabLabel = React.forwardRef<HTMLElement, PaneTabLabelProps>(fun
 
   return (
     <Comp
-      className="flex h-full min-w-0 max-w-full items-center overflow-hidden px-2 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2"
+      className="flex h-full min-w-0 max-w-full items-center overflow-hidden px-2.5 text-left outline-none group-data-[vertical]/tab:h-auto group-data-[vertical]/tab:w-full group-data-[vertical]/tab:justify-center group-data-[vertical]/tab:py-2"
       ref={ref}
       {...props}
     >
-      <span
-        className={cn(
-          'block min-w-0 truncate font-medium tracking-wide uppercase group-data-[closeable]/tab:text-clip',
-          className
-        )}
-      >
-        {children}
-      </span>
+      <span className={cn('block min-w-0 truncate font-medium', className)}>{children}</span>
     </Comp>
   )
 })
@@ -242,6 +250,8 @@ interface PaneTabStripProps extends React.ComponentProps<'div'> {
   trailing?: React.ReactNode
   /** Top-edge panel header shares the native window-control band. */
   titlebar?: boolean
+  /** Recessed track for a mode switcher (see `PaneTab.segmented`). */
+  segmented?: boolean
 }
 
 /**
@@ -254,24 +264,36 @@ interface PaneTabStripProps extends React.ComponentProps<'div'> {
  * `data-zone-tabstrip`, drop carets) ride on the usual div props.
  */
 export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(function PaneTabStrip(
-  { children, className, listRef, trailing, titlebar = false, ...props },
+  { children, className, listRef, segmented = false, trailing, titlebar = false, ...props },
   ref
 ) {
   return (
     <div
-      // Strip and active tab both sit on the sidebar surface, so the bar reads
-      // as one piece of chrome with the titlebar above it. No bottom rule — the
-      // active tab's primary underline is the only seam.
+      // The bar is a rail the tabs sit IN: it owns the surface, the row height
+      // and the breathing room, so every strip (window tabs, panel headers,
+      // preview rail) has the same rhythm without re-deriving it.
       className={cn(
-        'group/pane-header relative flex min-w-0 shrink-0 select-none bg-(--ui-sidebar-surface-background) [--pane-tab-active-bg:var(--ui-sidebar-surface-background)]',
-        titlebar ? 'h-full flex-1 [-webkit-app-region:drag]' : 'h-7 [-webkit-app-region:no-drag]',
+        'group/pane-header relative flex min-w-0 shrink-0 select-none items-stretch gap-0.5 bg-(--ui-sidebar-surface-background)',
+        // Window strips are a rail: a hair darker than the surfaces around them,
+        // so the selected tab reads as raised, plus a hairline that closes the
+        // band. Panel strips keep their own surface — a darkened header inside a
+        // pane would read as a second toolbar.
+        titlebar
+          ? 'h-full flex-1 bg-(--pane-tab-strip-bg,var(--ui-sidebar-surface-background)) px-1.5 py-0.75 shadow-[inset_0_-1px_0_var(--ui-stroke-quaternary)] [-webkit-app-region:drag]'
+          : 'h-7 px-1 py-0.5 [-webkit-app-region:no-drag]',
+        segmented && 'items-center px-2',
         className
       )}
+      data-segmented={segmented || undefined}
+      data-titlebar={titlebar || undefined}
       ref={ref}
       {...props}
     >
       <div
-        className="flex min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className={cn(
+          'flex min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+          segmented && 'items-center gap-0.5 rounded-[7px] bg-(--ui-bg-secondary) p-0.5'
+        )}
         ref={listRef}
         role="tablist"
       >
@@ -310,7 +332,7 @@ export function PaneStripGlyph({ active, disabled, icon, label, onSelect }: Omit
         aria-label={label}
         aria-pressed={active ?? undefined}
         className={cn(
-          'self-center bg-transparent select-none [-webkit-app-region:no-drag]',
+          'self-center rounded-[6px] bg-transparent select-none [-webkit-app-region:no-drag]',
           active ? 'opacity-100' : 'opacity-60 hover:opacity-100'
         )}
         disabled={disabled}

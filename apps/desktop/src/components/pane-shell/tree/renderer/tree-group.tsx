@@ -425,13 +425,14 @@ export function TreeGroup({
 
   const active = paneFor(activeId)
   const isEmpty = shown.length === 0
+  // A zone with no workspace/main pane is a SIDEBAR: its strip is a mode
+  // switcher, and it wears the segmented control instead of document tabs.
   const sidebarGroup = !node.panes.some(id => id === 'workspace' || paneChrome(paneFor(id)).placement === 'main')
 
   const { compactTabs, tabStripHeight, tabsBelowControls, tabsInTitlebar, titlebarHeight } = useZoneHeaderLayout({
     measuredBelowControls,
     narrow,
     shown,
-    sidebarGroup,
     topEdge
   })
 
@@ -735,6 +736,7 @@ export function TreeGroup({
                   }
                 }}
                 ref={stripRef}
+                segmented={sidebarGroup}
                 style={{ cursor: 'grab', WebkitAppRegion: dragging ? 'no-drag' : undefined } as CSSProperties}
                 titlebar={tabsInTitlebar}
                 trailing={
@@ -849,11 +851,12 @@ export function TreeGroup({
                         }
                       }}
                       role="tab"
+                      segmented={sidebarGroup}
                       selected={isSelected}
                       style={{ cursor: 'grab' }}
                     >
                       {chrome.tabLead ? (
-                        <span className="ml-2 -mr-1 flex shrink-0 items-center">
+                        <span className="flex shrink-0 items-center pl-2.5 -mr-0.5">
                           <TabKeyHint groupId={node.id} slot={index + 1}>
                             {chrome.tabLead()}
                           </TabKeyHint>
