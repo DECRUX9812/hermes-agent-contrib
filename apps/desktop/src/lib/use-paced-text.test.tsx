@@ -7,7 +7,7 @@
 import { renderHook, waitFor } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 
-import { usePacedText } from './use-paced-text'
+import { usePacedText } from './stream-pacing'
 
 const burst = 'x'.repeat(600)
 

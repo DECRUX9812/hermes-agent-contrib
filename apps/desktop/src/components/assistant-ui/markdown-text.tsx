@@ -51,9 +51,9 @@ import {
 import { previewTargetFromMarkdownHref } from '@/lib/preview-targets'
 import { remarkSoftBreaks } from '@/lib/remark-soft-breaks'
 import { sessionRefFromMarkdownHref } from '@/lib/session-refs'
+import { usePacedText } from '@/lib/stream-pacing'
 import { TOOL_MEDIA_RENDERER_AREA } from '@/lib/tool-media-renderers'
 import { remarkTranscriptDirectives } from '@/lib/transcript-directives'
-import { usePacedText } from '@/lib/use-paced-text'
 import { cn } from '@/lib/utils'
 import { useForcedTextDirection } from '@/store/text-direction'
 
