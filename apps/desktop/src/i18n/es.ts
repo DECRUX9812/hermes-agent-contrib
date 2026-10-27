@@ -4660,7 +4660,7 @@ export const esOverrides = {
     openInExternal: 'Abrir externamente',
     popIn: 'Acoplar',
     popOut: 'Desacoplar',
-    linkHint: '⌘/Ctrl-clic para acceder al panel de vista previa',
+    linkHint: '⌘/Ctrl-clic para abrir en el navegador',
     sourceLineTitle: 'Haz clic para seleccionar · Mayús-clic para ampliar · arrastra al compositor',
     source: 'FUENTE',
     renderedPreview: 'VISTA PREVIA',

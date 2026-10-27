@@ -3344,7 +3344,7 @@ export const ruOverrides = {
     hide: 'Скрыть',
     openPreview: 'Открыть предпросмотр',
     openInBrowser: 'Открыть в браузере',
-    linkHint: '⌘/Ctrl-клик — панель предпросмотра',
+    linkHint: '⌘/Ctrl-клик — открыть в браузере',
     sourceLineTitle: 'Клик — выбрать · Shift-клик — расширить · перетащите в композер',
     source: 'ИСТОЧНИК',
     renderedPreview: 'ПРЕДПРОСМОТР',

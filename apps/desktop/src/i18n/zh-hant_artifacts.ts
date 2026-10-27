@@ -72,7 +72,7 @@ export const zhHantArtifacts = {
     openInExternal: '在外部開啟',
     popIn: '彈回',
     popOut: '彈出',
-    linkHint: '⌘/Ctrl+點擊在預覽窗格開啟',
+    linkHint: '⌘/Ctrl+點擊在瀏覽器開啟',
     sourceLineTitle: '點擊選取 · shift 點擊擴展 · 拖曳至輸入框',
     source: '原始碼',
     renderedPreview: '預覽',

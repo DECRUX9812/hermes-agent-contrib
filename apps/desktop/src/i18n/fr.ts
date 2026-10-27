@@ -4684,7 +4684,7 @@ export const frOverrides = {
     openInExternal: 'Ouvrir dans une application externe',
     popIn: 'Réintégrer',
     popOut: 'Détacher',
-    linkHint: "⌘/Ctrl-clic pour le panneau d'aperçu",
+    linkHint: "⌘/Ctrl-clic pour ouvrir dans le navigateur",
     sourceLineTitle: 'Clic pour sélectionner · shift-clic pour étendre · glisser vers le compositeur',
     source: 'SOURCE',
     renderedPreview: 'APERÇU',
