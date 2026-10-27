@@ -20,8 +20,6 @@ import {
   sessionApprovalRequests
 } from '@/store/prompts'
 
-import { StatusBadge } from '../../status-dot'
-
 const RECENT_DECISION_MS = 1800
 const SESSION_STOPPED = 'session_stopped' // approvals plugin: upstream denied it when the turn stopped
 
@@ -36,7 +34,7 @@ export interface ApprovalCardProps {
 }
 
 /** The only approval decision UI. The compact option is for surfaces that
- *  choose to embed the card; read-only surfaces should use StatusBadge. */
+ *  choose to embed the card; read-only surfaces should show a status mark. */
 export function ApprovalCard({
   compact = false,
   initialDecision = null,
@@ -109,23 +107,33 @@ export function ApprovalCard({
   return (
     <article
       aria-label={copy.jumpToApproval}
-      className={cn('grid min-w-0 gap-2 rounded-card border border-line bg-surface-raised p-3', compact && 'p-2')}
+      className={cn(
+        'grid min-w-0 gap-2 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-elevated) p-3',
+        compact && 'p-2'
+      )}
       data-request-id={request.requestId}
       data-slot="tool-approval-card"
     >
       <div className="flex min-w-0 items-center gap-2">
-        <StatusBadge aria-label={copy.jumpToApproval} className="shrink-0" state="needs-approval" />
-        <p className="min-w-0 truncate text-ui-sm font-medium text-fg">{request.toolName || copy.cardTitle}</p>
+        <span
+          aria-label={copy.jumpToApproval}
+          className="inline-block size-1.5 shrink-0 rounded-full bg-(--ui-yellow)"
+          data-status="needs-approval"
+          role="img"
+        />
+        <p className="min-w-0 truncate text-sm font-medium text-(--ui-text-primary)">
+          {request.toolName || copy.cardTitle}
+        </p>
       </div>
 
       {command ? (
         <LogView className={cn('max-h-28', compact && 'max-h-20')}>{command}</LogView>
       ) : description ? (
-        <p className="whitespace-pre-wrap break-words text-ui-xs text-fg-secondary">{description}</p>
+        <p className="whitespace-pre-wrap break-words text-xs text-(--ui-text-secondary)">{description}</p>
       ) : null}
 
       {decision ? (
-        <p aria-live="polite" className="text-ui-xs text-fg-secondary" data-approval-outcome="" role="status">
+        <p aria-live="polite" className="text-xs text-(--ui-text-secondary)" data-approval-outcome="" role="status">
           {outcome}
         </p>
       ) : (
@@ -136,7 +144,7 @@ export function ApprovalCard({
             </Button>
             {request.allowPermanent === false ? null : confirmAlways ? (
               <>
-                <span className="min-w-0 flex-1 text-right text-ui-xs text-fg-secondary">
+                <span className="min-w-0 flex-1 text-right text-xs text-(--ui-text-secondary)">
                   {copy.alwaysConfirmPrompt(pattern)}
                 </span>
                 <Button disabled={busy} onClick={() => void answer('always')} size="sm" type="button">
@@ -169,7 +177,7 @@ export function ApprovalCard({
             </Button>
           </div>
           {error ? (
-            <p className="text-ui-xs text-danger" data-approval-error="" role="alert">
+            <p className="text-xs text-(--ui-red)" data-approval-error="" role="alert">
               {error}
             </p>
           ) : null}
