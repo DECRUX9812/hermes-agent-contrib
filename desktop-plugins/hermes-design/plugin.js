@@ -523,6 +523,59 @@ function guardTheme() {
   }
 }
 
+// Core reads its user-theme store synchronously before the first React paint (themes/user-themes.ts), but
+// plugins load ~1.5s later. A copy of Warm Paper in that store lets it paint on the first frame instead of the
+// stock palette. Refreshed on every register; never overwrites a user's own theme of the same name.
+const USER_THEMES_KEY = 'hermes-desktop-user-themes-v1'
+// The copy is pre-guarded, so nothing shifts when the plugin registers and the guard runs: ink and accents are
+// already lifted, and the solid text roles ship as skin CSS for each mode.
+const guarded = c => ({
+  ...c,
+  foreground: lift(c.foreground, c.background, 7),
+  primary: lift(c.primary, c.background, 4.8),
+  midground: lift(c.midground ?? c.ring, c.background, 4.8)
+})
+const textRoles = (c, sel) => {
+  const g = guarded(c)
+  const decls = TEXT_ROLES.map(([name, t, min]) => `${name}: ${lift(blend(g.background, g.foreground, t), g.background, min)};`)
+  return `${sel} { ${decls.join(' ')} }\n`
+}
+const BOOT_COPY = {
+  ...paperTheme,
+  origin: 'hermes-design',
+  colors: guarded(PAPER_LIGHT),
+  darkColors: guarded(PAPER_DARK),
+  // The token, composer and override layers ride along too, so the first frame already matches the registered
+  // plugin. The plugin's own style element repeats the same rules for every other skin.
+  customCSS:
+    PAPER_CSS +
+    TOKENS +
+    COMPOSER +
+    OVERRIDES +
+    textRoles(PAPER_LIGHT, ":root[data-hermes-theme='paper']:not(.dark)") +
+    textRoles(PAPER_DARK, ":root[data-hermes-theme='paper'].dark")
+}
+
+function cacheBootSkin(ls) {
+  const raw = ls.getItem(USER_THEMES_KEY)
+  const rec = raw ? JSON.parse(raw) : {}
+  if (!rec || typeof rec !== 'object' || Array.isArray(rec)) return
+  const mine = rec.paper
+  if (mine && mine.origin !== 'hermes-design') return
+  const json = JSON.stringify(BOOT_COPY)
+  if (mine && JSON.stringify(mine) === json) return
+  rec.paper = BOOT_COPY
+  ls.setItem(USER_THEMES_KEY, JSON.stringify(rec))
+}
+
+function dropBootSkin(ls) {
+  const raw = ls.getItem(USER_THEMES_KEY)
+  const rec = raw ? JSON.parse(raw) : null
+  if (!rec?.paper || rec.paper.origin !== 'hermes-design') return
+  delete rec.paper
+  ls.setItem(USER_THEMES_KEY, JSON.stringify(rec))
+}
+
 const ADOPTED_KEY = 'hermes-design-default-v1'
 const STYLE_ID = 'hermes-design-overrides'
 
@@ -543,8 +596,9 @@ export default {
           requestTheme('paper')
         }
       }
+      cacheBootSkin(ls)
     } catch {
-      // Storage unavailable: the stock skin stays.
+      // Storage unavailable or a malformed record: the stock skin paints until this plugin registers.
     }
     let el = document.getElementById(STYLE_ID)
     if (!el) {
@@ -557,6 +611,12 @@ export default {
     ctx.onDispose(() => {
       unguard()
       el.remove()
+      try {
+        // Disabled: Warm Paper should not outlive the plugin. A hot reload re-registers and re-caches.
+        dropBootSkin(window.localStorage)
+      } catch {
+        // Storage unavailable: nothing was cached.
+      }
     })
   },
 }
