@@ -6416,10 +6416,24 @@ function bopSeed(shape, name) {
   const parts = typeof shape === "string" ? shape.split(":") : [];
   return parts[1] || name || "agent";
 }
+var bopAvailable;
+function hasBopMascot() {
+  if (bopAvailable === void 0) {
+    try {
+      bopAvailable = Boolean(bopMascotMarkup("probe", PRIMARY_AVATAR_COLOR, { mood: "idle" }));
+    } catch {
+      bopAvailable = false;
+    }
+  }
+  return bopAvailable;
+}
 function bopMarkup(shape, name, color, mood, size) {
   const inner = bopMascotMarkup(bopSeed(shape, name), color, {
     mood: mood === "idle" ? "idle" : "awake"
   });
+  if (!inner) {
+    return null;
+  }
   return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="${size}" height="${size}" data-bot-face=${JSON.stringify(name)}>${inner}</svg>`;
 }
 function blobMarkup(shape, name, size) {
@@ -7052,13 +7066,17 @@ function BotFace({
     }
     shape = defaultShapeFor(name);
   }
-  if (isBopShape(shape)) {
+  const bop = isBopShape(shape) ? bopMarkup(shape, name, color, mood, size) : null;
+  if (isBopShape(shape) && !bop) {
+    shape = defaultShapeFor(name);
+  }
+  if (bop) {
     return /* @__PURE__ */ jsx(
       "span",
       {
         "aria-hidden": true,
         dangerouslySetInnerHTML: {
-          __html: bopMarkup(shape, name, color, mood, size)
+          __html: bop
         },
         "data-hb-mood": mood,
         style: {
@@ -7145,6 +7163,9 @@ function botAccentColor(bot, meta) {
 function botAppearance(name, meta) {
   const isPrimary = (name || "").trim().toLowerCase() === "default";
   const userCustomized = Boolean(meta?.custom);
+  if (isPrimary && !userCustomized && !hasBopMascot()) {
+    return { shape: defaultShapeFor(name), color: PRIMARY_AVATAR_COLOR, image: meta?.image || null };
+  }
   if (isPrimary && !userCustomized) {
     return {
       // The chief-of-staff bop: ink body, highlighter headphones — the
@@ -30939,6 +30960,8 @@ function renderRosterToolbar({
             children: /* @__PURE__ */ jsx71(
               sdk_compat_exports.Button,
               {
+                "aria-label": "Activity toasts",
+                "aria-pressed": activityToasts,
                 className: "rounded-md text-(--ui-text-tertiary) hover:text-foreground",
                 onClick: () => setActivityToasts(!activityToasts),
                 size: "icon-xs",
@@ -30948,19 +30971,19 @@ function renderRosterToolbar({
             )
           }
         ),
-        /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: "Bot Room on desktop", children: /* @__PURE__ */ jsx71(
+        window.hermesDesktop?.botroom ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: "Bot Room on desktop", children: /* @__PURE__ */ jsx71(
           sdk_compat_exports.Button,
           {
             "aria-label": "Bot Room on desktop",
             className: "rounded-md text-(--ui-text-tertiary) hover:text-foreground",
-            onClick: () => void window.hermesDesktop.botroom.open(),
+            onClick: () => void window.hermesDesktop?.botroom?.open(),
             size: "icon-xs",
             variant: "ghost",
             children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "device-desktop" })
           }
-        ) }),
+        ) }) : null,
         /* @__PURE__ */ jsxs69(sdk_compat_exports.DropdownMenu, { children: [
-          /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: "New\u2026", children: /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx71(
+          /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.roster.newBotOrGroup, children: /* @__PURE__ */ jsx71(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx71(
             sdk_compat_exports.Button,
             {
               "aria-label": b.roster.newBotOrGroup,

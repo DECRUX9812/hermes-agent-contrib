@@ -128,6 +128,8 @@ export function renderRosterToolbar({
             label={activityToasts ? 'Activity toasts on — click to silence' : 'Activity toasts off — click to enable'}
           >
             <Button
+              aria-label="Activity toasts"
+              aria-pressed={activityToasts}
               className="rounded-md text-(--ui-text-tertiary) hover:text-foreground"
               onClick={() => setActivityToasts(!activityToasts)}
               size="icon-xs"
@@ -140,19 +142,23 @@ export function renderRosterToolbar({
               Goes through the typed bridge (not the store) so the plugin
               boundary stays clean; the store self-wires control + roster feed
               when the overlay signals ready. */}
+          {/* The overlay window only exists in the desktop shell; the browser
+              build has no `botroom` bridge, so the action is not offered there. */}
+          {window.hermesDesktop?.botroom ? (
           <Tip label="Bot Room on desktop">
             <Button
               aria-label="Bot Room on desktop"
               className="rounded-md text-(--ui-text-tertiary) hover:text-foreground"
-              onClick={() => void window.hermesDesktop.botroom.open()}
+              onClick={() => void window.hermesDesktop?.botroom?.open()}
               size="icon-xs"
               variant="ghost"
             >
               <Codicon name="device-desktop" />
             </Button>
           </Tip>
+          ) : null}
           <DropdownMenu>
-            <Tip label="New…">
+            <Tip label={b.roster.newBotOrGroup}>
               <DropdownMenuTrigger asChild>
                 <Button
                   aria-label={b.roster.newBotOrGroup}

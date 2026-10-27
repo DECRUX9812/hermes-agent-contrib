@@ -205,10 +205,30 @@ export function bopSeed(shape: null | string | undefined, name: string | undefin
   return parts[1] || name || 'agent'
 }
 
+let bopAvailable: boolean | undefined
+
+/** Whether the host SDK ships the bop mascot. Older hosts get sdk-compat's
+ *  empty-string fallback, which would render an empty (invisible) svg. */
+export function hasBopMascot(): boolean {
+  if (bopAvailable === undefined) {
+    try {
+      bopAvailable = Boolean(bopMascotMarkup('probe', PRIMARY_AVATAR_COLOR, { mood: 'idle' }))
+    } catch {
+      bopAvailable = false
+    }
+  }
+
+  return bopAvailable
+}
+
 function bopMarkup(shape: null | string | undefined, name: string, color: string, mood: FaceMood, size: number) {
   const inner = bopMascotMarkup(bopSeed(shape, name), color, {
     mood: mood === 'idle' ? 'idle' : 'awake'
   })
+
+  if (!inner) {
+    return null
+  }
 
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="${size}" height="${size}"` +
@@ -1131,12 +1151,20 @@ export function BotFace({
 
   // The staff mascot — same static inline-SVG path as blobatar (the roster
   // PNG backfill finds it through data-bot-face; the math clock ignores it).
-  if (isBopShape(shape)) {
+  const bop = isBopShape(shape) ? bopMarkup(shape, name, color, mood, size) : null
+
+  if (isBopShape(shape) && !bop) {
+    // Host SDK without the mascot: draw the name's own legacy face instead
+    // of an empty svg.
+    shape = defaultShapeFor(name)
+  }
+
+  if (bop) {
     return (
       <span
         aria-hidden
         dangerouslySetInnerHTML={{
-          __html: bopMarkup(shape, name, color, mood, size)
+          __html: bop
         }}
         data-hb-mood={mood}
         style={{
@@ -1257,6 +1285,10 @@ export function botAppearance(name: string, meta: BotMeta | null | undefined): A
   // shape/color they set via the editor (tracked by meta.custom === true).
   const isPrimary = (name || '').trim().toLowerCase() === 'default'
   const userCustomized = Boolean(meta?.custom)
+
+  if (isPrimary && !userCustomized && !hasBopMascot()) {
+    return { shape: defaultShapeFor(name), color: PRIMARY_AVATAR_COLOR, image: meta?.image || null }
+  }
 
   if (isPrimary && !userCustomized) {
     return {
