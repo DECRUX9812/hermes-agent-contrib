@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-import { findSessionApprovalStack, scrollToSessionApproval } from './approval-anchor'
+import { findSessionApprovalStack, scrollToSessionApproval } from './approval-journal'
 
 describe('approval-anchor', () => {
   afterEach(() => {
