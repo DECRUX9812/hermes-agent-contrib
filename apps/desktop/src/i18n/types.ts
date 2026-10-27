@@ -3865,6 +3865,12 @@ catalog: CatalogTranslations
       loadingResponse: string
       loadingLocalModel: (model: string) => string
       processingPrompt: string
+      /** Part A receipt: "Got it — <restated ask>". */
+      instantAckPrompt: (prompt: string) => string
+      /** A slash command runs inline rather than in a turn. */
+      instantAckCommand: (command: string) => string
+      instantAckWaiting: string
+      instantAckApproval: string
       resumeWhenBackgroundDone: (count: number) => string
       thinking: string
       thought: string

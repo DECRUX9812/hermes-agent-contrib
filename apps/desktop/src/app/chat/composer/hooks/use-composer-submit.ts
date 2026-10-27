@@ -1,6 +1,7 @@
 import { SLASH_COMMAND_RE } from '@hermes/shared'
 import { type RefObject, useLayoutEffect, useRef } from 'react'
 
+import { armReceiptForSend } from '@/app/chat/instant-ack'
 import { usePaneVisible } from '@/components/pane-shell/pane-visibility'
 import { translateNow, useI18n } from '@/i18n'
 import { isSlashCommandText } from '@/lib/chat-runtime'
@@ -456,6 +457,12 @@ export function useComposerSubmit({
       triggerHaptic('submit')
       resetBrowseState(sessionId)
       clearDraft()
+      // Instant ack (Part A): armed here — synchronously, before any await —
+      // so the receipt paints on the next frame instead of after the gateway
+      // answers. It says only what the user just asked, so it stays true while
+      // the turn has not started. Queued and steered sends keep the running
+      // turn's own line: their queue pill already names them.
+      armReceiptForSend(activeQueueSessionKeyRef.current, text)
       // Keep blob: previews alive for the optimistic bubble; revoke when that
       // consumer is discarded/replaced (not here — clear would race the clone).
       scope.attachments.clear({ retainPreviewUrls: true })

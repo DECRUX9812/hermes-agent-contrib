@@ -4404,6 +4404,10 @@ export const en: Translations = {
       loadingResponse: 'Hermes is loading a response',
       loadingLocalModel: model => `Loading ${model} into memory`,
       processingPrompt: 'Processing prompt',
+      instantAckPrompt: (prompt: string) => `Got it — ${prompt}`,
+      instantAckCommand: (command: string) => `Running ${command}…`,
+      instantAckWaiting: 'Waiting on the model…',
+      instantAckApproval: 'Waiting on your approval',
       resumeWhenBackgroundDone: count =>
         count === 1
           ? 'Will resume when the background task finishes'
