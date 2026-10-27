@@ -3,6 +3,7 @@
 manifest_version: 1
 
 name: clickup
+connector_slug: clickup_mcp
 description: Tasks, docs, and workspaces in ClickUp.
 source: https://developer.clickup.com/docs/connect-an-ai-assistant-to-clickups-mcp-server
 

@@ -3,6 +3,7 @@
 manifest_version: 1
 
 name: amplitude
+connector_slug: amplitude_mcp
 description: 'Amplitude analytics: charts, dashboards, experiments, flags.'
 source: https://amplitude.com/docs/amplitude-ai/amplitude-mcp
 
