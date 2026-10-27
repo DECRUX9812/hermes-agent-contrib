@@ -349,6 +349,19 @@ function routineTimestamp(value: string | undefined): null | string {
  *  unknown one is passed through verbatim rather than hidden. `delivery_failed`
  *  means the agent run succeeded but the brief never reached its target; it
  *  must read as a failure, not as a run result the user can trust. */
+/** Muse-style health dot: grey when off, amber when the last run hit a
+ *  failure (run, delivery or config), green otherwise. A paused job stays
+ *  grey even if its last run failed, so the column is calm until it's on. */
+export function routineHealth(job: RoutineJob, active: boolean): 'good' | 'off' | 'warn' {
+  if (!active) {
+    return 'off'
+  }
+
+  const failed = ['blocked_config', 'delivery_failed', 'error'].includes(String(job.last_status || '').trim())
+
+  return failed || job.last_fire_error || job.last_delivery_error ? 'warn' : 'good'
+}
+
 export function routineLastResult(status: string | null | undefined, c = botsText().cron): null | string {
   const raw = String(status || '').trim()
 
@@ -659,6 +672,8 @@ interface RoutineRowProps {
   owner: RosterRow
 }
 
+const HEALTH_DOT = { good: 'bg-(--ui-success)', off: 'bg-(--ui-text-quaternary)', warn: 'hbp-bg-warn' } as const
+
 export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
   const b = useBots()
   const { t } = useI18n()
@@ -732,7 +747,8 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
               theme — the same reason the session status dots use it. */}
           <span
             aria-hidden
-            className={cn('size-1.5 shrink-0 rounded-full', active ? 'bg-(--ui-success)' : 'bg-(--ui-text-quaternary)')}
+            className={cn('size-1.5 shrink-0 rounded-full', HEALTH_DOT[routineHealth(job, active)])}
+            data-health={routineHealth(job, active)}
           />
           <span className={cn('min-w-0 flex-1 truncate text-xs font-medium', !active && 'text-(--ui-text-tertiary)')}>
             {routineTitle(job, b.cron)}

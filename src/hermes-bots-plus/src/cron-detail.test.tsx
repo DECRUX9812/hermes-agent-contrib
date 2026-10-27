@@ -37,7 +37,7 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
   }
 })
 
-const { RoutineDetailDialog, RoutineRow, routineDetailIssue, routineDetailRows } = await import('./cron')
+const { RoutineDetailDialog, routineHealth, RoutineRow, routineDetailIssue, routineDetailRows } = await import('./cron')
 
 const activeJob: RoutineJob = {
   deliver: 'bot-chat',
@@ -249,5 +249,28 @@ describe('run history (B6)', () => {
     render(<RoutineDetailDialog job={activeJob} onClose={() => undefined} open owner={owner} />)
 
     expect(await screen.findByText('No runs yet.')).toBeTruthy()
+  })
+})
+
+describe('routine health dot', () => {
+  const base: RoutineJob = { enabled: true, job_id: 'h', schedule: 'every 1h' }
+
+  it('is green when healthy, amber after any failure, grey when off', () => {
+    expect(routineHealth({ ...base, last_status: 'ok' }, true)).toBe('good')
+    expect(routineHealth(base, true)).toBe('good')
+
+    for (const last_status of ['error', 'delivery_failed', 'blocked_config']) {
+      expect(routineHealth({ ...base, last_status }, true)).toBe('warn')
+    }
+
+    expect(routineHealth({ ...base, last_fire_error: 'boom' }, true)).toBe('warn')
+    expect(routineHealth({ ...base, last_delivery_error: 'no target' }, true)).toBe('warn')
+    expect(routineHealth({ ...base, last_status: 'error' }, false)).toBe('off')
+  })
+
+  it('paints the row dot from it', () => {
+    const { container } = render(<RoutineRow job={{ ...base, last_status: 'error', name: 'Digest' }} owner={{ name: 'notetaker' } as RosterRow} />)
+
+    expect(container.querySelector('[data-health]')?.getAttribute('data-health')).toBe('warn')
   })
 })

@@ -19721,6 +19721,13 @@ function routineTimestamp(value) {
   const ms = value ? new Date(value).getTime() : Number.NaN;
   return Number.isFinite(ms) ? `${(0, sdk_compat_exports.relativeTime)(ms)} \xB7 ${new Date(ms).toLocaleString()}` : null;
 }
+function routineHealth(job, active) {
+  if (!active) {
+    return "off";
+  }
+  const failed = ["blocked_config", "delivery_failed", "error"].includes(String(job.last_status || "").trim());
+  return failed || job.last_fire_error || job.last_delivery_error ? "warn" : "good";
+}
 function routineLastResult(status, c = botsText().cron) {
   const raw = String(status || "").trim();
   if (!raw) {
@@ -19928,6 +19935,7 @@ function RoutineDetailDialog({ job, onClose, open, owner }) {
     }
   );
 }
+var HEALTH_DOT = { good: "bg-(--ui-success)", off: "bg-(--ui-text-quaternary)", warn: "hbp-bg-warn" };
 function RoutineRow({ job, onOpen, owner }) {
   const b = useBots();
   const { t } = (0, sdk_compat_exports.useI18n)();
@@ -19984,7 +19992,8 @@ function RoutineRow({ job, onOpen, owner }) {
                   "span",
                   {
                     "aria-hidden": true,
-                    className: (0, sdk_compat_exports.cn)("size-1.5 shrink-0 rounded-full", active ? "bg-(--ui-success)" : "bg-(--ui-text-quaternary)")
+                    className: (0, sdk_compat_exports.cn)("size-1.5 shrink-0 rounded-full", HEALTH_DOT[routineHealth(job, active)]),
+                    "data-health": routineHealth(job, active)
                   }
                 ),
                 /* @__PURE__ */ jsx29("span", { className: (0, sdk_compat_exports.cn)("min-w-0 flex-1 truncate text-xs font-medium", !active && "text-(--ui-text-tertiary)"), children: routineTitle(job, b.cron) })
@@ -26795,12 +26804,14 @@ function RailSection({
 var WORKING_KINDS2 = /* @__PURE__ */ new Set(["working", "routine", "group", "background", "delegated"]);
 function BotHero2({
   bot,
+  focused,
   meta,
   onEdit
 }) {
   const b = useBots();
   const live = useBotLiveStatus(bot);
-  const tasks = (0, sdk_compat_exports.useValue)(host.state.focusedActivity);
+  const focusedTasks = (0, sdk_compat_exports.useValue)(host.state.focusedActivity);
+  const tasks = focused ? focusedTasks : [];
   const now = activityNow(tasks, b.activity);
   const { shape, color, image } = botAppearance(bot.name, meta);
   const name = displayName({ name: bot.name }, meta);
@@ -26997,7 +27008,15 @@ function MissionRail() {
   const staleNotice = error && !view.live && view.all.length ? b.cron.staleNotice : null;
   const filterHint = routineFilterHint(view.all, jobs);
   return /* @__PURE__ */ jsxs54("div", { className: "flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain", children: [
-    /* @__PURE__ */ jsx56(BotHero2, { bot: owner, meta, onEdit: () => setEditing(true) }),
+    /* @__PURE__ */ jsx56(
+      BotHero2,
+      {
+        bot: owner,
+        focused: !!focusedOwner && isActiveRosterBot(owner, focusedOwner),
+        meta,
+        onEdit: () => setEditing(true)
+      }
+    ),
     /* @__PURE__ */ jsx56(RailTabs, { badges: { approvals: approvalCount }, onChange: setRailTab, value: tab }),
     /* @__PURE__ */ jsxs54(
       "div",

@@ -46,7 +46,7 @@ import {
   selectRoutineJobs,
   useRoutines
 } from './cron'
-import { $botMeta, $lastRoster, botHandle, botRosterKey, newBotChat } from './data'
+import { $botMeta, $lastRoster, botHandle, botRosterKey, isActiveRosterBot, newBotChat } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { useBots } from './i18n'
 import { botRole, displayName } from './labels'
@@ -105,16 +105,21 @@ const WORKING_KINDS = new Set(['working', 'routine', 'group', 'background', 'del
  *  do with a teammate (message it, hand it a project) and quiet icons. */
 function BotHero({
   bot,
+  focused,
   meta,
   onEdit
 }: {
   bot: RosterRow
+  /** The rail's bot owns the focused chat. Only then is the focused chat's
+   *  activity this bot's; otherwise it would show another bot's step. */
+  focused: boolean
   meta?: Parameters<typeof botAppearance>[1]
   onEdit: () => void
 }) {
   const b = useBots()
   const live = useBotLiveStatus(bot)
-  const tasks = useValue(host.state.focusedActivity)
+  const focusedTasks = useValue(host.state.focusedActivity)
+  const tasks = focused ? focusedTasks : []
   const now = activityNow(tasks, b.activity)
   const { shape, color, image } = botAppearance(bot.name, meta)
   const name = displayName({ name: bot.name }, meta)
@@ -381,7 +386,12 @@ export function MissionRail() {
 
   return (
     <div className="flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain">
-      <BotHero bot={owner} meta={meta} onEdit={() => setEditing(true)} />
+      <BotHero
+        bot={owner}
+        focused={!!focusedOwner && isActiveRosterBot(owner, focusedOwner)}
+        meta={meta}
+        onEdit={() => setEditing(true)}
+      />
       <RailTabs badges={{ approvals: approvalCount }} onChange={setRailTab} value={tab} />
       <div
         aria-labelledby={`rail-tab-${tab}`}
