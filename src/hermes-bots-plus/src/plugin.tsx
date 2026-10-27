@@ -139,6 +139,8 @@ import { TEAM_LOCALES } from './team-i18n'
 import { TeamPage } from './team-page'
 import { mountPluginStyles } from './tones'
 import { BotChatMark, mountReactionPillStyles } from './reaction-pills'
+import { mountSidePagesStyles, SIDE_PAGE_DIRECTIVE, SidePageCard, SidePagesChip } from './side-pages'
+import { SIDE_PAGES_LOCALES } from './side-pages-i18n'
 import { ToolRunCards } from './tool-card'
 import type { GroupChat, RosterRow } from './types'
 import { loadBotSections } from './user-sections'
@@ -184,6 +186,7 @@ export default {
     const unmountStyles = mountPluginStyles(pluginUtilities)
     // b1: landed reactions read as pills inside a canonical Bot Chat.
     const unmountReactionPills = mountReactionPillStyles()
+    const unmountSidePages = mountSidePagesStyles()
     // The user's own roster sections. Read once at register; every mutation
     // writes through.
     loadBotSections()
@@ -193,6 +196,7 @@ export default {
     const disposeContextPanelLocales = ctx.i18n.register(CONTEXT_PANEL_LOCALES)
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
+    const disposeSidePagesLocales = ctx.i18n.register(SIDE_PAGES_LOCALES)
     const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
     const disposeToolCardsLocales = ctx.i18n.register(TOOL_CARDS_LOCALES)
     setToolCardsTranslator(ctx.i18n.t)
@@ -209,6 +213,8 @@ export default {
     if (typeof ctx.onDispose === 'function') {
       ctx.onDispose(unmountStyles)
       ctx.onDispose(unmountReactionPills)
+      ctx.onDispose(unmountSidePages)
+      ctx.onDispose(disposeSidePagesLocales)
       ctx.onDispose(disposeLocales)
       ctx.onDispose(disposeTeamLocales)
       ctx.onDispose(disposeLiveViewLocales)
@@ -913,6 +919,13 @@ export default {
       render: () => <BotChatMark />
     })
 
+    // Side Pages (c1): pages this Bot Chat produced, in a slide-in panel.
+    ctx.register({
+      id: 'side-pages-chip',
+      area: COMPOSER_AREAS.top,
+      render: () => <SidePagesChip />
+    })
+
     ctx.register({
       id: 'bot-inbound-cards',
       area: COMPOSER_AREAS.top,
@@ -1022,6 +1035,17 @@ export default {
       data: {
         name: BOT_PLAN_DIRECTIVE,
         render: (props: TranscriptDirectiveProps) => <BotPlanCard {...props} />
+      }
+    })
+
+    // `::botpage{path="…"}` in a Bot Chat reply → a card that opens the page
+    // in the Side Pages panel.
+    ctx.register({
+      id: 'botpage-directive',
+      area: TRANSCRIPT_DIRECTIVE_AREA,
+      data: {
+        name: SIDE_PAGE_DIRECTIVE,
+        render: (props: TranscriptDirectiveProps) => <SidePageCard {...props} />
       }
     })
 

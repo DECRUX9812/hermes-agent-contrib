@@ -34,26 +34,31 @@ import { useState } from 'react'
 
 import { buildPlanExecutePrompt, parseBotPlanReply } from './bot-plan'
 import { isCanonicalChatOnScreen } from './canonical-chat'
-import { $lastRoster, cachedUnionRoster } from './data'
+import { $lastRoster, cachedUnionRoster, type RosterRow } from './data'
 import { useBots } from './i18n'
 
 /** Whether `storedId` is some roster bot's canonical Bot Chat. The live
  *  `$lastRoster` covers the common path; `cachedUnionRoster` backstops a card
  *  rendered before the roster's first fetch landed. */
 export function canonicalBotChatOnScreen(storedId: string | null): boolean {
+  return canonicalBotRowOnScreen(storedId) !== null
+}
+
+/** The roster bot whose canonical Bot Chat is `storedId`, or null. */
+export function canonicalBotRowOnScreen(storedId: string | null): null | RosterRow {
   if (!storedId) {
-    return false
+    return null
   }
 
   const union = cachedUnionRoster()
 
   for (const row of [...(union?.profiles ?? []), ...$lastRoster.get()]) {
     if (isCanonicalChatOnScreen(row, storedId)) {
-      return true
+      return row
     }
   }
 
-  return false
+  return null
 }
 
 /** Handled proposals, module-scoped like `::ask`'s settled set — transcript

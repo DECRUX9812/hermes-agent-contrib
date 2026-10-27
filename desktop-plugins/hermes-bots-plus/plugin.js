@@ -1617,7 +1617,7 @@ var init_i18n = __esm({
         clearChecklist: "Clear"
       },
       ack: {
-        prompt: (text2) => `Got it \u2014 ${text2}`,
+        prompt: (text3) => `Got it \u2014 ${text3}`,
         command: (command) => `Running ${command}\u2026`,
         waiting: "Waiting on the model\u2026",
         verbs: {
@@ -2494,7 +2494,7 @@ var init_i18n = __esm({
         clearChecklist: "\u30AF\u30EA\u30A2"
       },
       ack: {
-        prompt: (text2) => `\u4E86\u89E3 \u2014 ${text2}`,
+        prompt: (text3) => `\u4E86\u89E3 \u2014 ${text3}`,
         command: (command) => `${command} \u3092\u5B9F\u884C\u4E2D\u2026`,
         waiting: "\u30E2\u30C7\u30EB\u306E\u5FDC\u7B54\u3092\u5F85\u3063\u3066\u3044\u307E\u3059\u2026",
         verbs: {
@@ -3371,7 +3371,7 @@ var init_i18n = __esm({
         clearChecklist: "\u6E05\u9664"
       },
       ack: {
-        prompt: (text2) => `\u6536\u5230 \u2014 ${text2}`,
+        prompt: (text3) => `\u6536\u5230 \u2014 ${text3}`,
         command: (command) => `\u6B63\u5728\u8FD0\u884C ${command}\u2026`,
         waiting: "\u6B63\u5728\u7B49\u5F85\u6A21\u578B\u2026",
         verbs: {
@@ -4248,7 +4248,7 @@ var init_i18n = __esm({
         clearChecklist: "\u6E05\u9664"
       },
       ack: {
-        prompt: (text2) => `\u6536\u5230 \u2014 ${text2}`,
+        prompt: (text3) => `\u6536\u5230 \u2014 ${text3}`,
         command: (command) => `\u6B63\u5728\u57F7\u884C ${command}\u2026`,
         waiting: "\u6B63\u5728\u7B49\u5F85\u6A21\u578B\u2026",
         verbs: {
@@ -4510,8 +4510,8 @@ function botBackendProfileScope(route, fallbackProfile = "default") {
 }
 function legacyRetryParams(method, params, error) {
   const keys = LEGACY_ONLY_KEYS[method];
-  const text2 = String(error?.message ?? error ?? "");
-  const refused = text2.match(/invalid params for [\w.]+: (\w+): Extra inputs are not permitted/)?.[1];
+  const text3 = String(error?.message ?? error ?? "");
+  const refused = text3.match(/invalid params for [\w.]+: (\w+): Extra inputs are not permitted/)?.[1];
   if (!keys || !refused || !keys.includes(refused) || !(refused in params)) {
     return null;
   }
@@ -4557,8 +4557,8 @@ function asRpcError(value, fallback) {
     return value;
   }
   if (isObject) {
-    const text2 = hasStringMessage && String(message).trim() ? String(message) : fallback;
-    const error = new Error(text2);
+    const text3 = hasStringMessage && String(message).trim() ? String(message) : fallback;
+    const error = new Error(text3);
     error.cause = value;
     return error;
   }
@@ -4727,11 +4727,11 @@ function botRole(bot, meta) {
   const first = stripPreviewMarkdown(meta?.description || bot?.description || "").split(/[.!?]\s|\n/)[0]?.trim();
   return (first || "").slice(0, 60);
 }
-function stripPreviewMarkdown(text2) {
-  return String(text2 || "").replace(/```[\s\S]*?```/g, " ").replace(/`([^`\n]*)`/g, "$1").replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/(^|\s)[*_](\S(?:.*?\S)?)[*_](?=\s|$|[.,;:!?])/g, "$1$2").replace(/~~(.*?)~~/g, "$1").replace(/^\s{0,3}#{1,6}\s+/gm, "").replace(/^\s{0,3}>\s?/gm, "").replace(/\s+/g, " ").trim();
+function stripPreviewMarkdown(text3) {
+  return String(text3 || "").replace(/```[\s\S]*?```/g, " ").replace(/`([^`\n]*)`/g, "$1").replace(/!\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/\[([^\]]*)\]\([^)]*\)/g, "$1").replace(/(\*\*|__)(.*?)\1/g, "$2").replace(/(^|\s)[*_](\S(?:.*?\S)?)[*_](?=\s|$|[.,;:!?])/g, "$1$2").replace(/~~(.*?)~~/g, "$1").replace(/^\s{0,3}#{1,6}\s+/gm, "").replace(/^\s{0,3}>\s?/gm, "").replace(/\s+/g, " ").trim();
 }
-function cleanPreviewLine(text2) {
-  return stripPreviewMarkdown(text2).replace(/(^|\s)#{1,6}\s+/g, "$1").replace(/^\s*[-*•]\s+/, "").replace(/`/g, "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
+function cleanPreviewLine(text3) {
+  return stripPreviewMarkdown(text3).replace(/(^|\s)#{1,6}\s+/g, "$1").replace(/^\s*[-*•]\s+/, "").replace(/`/g, "").replace(/\*\*/g, "").replace(/\s+/g, " ").trim();
 }
 var init_labels = __esm({
   "src/labels.ts"() {
@@ -4802,8 +4802,8 @@ function botModeGatewayNeedsUpdate(error) {
   return /(?:method not found|no handler for|unknown method|unsupported rpc|out of sync|extra inputs are not permitted)/i.test(message);
 }
 function errorDetail(error) {
-  const text2 = String(error?.message || error || "").trim();
-  return text2 || void 0;
+  const text3 = String(error?.message || error || "").trim();
+  return text3 || void 0;
 }
 function notifyBotOpenFailure(error, bot, step, botName, retry) {
   const b = botsText().bot;
@@ -5367,14 +5367,14 @@ var init_profile_ops = __esm({
 
 // src/data.ts
 function botAttentionHint(reason) {
-  const text2 = botsText().bot;
+  const text3 = botsText().bot;
   const hints = {
-    provider_auth_or_access: text2.attentionProviderAuth,
-    provider_quota_limit: text2.attentionQuota,
-    missing_config: text2.attentionMissingConfig,
-    agent_blocked: text2.attentionBlocked
+    provider_auth_or_access: text3.attentionProviderAuth,
+    provider_quota_limit: text3.attentionQuota,
+    missing_config: text3.attentionMissingConfig,
+    agent_blocked: text3.attentionBlocked
   };
-  return hints[reason] || text2.attentionFallback;
+  return hints[reason] || text3.attentionFallback;
 }
 function attentionReasonFromError(errorTextOrReason) {
   const raw = String(errorTextOrReason || "").trim();
@@ -5384,22 +5384,22 @@ function attentionReasonFromError(errorTextOrReason) {
   if (BOT_ATTENTION_CLASSES.has(raw)) {
     return raw;
   }
-  const text2 = raw.toLowerCase();
-  if (/rate.?limit|too many requests|\b429\b|\b5\d\d\b|server error|overloaded|timed?.?out|timeout|temporar/.test(text2)) {
+  const text3 = raw.toLowerCase();
+  if (/rate.?limit|too many requests|\b429\b|\b5\d\d\b|server error|overloaded|timed?.?out|timeout|temporar/.test(text3)) {
     return null;
   }
-  if (/no llm provider|no access token|not configured|no api key|missing api key/.test(text2)) {
+  if (/no llm provider|no access token|not configured|no api key|missing api key/.test(text3)) {
     return "missing_config";
   }
   if (/\b401\b|\b403\b|unauthorized|forbidden|authentication|invalid.?api.?key|credentials? (are )?(invalid|expired)/.test(
-    text2
+    text3
   )) {
     return "provider_auth_or_access";
   }
-  if (/quota|out of funds|insufficient (credits?|funds|balance)|payment required|\b402\b|billing/.test(text2)) {
+  if (/quota|out of funds|insufficient (credits?|funds|balance)|payment required|\b402\b|billing/.test(text3)) {
     return "provider_quota_limit";
   }
-  if (/\bblocked\b/.test(text2)) {
+  if (/\bblocked\b/.test(text3)) {
     return "agent_blocked";
   }
   return null;
@@ -6033,9 +6033,9 @@ function newBotChat(bot, options = {}) {
     workspaceOwnerKey: ownerKey
   });
 }
-function resolveRosterMentions(text2, roster, active = {}) {
+function resolveRosterMentions(text3, roster, active = {}) {
   const members = Array.isArray(roster) ? roster : [];
-  const prose = String(text2 || "").replace(/```[\s\S]*?```/g, " ").replace(/`[^`\n]*`/g, " ");
+  const prose = String(text3 || "").replace(/```[\s\S]*?```/g, " ").replace(/`[^`\n]*`/g, " ");
   const byForm = /* @__PURE__ */ new Map();
   const formsByBot = /* @__PURE__ */ new Map();
   for (const bot of members) {
@@ -6427,9 +6427,9 @@ var blobatarSvg2 = typeof sdk_compat_exports === "undefined" ? void 0 : sdk_comp
 var createBudgetedLoop2 = typeof sdk_compat_exports === "undefined" ? void 0 : sdk_compat_exports.createBudgetedLoop;
 var AVATAR_SHAPES = ["circle", "squircle", "pill", "triangle", "hexagon", "cloud", "drop"];
 var AVATAR_PICKER_SHAPES = ["circle", "blob", "squircle", "pill", "triangle", "hexagon", "cloud", "drop"];
-function sigilRng(text2) {
+function sigilRng(text3) {
   let h = 2166136261;
-  for (const ch of text2) {
+  for (const ch of text3) {
     h ^= ch.charCodeAt(0);
     h = Math.imul(h, 16777619);
   }
@@ -7411,8 +7411,8 @@ function hydrateGroupChatTombstones(value) {
     }
   }
 }
-function compactGroupChatSyncText(text2, limit = GROUP_CHAT_SYNC_TEXT_CHARS) {
-  const raw = String(text2 || "");
+function compactGroupChatSyncText(text3, limit = GROUP_CHAT_SYNC_TEXT_CHARS) {
+  const raw = String(text3 || "");
   if (raw.length <= limit) {
     return { text: raw };
   }
@@ -8502,11 +8502,11 @@ function groupChatEntryId() {
 }
 var GROUP_EMPTY_SENTINEL = "(empty)";
 var GROUP_EMPTY_FRIENDLY = "\u26A0\uFE0F The model returned no response after processing tool results. This can happen with some models \u2014 try again or rephrase your question.";
-function normalizeGroupChatText(text2) {
-  const trimmed2 = String(text2 || "").trim();
+function normalizeGroupChatText(text3) {
+  const trimmed2 = String(text3 || "").trim();
   return trimmed2 === GROUP_EMPTY_SENTINEL ? GROUP_EMPTY_FRIENDLY : trimmed2;
 }
-function appendGroupChatEntry(group, from, text2, thread, images) {
+function appendGroupChatEntry(group, from, text3, thread, images) {
   const priorLog = ($groupChats.get()[group] || {}).log || [];
   const lastEntry = priorLog[priorLog.length - 1];
   const entry = {
@@ -8520,7 +8520,7 @@ function appendGroupChatEntry(group, from, text2, thread, images) {
     from,
     // Stored bodies share the prompt's per-line cap (see trimGroupChatLog);
     // cutting here too keeps the duplicate-echo guard comparing like with like.
-    text: compactGroupChatSyncText(normalizeGroupChatText(text2), GROUP_CHAT_HISTORY_LINE_CHARS).text,
+    text: compactGroupChatSyncText(normalizeGroupChatText(text3), GROUP_CHAT_HISTORY_LINE_CHARS).text,
     thread: thread || "legacy"
   };
   if (Array.isArray(images) && images.length) {
@@ -8564,7 +8564,7 @@ function shouldCommitMemberTurn(epochAtDispatch, currentEpoch, newerUserEntryInT
   return !newerUserEntryInThread;
 }
 var GROUP_DUPLICATE_APPEND_WINDOW_MS = 10 * 60 * 1e3;
-function isDuplicateGroupAppend(lastEntry, from, text2, thread, now = Date.now()) {
+function isDuplicateGroupAppend(lastEntry, from, text3, thread, now = Date.now()) {
   if (!lastEntry || !from || from.kind !== "member" || lastEntry.from?.kind !== "member") {
     return false;
   }
@@ -8580,7 +8580,7 @@ function isDuplicateGroupAppend(lastEntry, from, text2, thread, now = Date.now()
   if (now - (lastEntry.at || 0) > GROUP_DUPLICATE_APPEND_WINDOW_MS) {
     return false;
   }
-  return String(lastEntry.text || "") === String(text2 || "").trim();
+  return String(lastEntry.text || "") === String(text3 || "").trim();
 }
 function groupThreadOf(entry) {
   return entry?.thread || "legacy";
@@ -9154,12 +9154,12 @@ var LEAD_FILLER_RES = [
 function titleCase(words) {
   return words.replace(/\b[\p{L}]/gu, (ch) => ch.toUpperCase());
 }
-function suggestedName(text2) {
-  const named = NAME_CLAUSE_RE.exec(text2)?.[1]?.replace(NAME_TRAILER_RE, "").trim();
+function suggestedName(text3) {
+  const named = NAME_CLAUSE_RE.exec(text3)?.[1]?.replace(NAME_TRAILER_RE, "").trim();
   if (named && slugifyProfileName(named)) {
     return titleCase(named).slice(0, 32).trim();
   }
-  let stripped = text2;
+  let stripped = text3;
   for (const filler of LEAD_FILLER_RES) {
     stripped = stripped.replace(filler, "");
   }
@@ -9167,20 +9167,20 @@ function suggestedName(text2) {
   const candidate = titleCase(words.replace(/[.,;:!?]+$/, "")).slice(0, 32).trim();
   return candidate && slugifyProfileName(candidate) ? candidate : "Custom Bot";
 }
-function suggestedTitle(text2) {
-  const first = text2.split(/[.!?\n]/)[0]?.trim() || "";
+function suggestedTitle(text3) {
+  const first = text3.split(/[.!?\n]/)[0]?.trim() || "";
   const clause = first.length > 72 ? `${first.slice(0, 72).replace(/\s+\S*$/, "")}\u2026` : first;
   return clause.slice(0, 72);
 }
 function draftFromDescription(raw) {
-  const text2 = raw.trim().replace(/\s+/g, " ");
-  if (!text2) {
+  const text3 = raw.trim().replace(/\s+/g, " ");
+  if (!text3) {
     return null;
   }
   return {
-    name: suggestedName(text2),
-    title: suggestedTitle(text2),
-    description: text2,
+    name: suggestedName(text3),
+    title: suggestedTitle(text3),
+    description: text3,
     persona: "",
     starters: chatStarters(null),
     shape: "bop",
@@ -9337,12 +9337,12 @@ function hasMessagingProtocol(soul) {
   return /(^|\n)## Messaging other agents(\s|$)/.test(soul || "");
 }
 function ensureMessagingProtocol(soul, name, roster) {
-  const text2 = (soul || "").trim();
-  if (serverInjectsProtocol || hasMessagingProtocol(text2)) {
-    return text2;
+  const text3 = (soul || "").trim();
+  if (serverInjectsProtocol || hasMessagingProtocol(text3)) {
+    return text3;
   }
   const section = messagingProtocolSection(name, roster);
-  return text2 ? text2 + "\n\n" + section : section;
+  return text3 ? text3 + "\n\n" + section : section;
 }
 var soulProtocolChecked = /* @__PURE__ */ new Set();
 var soulProtocolInflight = /* @__PURE__ */ new Set();
@@ -9720,8 +9720,8 @@ function currentGroupActivity(group) {
   return ($groupActivity.get()[group] || {}).events?.filter((event) => (event.epoch || 0) === epoch) || [];
 }
 var GROUP_SLOT_WAIT_REASON = "slot_wait_timeout";
-function isGroupSlotWaitTimeoutText(text2) {
-  return typeof text2 === "string" && text2.includes("timed out while waiting for a free slot");
+function isGroupSlotWaitTimeoutText(text3) {
+  return typeof text3 === "string" && text3.includes("timed out while waiting for a free slot");
 }
 function groupFailureReason(error) {
   const typed = typeof error?.data?.reason === "string" ? String(error.data.reason).trim() : "";
@@ -9740,7 +9740,7 @@ var GROUP_FAILURE_REDACTIONS = [
 ];
 function groupFailureDetail(message) {
   const line = String(message || "").split(/\r?\n/).map((part) => part.trim()).find(Boolean) || "";
-  const redacted = GROUP_FAILURE_REDACTIONS.reduce((text2, [re, repl]) => text2.replace(re, repl), line);
+  const redacted = GROUP_FAILURE_REDACTIONS.reduce((text3, [re, repl]) => text3.replace(re, repl), line);
   return redacted.length > GROUP_FAILURE_DETAIL_LIMIT ? `${redacted.slice(0, GROUP_FAILURE_DETAIL_LIMIT - 1)}\u2026` : redacted;
 }
 function groupActivityLabel(event, group) {
@@ -10170,16 +10170,16 @@ init_data();
 // src/group-round-prompt.ts
 init_data();
 var MEMBER_CONTROL_FRAME_RE = /\[(?=\/?OUT-OF-BAND USER MESSAGE|CONTEXT COMPACTION|CONTEXT SUMMARY\]|PRIOR CONTEXT|Runtime note:|System note:|System:|SYSTEM\]|IMPORTANT:|Planning state preserved|ASYNC DELEGATION|Group chat:|Discussion:)/gi;
-function relabelMemberControlFrames(text2) {
-  return text2.replace(MEMBER_CONTROL_FRAME_RE, "[member-quoted ");
+function relabelMemberControlFrames(text3) {
+  return text3.replace(MEMBER_CONTROL_FRAME_RE, "[member-quoted ");
 }
 var MEMBER_FORGED_LINE_RE = /^(?!\[member-quoted)(?:[^\S\n]*[^\n():]{0,80}?[^\S\n]\((?:user|you)\)(?:[^\S\n]*\[[^\]\n]{1,64}\])?[^\S\n]*:|Message from 🤖 )/gim;
 var MEMBER_TASK_MARK_RE = /\[(?=\s*task\s+mbx_)/g;
-function escapeRegExp(text2) {
-  return text2.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function escapeRegExp(text3) {
+  return text3.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
-function relabelMemberAttributionLines(text2, group) {
-  const relabeled = relabelMemberControlFrames(text2).replace(MEMBER_FORGED_LINE_RE, (match) => `[member-quoted ${match}`).replace(MEMBER_TASK_MARK_RE, "[member-quoted ");
+function relabelMemberAttributionLines(text3, group) {
+  const relabeled = relabelMemberControlFrames(text3).replace(MEMBER_FORGED_LINE_RE, (match) => `[member-quoted ${match}`).replace(MEMBER_TASK_MARK_RE, "[member-quoted ");
   const members = group ? $groupChats.get()[group]?.members || [] : [];
   const labels = [
     ...new Set(
@@ -10322,8 +10322,8 @@ var GROUP_ADDRESSED_NUDGE_SUFFIX = [
 // src/group-external-writes.ts
 init_routing();
 function groupTranscriptRowText(row) {
-  const text2 = typeof row.content === "string" ? row.content : Array.isArray(row.content) ? row.content.map((part) => typeof part === "string" ? part : part?.text || "").join("") : row.text || "";
-  return String(text2).trim();
+  const text3 = typeof row.content === "string" ? row.content : Array.isArray(row.content) ? row.content.map((part) => typeof part === "string" ? part : part?.text || "").join("") : row.text || "";
+  return String(text3).trim();
 }
 var SYNTHETIC_USER_ROW_PREFIXES = [
   "[System:",
@@ -10339,28 +10339,28 @@ var SYNTHETIC_USER_ROW_PREFIXES = [
 function failedTurnBoundaryRow(row) {
   return row.role === "assistant" && row.display_kind === "failed_turn";
 }
-function syntheticGroupUserRow(row, text2 = groupTranscriptRowText(row)) {
+function syntheticGroupUserRow(row, text3 = groupTranscriptRowText(row)) {
   if (row.display_kind && row.display_kind !== "skill_invocation") {
     return true;
   }
-  return SYNTHETIC_USER_ROW_PREFIXES.some((prefix) => text2.startsWith(prefix));
+  return SYNTHETIC_USER_ROW_PREFIXES.some((prefix) => text3.startsWith(prefix));
 }
 function externalGroupTranscriptRows(rows) {
   const external = [];
   let answeringExternal = false;
   for (const row of rows) {
-    const text2 = groupTranscriptRowText(row);
-    if (!text2 || row.role !== "user" && row.role !== "assistant" || failedTurnBoundaryRow(row)) {
+    const text3 = groupTranscriptRowText(row);
+    if (!text3 || row.role !== "user" && row.role !== "assistant" || failedTurnBoundaryRow(row)) {
       continue;
     }
     if (row.role === "user") {
-      answeringExternal = !syntheticGroupUserRow(row, text2) && !text2.startsWith(GROUP_PROMPT_HEADER_PREFIX);
+      answeringExternal = !syntheticGroupUserRow(row, text3) && !text3.startsWith(GROUP_PROMPT_HEADER_PREFIX);
       if (!answeringExternal) {
         continue;
       }
     }
     if (answeringExternal) {
-      external.push(text2);
+      external.push(text3);
     }
   }
   return external;
@@ -10380,14 +10380,14 @@ function mirrorExternalGroupWrites(group, member, thread, messages) {
   const markKey = `${thread}::${groupMemberKey(member)}`;
   const logLengthBefore = (room.log || []).length;
   const mirrored = externalGroupTranscriptRows(rows.slice(seen)).map(
-    (text2) => appendGroupChatEntry(
+    (text3) => appendGroupChatEntry(
       group,
       {
         kind: "member",
         name: member.name,
         ...member.remoteSource ? { source: member.connectionLabel || member.connectionId } : {}
       },
-      text2,
+      text3,
       thread
     )
   );
@@ -10433,8 +10433,8 @@ async function sweepExternalGroupWrites(group, members) {
 
 // src/group-turns.ts
 init_routing();
-function isGroupPassText(text2) {
-  const trimmed2 = String(text2 || "").trim();
+function isGroupPassText(text3) {
+  const trimmed2 = String(text3 || "").trim();
   if (!trimmed2) {
     return true;
   }
@@ -10447,8 +10447,8 @@ function pickGroupTurnReply(messages, before) {
     if (msg?.role !== "assistant") {
       continue;
     }
-    const text2 = typeof msg.content === "string" ? msg.content : Array.isArray(msg.content) ? msg.content.map((p) => typeof p === "string" ? p : p?.text || "").join("") : msg?.text || "";
-    const replyText = String(text2).trim();
+    const text3 = typeof msg.content === "string" ? msg.content : Array.isArray(msg.content) ? msg.content.map((p) => typeof p === "string" ? p : p?.text || "").join("") : msg?.text || "";
+    const replyText = String(text3).trim();
     if (failedTurnBoundaryRow(msg)) {
       return passText ?? { failedNotice: replyText };
     }
@@ -10470,24 +10470,24 @@ function pickStrandedGroupTurnReply(messages, before) {
   let reply = null;
   for (let i = anchor === -1 ? before : anchor; i < messages.length; i++) {
     const msg = messages[i];
-    const text2 = groupTranscriptRowText(msg);
+    const text3 = groupTranscriptRowText(msg);
     if (msg?.role === "user") {
-      if (text2.startsWith(GROUP_PROMPT_HEADER_PREFIX) || syntheticGroupUserRow(msg, text2)) {
+      if (text3.startsWith(GROUP_PROMPT_HEADER_PREFIX) || syntheticGroupUserRow(msg, text3)) {
         continue;
       }
       break;
     }
     if (failedTurnBoundaryRow(msg)) {
-      return { failedNotice: text2 };
+      return { failedNotice: text3 };
     }
-    if (msg?.role !== "assistant" || !text2) {
+    if (msg?.role !== "assistant" || !text3) {
       continue;
     }
-    if (isGroupPassText(text2)) {
-      passText = text2;
+    if (isGroupPassText(text3)) {
+      passText = text3;
       continue;
     }
-    reply ??= text2;
+    reply ??= text3;
   }
   return reply ?? passText;
 }
@@ -10703,11 +10703,11 @@ async function retainGroupTurnRoute(member) {
     return noop;
   }
 }
-async function submitGroupTurnPrompt(member, runtime, stored, text2) {
+async function submitGroupTurnPrompt(member, runtime, stored, text3) {
   try {
     await requestForBot(member, "prompt.submit", {
       session_id: runtime,
-      text: text2
+      text: text3
     });
     return runtime;
   } catch (error) {
@@ -10725,7 +10725,7 @@ async function submitGroupTurnPrompt(member, runtime, stored, text2) {
     }
     await requestForBot(member, "prompt.submit", {
       session_id: fresh,
-      text: text2
+      text: text3
     });
     return fresh;
   }
@@ -11265,8 +11265,8 @@ function GroupImageControls({ image, onImage, seedName, seedMembers }) {
     image ? /* @__PURE__ */ jsx6(sdk_compat_exports.Button, { onClick: () => onImage(null), size: "sm", type: "button", variant: "ghost", children: t2.common.remove }) : null
   ] });
 }
-function mentionTokenAt(text2, caret) {
-  const upto = String(text2 || "").slice(0, caret);
+function mentionTokenAt(text3, caret) {
+  const upto = String(text3 || "").slice(0, caret);
   const match = /(^|\s)@([a-z0-9._-]*)$/i.exec(upto);
   if (!match) {
     return null;
@@ -12008,8 +12008,8 @@ async function runGroupContinuationMembers(context, pendingKeys, continuations, 
 // src/group-slash.ts
 init_sdk_compat();
 init_i18n();
-function rejectGroupSlashCommand(text2) {
-  if (!/^\/[a-z][\w-]*(?:\s|$)/i.test(text2)) {
+function rejectGroupSlashCommand(text3) {
+  if (!/^\/[a-z][\w-]*(?:\s|$)/i.test(text3)) {
     return false;
   }
   host.notify({
@@ -12093,8 +12093,8 @@ function teamLeadKey(lead, members) {
 // src/group-rounds.ts
 init_i18n();
 init_routing();
-function parseGroupChatMentions(text2, members) {
-  const source = String(text2 || "");
+function parseGroupChatMentions(text3, members) {
+  const source = String(text3 || "");
   const mentioned = /* @__PURE__ */ new Set();
   let everyone = false;
   const handles = /* @__PURE__ */ new Map();
@@ -12231,8 +12231,8 @@ function rotateGroupSpeakers(members, round) {
   const shift = round % members.length;
   return [...members.slice(shift), ...members.slice(0, shift)];
 }
-function classifyGroupHoldDirective(text2, mentionedKeys, everyone) {
-  const value = String(text2 || "");
+function classifyGroupHoldDirective(text3, mentionedKeys, everyone) {
+  const value = String(text3 || "");
   const mentioned = [...mentionedKeys || []];
   const stop = stopWordPlacement(value);
   if (stop === "adjacent") {
@@ -12292,9 +12292,9 @@ function stopWordPlacement(value) {
   }
   return stopAt.length ? "distant" : null;
 }
-function applyGroupHoldDirective(holds, mentions, text2, stamp, allMemberKeys = []) {
+function applyGroupHoldDirective(holds, mentions, text3, stamp, allMemberKeys = []) {
   const prior = holds && typeof holds === "object" ? holds : {};
-  const action = classifyGroupHoldDirective(text2, mentions?.mentioned || [], Boolean(mentions?.everyone));
+  const action = classifyGroupHoldDirective(text3, mentions?.mentioned || [], Boolean(mentions?.everyone));
   if (action.releaseAll) {
     return Object.keys(prior).length ? {} : prior;
   }
@@ -12571,8 +12571,8 @@ async function harvestStrandedUntilSettled(group, members, thread) {
     binding.dispose();
   }
 }
-function sendToGroupChat(group, members, text2, thread, images) {
-  const trimmed2 = String(text2 || "").trim();
+function sendToGroupChat(group, members, text3, thread, images) {
+  const trimmed2 = String(text3 || "").trim();
   if (rejectGroupSlashCommand(trimmed2)) {
     return null;
   }
@@ -12701,17 +12701,17 @@ var TITLES = {
   broadcast: "Everyone in the room",
   human: "You \u2014 the room is waiting on a human"
 };
-function renderGroupMentionText(text2, members) {
+function renderGroupMentionText(text3, members) {
   const parts = [];
   let last = 0;
-  for (const match of text2.matchAll(MENTION)) {
+  for (const match of text3.matchAll(MENTION)) {
     const kind = classifyGroupMention(match[1], members);
     if (!kind) {
       continue;
     }
     const start = match.index ?? 0;
     if (start > last) {
-      parts.push(text2.slice(last, start));
+      parts.push(text3.slice(last, start));
     }
     parts.push(
       /* @__PURE__ */ jsx9("span", { className: "ref font-medium", "data-ref": kind, title: TITLES[kind], children: match[0] }, `${start}:${match[0]}`)
@@ -12719,10 +12719,10 @@ function renderGroupMentionText(text2, members) {
     last = start + match[0].length;
   }
   if (!parts.length) {
-    return text2;
+    return text3;
   }
-  if (last < text2.length) {
-    parts.push(text2.slice(last));
+  if (last < text3.length) {
+    parts.push(text3.slice(last));
   }
   return /* @__PURE__ */ jsx9(Fragment2, { children: parts });
 }
@@ -12971,18 +12971,18 @@ var FIELD_SPLIT = /\s*[·|;]\s*/;
 var OPTIONS = /^options?\s*:\s*/i;
 var VOTE = /\b(?:vote|pick|voting)\s*:\s*(.+)$/i;
 var DECIDED = /(?:^|\s)(?:@everyone\s+)?decide[sd]?\s*:\s*(.+)/i;
-function splitOptions(text2) {
-  return String(text2 || "").split(/\s*(?:\/|\||·)\s*/).map((part) => part.trim()).filter(Boolean);
+function splitOptions(text3) {
+  return String(text3 || "").split(/\s*(?:\/|\||·)\s*/).map((part) => part.trim()).filter(Boolean);
 }
-function namesOption(text2, option) {
+function namesOption(text3, option) {
   if (!option) {
     return false;
   }
   const escaped = option.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(^|[^\\w])${escaped}([^\\w]|$)`, "i").test(text2);
+  return new RegExp(`(^|[^\\w])${escaped}([^\\w]|$)`, "i").test(text3);
 }
-function parseDecisionLine(text2) {
-  for (const line of String(text2 || "").split("\n")) {
+function parseDecisionLine(text3) {
+  for (const line of String(text3 || "").split("\n")) {
     const match = line.match(DECIDE);
     if (!match) {
       continue;
@@ -12997,9 +12997,9 @@ function parseDecisionLine(text2) {
   }
   return null;
 }
-function pickOf(text2, options) {
-  const explicit = text2.match(VOTE);
-  const said = String(explicit ? explicit[1] : text2).trim();
+function pickOf(text3, options) {
+  const explicit = text3.match(VOTE);
+  const said = String(explicit ? explicit[1] : text3).trim();
   return [...options].sort((a, b) => b.length - a.length).find((option) => namesOption(said, option)) || "";
 }
 function deriveRoomVotes(log, members) {
@@ -13018,13 +13018,13 @@ function deriveRoomVotes(log, members) {
       if (groupThreadOf(later) !== thread) {
         continue;
       }
-      const text2 = String(later.text || "").trim();
+      const text3 = String(later.text || "").trim();
       const who = later.from?.kind === "user" ? "You" : later.from?.name || "";
-      if (!text2 || !who) {
+      if (!text3 || !who) {
         continue;
       }
       if (later.from?.kind === "user") {
-        const call = text2.match(DECIDED);
+        const call = text3.match(DECIDED);
         const called = call ? pickOf(call[1], parsed.options) : "";
         if (called) {
           decided = called;
@@ -13032,10 +13032,10 @@ function deriveRoomVotes(log, members) {
         }
         continue;
       }
-      if (isGroupPassText(text2)) {
+      if (isGroupPassText(text3)) {
         continue;
       }
-      const pick2 = pickOf(text2, parsed.options);
+      const pick2 = pickOf(text3, parsed.options);
       if (pick2) {
         tally[who] = pick2;
       }
@@ -13252,13 +13252,13 @@ init_data();
 var A2A_RE = /^Message from (?:agent '([^']+)'|🤖\s*([^\s(@]+))/i;
 var A2A_PREFIX_RE = /^Message from (?:agent '[^']+'|🤖[^:]+):\s*/i;
 function previewKind(preview) {
-  const text2 = (preview || "").trim();
-  if (!text2) {
+  const text3 = (preview || "").trim();
+  if (!text3) {
     return {
       fromBot: null
     };
   }
-  const match = text2.match(A2A_RE);
+  const match = text3.match(A2A_RE);
   if (match) {
     const sender = (match[1] || match[2] || "").trim().toLowerCase();
     return {
@@ -13899,8 +13899,8 @@ var RECAP_MAX_LINES = 80;
 async function recapEntries(entries, nameOf) {
   const input = entries.slice(-RECAP_MAX_LINES).map((entry) => {
     const who = entry.from?.kind === "user" ? "User (CEO)" : nameOf(entry.from?.name || "");
-    const text2 = String(entry.text || "").replace(/\s+/g, " ").trim().slice(0, RECAP_LINE_CHARS);
-    return `${who}: ${text2}`;
+    const text3 = String(entry.text || "").replace(/\s+/g, " ").trim().slice(0, RECAP_LINE_CHARS);
+    return `${who}: ${text3}`;
   }).join("\n");
   const reply = await host.request("llm.oneshot", {
     input,
@@ -14047,8 +14047,8 @@ function resolveHandle(handle, members) {
   });
   return member ? member.name : null;
 }
-function parseHandoffLine(text2, members) {
-  for (const line of String(text2 || "").split("\n")) {
+function parseHandoffLine(text3, members) {
+  for (const line of String(text3 || "").split("\n")) {
     const match = line.match(LINE);
     const to = match ? resolveHandle(match[1], members) : null;
     if (!match || !to) {
@@ -14091,19 +14091,19 @@ function deriveRoomHandoffs(log, members, { live = /* @__PURE__ */ new Map(), no
       if (groupThreadOf(later) !== thread || later.from?.kind !== "member" || later.from.name !== parsed.to) {
         continue;
       }
-      const text2 = String(later.text || "").trim();
-      if (isGroupPassText(text2)) {
+      const text3 = String(later.text || "").trim();
+      if (isGroupPassText(text3)) {
         continue;
       }
-      if (DECLINE.test(text2)) {
+      if (DECLINE.test(text3)) {
         status = "declined";
-        reply = text2.replace(DECLINE, "").trim();
+        reply = text3.replace(DECLINE, "").trim();
         replyIndex = next;
         break;
       }
-      if (PROOF.test(text2) && !ACCEPT.test(text2)) {
+      if (PROOF.test(text3) && !ACCEPT.test(text3)) {
         status = "delivered";
-        reply = text2;
+        reply = text3;
         replyIndex = next;
         break;
       }
@@ -14387,8 +14387,8 @@ async function refreshTeam(teamId) {
   });
   return view;
 }
-async function addLearning(teamId, text2, by = "you") {
-  await host.request("bots_team.learning.add", { by, team_id: teamId, text: text2 });
+async function addLearning(teamId, text3, by = "you") {
+  await host.request("bots_team.learning.add", { by, team_id: teamId, text: text3 });
   await refreshTeam(teamId);
 }
 
@@ -15822,14 +15822,14 @@ function Approvals({ t: t2, team }) {
   );
 }
 function Learnings({ t: t2, team }) {
-  const [text2, setText] = useState13("");
+  const [text3, setText] = useState13("");
   const items = topLearnings(team.learnings);
   const add = async () => {
-    if (!text2.trim()) {
+    if (!text3.trim()) {
       return;
     }
     try {
-      await addLearning(team.id, text2);
+      await addLearning(team.id, text3);
       setText("");
     } catch (err) {
       fail(err);
@@ -15861,7 +15861,7 @@ function Learnings({ t: t2, team }) {
           void add();
         },
         children: [
-          /* @__PURE__ */ jsx21(sdk_compat_exports.Input, { onChange: (e) => setText(e.target.value), placeholder: t2.learningPlaceholder, value: text2 }),
+          /* @__PURE__ */ jsx21(sdk_compat_exports.Input, { onChange: (e) => setText(e.target.value), placeholder: t2.learningPlaceholder, value: text3 }),
           /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { size: "sm", type: "submit", variant: "outline", children: t2.addLearning })
         ]
       }
@@ -16141,10 +16141,10 @@ function TeamTab(props) {
     /* @__PURE__ */ jsx22(OrgChart, { t: t2, team, tree })
   ] });
 }
-function Mission({ label, text: text2 }) {
+function Mission({ label, text: text3 }) {
   return /* @__PURE__ */ jsxs21("div", { className: "text-left", "data-testid": "group-room-mission", children: [
     /* @__PURE__ */ jsx22("div", { className: "ui-section-label", children: label }),
-    text2 ? /* @__PURE__ */ jsx22("p", { className: "m-0 mt-1 text-[0.75rem] leading-relaxed text-(--ui-text-secondary)", children: text2 }) : null
+    text3 ? /* @__PURE__ */ jsx22("p", { className: "m-0 mt-1 text-[0.75rem] leading-relaxed text-(--ui-text-secondary)", children: text3 }) : null
   ] });
 }
 function FloorSquad(props) {
@@ -16547,8 +16547,8 @@ function groupUnreadCount(log, readAt) {
 function groupLastRoundSummary(room) {
   const log = Array.isArray(room?.log) ? room.log : [];
   const last = log.length ? log[log.length - 1] : null;
-  const text2 = String(last?.text || "").split("\n").join(" ").trim().slice(0, GROUP_ROUND_PREVIEW_CHARS);
-  return { last, text: text2 };
+  const text3 = String(last?.text || "").split("\n").join(" ").trim().slice(0, GROUP_ROUND_PREVIEW_CHARS);
+  return { last, text: text3 };
 }
 function noteGroupRoomsSeen(rooms) {
   const current = $groupReadAt.get();
@@ -16792,8 +16792,8 @@ function roomLiveWork(sessions, dotById, members) {
 }
 var TITLE_MAX = 90;
 var STATUS_RANK = { waiting: 0, working: 1, open: 2, answered: 3 };
-function oneLine(text2) {
-  const line = text2.replace(/\s+/g, " ").trim();
+function oneLine(text3) {
+  const line = text3.replace(/\s+/g, " ").trim();
   return line.length > TITLE_MAX ? `${line.slice(0, TITLE_MAX - 1).trimEnd()}\u2026` : line;
 }
 function roomWorkItems(log, {
@@ -16849,8 +16849,8 @@ function groupSteerTarget(group) {
   const sessionId = sessions[groupSessionKey(thread || "legacy", member)] || (hasThreadScopedGroupSession(sessions, key) ? null : sessions[key]);
   return typeof sessionId === "string" && sessionId ? { member, sessionId, thread } : null;
 }
-async function steerGroupTurn(group, text2) {
-  const trimmed2 = text2.trim();
+async function steerGroupTurn(group, text3) {
+  const trimmed2 = text3.trim();
   const target = trimmed2 ? groupSteerTarget(group) : null;
   if (!target) {
     return null;
@@ -17530,9 +17530,9 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
     ] }, `${event.at}:${i}`)) : /* @__PURE__ */ jsx24("div", { className: "px-0.5 pb-0.5 text-[0.625rem] text-(--ui-text-quaternary)", children: b.group.noActivityYet }) }) : null
   ] });
   const submit = () => {
-    const text2 = draft.trim();
+    const text3 = draft.trim();
     const images = imagesFor(null);
-    if (!text2 && !images.length) {
+    if (!text3 && !images.length) {
       return;
     }
     const before = groupComposerDraftSnapshot(composerKeyRef.current);
@@ -17544,7 +17544,7 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
         main: []
       }
     }));
-    const minted = sendToGroupChat(group, memberDescriptors(), text2, null, images);
+    const minted = sendToGroupChat(group, memberDescriptors(), text3, null, images);
     if (!minted) {
       const restored = restoreGroupComposerDraft(composerKeyRef.current, cleared.revision, before);
       if (restored) {
@@ -17555,13 +17555,13 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
   const [steering, setSteering] = useState17(false);
   const steerTarget = room.running ? groupSteerTarget(group) : null;
   const steerDraft = async (thread) => {
-    const text2 = (thread ? replyDrafts[thread] || "" : draft).trim();
-    if (!text2 || steering) {
+    const text3 = (thread ? replyDrafts[thread] || "" : draft).trim();
+    if (!text3 || steering) {
       return;
     }
     setSteering(true);
     try {
-      if (await steerGroupTurn(group, text2)) {
+      if (await steerGroupTurn(group, text3)) {
         if (thread) {
           setReplyDrafts((prev) => ({ ...prev, [thread]: "" }));
         } else {
@@ -17580,9 +17580,9 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
     }
   };
   const submitReply = (thread) => {
-    const text2 = (replyDrafts[thread] || "").trim();
+    const text3 = (replyDrafts[thread] || "").trim();
     const images = imagesFor(thread);
-    if (!text2 && !images.length) {
+    if (!text3 && !images.length) {
       return;
     }
     const before = groupComposerDraftSnapshot(composerKeyRef.current);
@@ -17597,7 +17597,7 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
         [thread]: ""
       }
     }));
-    const sent = sendToGroupChat(group, memberDescriptors(), text2, thread, images);
+    const sent = sendToGroupChat(group, memberDescriptors(), text3, thread, images);
     if (!sent) {
       const restored = restoreGroupComposerDraft(composerKeyRef.current, cleared.revision, before);
       if (restored) {
@@ -18165,7 +18165,7 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
                         {
                           "aria-label": replyThread ? b.group.replyInThread : b.group.messageRoom(group),
                           members,
-                          onChange: (text2) => replyThread ? setReplyDrafts((prev) => ({ ...prev, [replyThread]: text2 })) : setDraft(text2),
+                          onChange: (text3) => replyThread ? setReplyDrafts((prev) => ({ ...prev, [replyThread]: text3 })) : setDraft(text3),
                           onEscape: replyThread ? () => openThread(null) : void 0,
                           onPaste: (event) => pasteImages(replyThread, event),
                           onSubmitDraft: () => replyThread ? submitReply(replyThread) : submit(),
@@ -18211,7 +18211,7 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
                   commands,
                   firstTag: groupReplyMentionTag(leadMember || members[0] || { name: "everyone" }, members) || "everyone",
                   onHelp: () => setKeysOpen((open) => !open),
-                  onInsert: (text2) => replyThread ? setReplyDrafts((prev) => ({ ...prev, [replyThread]: text2 })) : setDraft(text2),
+                  onInsert: (text3) => replyThread ? setReplyDrafts((prev) => ({ ...prev, [replyThread]: text3 })) : setDraft(text3),
                   thread: replyThread
                 }
               )
@@ -19300,8 +19300,8 @@ function clockTime(epochSeconds) {
   return epochSeconds ? new Date(epochSeconds * 1e3).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : "";
 }
 var SUBJECT_MAX = 60;
-function clipWords(text2, max = SUBJECT_MAX) {
-  const line = text2.split("\n", 1)[0].replace(/\s+/g, " ").trim();
+function clipWords(text3, max = SUBJECT_MAX) {
+  const line = text3.split("\n", 1)[0].replace(/\s+/g, " ").trim();
   if (line.length <= max) {
     return line;
   }
@@ -19373,8 +19373,8 @@ var BOT_RUNS_LIMIT = 8;
 var ROUTINE_BOT_TAG_RE = /^\[bot:([a-z0-9][a-z0-9_-]*)\]\s*/i;
 var GROUP_ROUND_FAILURES = /* @__PURE__ */ new Set(["failed", "timed-out"]);
 var GROUP_ROUND_LIVE = /* @__PURE__ */ new Set(["queued", "working"]);
-function firstLine(text2) {
-  return String(text2 || "").split("\n")[0].trim();
+function firstLine(text3) {
+  return String(text3 || "").split("\n")[0].trim();
 }
 function routineRunTitle(job) {
   return String(job?.name || "").replace(ROUTINE_BOT_TAG_RE, "").trim();
@@ -19632,8 +19632,8 @@ function mailboxOpenCountFor(notes, member) {
 // src/bot-events.ts
 var INBOUND_WINDOW_MS = 24 * 60 * 60 * 1e3;
 var INBOUND_LIMIT = 6;
-function firstLine2(text2) {
-  return String(text2 || "").split("\n").map((line) => line.trim()).find(Boolean) || "";
+function firstLine2(text3) {
+  return String(text3 || "").split("\n").map((line) => line.trim()).find(Boolean) || "";
 }
 function noteIcon(kind) {
   const k = String(kind || "task").toLowerCase();
@@ -19807,7 +19807,7 @@ function BotChatEmpty({ sessionId }) {
   const name = displayName(bot, meta);
   const { color, image, shape } = botAppearance(bot.name, meta);
   const photo = Boolean(image && !isBackfilledFacePng(image));
-  const submitStarter = (text2) => {
+  const submitStarter = (text3) => {
     if (sent || host.state.busy?.get?.()) {
       return;
     }
@@ -19818,7 +19818,7 @@ function BotChatEmpty({ sessionId }) {
     setSent(true);
     void requestForBot(bot, "prompt.submit", {
       session_id: runtimeId,
-      text: text2
+      text: text3
     }).catch((err) => {
       setSent(false);
       host.notifyError(err, "Could not send that message");
@@ -19844,17 +19844,17 @@ function BotChatEmpty({ sessionId }) {
           }
         ),
         /* @__PURE__ */ jsx28("p", { className: "m-0 text-center leading-normal tracking-tight", children: b.bot.chatEmpty }),
-        /* @__PURE__ */ jsx28("div", { className: "pointer-events-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-1.5", children: starters.map((text2) => /* @__PURE__ */ jsx28(
+        /* @__PURE__ */ jsx28("div", { className: "pointer-events-auto mt-4 flex max-w-md flex-wrap items-center justify-center gap-1.5", children: starters.map((text3) => /* @__PURE__ */ jsx28(
           sdk_compat_exports.Button,
           {
             className: "rounded-full",
             disabled: sent,
-            onClick: () => submitStarter(text2),
+            onClick: () => submitStarter(text3),
             size: "xs",
             variant: "chip",
-            children: text2
+            children: text3
           },
-          text2
+          text3
         )) })
       ] })
     }
@@ -21941,21 +21941,21 @@ function planModePrompt(task) {
 ${trimmed2}` : "No task was given yet \u2014 first ask the user (in one short question) what to plan.";
   return "[plan mode] The user wants a reviewed plan before anything runs. Do NOT call tools, write files, or execute anything \u2014 this turn is planning only.\n\nReply with ONLY:\n  1. A numbered plan \u2014 one short step per line, at most 8 steps.\n  2. A blank line, then the exact marker `::botplan` alone on the last line.\n\nThe desktop renders that reply as an approval card; on approve you will get a follow-up telling you to execute.\n\n" + brief;
 }
-function rewritePlanDraft(text2, canonicalChat) {
+function rewritePlanDraft(text3, canonicalChat) {
   if (!canonicalChat) {
     return null;
   }
-  const match = BOT_PLAN_SLASH_RE.exec(text2.trim());
+  const match = BOT_PLAN_SLASH_RE.exec(text3.trim());
   if (!match) {
     return null;
   }
   return {
-    displayText: text2.trim(),
+    displayText: text3.trim(),
     text: planModePrompt(match[1] ?? "")
   };
 }
-function parseBotPlanReply(text2) {
-  const planText = text2.replace(PLAN_MARKER_LINE_RE, "").trim();
+function parseBotPlanReply(text3) {
+  const planText = text3.replace(PLAN_MARKER_LINE_RE, "").trim();
   const steps = [];
   NUMBERED_STEP_RE.lastIndex = 0;
   for (const match of planText.matchAll(NUMBERED_STEP_RE)) {
@@ -21983,13 +21983,13 @@ function isPlanMessage(message) {
 function hasExecutePrefix(message) {
   return message.role === "user" && !message.hidden && chatMessageText(message).trimStart().startsWith(EXECUTE_PLAN_PREFIX);
 }
-function collectDoneSteps(text2, out) {
+function collectDoneSteps(text3, out) {
   DONE_FORWARD_RE.lastIndex = 0;
   DONE_REVERSE_RE.lastIndex = 0;
-  for (const match of text2.matchAll(DONE_FORWARD_RE)) {
+  for (const match of text3.matchAll(DONE_FORWARD_RE)) {
     out.add(Number(match[1]));
   }
-  for (const match of text2.matchAll(DONE_REVERSE_RE)) {
+  for (const match of text3.matchAll(DONE_REVERSE_RE)) {
     out.add(Number(match[1]));
   }
 }
@@ -22037,16 +22037,19 @@ init_data();
 init_i18n();
 import { jsx as jsx34, jsxs as jsxs33 } from "react/jsx-runtime";
 function canonicalBotChatOnScreen(storedId) {
+  return canonicalBotRowOnScreen(storedId) !== null;
+}
+function canonicalBotRowOnScreen(storedId) {
   if (!storedId) {
-    return false;
+    return null;
   }
   const union = cachedUnionRoster();
   for (const row of [...union?.profiles ?? [], ...$lastRoster.get()]) {
     if (isCanonicalChatOnScreen(row, storedId)) {
-      return true;
+      return row;
     }
   }
-  return false;
+  return null;
 }
 var settled = /* @__PURE__ */ new Set();
 function BotPlanCard({ messageText: messageText2, streaming }) {
@@ -22695,10 +22698,10 @@ function BotScreenPane({ bot }) {
           if (client.viewOnly) {
             return;
           }
-          const text2 = event.clipboardData?.getData("text");
-          if (text2 && text2.length <= MAX_PASTE_CUT_TEXT) {
+          const text3 = event.clipboardData?.getData("text");
+          if (text3 && text3.length <= MAX_PASTE_CUT_TEXT) {
             event.preventDefault();
-            client.clipboardPasteFrom(text2);
+            client.clipboardPasteFrom(text3);
           }
         };
         pasteTarget.addEventListener("paste", handlePaste);
@@ -23259,8 +23262,8 @@ var FENCE = /```[\s\S]*?```/g;
 var MD_LINK = /\[([^\]]*)\]\([^)]*\)/g;
 var NOISE_TOKEN = /^(?:https?:\/\/\S+|www\.\S+|\/[\w./-]+|~\/\S+|@\S+|#\S+)$/i;
 var LEADING_MARKER = /^(?:[\s>*#–—•\])]+|[-–—]\s+|\d+[.)]\s*|\[[ xX]?\]\s*)/u;
-function stripLeadingMarkers(text2) {
-  let out = text2;
+function stripLeadingMarkers(text3) {
+  let out = text3;
   for (let pass = 0; pass < 6; pass += 1) {
     const next = out.replace(LEADING_MARKER, "");
     if (next === out) {
@@ -23270,8 +23273,8 @@ function stripLeadingMarkers(text2) {
   }
   return out;
 }
-function receiptFromPrompt(text2) {
-  const cleaned = text2.replace(FENCE, " ").replace(MD_LINK, "$1").replace(/`([^`]*)`/g, "$1").replace(/\s+/g, " ").trim();
+function receiptFromPrompt(text3) {
+  const cleaned = text3.replace(FENCE, " ").replace(MD_LINK, "$1").replace(/`([^`]*)`/g, "$1").replace(/\s+/g, " ").trim();
   if (!cleaned) {
     return null;
   }
@@ -23332,8 +23335,8 @@ function noteInstantAck(runtimeId, event, at = Date.now()) {
   }
   $instantAcks.set(copy);
 }
-function armInstantAck(runtimeId, storedId, text2, busy) {
-  const receipt = receiptFromPrompt(text2);
+function armInstantAck(runtimeId, storedId, text3, busy) {
+  const receipt = receiptFromPrompt(text3);
   if (!runtimeId || !storedId || !receipt || busy) {
     return false;
   }
@@ -24732,8 +24735,8 @@ function humanize(key) {
 }
 function scalarText(value, lines) {
   if (typeof value === "string") {
-    const text2 = value.trim();
-    return lines ? text2.split("\n").slice(0, lines).join("\n") : text2;
+    const text3 = value.trim();
+    return lines ? text3.split("\n").slice(0, lines).join("\n") : text3;
   }
   if (typeof value === "number" || typeof value === "boolean") {
     return String(value);
@@ -24777,9 +24780,9 @@ function scalarLine(key, value) {
   return typeof value === "number" || typeof value === "boolean" ? `${key}: ${value}` : "";
 }
 function recordOutput(record2, family) {
-  const text2 = OUTPUT_TEXT_KEYS.map((key) => record2[key]).find(nonEmptyString);
-  if (text2) {
-    return (0, sdk_compat_exports.stripAnsi)(text2);
+  const text3 = OUTPUT_TEXT_KEYS.map((key) => record2[key]).find(nonEmptyString);
+  if (text3) {
+    return (0, sdk_compat_exports.stripAnsi)(text3);
   }
   if (family === "browser") {
     const page = [record2.title, record2.url].filter(nonEmptyString).join("\n");
@@ -24813,13 +24816,13 @@ function unwrapToolResult(result) {
 function toolCardOutput(rawResult, family) {
   const result = unwrapToolResult(rawResult);
   const record2 = (0, sdk_compat_exports.parseMaybeObject)(result);
-  let text2 = "";
+  let text3 = "";
   if (Object.keys(record2).length > 0) {
-    text2 = recordOutput(record2, family);
+    text3 = recordOutput(record2, family);
   } else if (typeof result === "string" && !/^\s*[[{]/.test(result)) {
-    text2 = (0, sdk_compat_exports.stripAnsi)(result);
+    text3 = (0, sdk_compat_exports.stripAnsi)(result);
   }
-  const trimmed2 = text2.trim();
+  const trimmed2 = text3.trim();
   return trimmed2 ? clampText(trimmed2, MAX_OUTPUT_CHARS) : void 0;
 }
 function toolCardReason(part, view) {
@@ -25201,17 +25204,17 @@ function buildTrace(messages) {
 init_routing();
 import { Fragment as Fragment10, jsx as jsx46, jsxs as jsxs44 } from "react/jsx-runtime";
 var TONE_FILL = { calm: "bg-(--ui-accent)", full: "hbp-bg-danger", warm: "hbp-bg-warn" };
-function ContextGauge({ reading, text: text2 }) {
+function ContextGauge({ reading, text: text3 }) {
   const tone = contextTone(reading?.percent ?? 0);
   return /* @__PURE__ */ jsxs44("div", { "data-testid": "rail-context-gauge", "data-tone": reading ? tone : "none", children: [
     /* @__PURE__ */ jsxs44("div", { className: "flex min-w-0 items-baseline gap-2 text-xs", children: [
-      /* @__PURE__ */ jsx46("span", { className: "truncate ui-section-label", children: text2.title }),
-      /* @__PURE__ */ jsx46("span", { className: "ml-auto shrink-0 tabular-nums text-(--ui-text-tertiary)", "data-testid": "rail-context-reading", children: reading ? text2.reading(reading.percent, shortTokens(reading.used), shortTokens(reading.max)) : text2.waiting })
+      /* @__PURE__ */ jsx46("span", { className: "truncate ui-section-label", children: text3.title }),
+      /* @__PURE__ */ jsx46("span", { className: "ml-auto shrink-0 tabular-nums text-(--ui-text-tertiary)", "data-testid": "rail-context-reading", children: reading ? text3.reading(reading.percent, shortTokens(reading.used), shortTokens(reading.max)) : text3.waiting })
     ] }),
     /* @__PURE__ */ jsx46(
       "div",
       {
-        "aria-label": text2.meterLabel(reading?.percent ?? 0),
+        "aria-label": text3.meterLabel(reading?.percent ?? 0),
         "aria-valuemax": 100,
         "aria-valuemin": 0,
         "aria-valuenow": reading?.percent ?? 0,
@@ -25231,17 +25234,17 @@ function ContextGauge({ reading, text: text2 }) {
     )
   ] });
 }
-function GaugeNotes({ reading, text: text2 }) {
+function GaugeNotes({ reading, text: text3 }) {
   if (!reading) {
     return null;
   }
   return /* @__PURE__ */ jsxs44(Fragment10, { children: [
-    contextTone(reading.percent) !== "calm" ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text2.nearlyFullHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter hbp-fg-warn", children: text2.nearlyFull }) }) : null,
-    reading.compressions > 0 ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text2.compactedHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter", children: text2.compacted(reading.compressions) }) }) : null,
-    reading.estimated ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text2.estimatedHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter", children: text2.estimated }) }) : null
+    contextTone(reading.percent) !== "calm" ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text3.nearlyFullHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter hbp-fg-warn", children: text3.nearlyFull }) }) : null,
+    reading.compressions > 0 ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text3.compactedHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter", children: text3.compacted(reading.compressions) }) }) : null,
+    reading.estimated ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text3.estimatedHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter", children: text3.estimated }) }) : null
   ] });
 }
-function TurnRow({ live, open, onToggle, text: text2, turn }) {
+function TurnRow({ live, open, onToggle, text: text3, turn }) {
   return /* @__PURE__ */ jsxs44("li", { "data-testid": "rail-trace-turn", children: [
     /* @__PURE__ */ jsxs44(
       "button",
@@ -25259,9 +25262,9 @@ function TurnRow({ live, open, onToggle, text: text2, turn }) {
               size: "0.75rem"
             }
           ),
-          /* @__PURE__ */ jsx46("span", { className: "shrink-0 font-medium text-(--ui-text-secondary)", children: text2.turn(turn.index) }),
+          /* @__PURE__ */ jsx46("span", { className: "shrink-0 font-medium text-(--ui-text-secondary)", children: text3.turn(turn.index) }),
           /* @__PURE__ */ jsx46("span", { className: "min-w-0 flex-1 truncate text-(--ui-text-tertiary)", children: turn.prompt }),
-          /* @__PURE__ */ jsx46("span", { className: "shrink-0 tabular-nums text-(--ui-text-quaternary)", children: [text2.stepCount(turn.steps.length), turn.span === void 0 ? "" : shortDuration(turn.span)].filter(Boolean).join(" \xB7 ") })
+          /* @__PURE__ */ jsx46("span", { className: "shrink-0 tabular-nums text-(--ui-text-quaternary)", children: [text3.stepCount(turn.steps.length), turn.span === void 0 ? "" : shortDuration(turn.span)].filter(Boolean).join(" \xB7 ") })
         ]
       }
     ),
@@ -25271,7 +25274,7 @@ function TurnRow({ live, open, onToggle, text: text2, turn }) {
           /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { className: "shrink-0 text-(--ui-text-tertiary)", name: step.icon, size: "0.8rem" }),
           /* @__PURE__ */ jsx46("span", { className: "shrink-0 text-(--ui-text-secondary)", children: step.name }),
           /* @__PURE__ */ jsx46("span", { className: "min-w-0 flex-1 truncate font-mono text-(--ui-text-quaternary)", children: step.context }),
-          step.took === void 0 ? null : /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text2.tookHint, children: /* @__PURE__ */ jsx46(
+          step.took === void 0 ? null : /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text3.tookHint, children: /* @__PURE__ */ jsx46(
             "span",
             {
               className: (0, sdk_compat_exports.cn)(
@@ -25291,23 +25294,23 @@ function TurnRow({ live, open, onToggle, text: text2, turn }) {
               size: "0.8rem"
             }
           ),
-          /* @__PURE__ */ jsx46("span", { children: live ? text2.working : turn.answered ? text2.answered : text2.noAnswer })
+          /* @__PURE__ */ jsx46("span", { children: live ? text3.working : turn.answered ? text3.answered : text3.noAnswer })
         ] })
       ] }),
-      turn.steps.length > 1 && turn.slowest?.took !== void 0 ? /* @__PURE__ */ jsx46("p", { className: "py-0.5 text-xs text-(--ui-text-quaternary)", children: text2.slowest(turn.slowest.name, shortDuration(turn.slowest.took)) }) : null
+      turn.steps.length > 1 && turn.slowest?.took !== void 0 ? /* @__PURE__ */ jsx46("p", { className: "py-0.5 text-xs text-(--ui-text-quaternary)", children: text3.slowest(turn.slowest.name, shortDuration(turn.slowest.took)) }) : null
     ] }) : null
   ] });
 }
-function TraceList({ busy, text: text2, turns }) {
+function TraceList({ busy, text: text3, turns }) {
   const newest = turns.at(-1)?.id;
   const [folded, setFolded] = useState28({});
   const shown = turns.slice(-30).reverse();
   const steps = turns.reduce((sum, turn) => sum + turn.steps.length, 0);
   if (!turns.length) {
-    return /* @__PURE__ */ jsx46("p", { className: "px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: text2.none });
+    return /* @__PURE__ */ jsx46("p", { className: "px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: text3.none });
   }
   return /* @__PURE__ */ jsxs44("div", { "data-testid": "rail-trace-list", children: [
-    /* @__PURE__ */ jsx46("p", { className: "px-1.5 pb-1 text-xs text-(--ui-text-quaternary)", children: text2.overview(turns.length, steps) }),
+    /* @__PURE__ */ jsx46("p", { className: "px-1.5 pb-1 text-xs text-(--ui-text-quaternary)", children: text3.overview(turns.length, steps) }),
     /* @__PURE__ */ jsx46("ol", { className: "flex flex-col", children: shown.map((turn) => {
       const open = folded[turn.id] ?? turn.id === newest;
       return /* @__PURE__ */ jsx46(
@@ -25316,7 +25319,7 @@ function TraceList({ busy, text: text2, turns }) {
           live: busy && turn.id === newest,
           onToggle: () => setFolded((state) => ({ ...state, [turn.id]: !open })),
           open,
-          text: text2,
+          text: text3,
           turn
         },
         turn.id
@@ -25398,7 +25401,7 @@ function useBreakdown(bot, sessionId, busy) {
   return breakdown;
 }
 function ContextPanel({ bot }) {
-  const text2 = useContextPanelText();
+  const text3 = useContextPanelText();
   const sessionId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId) ?? "";
   const usage = (0, sdk_compat_exports.useValue)(host.state.focusedUsage);
   const busy = (0, sdk_compat_exports.useValue)(host.state.busy) === true;
@@ -25410,10 +25413,10 @@ function ContextPanel({ bot }) {
     return null;
   }
   return /* @__PURE__ */ jsxs44("section", { className: "px-4 pb-3", "data-testid": "rail-context", children: [
-    /* @__PURE__ */ jsx46(ContextGauge, { reading, text: text2 }),
+    /* @__PURE__ */ jsx46(ContextGauge, { reading, text: text3 }),
     /* @__PURE__ */ jsxs44("div", { className: "mt-1 flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-(--ui-text-quaternary)", children: [
-      /* @__PURE__ */ jsx46(GaugeNotes, { reading, text: text2 }),
-      /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: open ? text2.hideSteps : text2.showSteps, children: /* @__PURE__ */ jsxs44(
+      /* @__PURE__ */ jsx46(GaugeNotes, { reading, text: text3 }),
+      /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: open ? text3.hideSteps : text3.showSteps, children: /* @__PURE__ */ jsxs44(
         sdk_compat_exports.Button,
         {
           "aria-controls": "rail-trace",
@@ -25425,7 +25428,7 @@ function ContextPanel({ bot }) {
           variant: "ghost",
           children: [
             /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { name: "list-tree" }),
-            text2.steps,
+            text3.steps,
             /* @__PURE__ */ jsx46(
               sdk_compat_exports.Codicon,
               {
@@ -25445,12 +25448,12 @@ function ContextPanel({ bot }) {
         "data-state": open ? "open" : "closed",
         id: "rail-trace",
         inert: !open,
-        children: /* @__PURE__ */ jsx46("div", { className: "min-h-0 overflow-hidden", children: /* @__PURE__ */ jsx46("div", { className: "mt-1 max-h-80 overflow-y-auto overscroll-contain rounded-md bg-(--ui-inline-code-background) p-1.5", children: load2.kind === "ready" ? /* @__PURE__ */ jsx46(TraceList, { busy, text: text2, turns: load2.turns }) : load2.kind === "error" ? /* @__PURE__ */ jsxs44("p", { className: "flex items-center gap-2 px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: [
-          text2.failed,
-          /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { onClick: retry, size: "xs", variant: "ghost", children: text2.retry })
+        children: /* @__PURE__ */ jsx46("div", { className: "min-h-0 overflow-hidden", children: /* @__PURE__ */ jsx46("div", { className: "mt-1 max-h-80 overflow-y-auto overscroll-contain rounded-md bg-(--ui-inline-code-background) p-1.5", children: load2.kind === "ready" ? /* @__PURE__ */ jsx46(TraceList, { busy, text: text3, turns: load2.turns }) : load2.kind === "error" ? /* @__PURE__ */ jsxs44("p", { className: "flex items-center gap-2 px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: [
+          text3.failed,
+          /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { onClick: retry, size: "xs", variant: "ghost", children: text3.retry })
         ] }) : /* @__PURE__ */ jsxs44("p", { className: "flex items-center gap-1.5 px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: [
           /* @__PURE__ */ jsx46(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-accent)", spinner: "breathe" }),
-          text2.loading
+          text3.loading
         ] }) }) })
       }
     )
@@ -27519,8 +27522,8 @@ init_labels();
 // src/share-card.ts
 var SHARE_CARD_WIDTH = 1200;
 var SHARE_CARD_HEIGHT = 630;
-function wrapText(text2, maxWidth, maxLines, measure) {
-  const words = text2.trim().split(/\s+/).filter(Boolean);
+function wrapText(text3, maxWidth, maxLines, measure) {
+  const words = text3.trim().split(/\s+/).filter(Boolean);
   const lines = [];
   let line = "";
   let index = 0;
@@ -28019,13 +28022,13 @@ function Timeline({
     }
   );
 }
-function CodeBlock({ copyLabel, label, text: text2 }) {
+function CodeBlock({ copyLabel, label, text: text3 }) {
   return /* @__PURE__ */ jsxs54("div", { className: "overflow-hidden rounded-xl border border-(--ui-stroke-tertiary) bg-(--ui-inline-code-background)", children: [
     /* @__PURE__ */ jsxs54("div", { className: "flex items-center justify-between px-3 pt-1.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
       /* @__PURE__ */ jsx56("span", { className: "font-mono", children: label }),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.CopyButton, { label: copyLabel, text: text2 })
+      /* @__PURE__ */ jsx56(sdk_compat_exports.CopyButton, { label: copyLabel, text: text3 })
     ] }),
-    /* @__PURE__ */ jsx56("pre", { className: "max-h-72 overflow-auto px-3 pb-3 pt-1 font-mono text-[0.75rem] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] text-foreground", children: text2 })
+    /* @__PURE__ */ jsx56("pre", { className: "max-h-72 overflow-auto px-3 pb-3 pt-1 font-mono text-[0.75rem] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] text-foreground", children: text3 })
   ] });
 }
 function StepDetail({ a, step }) {
@@ -28162,10 +28165,10 @@ function ensureActivitySubjects() {
     }
   }
 }
-function shortHash(text2) {
+function shortHash(text3) {
   let hash = 2166136261;
-  for (let index = 0; index < text2.length; index++) {
-    hash ^= text2.charCodeAt(index);
+  for (let index = 0; index < text3.length; index++) {
+    hash ^= text3.charCodeAt(index);
     hash = Math.imul(hash, 16777619);
   }
   return (hash >>> 0).toString(36);
@@ -28179,11 +28182,11 @@ function requestTextOf(message) {
   }
   return chatMessageText(message).trim();
 }
-function requestLanguage(text2) {
-  if (/[\u3040-\u30ff]/.test(text2)) {
+function requestLanguage(text3) {
+  if (/[\u3040-\u30ff]/.test(text3)) {
     return "ja";
   }
-  if (/[\u3400-\u9fff\uf900-\ufaff]/.test(text2)) {
+  if (/[\u3400-\u9fff\uf900-\ufaff]/.test(text3)) {
     return "zh";
   }
   return null;
@@ -28212,17 +28215,17 @@ function validateModelSubject(raw) {
   if (typeof raw !== "string") {
     return null;
   }
-  const text2 = raw.replace(/```[A-Za-z]*/g, " ").replace(/\s+/g, " ").trim().replace(/^["'“”‘’«»]+|["'“”‘’«»]+$/g, "").trim().replace(/^(?:title|subject|name)\s*[:\-–—]\s*/i, "").trim();
-  if (!text2 || text2.length > MAX_SUBJECT_CHARS) {
+  const text3 = raw.replace(/```[A-Za-z]*/g, " ").replace(/\s+/g, " ").trim().replace(/^["'“”‘’«»]+|["'“”‘’«»]+$/g, "").trim().replace(/^(?:title|subject|name)\s*[:\-–—]\s*/i, "").trim();
+  if (!text3 || text3.length > MAX_SUBJECT_CHARS) {
     return null;
   }
-  if (text2.split(" ").length > MAX_SUBJECT_WORDS) {
+  if (text3.split(" ").length > MAX_SUBJECT_WORDS) {
     return null;
   }
-  if (/[?:,;!]$/.test(text2) || ANSWER_SHAPED.test(text2)) {
+  if (/[?:,;!]$/.test(text3) || ANSWER_SHAPED.test(text3)) {
     return null;
   }
-  return clipWords(text2, 60);
+  return clipWords(text3, 60);
 }
 function parseModelSubjects(reply, count) {
   const cleaned = String(reply || "").replace(/```[A-Za-z]*/g, "");
@@ -28602,7 +28605,7 @@ function WorkBoard({
   const shownDone = showAllDone ? done : done.slice(0, DONE_PREVIEW);
   const livePlan = plan && !plan.complete ? plan : null;
   const current = livePlan ? activePlanStep(livePlan) : 0;
-  const planNext = livePlan ? livePlan.steps.map((text2, i) => ({ n: i + 1, text: text2 })).filter((s) => s.n > current) : [];
+  const planNext = livePlan ? livePlan.steps.map((text3, i) => ({ n: i + 1, text: text3 })).filter((s) => s.n > current) : [];
   const routines = useMemo9(
     () => jobs.filter((job) => job.enabled !== false && job.state !== "paused").sort((x, y) => String(x.next_run_at || "~").localeCompare(String(y.next_run_at || "~"))).slice(0, ROUTINE_PREVIEW),
     [jobs]
@@ -30180,9 +30183,9 @@ function latestAssistantReply(messages, before) {
     if (list[i]?.role !== "assistant") {
       continue;
     }
-    const text2 = messageText(list[i]);
-    if (text2) {
-      return text2;
+    const text3 = messageText(list[i]);
+    if (text3) {
+      return text3;
     }
   }
   return null;
@@ -30280,8 +30283,8 @@ async function collectReply(bot, stored, baselineCount, patch) {
 }
 var latestRun = null;
 function broadcastPrompt(bots, prompt) {
-  const text2 = String(prompt || "").trim();
-  if (!text2 || !bots.length) {
+  const text3 = String(prompt || "").trim();
+  if (!text3 || !bots.length) {
     return;
   }
   const run = {
@@ -30291,7 +30294,7 @@ function broadcastPrompt(bots, prompt) {
       key: botRosterKey(bot) || bot.name,
       status: "sending"
     })),
-    prompt: text2
+    prompt: text3
   };
   const setEntry = (key, part) => {
     const current = $broadcastRun.get();
@@ -30320,7 +30323,7 @@ function broadcastPrompt(bots, prompt) {
           return;
         }
         const baselineCount = resumed.message_count ?? resumed.messages?.length ?? 0;
-        await requestForBot(entry.bot, "prompt.submit", { session_id: runtime, text: text2 }, { spawnPriority: "foreground" });
+        await requestForBot(entry.bot, "prompt.submit", { session_id: runtime, text: text3 }, { spawnPriority: "foreground" });
         setEntry(entry.key, { status: "working" });
         await collectReply(entry.bot, stored, baselineCount, (part) => setEntry(entry.key, part));
       } catch (error) {
@@ -30600,7 +30603,7 @@ var SHELF_CLASS = "flex h-7 w-full items-center justify-between rounded-md px-2 
 var CARD_CLASS = "flex min-w-0 flex-col gap-1.5 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-card,transparent) p-3 text-left transition-colors hover:border-(--ui-stroke-primary) data-[picked=true]:border-(--ui-accent) data-[picked=true]:ring-1 data-[picked=true]:ring-(--ui-accent)";
 function starterMatches(starter, query) {
   const q = query.trim().toLowerCase();
-  return !q || [starter.name, starter.title, starter.tagline].some((text2) => text2.toLowerCase().includes(q));
+  return !q || [starter.name, starter.title, starter.tagline].some((text3) => text3.toLowerCase().includes(q));
 }
 function presetTags(draft) {
   return (BOT_TEMPLATES[draft.preset]?.skills ?? []).slice(0, 4);
@@ -34517,25 +34520,550 @@ function mountReactionPillStyles() {
   return () => el?.remove();
 }
 
+// src/side-pages.tsx
+init_sdk_compat();
+init_sdk_compat();
+import { useEffect as useEffect29, useLayoutEffect as useLayoutEffect2, useMemo as useMemo12, useRef as useRef19, useState as useState48 } from "react";
+init_data();
+init_routing();
+
+// src/side-pages-i18n.ts
+init_sdk_compat();
+init_shared();
+var SIDE_PAGES_EN = {
+  chip: (n) => n === 1 ? "Page \xB7 1" : `Pages \xB7 ${n}`,
+  chipHint: "Show pages from this chat",
+  panelLabel: "Pages from this chat",
+  listLabel: "Pages",
+  open: "Open",
+  copy: "Copy",
+  copied: "Copied",
+  download: "Download",
+  close: "Close",
+  missing: "This page is not in the chat anymore",
+  kind: {
+    html: "Web page",
+    markdown: "Report",
+    svg: "Graphic"
+  }
+};
+var SIDE_PAGES_LOCALES = { en: { sidePages: SIDE_PAGES_EN } };
+function useSidePagesText() {
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, SIDE_PAGES_EN, "sidePages");
+}
+
+// src/side-pages-model.ts
+var WRITE_TOOLS = /* @__PURE__ */ new Set(["write_file", "create_file", "write"]);
+var VISUAL_TOOLS = /* @__PURE__ */ new Set(["create_visualization"]);
+var KIND_BY_EXT = {
+  htm: "html",
+  html: "html",
+  markdown: "markdown",
+  md: "markdown",
+  svg: "svg"
+};
+function pageKindOf(path) {
+  const ext = /\.([a-z0-9]+)$/i.exec(path.trim())?.[1]?.toLowerCase();
+  return ext && KIND_BY_EXT[ext] || null;
+}
+function baseName2(path) {
+  const parts = path.split(/[\\/]/).filter(Boolean);
+  return parts[parts.length - 1] || path;
+}
+function argsOf(part) {
+  if (part.args && typeof part.args === "object") {
+    return part.args;
+  }
+  if (typeof part.argsText === "string" && part.argsText.trim().startsWith("{")) {
+    try {
+      const parsed = JSON.parse(part.argsText);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
+  }
+  return {};
+}
+function text2(value) {
+  return typeof value === "string" ? value : "";
+}
+function decodeEntities(value) {
+  return value.replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&amp;/g, "&");
+}
+function pageTitle(kind, content, path) {
+  if (kind === "markdown") {
+    const heading = /^\s{0,3}#{1,2}\s+(.+?)\s*#*\s*$/m.exec(content)?.[1];
+    if (heading) {
+      return heading.slice(0, 120);
+    }
+  } else {
+    const titled = /<title[^>]*>([\s\S]*?)<\/title>/i.exec(content)?.[1]?.trim();
+    if (titled) {
+      return decodeEntities(titled).slice(0, 120);
+    }
+  }
+  return baseName2(path);
+}
+function pagesFromMessages(messages) {
+  const byId = /* @__PURE__ */ new Map();
+  for (const message of messages ?? []) {
+    for (const raw of message?.parts ?? []) {
+      const part = raw ?? {};
+      if (part.type !== "tool-call") {
+        continue;
+      }
+      const tool = text2(part.toolName);
+      const args = argsOf(part);
+      let page = null;
+      if (WRITE_TOOLS.has(tool)) {
+        const path = text2(args.path) || text2(args.file_path) || text2(args.filename);
+        const kind = pageKindOf(path);
+        const content = text2(args.content) || text2(args.text);
+        if (path && kind && content) {
+          page = { content, id: path, kind, path, title: pageTitle(kind, content, path) };
+        }
+      } else if (VISUAL_TOOLS.has(tool)) {
+        const content = text2(args.html) || text2(args.content);
+        const id = `visual:${text2(part.toolCallId) || byId.size}`;
+        const path = text2(args.filename) || `${text2(args.title) || "visualization"}.html`;
+        if (content) {
+          page = { content, id, kind: "html", path, title: text2(args.title) || pageTitle("html", content, path) };
+        }
+      }
+      if (page) {
+        byId.delete(page.id);
+        byId.set(page.id, page);
+      }
+    }
+  }
+  return [...byId.values()];
+}
+function findPage(pages, ref) {
+  const key = (ref.id || ref.path || "").trim();
+  if (!key) {
+    return null;
+  }
+  const exact = pages.find((page) => page.id === key || page.path === key);
+  if (exact) {
+    return exact;
+  }
+  const named = pages.filter((page) => baseName2(page.path) === baseName2(key));
+  return named.length === 1 ? named[0] : null;
+}
+function pageMime(kind) {
+  return kind === "html" ? "text/html" : kind === "svg" ? "image/svg+xml" : "text/markdown";
+}
+function pageFrameSrc(page) {
+  return `data:${pageMime(page.kind)};charset=utf-8,${encodeURIComponent(page.content)}`;
+}
+function pageFileName(page) {
+  const name = baseName2(page.path).replace(/[^\w.\- ]+/g, "_") || "page";
+  const ext = page.kind === "markdown" ? "md" : page.kind;
+  return pageKindOf(name) ? name : `${name}.${ext}`;
+}
+function historyToMessages(rows) {
+  if (!Array.isArray(rows)) {
+    return [];
+  }
+  return rows.map((raw) => {
+    const row = raw ?? {};
+    if (row.role === "tool") {
+      return { parts: [{ args: row.args, toolCallId: row.tool_call_id, toolName: row.name, type: "tool-call" }] };
+    }
+    const calls = Array.isArray(row.tool_calls) ? row.tool_calls : [];
+    return {
+      parts: calls.map((call) => {
+        const c = call ?? {};
+        const args = c.function?.arguments;
+        return {
+          args: args && typeof args === "object" ? args : void 0,
+          argsText: typeof args === "string" ? args : void 0,
+          toolCallId: c.id,
+          toolName: c.function?.name,
+          type: "tool-call"
+        };
+      })
+    };
+  });
+}
+
+// src/side-pages.tsx
+import { jsx as jsx79, jsxs as jsxs76 } from "react/jsx-runtime";
+var SIDE_PAGE_DIRECTIVE = "botpage";
+var $sidePanel = (0, sdk_compat_exports.atom)({ activeId: null, open: false, sessionKey: null });
+function openSidePage(sessionKey, activeId) {
+  $sidePanel.set({ activeId, open: true, sessionKey });
+}
+function closeSidePages() {
+  $sidePanel.set({ ...$sidePanel.get(), open: false });
+}
+var KIND_ICON = { html: "globe", markdown: "note", svg: "graph" };
+var $historyPages = (0, sdk_compat_exports.atom)({});
+var REFRESH_EVENTS = ["tool.complete", "message.complete"];
+function useHistoryPages(enabled, storedId, runtimeId) {
+  const busy = (0, sdk_compat_exports.useValue)(host.state.busy) === true;
+  const rowRef = useRef19(canonicalBotRowOnScreen(storedId));
+  rowRef.current = canonicalBotRowOnScreen(storedId) ?? rowRef.current;
+  const hasRow = rowRef.current !== null;
+  const sessionId = runtimeId || storedId;
+  const [tick, setTick] = useState48(0);
+  useEffect29(() => {
+    const row = rowRef.current;
+    if (!enabled || !row || !storedId || !sessionId) {
+      return;
+    }
+    let live = true;
+    requestForBot(row, "session.history", { session_id: sessionId }).then((result) => {
+      if (live) {
+        $historyPages.set({ ...$historyPages.get(), [storedId]: pagesFromMessages(historyToMessages(result?.messages)) });
+      }
+    }).catch(() => void 0);
+    return () => {
+      live = false;
+    };
+  }, [busy, enabled, hasRow, sessionId, storedId, tick]);
+  useEffect29(() => {
+    if (!enabled || !sessionId || typeof host.onEvent !== "function") {
+      return;
+    }
+    let timer;
+    const onStep = (event) => {
+      if (event?.session_id && event.session_id !== sessionId) {
+        return;
+      }
+      clearTimeout(timer);
+      timer = setTimeout(() => setTick((n) => n + 1), 600);
+    };
+    const offs = REFRESH_EVENTS.map((type) => host.onEvent(type, onStep));
+    return () => {
+      clearTimeout(timer);
+      offs.forEach((off) => off?.());
+    };
+  }, [enabled, sessionId]);
+}
+function useBotChatPages(owner = false) {
+  const view = useSessionView();
+  const storedId = (0, sdk_compat_exports.useValue)(view.$storedId) ?? null;
+  const runtimeId = (0, sdk_compat_exports.useValue)(view.$runtimeId) ?? null;
+  const messages = (0, sdk_compat_exports.useValue)(view.$messages);
+  const fetched = (0, sdk_compat_exports.useValue)($historyPages);
+  (0, sdk_compat_exports.useValue)($lastRoster);
+  const canonical = canonicalBotChatOnScreen(storedId);
+  useHistoryPages(owner && canonical, storedId, runtimeId);
+  const live = useMemo12(() => pagesFromMessages(messages), [messages]);
+  const pages = live.length ? live : storedId && fetched[storedId] || NO_PAGES;
+  return { canonical, pages, storedId };
+}
+var NO_PAGES = [];
+function SidePagesChip() {
+  const copy = useSidePagesText();
+  const { canonical, pages, storedId } = useBotChatPages(true);
+  const panel = (0, sdk_compat_exports.useValue)($sidePanel);
+  if (!canonical || !pages.length) {
+    return null;
+  }
+  const mine = panel.sessionKey === storedId;
+  const open = panel.open && mine;
+  return /* @__PURE__ */ jsxs76("div", { className: "hbp-sp-chip-row", children: [
+    /* @__PURE__ */ jsxs76(
+      "button",
+      {
+        "aria-expanded": open,
+        className: "hbp-sp-chip",
+        "data-open": open || void 0,
+        onClick: () => open ? closeSidePages() : openSidePage(storedId, mine ? panel.activeId : null),
+        title: copy.chipHint,
+        type: "button",
+        children: [
+          /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "layout-sidebar-right", size: "0.8rem" }),
+          /* @__PURE__ */ jsx79("span", { children: copy.chip(pages.length) })
+        ]
+      }
+    ),
+    /* @__PURE__ */ jsx79("span", { className: "hbp-sp-anchor", children: /* @__PURE__ */ jsx79(SidePagesPanel, { activeId: mine ? panel.activeId : null, open, pages }) })
+  ] });
+}
+function SidePageCard({ attrs, streaming }) {
+  const copy = useSidePagesText();
+  const { canonical, pages, storedId } = useBotChatPages();
+  if (!canonical || streaming) {
+    return null;
+  }
+  const page = findPage(pages, { id: attrs.id, path: attrs.path || attrs.file });
+  if (!page) {
+    return null;
+  }
+  return /* @__PURE__ */ jsxs76("button", { className: "hbp-sp-card", onClick: () => openSidePage(storedId, page.id), type: "button", children: [
+    /* @__PURE__ */ jsx79("span", { className: "hbp-sp-card-icon", children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: KIND_ICON[page.kind], size: "1rem" }) }),
+    /* @__PURE__ */ jsxs76("span", { className: "hbp-sp-card-text", children: [
+      /* @__PURE__ */ jsx79("span", { className: "hbp-sp-card-title", children: page.title }),
+      /* @__PURE__ */ jsxs76("span", { className: "hbp-sp-card-meta", children: [
+        copy.kind[page.kind],
+        " \xB7 ",
+        pageFileName(page)
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxs76("span", { className: "hbp-sp-card-open", children: [
+      copy.open,
+      /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "arrow-right", size: "0.75rem" })
+    ] })
+  ] });
+}
+function downloadPage(page) {
+  const url = URL.createObjectURL(new Blob([page.content], { type: `${pageMime(page.kind)};charset=utf-8` }));
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = pageFileName(page);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1e3);
+}
+function PageView({ page }) {
+  if (page.kind === "markdown") {
+    const Markdown = sdk_compat_exports.MessageTextContent;
+    return /* @__PURE__ */ jsx79("div", { className: "hbp-sp-doc", children: Markdown ? /* @__PURE__ */ jsx79(Markdown, { media: false, text: page.content }) : /* @__PURE__ */ jsx79("pre", { children: page.content }) });
+  }
+  const Frame = sdk_compat_exports.SandboxedFrame;
+  return Frame ? /* @__PURE__ */ jsx79(Frame, { className: "hbp-sp-frame", src: pageFrameSrc(page), title: page.title }, page.id + page.content.length) : /* @__PURE__ */ jsx79("pre", { className: "hbp-sp-doc", children: page.content });
+}
+function useLiftToAppRoot(ref) {
+  useLayoutEffect2(() => {
+    const node = ref.current;
+    const home = node?.parentElement;
+    if (!node || !home) {
+      return;
+    }
+    let root = home;
+    while (root.parentElement && root.parentElement !== document.body) {
+      root = root.parentElement;
+    }
+    if (root === home) {
+      return;
+    }
+    root.appendChild(node);
+    return () => {
+      home.appendChild(node);
+    };
+  }, [ref]);
+}
+function usePanelActions(ref, act) {
+  const latest = useRef19(act);
+  latest.current = act;
+  useEffect29(() => {
+    const node = ref.current;
+    if (!node) {
+      return;
+    }
+    const onClick = (event) => {
+      const button = event.target?.closest?.("[data-sp-act]");
+      if (button && node.contains(button) && !button.disabled) {
+        latest.current(button.getAttribute("data-sp-act") ?? "", button.getAttribute("data-sp-id") ?? "");
+      }
+    };
+    node.addEventListener("click", onClick);
+    return () => node.removeEventListener("click", onClick);
+  }, [ref]);
+}
+function SidePagesPanel({ activeId, open, pages }) {
+  const copy = useSidePagesText();
+  const [copied, setCopied] = useState48(false);
+  const panelRef = useRef19(null);
+  useLiftToAppRoot(panelRef);
+  const active = pages.find((page) => page.id === activeId) ?? pages[pages.length - 1] ?? null;
+  useEffect29(() => {
+    if (!open) {
+      return;
+    }
+    const onKey = (event) => event.key === "Escape" && closeSidePages();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+  useEffect29(() => setCopied(false), [active?.id]);
+  const copyPage = async () => {
+    if (!active) {
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(active.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      setCopied(false);
+    }
+  };
+  usePanelActions(panelRef, (action, id) => {
+    if (action === "copy") {
+      void copyPage();
+    } else if (action === "download") {
+      active && downloadPage(active);
+    } else if (action === "close") {
+      closeSidePages();
+    } else if (action === "select") {
+      openSidePage($sidePanel.get().sessionKey, id);
+    }
+  });
+  return /* @__PURE__ */ jsxs76(
+    "aside",
+    {
+      "aria-hidden": !open,
+      "aria-label": copy.panelLabel,
+      className: "hbp-sp-panel",
+      "data-open": open || void 0,
+      ref: panelRef,
+      children: [
+        /* @__PURE__ */ jsxs76("header", { className: "hbp-sp-head", children: [
+          /* @__PURE__ */ jsx79("span", { className: "hbp-sp-head-title", children: active?.title ?? copy.listLabel }),
+          active && /* @__PURE__ */ jsx79("span", { className: "hbp-sp-badge", children: copy.kind[active.kind] }),
+          /* @__PURE__ */ jsx79("span", { className: "hbp-sp-spacer" }),
+          /* @__PURE__ */ jsxs76("button", { className: "hbp-sp-act", "data-sp-act": "copy", disabled: !active, title: copy.copy, type: "button", children: [
+            /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: copied ? "check" : "copy", size: "0.85rem" }),
+            /* @__PURE__ */ jsx79("span", { children: copied ? copy.copied : copy.copy })
+          ] }),
+          /* @__PURE__ */ jsxs76(
+            "button",
+            {
+              className: "hbp-sp-act",
+              "data-sp-act": "download",
+              disabled: !active,
+              title: copy.download,
+              type: "button",
+              children: [
+                /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "desktop-download", size: "0.85rem" }),
+                /* @__PURE__ */ jsx79("span", { children: copy.download })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsx79(
+            "button",
+            {
+              "aria-label": copy.close,
+              className: "hbp-sp-act hbp-sp-icon",
+              "data-sp-act": "close",
+              title: copy.close,
+              type: "button",
+              children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "close", size: "0.85rem" })
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs76("div", { className: "hbp-sp-body", children: [
+          /* @__PURE__ */ jsx79("nav", { "aria-label": copy.listLabel, className: "hbp-sp-list", children: pages.map((page) => /* @__PURE__ */ jsxs76(
+            "button",
+            {
+              "aria-current": page.id === active?.id || void 0,
+              className: (0, sdk_compat_exports.cn)("hbp-sp-item"),
+              "data-sp-act": "select",
+              "data-sp-id": page.id,
+              title: page.path,
+              type: "button",
+              children: [
+                /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: KIND_ICON[page.kind], size: "0.85rem" }),
+                /* @__PURE__ */ jsxs76("span", { className: "hbp-sp-item-text", children: [
+                  /* @__PURE__ */ jsx79("span", { className: "hbp-sp-item-title", children: page.title }),
+                  /* @__PURE__ */ jsx79("span", { className: "hbp-sp-item-meta", children: copy.kind[page.kind] })
+                ] })
+              ]
+            },
+            page.id
+          )) }),
+          /* @__PURE__ */ jsx79("section", { className: "hbp-sp-view", children: active && open ? /* @__PURE__ */ jsx79(PageView, { page: active }) : null })
+        ] })
+      ]
+    }
+  );
+}
+function sidePagesStyleSheet() {
+  const slow = "260ms";
+  const base = "180ms";
+  const fast = "120ms";
+  const outQuint = "cubic-bezier(0.22,1,0.36,1)";
+  const standard = "cubic-bezier(0.2,0,0,1)";
+  return [
+    `.hbp-sp-chip-row{display:flex;justify-content:flex-end;}`,
+    `.hbp-sp-anchor{display:contents;}`,
+    `.hbp-sp-chip{display:inline-flex;align-items:center;gap:0.375rem;height:1.5rem;padding:0 0.625rem;border-radius:999px;`,
+    `font-size:0.75rem;color:var(--ui-text-secondary);background:var(--ui-bg-quaternary);box-shadow:inset 0 0 0 1px var(--ui-stroke-tertiary);`,
+    `transition:background-color ${fast} ${standard},color ${fast} ${standard},box-shadow ${fast} ${standard};}`,
+    `.hbp-sp-chip:hover{background:var(--ui-control-hover-background);color:var(--ui-text-primary);}`,
+    `.hbp-sp-chip[data-open]{color:var(--ui-text-primary);box-shadow:inset 0 0 0 1px var(--ui-accent);}`,
+    `.hbp-sp-card{display:flex;align-items:center;gap:0.75rem;width:100%;max-width:32rem;margin:0.375rem 0;padding:0.625rem 0.75rem;text-align:left;`,
+    `border-radius:var(--radius-xl);background:var(--ui-bg-elevated);box-shadow:inset 0 0 0 1px var(--ui-stroke-tertiary),var(--shadow-xs);`,
+    `transition:box-shadow ${fast} ${standard},transform ${fast} ${standard};}`,
+    `.hbp-sp-card:hover{box-shadow:inset 0 0 0 1px var(--ui-stroke-secondary),var(--shadow-sm);transform:translateY(-1px);}`,
+    `.hbp-sp-card-icon{display:grid;place-items:center;width:2rem;height:2rem;flex:none;border-radius:var(--radius-lg);background:var(--ui-bg-quaternary);color:var(--ui-text-secondary);}`,
+    `.hbp-sp-card-text{display:flex;flex-direction:column;min-width:0;flex:1;}`,
+    `.hbp-sp-card-title{font-size:0.8125rem;font-weight:600;color:var(--ui-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`,
+    `.hbp-sp-card-meta{font-size:0.75rem;color:var(--ui-text-tertiary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`,
+    `.hbp-sp-card-open{display:inline-flex;align-items:center;gap:0.25rem;font-size:0.75rem;color:var(--ui-text-secondary);}`,
+    `.hbp-sp-panel{position:fixed;z-index:60;top:2.75rem;right:0.75rem;bottom:0.75rem;width:min(46rem,calc(100vw - 6rem));`,
+    `display:flex;flex-direction:column;overflow:hidden;border-radius:var(--radius-2xl);background:var(--ui-bg-elevated);`,
+    `box-shadow:inset 0 0 0 1px var(--ui-stroke-secondary),var(--shadow-lg);`,
+    `transform:translateX(calc(100% + 1rem));opacity:0;visibility:hidden;pointer-events:none;`,
+    `transition:transform ${slow} ${outQuint},opacity ${base} ${standard},visibility 0s linear ${slow};}`,
+    `.hbp-sp-panel[data-open]{transform:none;opacity:1;visibility:visible;pointer-events:auto;`,
+    `transition:transform ${slow} ${outQuint},opacity ${base} ${standard},visibility 0s;}`,
+    `@media (prefers-reduced-motion:reduce){.hbp-sp-panel,.hbp-sp-panel[data-open]{transition:opacity ${fast} linear,visibility 0s;transform:none;}}`,
+    `.hbp-sp-head{display:flex;align-items:center;gap:0.375rem;min-height:2.75rem;padding:0 0.5rem 0 1rem;border-bottom:1px solid var(--ui-stroke-tertiary);}`,
+    `.hbp-sp-head-title{font-size:0.875rem;font-weight:600;color:var(--ui-text-primary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`,
+    `.hbp-sp-badge{flex:none;font-size:0.6875rem;padding:0.0625rem 0.5rem;border-radius:999px;color:var(--ui-text-secondary);background:var(--ui-bg-quaternary);}`,
+    `.hbp-sp-spacer{flex:1;}`,
+    `.hbp-sp-act{display:inline-flex;align-items:center;gap:0.3125rem;height:1.75rem;padding:0 0.5rem;border-radius:var(--radius-md);`,
+    `font-size:0.75rem;color:var(--ui-text-secondary);transition:background-color ${fast} ${standard},color ${fast} ${standard};}`,
+    `.hbp-sp-act:hover:not(:disabled){background:var(--ui-control-hover-background);color:var(--ui-text-primary);}`,
+    `.hbp-sp-act:disabled{opacity:0.5;}`,
+    `.hbp-sp-icon{width:1.75rem;justify-content:center;padding:0;}`,
+    `.hbp-sp-body{display:flex;flex:1;min-height:0;}`,
+    `.hbp-sp-list{display:flex;flex-direction:column;gap:0.125rem;width:12rem;flex:none;padding:0.5rem;overflow-y:auto;border-right:1px solid var(--ui-stroke-tertiary);}`,
+    `.hbp-sp-item{display:flex;align-items:flex-start;gap:0.5rem;padding:0.4375rem 0.5rem;text-align:left;border-radius:var(--radius-md);color:var(--ui-text-secondary);`,
+    `transition:background-color ${fast} ${standard},color ${fast} ${standard};}`,
+    `.hbp-sp-item:hover{background:var(--ui-control-hover-background);color:var(--ui-text-primary);}`,
+    `.hbp-sp-item[aria-current]{background:var(--ui-bg-quaternary);color:var(--ui-text-primary);box-shadow:inset 2px 0 0 var(--ui-accent);}`,
+    `.hbp-sp-item-text{display:flex;flex-direction:column;min-width:0;}`,
+    `.hbp-sp-item-title{font-size:0.78125rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`,
+    `.hbp-sp-item-meta{font-size:0.6875rem;color:var(--ui-text-tertiary);}`,
+    `.hbp-sp-view{flex:1;min-width:0;overflow:auto;background:var(--ui-bg-primary,transparent);}`,
+    `.hbp-sp-frame{display:block;width:100%;height:100%;}`,
+    `.hbp-sp-doc{padding:1rem 1.25rem;font-size:0.875rem;}`,
+    `.hbp-sp-doc pre,pre.hbp-sp-doc{white-space:pre-wrap;}`
+  ].join("");
+}
+function mountSidePagesStyles() {
+  if (typeof document === "undefined") {
+    return () => {
+    };
+  }
+  const id = "hermes-bots-plus-side-pages";
+  document.getElementById(id)?.remove();
+  const el = document.createElement("style");
+  el.id = id;
+  el.textContent = sidePagesStyleSheet();
+  document.head.appendChild(el);
+  return () => {
+    el.remove();
+    closeSidePages();
+  };
+}
+
 // src/tool-card.tsx
 init_sdk_compat();
 import {
   memo,
   useContext as useContext3,
-  useEffect as useEffect33,
-  useMemo as useMemo12,
-  useRef as useRef21,
-  useState as useState52
+  useEffect as useEffect34,
+  useMemo as useMemo13,
+  useRef as useRef22,
+  useState as useState53
 } from "react";
 
 // src/tool-card-live.tsx
 init_sdk_compat();
-import { useContext as useContext2, useEffect as useEffect32, useRef as useRef20, useState as useState51 } from "react";
+import { useContext as useContext2, useEffect as useEffect33, useRef as useRef21, useState as useState52 } from "react";
 
 // src/browser-backend.ts
 init_data();
 init_routing();
-import { useEffect as useEffect29, useState as useState48 } from "react";
+import { useEffect as useEffect30, useState as useState49 } from "react";
 var TRUTHY = /* @__PURE__ */ new Set(["1", "true", "yes", "on"]);
 function truthy(value) {
   return typeof value === "string" ? TRUTHY.has(value.trim().toLowerCase()) : Boolean(value);
@@ -34595,8 +35123,8 @@ function browserBackendFor(bot, now = Date.now()) {
 }
 function useBrowserBackend(bot) {
   const key = bot ? botRosterKey(bot) : "";
-  const [verdict, setVerdict] = useState48({ key: "", value: "unknown" });
-  useEffect29(() => {
+  const [verdict, setVerdict] = useState49({ key: "", value: "unknown" });
+  useEffect30(() => {
     if (!bot) {
       return;
     }
@@ -34615,7 +35143,7 @@ function useBrowserBackend(bot) {
 
 // src/card-bot.ts
 init_sdk_compat();
-import { useContext, useEffect as useEffect30, useState as useState49 } from "react";
+import { useContext, useEffect as useEffect31, useState as useState50 } from "react";
 init_data();
 
 // src/tool-card-session.ts
@@ -34649,12 +35177,12 @@ function cachedRows() {
 function useCardBot() {
   const session = useContext(PreviewSessionContext);
   const live = (0, sdk_compat_exports.useValue)($lastRoster);
-  const [cached, setCached] = useState49(() => live.length ? [] : cachedRows());
+  const [cached, setCached] = useState50(() => live.length ? [] : cachedRows());
   const inChat = Boolean(session.storedId || session.runtimeId);
   const roster = live.length ? live : cached;
   const bot = inChat ? botForChat(roster, session.storedId ?? "") : null;
   const missing = inChat && !bot;
-  useEffect30(() => {
+  useEffect31(() => {
     if (!missing) {
       return;
     }
@@ -34677,8 +35205,8 @@ init_routing();
 
 // src/tool-card-screen.tsx
 init_sdk_compat();
-import { useEffect as useEffect31, useRef as useRef19, useState as useState50 } from "react";
-import { jsx as jsx79 } from "react/jsx-runtime";
+import { useEffect as useEffect32, useRef as useRef20, useState as useState51 } from "react";
+import { jsx as jsx80 } from "react/jsx-runtime";
 var CLOSE_CONTROL_TAKEN2 = 4e3;
 var MAX_REDIALS = 2;
 var MORPH_NAME = "hbp-screen-morph";
@@ -34725,13 +35253,13 @@ function CardScreenStream({
   botKey,
   onLive
 }) {
-  const canvasHost = useRef19(null);
-  const report = useRef19(onLive);
-  const botRef = useRef19(bot);
-  const [painted, setPainted] = useState50(false);
+  const canvasHost = useRef20(null);
+  const report = useRef20(onLive);
+  const botRef = useRef20(bot);
+  const [painted, setPainted] = useState51(false);
   report.current = onLive;
   botRef.current = bot;
-  useEffect31(() => {
+  useEffect32(() => {
     const bot2 = botRef.current;
     let disposed = false;
     let redials = 0;
@@ -34814,15 +35342,15 @@ function CardScreenStream({
       release();
     };
   }, [botKey]);
-  return /* @__PURE__ */ jsx79("span", { className: "hbp-lv-layer absolute inset-0 block hbp-tc-sunken", "data-ready": painted, "data-live-screen": "", children: /* @__PURE__ */ jsx79("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 block", ref: canvasHost }) });
+  return /* @__PURE__ */ jsx80("span", { className: "hbp-lv-layer absolute inset-0 block hbp-tc-sunken", "data-ready": painted, "data-live-screen": "", children: /* @__PURE__ */ jsx80("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 block", ref: canvasHost }) });
 }
 function ScreenExpandButton({
   bot,
   label,
   meta
 }) {
-  const ref = useRef19(null);
-  return /* @__PURE__ */ jsx79(
+  const ref = useRef20(null);
+  return /* @__PURE__ */ jsx80(
     "button",
     {
       "aria-label": label,
@@ -34837,13 +35365,13 @@ function ScreenExpandButton({
       onKeyDown: (event) => event.stopPropagation(),
       ref,
       type: "button",
-      children: /* @__PURE__ */ jsx79("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
+      children: /* @__PURE__ */ jsx80("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
     }
   );
 }
 
 // src/tool-card-live.tsx
-import { Fragment as Fragment18, jsx as jsx80, jsxs as jsxs76 } from "react/jsx-runtime";
+import { Fragment as Fragment18, jsx as jsx81, jsxs as jsxs77 } from "react/jsx-runtime";
 var MORPH_NAME2 = "hbp-shot-morph";
 var FADE_MS = 180;
 var TARGET_WAIT_MS2 = 450;
@@ -34856,7 +35384,7 @@ function ShotLayer({
   if (!image.src || image.failed) {
     return null;
   }
-  return /* @__PURE__ */ jsx80(
+  return /* @__PURE__ */ jsx81(
     "img",
     {
       alt: "",
@@ -34874,10 +35402,10 @@ function ShotLayer({
   );
 }
 function CrossfadeShot({ src }) {
-  const nextId = useRef20(1);
-  const [layers, setLayers] = useState51(() => [{ id: 0, src }]);
-  const [readySrc, setReadySrc] = useState51("");
-  useEffect32(() => {
+  const nextId = useRef21(1);
+  const [layers, setLayers] = useState52(() => [{ id: 0, src }]);
+  const [readySrc, setReadySrc] = useState52("");
+  useEffect33(() => {
     setLayers((current) => {
       if (current[current.length - 1]?.src === src) {
         return current;
@@ -34886,14 +35414,14 @@ function CrossfadeShot({ src }) {
       return [...current.slice(-1), layer];
     });
   }, [src]);
-  useEffect32(() => {
+  useEffect33(() => {
     if (readySrc !== src || layers.length < 2) {
       return;
     }
     const timer = window.setTimeout(() => setLayers((current) => current.slice(-1)), FADE_MS + 40);
     return () => window.clearTimeout(timer);
   }, [layers.length, readySrc, src]);
-  return /* @__PURE__ */ jsx80("span", { className: "relative block h-full w-full", children: layers.map((layer, index) => /* @__PURE__ */ jsx80(
+  return /* @__PURE__ */ jsx81("span", { className: "relative block h-full w-full", children: layers.map((layer, index) => /* @__PURE__ */ jsx81(
     ShotLayer,
     {
       onReady: setReadySrc,
@@ -35017,43 +35545,43 @@ function ExpandableShot({
   src,
   step
 }) {
-  const text2 = useLiveViewText();
+  const text3 = useLiveViewText();
   const session = useContext2(PreviewSessionContext);
-  const frameRef = useRef20(null);
-  return /* @__PURE__ */ jsxs76(
+  const frameRef = useRef21(null);
+  return /* @__PURE__ */ jsxs77(
     "button",
     {
-      "aria-label": text2.expand,
+      "aria-label": text3.expand,
       className: (0, sdk_compat_exports.cn)("hbp-lv-frame relative block h-full w-full cursor-zoom-in", className),
       "data-live-shot": "",
       onClick: (event) => {
         event.stopPropagation();
         if (frameRef.current) {
-          void expandShot(frameRef.current, src, text2.shotLabel(host2, step), session);
+          void expandShot(frameRef.current, src, text3.shotLabel(host2, step), session);
         }
       },
       onKeyDown: (event) => event.stopPropagation(),
       ref: frameRef,
       type: "button",
       children: [
-        /* @__PURE__ */ jsx80(CrossfadeShot, { src }),
-        /* @__PURE__ */ jsx80("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
+        /* @__PURE__ */ jsx81(CrossfadeShot, { src }),
+        /* @__PURE__ */ jsx81("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
       ]
     }
   );
 }
 function ScreenLayer({ bot }) {
-  const text2 = useLiveViewText();
+  const text3 = useLiveViewText();
   const { tone } = useScreenPortalState(bot);
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
-  const [painted, setPainted] = useState51(false);
-  const [ended, setEnded] = useState51(false);
+  const [painted, setPainted] = useState52(false);
+  const [ended, setEnded] = useState52(false);
   const streamable = tone === "live" || tone === "human" || tone === "other";
   if (!streamable || ended) {
     return null;
   }
-  return /* @__PURE__ */ jsxs76(Fragment18, { children: [
-    /* @__PURE__ */ jsx80(
+  return /* @__PURE__ */ jsxs77(Fragment18, { children: [
+    /* @__PURE__ */ jsx81(
       CardScreenStream,
       {
         bot,
@@ -35066,11 +35594,11 @@ function ScreenLayer({ bot }) {
         }
       }
     ),
-    painted ? /* @__PURE__ */ jsx80(ScreenExpandButton, { bot, label: text2.expandScreen, meta: botRosterMeta(bot, allMeta) }) : null
+    painted ? /* @__PURE__ */ jsx81(ScreenExpandButton, { bot, label: text3.expandScreen, meta: botRosterMeta(bot, allMeta) }) : null
   ] });
 }
 function LiveFrame({ group, open }) {
-  const text2 = useLiveViewText();
+  const text3 = useLiveViewText();
   const shot = latestShot(group.cards);
   const pageUrl = latestPage(group.cards);
   const host2 = safeHost(shot ? group.cards[shot.index]?.thumb?.url ?? pageUrl : pageUrl);
@@ -35078,34 +35606,34 @@ function LiveFrame({ group, open }) {
   const bot = useCardBot();
   const onDesktop = useBrowserBackend(running ? bot : null) === "desktop";
   const realProfile = group.cards.some((card) => card.realProfile);
-  return /* @__PURE__ */ jsx80("div", { className: "hbp-tc-collapse", "data-live-frame": "", "data-open": open, inert: !open, children: /* @__PURE__ */ jsx80("div", { children: /* @__PURE__ */ jsx80("div", { className: "hbp-tc-pl12 pt-1.5", children: /* @__PURE__ */ jsxs76("div", { className: "relative aspect-video w-full max-w-sm overflow-hidden rounded-card border border-line hbp-tc-sunken", children: [
-    shot ? /* @__PURE__ */ jsx80(ExpandableShot, { host: host2, src: shot.src, step: shot.index + 1 }) : /* @__PURE__ */ jsxs76("div", { className: "hbp-tc-shimmer flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
-      pageUrl && isPublicHost(host2) ? /* @__PURE__ */ jsx80("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx80(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "globe", size: 20 }),
-      pageUrl ? /* @__PURE__ */ jsx80("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : null,
-      /* @__PURE__ */ jsx80("span", { children: text2.waiting })
+  return /* @__PURE__ */ jsx81("div", { className: "hbp-tc-collapse", "data-live-frame": "", "data-open": open, inert: !open, children: /* @__PURE__ */ jsx81("div", { children: /* @__PURE__ */ jsx81("div", { className: "hbp-tc-pl12 pt-1.5", children: /* @__PURE__ */ jsxs77("div", { className: "relative aspect-video w-full max-w-sm overflow-hidden rounded-card border border-line hbp-tc-sunken", children: [
+    shot ? /* @__PURE__ */ jsx81(ExpandableShot, { host: host2, src: shot.src, step: shot.index + 1 }) : /* @__PURE__ */ jsxs77("div", { className: "hbp-tc-shimmer flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+      pageUrl && isPublicHost(host2) ? /* @__PURE__ */ jsx81("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx81(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 20 }),
+      pageUrl ? /* @__PURE__ */ jsx81("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : null,
+      /* @__PURE__ */ jsx81("span", { children: text3.waiting })
     ] }),
-    bot && running && open && onDesktop && !realProfile ? /* @__PURE__ */ jsx80(ScreenLayer, { bot }) : null,
-    running ? /* @__PURE__ */ jsxs76("span", { className: "pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 text-ui-2xs hbp-lv-badge", children: [
-      /* @__PURE__ */ jsx80("span", { "aria-hidden": true, className: "hbp-lv-dot size-1.5 rounded-full" }),
-      text2.live
+    bot && running && open && onDesktop && !realProfile ? /* @__PURE__ */ jsx81(ScreenLayer, { bot }) : null,
+    running ? /* @__PURE__ */ jsxs77("span", { className: "pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 text-ui-2xs hbp-lv-badge", children: [
+      /* @__PURE__ */ jsx81("span", { "aria-hidden": true, className: "hbp-lv-dot size-1.5 rounded-full" }),
+      text3.live
     ] }) : null
   ] }) }) }) });
 }
 
 // src/tool-card.tsx
-import { Fragment as Fragment19, jsx as jsx81, jsxs as jsxs77 } from "react/jsx-runtime";
+import { Fragment as Fragment19, jsx as jsx82, jsxs as jsxs78 } from "react/jsx-runtime";
 function SiteFavicon({ host: host2, url }) {
   if (!isPublicHost(host2)) {
     return null;
   }
-  return /* @__PURE__ */ jsx81("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx81(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx81("span", { className: "block size-full" }), url }) });
+  return /* @__PURE__ */ jsx82("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx82(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx82("span", { className: "block size-full" }), url }) });
 }
 function ScreenshotThumb({ src }) {
   const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 10);
   if (image.failed) {
     return null;
   }
-  return /* @__PURE__ */ jsx81("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx81(
+  return /* @__PURE__ */ jsx82("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx82(
     "img",
     {
       alt: "",
@@ -35141,7 +35669,7 @@ function OpenPageButton({
       session.runtimeId
     );
   };
-  return /* @__PURE__ */ jsx81(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs77(
+  return /* @__PURE__ */ jsx82(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs78(
     sdk_compat_exports.Button,
     {
       "aria-label": label,
@@ -35153,7 +35681,7 @@ function OpenPageButton({
       type: "button",
       variant: "ghost",
       children: [
-        /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "link-external" }),
+        /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "link-external" }),
         iconOnly ? null : label
       ]
     }
@@ -35163,29 +35691,29 @@ function CardBlock({ card, showStatus }) {
   const copy = useToolCardsText();
   const pageUrl = card.family === "browser" ? "" : stepPageUrl([card]);
   const shot = card.family !== "browser" && card.thumb?.kind === "screenshot" ? card.thumb.src : "";
-  return /* @__PURE__ */ jsxs77("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
-    showStatus ? /* @__PURE__ */ jsx81("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
-    pageUrl || shot ? /* @__PURE__ */ jsxs77("div", { className: "flex min-w-0 items-center gap-2", "data-card-page": "", children: [
-      shot ? /* @__PURE__ */ jsx81(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx81("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx81(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
-      pageUrl ? /* @__PURE__ */ jsxs77(Fragment19, { children: [
-        /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
-        /* @__PURE__ */ jsx81(OpenPageButton, { url: pageUrl })
+  return /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
+    showStatus ? /* @__PURE__ */ jsx82("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
+    pageUrl || shot ? /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 items-center gap-2", "data-card-page": "", children: [
+      shot ? /* @__PURE__ */ jsx82(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx82("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx82(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
+      pageUrl ? /* @__PURE__ */ jsxs78(Fragment19, { children: [
+        /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
+        /* @__PURE__ */ jsx82(OpenPageButton, { url: pageUrl })
       ] }) : null
     ] }) : null,
-    card.args.length > 0 ? /* @__PURE__ */ jsxs77("div", { className: "flex min-w-0 flex-col gap-1", children: [
-      /* @__PURE__ */ jsx81("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
-      card.args.map((detail) => /* @__PURE__ */ jsxs77("div", { className: "flex min-w-0 gap-2", children: [
-        /* @__PURE__ */ jsx81("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
-        /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
+    card.args.length > 0 ? /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 flex-col gap-1", children: [
+      /* @__PURE__ */ jsx82("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
+      card.args.map((detail) => /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 gap-2", children: [
+        /* @__PURE__ */ jsx82("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
+        /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
       ] }, detail.label))
     ] }) : null,
-    /* @__PURE__ */ jsx81("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
-    card.output ? /* @__PURE__ */ jsx81("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx81("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
-    card.reason ? /* @__PURE__ */ jsx81("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
-    card.durationLabel ? /* @__PURE__ */ jsxs77("div", { className: "text-ui-2xs hbp-tc-subtle", children: [
+    /* @__PURE__ */ jsx82("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
+    card.output ? /* @__PURE__ */ jsx82("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx82("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
+    card.reason ? /* @__PURE__ */ jsx82("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
+    card.durationLabel ? /* @__PURE__ */ jsxs78("div", { className: "text-ui-2xs hbp-tc-subtle", children: [
       copy.details.duration,
       " ",
-      /* @__PURE__ */ jsx81("span", { className: "tabular-nums", children: card.durationLabel })
+      /* @__PURE__ */ jsx82("span", { className: "tabular-nums", children: card.durationLabel })
     ] }) : null
   ] });
 }
@@ -35214,7 +35742,7 @@ function BrowserSteps({ group }) {
   const copy = useToolCardsText().viewer;
   const { cards, name } = group;
   const total = cards.length;
-  const [manual, setManual] = useState52(null);
+  const [manual, setManual] = useState53(null);
   const live = group.state !== "done";
   const settledDefault = latestScreenshotIndex(cards) ?? total - 1;
   const selected = Math.min(manual ?? (live ? total - 1 : settledDefault), total - 1);
@@ -35225,7 +35753,7 @@ function BrowserSteps({ group }) {
   const move = (delta) => {
     setManual(Math.min(total - 1, Math.max(0, selected + delta)));
   };
-  return /* @__PURE__ */ jsxs77(
+  return /* @__PURE__ */ jsxs78(
     "section",
     {
       "aria-label": copy.title(name),
@@ -35237,14 +35765,14 @@ function BrowserSteps({ group }) {
         }
       },
       children: [
-        /* @__PURE__ */ jsx81("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
-        /* @__PURE__ */ jsx81("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx81(ExpandableShot, { host: host2 || pageHost(pageUrl), src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs77("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
-          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx81("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx81(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
-          pageUrl ? /* @__PURE__ */ jsx81("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx81("span", { className: "truncate", children: host2 }) : null,
-          /* @__PURE__ */ jsx81("span", { children: copy.noScreenshot })
+        /* @__PURE__ */ jsx82("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
+        /* @__PURE__ */ jsx82("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx82(ExpandableShot, { host: host2 || pageHost(pageUrl), src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs78("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx82("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx82(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
+          pageUrl ? /* @__PURE__ */ jsx82("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx82("span", { className: "truncate", children: host2 }) : null,
+          /* @__PURE__ */ jsx82("span", { children: copy.noScreenshot })
         ] }) }),
-        /* @__PURE__ */ jsxs77("div", { className: "mt-1 flex items-center gap-1", children: [
-          /* @__PURE__ */ jsx81(
+        /* @__PURE__ */ jsxs78("div", { className: "mt-1 flex items-center gap-1", children: [
+          /* @__PURE__ */ jsx82(
             sdk_compat_exports.Button,
             {
               "aria-label": copy.previous,
@@ -35252,11 +35780,11 @@ function BrowserSteps({ group }) {
               onClick: () => move(-1),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "chevron-left" })
+              children: /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "chevron-left" })
             }
           ),
-          /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
-          /* @__PURE__ */ jsx81(
+          /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
+          /* @__PURE__ */ jsx82(
             sdk_compat_exports.Button,
             {
               "aria-label": copy.next,
@@ -35264,14 +35792,14 @@ function BrowserSteps({ group }) {
               onClick: () => move(1),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "chevron-right" })
+              children: /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "chevron-right" })
             }
           ),
-          pageUrl ? /* @__PURE__ */ jsx81(OpenPageButton, { url: pageUrl }) : null
+          pageUrl ? /* @__PURE__ */ jsx82(OpenPageButton, { url: pageUrl }) : null
         ] }),
-        /* @__PURE__ */ jsx81("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
+        /* @__PURE__ */ jsx82("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
           const rowHost = stepHost(card);
-          return /* @__PURE__ */ jsx81("li", { children: /* @__PURE__ */ jsxs77(
+          return /* @__PURE__ */ jsx82("li", { children: /* @__PURE__ */ jsxs78(
             "button",
             {
               "aria-current": index === selected ? "true" : void 0,
@@ -35282,14 +35810,14 @@ function BrowserSteps({ group }) {
               onClick: () => setManual(index),
               type: "button",
               children: [
-                /* @__PURE__ */ jsx81("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
-                /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
-                rowHost ? /* @__PURE__ */ jsx81("span", { className: "shrink-0 truncate", children: rowHost }) : null
+                /* @__PURE__ */ jsx82("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
+                /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
+                rowHost ? /* @__PURE__ */ jsx82("span", { className: "shrink-0 truncate", children: rowHost }) : null
               ]
             }
           ) }, card.id);
         }) }),
-        /* @__PURE__ */ jsx81("div", { className: "mt-2", children: /* @__PURE__ */ jsx81(CardBlock, { card: step, showStatus: false }) })
+        /* @__PURE__ */ jsx82("div", { className: "mt-2", children: /* @__PURE__ */ jsx82(CardBlock, { card: step, showStatus: false }) })
       ]
     }
   );
@@ -35300,13 +35828,13 @@ function ToolCardDetails({
   open
 }) {
   const multi = group.cards.length > 1;
-  return /* @__PURE__ */ jsx81("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx81("div", { children: /* @__PURE__ */ jsx81("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx81(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx81(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
+  return /* @__PURE__ */ jsx82("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx82("div", { children: /* @__PURE__ */ jsx82("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx82(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx82(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
 }
 function TypingDots() {
-  return /* @__PURE__ */ jsxs77("span", { "aria-hidden": "true", className: "hbp-tc-typing inline-flex shrink-0 items-center gap-0.5", "data-typing": "", children: [
-    /* @__PURE__ */ jsx81("span", { className: "size-1 rounded-full bg-current" }),
-    /* @__PURE__ */ jsx81("span", { className: "size-1 rounded-full bg-current" }),
-    /* @__PURE__ */ jsx81("span", { className: "size-1 rounded-full bg-current" })
+  return /* @__PURE__ */ jsxs78("span", { "aria-hidden": "true", className: "hbp-tc-typing inline-flex shrink-0 items-center gap-0.5", "data-typing": "", children: [
+    /* @__PURE__ */ jsx82("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx82("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx82("span", { className: "size-1 rounded-full bg-current" })
   ] });
 }
 function isLiveState(state) {
@@ -35331,24 +35859,24 @@ function toggleOnClick(toggle) {
 function LiveStatus({ copy, group }) {
   const status = group.cards[group.cards.length - 1].status;
   if (group.state === "running") {
-    return /* @__PURE__ */ jsxs77(Fragment19, { children: [
-      /* @__PURE__ */ jsx81("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
-      /* @__PURE__ */ jsx81(TypingDots, {})
+    return /* @__PURE__ */ jsxs78(Fragment19, { children: [
+      /* @__PURE__ */ jsx82("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
+      /* @__PURE__ */ jsx82(TypingDots, {})
     ] });
   }
   if (group.state === "approval") {
-    return /* @__PURE__ */ jsx81("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
+    return /* @__PURE__ */ jsx82("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
   }
-  return /* @__PURE__ */ jsx81("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
+  return /* @__PURE__ */ jsx82("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
 }
 function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
   const last = group.cards[group.cards.length - 1];
   const site = group.thumb?.kind === "site" ? group.thumb : null;
   const shot = group.thumb?.kind === "screenshot" ? group.thumb.src : null;
   const pageUrl = stepPageUrl(group.cards);
-  return /* @__PURE__ */ jsxs77(Fragment19, { children: [
-    /* @__PURE__ */ jsxs77("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-3 hbp-tc-rc", children: [
-      /* @__PURE__ */ jsxs77(
+  return /* @__PURE__ */ jsxs78(Fragment19, { children: [
+    /* @__PURE__ */ jsxs78("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-3 hbp-tc-rc", children: [
+      /* @__PURE__ */ jsxs78(
         "span",
         {
           className: (0, sdk_compat_exports.cn)(
@@ -35358,27 +35886,27 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
             group.state === "approval" && "hbp-bg-warn-10 text-warning"
           ),
           children: [
-            /* @__PURE__ */ jsx81(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
-            actor ? /* @__PURE__ */ jsx81("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
+            /* @__PURE__ */ jsx82(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
+            actor ? /* @__PURE__ */ jsx82("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
           ]
         }
       ),
-      /* @__PURE__ */ jsxs77("span", { className: "flex min-w-0 flex-1 flex-col", children: [
-        /* @__PURE__ */ jsxs77("span", { className: "truncate text-ui-sm font-semibold text-fg", children: [
+      /* @__PURE__ */ jsxs78("span", { className: "flex min-w-0 flex-1 flex-col", children: [
+        /* @__PURE__ */ jsxs78("span", { className: "truncate text-ui-sm font-semibold text-fg", children: [
           group.name,
-          group.cards.length > 1 ? /* @__PURE__ */ jsxs77("span", { className: "font-normal hbp-tc-subtle tabular-nums", children: [
+          group.cards.length > 1 ? /* @__PURE__ */ jsxs78("span", { className: "font-normal hbp-tc-subtle tabular-nums", children: [
             " \xB7 ",
             group.cards.length
           ] }) : null
         ] }),
-        /* @__PURE__ */ jsxs77("span", { className: "flex min-w-0 items-center gap-1.5 truncate text-ui-xs", children: [
-          site ? /* @__PURE__ */ jsx81(SiteFavicon, { host: site.host, url: site.url }) : null,
-          /* @__PURE__ */ jsx81(LiveStatus, { copy, group })
+        /* @__PURE__ */ jsxs78("span", { className: "flex min-w-0 items-center gap-1.5 truncate text-ui-xs", children: [
+          site ? /* @__PURE__ */ jsx82(SiteFavicon, { host: site.host, url: site.url }) : null,
+          /* @__PURE__ */ jsx82(LiveStatus, { copy, group })
         ] }),
-        group.state === "error" && last.reason ? /* @__PURE__ */ jsx81("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
+        group.state === "error" && last.reason ? /* @__PURE__ */ jsx82("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
       ] })
     ] }),
-    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx81(
+    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx82(
       sdk_compat_exports.Button,
       {
         onClick: (event) => {
@@ -35390,8 +35918,8 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
         children: copy.reviewApproval
       }
     ) : null,
-    shot && group.family !== "browser" ? /* @__PURE__ */ jsx81(ScreenshotThumb, { src: shot }) : null,
-    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx81(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
+    shot && group.family !== "browser" ? /* @__PURE__ */ jsx82(ScreenshotThumb, { src: shot }) : null,
+    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx82(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
   ] });
 }
 function QuietCardBody({ copy, group, toggle }) {
@@ -35399,15 +35927,15 @@ function QuietCardBody({ copy, group, toggle }) {
   const header = group.cards.length > 1 ? copy.usedTimes(group.name, group.cards.length) : last.status;
   const site = group.thumb?.kind === "site" ? group.thumb : null;
   const pageUrl = stepPageUrl(group.cards);
-  return /* @__PURE__ */ jsxs77(Fragment19, { children: [
-    /* @__PURE__ */ jsxs77("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-2 hbp-tc-rr", children: [
-      /* @__PURE__ */ jsx81(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
-      /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
-      /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 truncate", children: header }),
-      site ? /* @__PURE__ */ jsx81(SiteFavicon, { host: site.host, url: site.url }) : null,
-      last.durationLabel ? /* @__PURE__ */ jsx81("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
+  return /* @__PURE__ */ jsxs78(Fragment19, { children: [
+    /* @__PURE__ */ jsxs78("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-2 hbp-tc-rr", children: [
+      /* @__PURE__ */ jsx82(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
+      /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
+      /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 truncate", children: header }),
+      site ? /* @__PURE__ */ jsx82(SiteFavicon, { host: site.host, url: site.url }) : null,
+      last.durationLabel ? /* @__PURE__ */ jsx82("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
     ] }),
-    pageUrl ? /* @__PURE__ */ jsx81(
+    pageUrl ? /* @__PURE__ */ jsx82(
       OpenPageButton,
       {
         className: "hbp-tc-reveal",
@@ -35433,13 +35961,13 @@ function ToolCard({
   onReviewApproval
 }) {
   const copy = useToolCardsText();
-  const [open, setOpen] = useState52(false);
-  const [everOpened, setEverOpened] = useState52(false);
-  const [mountedLive] = useState52(() => isLiveState(group.state));
+  const [open, setOpen] = useState53(false);
+  const [everOpened, setEverOpened] = useState53(false);
+  const [mountedLive] = useState53(() => isLiveState(group.state));
   const live = isLiveState(group.state);
   const frameOpen = group.family === "browser" && live && !open;
-  const [frameMounted, setFrameMounted] = useState52(frameOpen);
-  useEffect33(() => {
+  const [frameMounted, setFrameMounted] = useState53(frameOpen);
+  useEffect34(() => {
     if (frameOpen) {
       setFrameMounted(true);
       return;
@@ -35462,8 +35990,8 @@ function ToolCard({
     role: "button",
     tabIndex: 0
   };
-  return /* @__PURE__ */ jsxs77("div", { "data-tool-card": group.state, "data-tool-card-key": group.key, role: "listitem", children: [
-    /* @__PURE__ */ jsx81(
+  return /* @__PURE__ */ jsxs78("div", { "data-tool-card": group.state, "data-tool-card-key": group.key, role: "listitem", children: [
+    /* @__PURE__ */ jsx82(
       "div",
       {
         className: (0, sdk_compat_exports.cn)(
@@ -35472,11 +36000,11 @@ function ToolCard({
           live ? "flex min-h-14 items-center gap-3 rounded-card border border-line bg-surface-raised px-3 py-2.5 text-left" : "hbp-tc-row flex min-h-7 items-center gap-2 hbp-tc-rr border border-transparent px-1.5 text-left text-ui-xs hbp-tc-muted hbp-tc-hover"
         ),
         onClick: toggleOnClick(toggle),
-        children: live ? /* @__PURE__ */ jsx81(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx81(QuietCardBody, { copy, group, toggle: toggleProps })
+        children: live ? /* @__PURE__ */ jsx82(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx82(QuietCardBody, { copy, group, toggle: toggleProps })
       }
     ),
-    frameMounted ? /* @__PURE__ */ jsx81(LiveFrame, { group, open: frameOpen }) : null,
-    everOpened ? /* @__PURE__ */ jsx81(ToolCardDetails, { group, live, open }) : null
+    frameMounted ? /* @__PURE__ */ jsx82(LiveFrame, { group, open: frameOpen }) : null,
+    everOpened ? /* @__PURE__ */ jsx82(ToolCardDetails, { group, live, open }) : null
   ] });
 }
 function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
@@ -35484,14 +36012,14 @@ function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
   if (groups.length === 0) {
     return null;
   }
-  return /* @__PURE__ */ jsx81(
+  return /* @__PURE__ */ jsx82(
     "div",
     {
       "aria-label": copy.activityLabel,
       className: (0, sdk_compat_exports.cn)("flex min-w-0 max-w-full flex-col gap-1.5", className),
       "data-slot": "tool-activity-stack",
       role: "list",
-      children: groups.map((group) => /* @__PURE__ */ jsx81(ToolCard, { actor, group, onReviewApproval }, group.key))
+      children: groups.map((group) => /* @__PURE__ */ jsx82(ToolCard, { actor, group, onReviewApproval }, group.key))
     }
   );
 }
@@ -35513,20 +36041,20 @@ function ToolRunCards({
   sessionId,
   storedSessionId
 }) {
-  const freshGroups = useMemo12(() => toolCardsFromParts(parts, { approvalCallId }), [parts, approvalCallId]);
-  const cacheRef = useRef21({ groups: [], signature: "" });
-  const signature = useMemo12(() => groupsSignature(freshGroups), [freshGroups]);
+  const freshGroups = useMemo13(() => toolCardsFromParts(parts, { approvalCallId }), [parts, approvalCallId]);
+  const cacheRef = useRef22({ groups: [], signature: "" });
+  const signature = useMemo13(() => groupsSignature(freshGroups), [freshGroups]);
   if (cacheRef.current.signature !== signature || cacheRef.current.groups.length !== freshGroups.length) {
     cacheRef.current = { groups: freshGroups, signature };
   }
-  const session = useMemo12(() => ({ runtimeId: sessionId, storedId: storedSessionId }), [sessionId, storedSessionId]);
-  return /* @__PURE__ */ jsx81(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx81(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
+  const session = useMemo13(() => ({ runtimeId: sessionId, storedId: storedSessionId }), [sessionId, storedSessionId]);
+  return /* @__PURE__ */ jsx82(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx82(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
 }
 
 // src/plugin.tsx
-import { Fragment as Fragment20, jsx as jsx82 } from "react/jsx-runtime";
+import { Fragment as Fragment20, jsx as jsx83 } from "react/jsx-runtime";
 function RailTabTitle() {
-  return /* @__PURE__ */ jsx82(Fragment20, { children: useBots().rail.title });
+  return /* @__PURE__ */ jsx83(Fragment20, { children: useBots().rail.title });
 }
 var plugin_default = {
   id: "hermes-bots-plus",
@@ -35537,6 +36065,7 @@ var plugin_default = {
     setPluginCtx(ctx);
     const unmountStyles = mountPluginStyles(css_default);
     const unmountReactionPills = mountReactionPillStyles();
+    const unmountSidePages = mountSidePagesStyles();
     loadBotSections();
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES);
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES);
@@ -35544,6 +36073,7 @@ var plugin_default = {
     const disposeContextPanelLocales = ctx.i18n.register(CONTEXT_PANEL_LOCALES);
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES);
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES);
+    const disposeSidePagesLocales = ctx.i18n.register(SIDE_PAGES_LOCALES);
     const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES);
     const disposeToolCardsLocales = ctx.i18n.register(TOOL_CARDS_LOCALES);
     setToolCardsTranslator(ctx.i18n.t);
@@ -35554,6 +36084,8 @@ var plugin_default = {
     if (typeof ctx.onDispose === "function") {
       ctx.onDispose(unmountStyles);
       ctx.onDispose(unmountReactionPills);
+      ctx.onDispose(unmountSidePages);
+      ctx.onDispose(disposeSidePagesLocales);
       ctx.onDispose(disposeLocales);
       ctx.onDispose(disposeTeamLocales);
       ctx.onDispose(disposeLiveViewLocales);
@@ -35760,17 +36292,17 @@ var plugin_default = {
     ctx.register({
       id: "screen-portal",
       area: sdk_compat_exports.SIDEBAR_PROFILE_GROUP_HEADER_AREA,
-      data: { render: (route) => /* @__PURE__ */ jsx82(ProfileGroupScreenPortal, { route }) }
+      data: { render: (route) => /* @__PURE__ */ jsx83(ProfileGroupScreenPortal, { route }) }
     });
     ctx.register({
       id: "agents-section",
       area: SIDEBAR_LIST_TOP_AREA,
-      data: { render: () => /* @__PURE__ */ jsx82(AgentsSection, {}), searchable: true }
+      data: { render: () => /* @__PURE__ */ jsx83(AgentsSection, {}), searchable: true }
     });
     ctx.register({
       id: "bot-header-identity",
       area: CHAT_HEADER_AREAS.title,
-      data: { render: (props) => /* @__PURE__ */ jsx82(BotHeaderIdentity, { ...props }) }
+      data: { render: (props) => /* @__PURE__ */ jsx83(BotHeaderIdentity, { ...props }) }
     });
     ctx.register({
       id: "pane",
@@ -35805,7 +36337,7 @@ var plugin_default = {
         width: "260px",
         collapsible: true,
         hideOnly: true,
-        tabTitle: () => /* @__PURE__ */ jsx82(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
+        tabTitle: () => /* @__PURE__ */ jsx83(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
         tabTitleText: () => (0, sdk_compat_exports.translateNow)("common.bots"),
         dock: {
           pane: "sessions",
@@ -35813,7 +36345,7 @@ var plugin_default = {
           enforce: true
         }
       },
-      render: () => /* @__PURE__ */ jsx82(BotsPane, {})
+      render: () => /* @__PURE__ */ jsx83(BotsPane, {})
     });
     const registerRoutinesPane = (restoreDismissed) => {
       const dispose = ctx.register({
@@ -35825,7 +36357,7 @@ var plugin_default = {
         // not `useI18n`: a pane title is read at registration, outside React.
         title: botsText().rail.title,
         data: {
-          tabTitle: () => /* @__PURE__ */ jsx82(RailTabTitle, {}),
+          tabTitle: () => /* @__PURE__ */ jsx83(RailTabTitle, {}),
           tabTitleText: () => botsText().rail.title,
           placement: "main",
           // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
@@ -35840,7 +36372,7 @@ var plugin_default = {
           defaultCollapsed: true,
           width: "320px"
         },
-        render: () => /* @__PURE__ */ jsx82(MissionRail, {})
+        render: () => /* @__PURE__ */ jsx83(MissionRail, {})
       });
       if (restoreDismissed && typeof host.undismissPane === "function") {
         host.undismissPane(paneId2("routines"));
@@ -35951,42 +36483,47 @@ var plugin_default = {
       id: "bot-tool-cards",
       area: sdk_compat_exports.TOOL_RUN_RENDERER_AREA,
       data: {
-        render: (props) => /* @__PURE__ */ jsx82(ToolRunCards, { ...props })
+        render: (props) => /* @__PURE__ */ jsx83(ToolRunCards, { ...props })
       }
     });
     ctx.register({
       id: "chat-empty",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx82(BotChatEmpty, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx83(BotChatEmpty, { sessionId })
       }
     });
     ctx.register({
       id: "chat-empty-tips",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx82(BotChatTips, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx83(BotChatTips, { sessionId })
       }
     });
     ctx.register({
       id: "bot-chat-mark",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx82(BotChatMark, {})
+      render: () => /* @__PURE__ */ jsx83(BotChatMark, {})
+    });
+    ctx.register({
+      id: "side-pages-chip",
+      area: sdk_compat_exports.COMPOSER_AREAS.top,
+      render: () => /* @__PURE__ */ jsx83(SidePagesChip, {})
     });
     ctx.register({
       id: "bot-inbound-cards",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx82(BotInboundCards, {})
+      render: () => /* @__PURE__ */ jsx83(BotInboundCards, {})
     });
     ctx.register({
       id: "bot-context-nudge",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx82(BotContextNudge, {})
+      render: () => /* @__PURE__ */ jsx83(BotContextNudge, {})
     });
     ctx.register({
       id: "bot-delegate-hint",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx82(BotDelegateHint, {})
+      render: () => /* @__PURE__ */ jsx83(BotDelegateHint, {})
     });
     ctx.register({
       id: "new-agent",
@@ -36025,7 +36562,7 @@ var plugin_default = {
             label: displayName(bot, botRosterMeta(bot, meta)),
             keywords: ["bot", "agent", "chat", bot.name, botHandle(bot.name, bot)].filter(Boolean),
             detail: () => bot.remoteSource ? "remote" : "local",
-            icon: (props) => /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "robot", ...props }),
+            icon: (props) => /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "robot", ...props }),
             run: () => void openRosterBot(bot)
           }));
         }
@@ -36049,21 +36586,29 @@ var plugin_default = {
       area: sdk_compat_exports.TRANSCRIPT_DIRECTIVE_AREA,
       data: {
         name: BOT_PLAN_DIRECTIVE,
-        render: (props) => /* @__PURE__ */ jsx82(BotPlanCard, { ...props })
+        render: (props) => /* @__PURE__ */ jsx83(BotPlanCard, { ...props })
+      }
+    });
+    ctx.register({
+      id: "botpage-directive",
+      area: sdk_compat_exports.TRANSCRIPT_DIRECTIVE_AREA,
+      data: {
+        name: SIDE_PAGE_DIRECTIVE,
+        render: (props) => /* @__PURE__ */ jsx83(SidePageCard, { ...props })
       }
     });
     ctx.register({
       id: "bot-plan-checklist",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx82(BotPlanChecklist, {})
+      render: () => /* @__PURE__ */ jsx83(BotPlanChecklist, {})
     });
     ctx.register({
       id: "mention-middleware",
       area: sdk_compat_exports.COMPOSER_AREAS.middleware,
       data: {
         handler: async (draft) => {
-          const text2 = draft.text || "";
-          const slashNew = /^\/(new|reset)\s*$/.exec(text2.trim());
+          const text3 = draft.text || "";
+          const slashNew = /^\/(new|reset)\s*$/.exec(text3.trim());
           if (slashNew) {
             const activeBot = $selectedBot.get();
             const roster2 = $lastRoster.get();
@@ -36080,7 +36625,7 @@ var plugin_default = {
               };
             }
           }
-          if (!/(^|\s)@[a-z0-9][a-z0-9_-]*/i.test(text2)) {
+          if (!/(^|\s)@[a-z0-9][a-z0-9_-]*/i.test(text3)) {
             return draft;
           }
           const live = {
@@ -36093,13 +36638,13 @@ var plugin_default = {
             cached = cachedUnionRoster();
           }
           const roster = Array.isArray(cached?.profiles) ? cached.profiles : null;
-          let mentionedBots = roster ? resolveRosterMentions(text2, roster, live) : [];
+          let mentionedBots = roster ? resolveRosterMentions(text3, roster, live) : [];
           if (!roster) {
             try {
               const res = await host.request("profiles.list", {
                 include_sessions: false
               });
-              mentionedBots = resolveRosterMentions(text2, res?.profiles ?? [], live).map((bot) => ({
+              mentionedBots = resolveRosterMentions(text3, res?.profiles ?? [], live).map((bot) => ({
                 ...bot,
                 remoteSource: false
               }));
@@ -36122,7 +36667,7 @@ var plugin_default = {
           const note = "\n\n[@mentions resolved from the Bot Mode roster \u2014 the user is referring to: " + lines.join("; ") + ". If they want one of these agents contacted, compose your own message and send it with your message_agent tool (agents on other connected machines are reachable too \u2014 the Desktop relays it); never forward the user\u2019s text verbatim. If this session has no message_agent tool, agent messaging is unavailable here \u2014 say so.]";
           return {
             ...draft,
-            text: text2 + note
+            text: text3 + note
           };
         }
       }
@@ -36150,7 +36695,7 @@ var plugin_default = {
       ctx.register({
         id: "instant-ack",
         area: sdk_compat_exports.COMPOSER_AREAS.top,
-        render: () => /* @__PURE__ */ jsx82(InstantAckLine, {})
+        render: () => /* @__PURE__ */ jsx83(InstantAckLine, {})
       });
     }
     for (const contribution of [
@@ -36158,7 +36703,7 @@ var plugin_default = {
         id: "team-page",
         area: sdk_compat_exports.ROUTES_AREA,
         data: { path: "/team" },
-        render: () => /* @__PURE__ */ jsx82(TeamPage, {})
+        render: () => /* @__PURE__ */ jsx83(TeamPage, {})
       },
       {
         id: "team-nav",
