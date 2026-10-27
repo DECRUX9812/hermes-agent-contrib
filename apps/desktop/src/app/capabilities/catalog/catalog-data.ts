@@ -77,8 +77,15 @@ function webUrl(value: unknown): string | null {
 
 /** Display form of a source or category id: domains stay verbatim (`browse.sh`),
  *  slugs read as words (`software-development` → `Software Development`). */
+// Slug words that read as acronyms, so 'autonomous-ai-agents' is not "Autonomous Ai Agents".
+const LABEL_ACRONYMS: Record<string, string> = { ai: 'AI', api: 'API', aws: 'AWS', llm: 'LLM', mcp: 'MCP', ui: 'UI' }
+
 export const catalogLabel = (value: string) =>
-  value.includes('.') ? value : value.replace(/[-_]+/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
+  value.includes('.')
+    ? value
+    : value
+        .replace(/[-_]+/g, ' ')
+        .replace(/\b\w+/g, word => LABEL_ACRONYMS[word.toLowerCase()] ?? word[0].toUpperCase() + word.slice(1))
 
 const isoDate = (value: unknown) => (Number.isFinite(Date.parse(text(value))) ? text(value) : undefined)
 
