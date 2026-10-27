@@ -5,7 +5,7 @@ import { useSessionView } from '@/app/chat/session-view'
 import { ChatEmptySlot } from '@/components/assistant-ui/chat-empty-slot'
 import { AssistantMessage } from '@/components/assistant-ui/thread/assistant-message'
 import { ThreadMessageList } from '@/components/assistant-ui/thread/list'
-import { BackgroundResumeNotice, CenteredThreadSpinner } from '@/components/assistant-ui/thread/status'
+import { BackgroundResumeNotice } from '@/components/assistant-ui/thread/status'
 import { SystemMessage } from '@/components/assistant-ui/thread/system-message'
 import { ThreadTimeline } from '@/components/assistant-ui/thread/timeline'
 import { useTranscriptWindow } from '@/components/assistant-ui/thread/transcript-window'
@@ -13,9 +13,11 @@ import { type RestoreMessageTarget } from '@/components/assistant-ui/thread/type
 import { UserEditComposer } from '@/components/assistant-ui/thread/user-edit-composer'
 import { UserMessage } from '@/components/assistant-ui/thread/user-message'
 import { Intro, type IntroProps } from '@/components/chat/intro'
+import { ThreadSkeleton } from '@/components/chat/skeletons'
 import { $workspaceMode } from '@/components/pane-shell/workspace-scope'
 import { ConfirmDialog } from '@/components/ui/confirm-dialog'
 import type { HermesGateway } from '@/hermes'
+import { useDelayedTrue } from '@/hooks/use-delayed-true'
 import { useI18n } from '@/i18n'
 import { $webappSignedOut } from '@/store/boot'
 import { $introSplash } from '@/store/intro-splash'
@@ -206,6 +208,10 @@ export const Thread = memo(function Thread({
   // always correct.
   const loadingIndicator = useMemo(() => <BackgroundResumeNotice />, [])
 
+  // Anti-flash: a cached resume can finish inside a frame or two, and a
+  // skeleton that appears for 60ms reads as a glitch, not as progress.
+  const sessionSkeleton = useDelayedTrue(loading === 'session', 150)
+
   return (
     <ThreadEditContext.Provider value={editContext}>
       <div
@@ -224,7 +230,7 @@ export const Thread = memo(function Thread({
               sessionKey={sessionKey}
               sessionLoading={loading === 'session'}
             />
-            {loading === 'session' && <CenteredThreadSpinner />}
+            {sessionSkeleton && <ThreadSkeleton />}
             <ThreadTimeline />
           </>
         )}

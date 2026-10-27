@@ -26,7 +26,7 @@ import { probeStoredSession, resolveStoredSession } from '@/app/session/hooks/us
 import { ModelMenuPanel } from '@/app/shell/model-menu-panel'
 import { ReasoningMenuPanel } from '@/app/shell/reasoning-menu-panel'
 import { formatRefValue } from '@/components/assistant-ui/directive-text'
-import { CenteredThreadSpinner } from '@/components/assistant-ui/thread/status'
+import { ThreadSkeleton } from '@/components/chat/skeletons'
 import { findGroupOfPane } from '@/components/pane-shell/tree/model'
 import { $layoutTree, closeTreePane, moveTreePane, setTreeGroupTabStrip } from '@/components/pane-shell/tree/store'
 import {
@@ -587,7 +587,7 @@ export function SessionTilePane({ storedSessionId }: { storedSessionId: string }
     // loading === 'session' branch) — one loading language everywhere.
     return (
       <div className="relative h-full">
-        <CenteredThreadSpinner />
+        <ThreadSkeleton />
       </div>
     )
   }

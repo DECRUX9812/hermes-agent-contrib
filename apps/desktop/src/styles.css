@@ -1792,6 +1792,15 @@ body.guest-pointer-lock :is(webview, iframe) {
   --chrome-text-switcher: 0.71875rem;
 }
 
+/* A skeleton's pulse is pure decoration — with reduced motion the shape still
+   does the job, so drop the animation rather than the placeholder. */
+@media (prefers-reduced-motion: reduce) {
+  [data-slot='skeleton'],
+  [data-slot='count-skeleton'] {
+    animation: none;
+  }
+}
+
 /* The tab rail: a hair darker than the surfaces around it, so the selected
    tab's card (and a hovered one) reads as a raised object instead of a
    differently-tinted rectangle. Themes can still pin --pane-tab-strip-bg. */
