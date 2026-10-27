@@ -57,6 +57,9 @@ export interface ToolCardView {
   startedAt?: number
   /** ms epoch. */
   completedAt?: number
+  /** The call asked for the user's own signed-in browser (`local: true`),
+   *  which never draws on the bot's desktop. */
+  realProfile?: boolean
 }
 
 /** Consecutive calls of one tool, shown as one card. */
@@ -591,6 +594,10 @@ export function toolCardView(part: ToolPart, options: { approvalPending?: boolea
 
   if (state === 'error') {
     card.reason = toolCardReason(part, view) ?? t('failed')
+  }
+
+  if (family === 'browser' && (part.args as { local?: unknown } | undefined)?.local === true) {
+    card.realProfile = true
   }
 
   card.thumb = toolCardThumb(family, view, part.result, pageUrl)

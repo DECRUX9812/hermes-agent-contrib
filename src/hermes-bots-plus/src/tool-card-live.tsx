@@ -12,8 +12,9 @@
 import { cn, Codicon, Favicon, hostPathLabel, openPreview, useMediaImage, useValue } from '@hermes/plugin-sdk'
 import { type JSX, useContext, useEffect, useRef, useState } from 'react'
 
-import { botForChat } from './chat-empty'
-import { $botMeta, $lastRoster, botRosterKey } from './data'
+import { useBrowserBackend } from './browser-backend'
+import { useCardBot } from './card-bot'
+import { $botMeta, botRosterKey } from './data'
 import { useLiveViewText } from './live-view-i18n'
 import { botRosterMeta } from './routing'
 import { useScreenPortalState } from './screen-portal'
@@ -344,14 +345,6 @@ function ScreenLayer({ bot }: { bot: RosterRow }): JSX.Element | null {
   )
 }
 
-/** The Bot Chat this card sits in, when it is one. */
-function useCardBot(): null | RosterRow {
-  const session = useContext(PreviewSessionContext)
-  const roster = useValue($lastRoster)
-
-  return session.storedId || session.runtimeId ? botForChat(roster, session.storedId ?? '') : null
-}
-
 /** The live frame under a running browser card. Mounted open when the run is
  *  live and folds shut (same grid-row collapse as the details panel) when it
  *  settles or when the details panel takes over. */
@@ -362,6 +355,10 @@ export function LiveFrame({ group, open }: { group: ToolCardGroup; open: boolean
   const host = safeHost(shot ? (group.cards[shot.index]?.thumb?.url ?? pageUrl) : pageUrl)
   const running = group.state === 'running'
   const bot = useCardBot()
+  // The bot's screen shows only a browser that draws on it: never a cloud or
+  // CDP session, a headless one, or the user's own real-profile browser.
+  const onDesktop = useBrowserBackend(running ? bot : null) === 'desktop'
+  const realProfile = group.cards.some(card => card.realProfile)
 
   return (
     <div className="hbp-tc-collapse" data-live-frame="" data-open={open} inert={!open}>
@@ -385,7 +382,7 @@ export function LiveFrame({ group, open }: { group: ToolCardGroup; open: boolean
                 <span>{text.waiting}</span>
               </div>
             )}
-            {bot && running && open ? <ScreenLayer bot={bot} /> : null}
+            {bot && running && open && onDesktop && !realProfile ? <ScreenLayer bot={bot} /> : null}
             {running ? (
               <span className="pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 text-ui-2xs hbp-lv-badge">
                 <span aria-hidden className="hbp-lv-dot size-1.5 rounded-full" />
