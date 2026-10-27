@@ -8,14 +8,16 @@
  *  - `SidePageCard` claims `::botpage{path="…"}` so a reply can point at a
  *    page with a card that opens it.
  *
- * Self-contained: one fixed-position panel (lifted out of the composer dock), its own style element, design tokens only — it
+ * Self-contained: one fixed-position panel rendered through a React portal
+ * into a body-level layer, its own style element, design tokens only — it
  * does not borrow the core preview rail.
  */
 
 import * as sdk from '@hermes/plugin-sdk'
 import { atom, Codicon, cn, host, useSessionView, useValue } from '@hermes/plugin-sdk'
 import type { TranscriptDirectiveProps } from '@hermes/plugin-sdk'
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import type { ReactNode } from 'react'
 
 import { canonicalBotChatOnScreen, canonicalBotRowOnScreen } from './bot-plan-card'
 import { $lastRoster } from './data'
@@ -139,6 +141,7 @@ export function SidePagesChip() {
   const copy = useSidePagesText()
   const { canonical, pages, storedId } = useBotChatPages(true)
   const panel = useValue($sidePanel)
+  const layer = usePortalLayer(canonical && pages.length > 0)
 
   if (!canonical || !pages.length) {
     return null
@@ -160,9 +163,7 @@ export function SidePagesChip() {
         <Codicon name="layout-sidebar-right" size="0.8rem" />
         <span>{copy.chip(pages.length)}</span>
       </button>
-      <span className="hbp-sp-anchor">
-        <SidePagesPanel activeId={mine ? panel.activeId : null} open={open} pages={pages} />
-      </span>
+      {layer && rootPortal(<SidePagesPanel activeId={mine ? panel.activeId : null} open={open} pages={pages} />, layer)}
     </div>
   )
 }
@@ -237,71 +238,45 @@ function PageView({ page }: { page: SidePage }) {
 }
 
 /**
- * The composer dock sits in a portal inside the chat pane's isolated stacking
- * context, which hides a `position: fixed` panel behind the transcript. The
- * plugin build has no react-dom portal, so while mounted the panel's node is
- * re-parented onto the app root and put back before React removes it.
- * React does not dispatch synthetic events for a portal subtree's node that
- * has left its portal container, so the panel's own controls are wired with
- * one native delegated listener (`data-sp-act`) instead of `onClick`.
+ * The composer dock sits inside the chat pane's isolated stacking context,
+ * which hides a `position: fixed` panel behind the transcript, so the panel is
+ * rendered through a React portal into its own body-level layer. The plugin
+ * runtime exposes no react-dom, so the portal element is built by hand: React
+ * reconciles any `{$$typeof: react.portal}` child as a HostPortal and attaches
+ * its event listeners to the container, so `onClick` and every React control
+ * inside a page (code-block copy buttons, …) keep working.
  */
-function useLiftToAppRoot(ref: { current: HTMLElement | null }): void {
-  useLayoutEffect(() => {
-    const node = ref.current
-    const home = node?.parentElement
+const PORTAL_TYPE = Symbol.for('react.portal')
 
-    if (!node || !home) {
-      return
-    }
-
-    let root: HTMLElement = home
-
-    while (root.parentElement && root.parentElement !== document.body) {
-      root = root.parentElement
-    }
-
-    if (root === home) {
-      return
-    }
-
-    root.appendChild(node)
-
-    return () => {
-      home.appendChild(node)
-    }
-  }, [ref])
+function rootPortal(children: ReactNode, container: HTMLElement): ReactNode {
+  return { $$typeof: PORTAL_TYPE, children, containerInfo: container, implementation: null, key: null } as unknown as ReactNode
 }
 
-function usePanelActions(ref: { current: HTMLElement | null }, act: (action: string, id: string) => void): void {
-  const latest = useRef(act)
-  latest.current = act
+function usePortalLayer(enabled: boolean): HTMLElement | null {
+  const [layer, setLayer] = useState<HTMLElement | null>(null)
 
   useEffect(() => {
-    const node = ref.current
-
-    if (!node) {
+    if (!enabled || typeof document === 'undefined') {
       return
     }
 
-    const onClick = (event: MouseEvent) => {
-      const button = (event.target as Element | null)?.closest?.('[data-sp-act]')
+    const node = document.createElement('div')
+    node.className = 'hbp-sp-layer'
+    document.body.appendChild(node)
+    setLayer(node)
 
-      if (button && node.contains(button) && !(button as HTMLButtonElement).disabled) {
-        latest.current(button.getAttribute('data-sp-act') ?? '', button.getAttribute('data-sp-id') ?? '')
-      }
+    return () => {
+      setLayer(null)
+      node.remove()
     }
+  }, [enabled])
 
-    node.addEventListener('click', onClick)
-
-    return () => node.removeEventListener('click', onClick)
-  }, [ref])
+  return layer
 }
 
 export function SidePagesPanel({ activeId, open, pages }: { activeId: null | string; open: boolean; pages: SidePage[] }) {
   const copy = useSidePagesText()
   const [copied, setCopied] = useState(false)
-  const panelRef = useRef<HTMLElement>(null)
-  useLiftToAppRoot(panelRef)
   const active = pages.find(page => page.id === activeId) ?? pages[pages.length - 1] ?? null
 
   useEffect(() => {
@@ -331,38 +306,31 @@ export function SidePagesPanel({ activeId, open, pages }: { activeId: null | str
     }
   }
 
-  usePanelActions(panelRef, (action, id) => {
-    if (action === 'copy') {
-      void copyPage()
-    } else if (action === 'download') {
-      active && downloadPage(active)
-    } else if (action === 'close') {
-      closeSidePages()
-    } else if (action === 'select') {
-      openSidePage($sidePanel.get().sessionKey, id)
-    }
-  })
-
   return (
     <aside
       aria-hidden={!open}
       aria-label={copy.panelLabel}
       className="hbp-sp-panel"
       data-open={open || undefined}
-      ref={panelRef}
     >
       <header className="hbp-sp-head">
         <span className="hbp-sp-head-title">{active?.title ?? copy.listLabel}</span>
         {active && <span className="hbp-sp-badge">{copy.kind[active.kind]}</span>}
         <span className="hbp-sp-spacer" />
-        <button className="hbp-sp-act" data-sp-act="copy" disabled={!active} title={copy.copy} type="button">
+        <button
+          className="hbp-sp-act"
+          disabled={!active}
+          onClick={() => void copyPage()}
+          title={copy.copy}
+          type="button"
+        >
           <Codicon name={copied ? 'check' : 'copy'} size="0.85rem" />
           <span>{copied ? copy.copied : copy.copy}</span>
         </button>
         <button
           className="hbp-sp-act"
-          data-sp-act="download"
           disabled={!active}
+          onClick={() => active && downloadPage(active)}
           title={copy.download}
           type="button"
         >
@@ -372,7 +340,7 @@ export function SidePagesPanel({ activeId, open, pages }: { activeId: null | str
         <button
           aria-label={copy.close}
           className="hbp-sp-act hbp-sp-icon"
-          data-sp-act="close"
+          onClick={closeSidePages}
           title={copy.close}
           type="button"
         >
@@ -385,9 +353,8 @@ export function SidePagesPanel({ activeId, open, pages }: { activeId: null | str
             <button
               aria-current={page.id === active?.id || undefined}
               className={cn('hbp-sp-item')}
-              data-sp-act="select"
-              data-sp-id={page.id}
               key={page.id}
+              onClick={() => openSidePage($sidePanel.get().sessionKey, page.id)}
               title={page.path}
               type="button"
             >
@@ -416,7 +383,6 @@ export function sidePagesStyleSheet(): string {
 
   return [
     `.hbp-sp-chip-row{display:flex;justify-content:flex-end;}`,
-    `.hbp-sp-anchor{display:contents;}`,
     `.hbp-sp-chip{display:inline-flex;align-items:center;gap:0.375rem;height:1.5rem;padding:0 0.625rem;border-radius:999px;`,
     `font-size:0.75rem;color:var(--ui-text-secondary);background:var(--ui-bg-quaternary);box-shadow:inset 0 0 0 1px var(--ui-stroke-tertiary);`,
     `transition:background-color ${fast} ${standard},color ${fast} ${standard},box-shadow ${fast} ${standard};}`,
@@ -459,7 +425,7 @@ export function sidePagesStyleSheet(): string {
     `.hbp-sp-item-text{display:flex;flex-direction:column;min-width:0;}`,
     `.hbp-sp-item-title{font-size:0.78125rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`,
     `.hbp-sp-item-meta{font-size:0.6875rem;color:var(--ui-text-tertiary);}`,
-    `.hbp-sp-view{flex:1;min-width:0;overflow:auto;background:var(--ui-bg-primary,transparent);}`,
+    `.hbp-sp-view{flex:1;min-width:0;overflow:auto;background:var(--ui-surface-background);}`,
     `.hbp-sp-frame{display:block;width:100%;height:100%;}`,
     `.hbp-sp-doc{padding:1rem 1.25rem;font-size:0.875rem;}`,
     `.hbp-sp-doc pre,pre.hbp-sp-doc{white-space:pre-wrap;}`

@@ -34561,7 +34561,7 @@ function installReactionsDefault(win = typeof window === "undefined" ? void 0 : 
 // src/side-pages.tsx
 init_sdk_compat();
 init_sdk_compat();
-import { useEffect as useEffect29, useLayoutEffect as useLayoutEffect2, useMemo as useMemo12, useRef as useRef19, useState as useState48 } from "react";
+import { useEffect as useEffect29, useMemo as useMemo12, useRef as useRef19, useState as useState48 } from "react";
 init_data();
 init_routing();
 
@@ -34798,6 +34798,7 @@ function SidePagesChip() {
   const copy = useSidePagesText();
   const { canonical, pages, storedId } = useBotChatPages(true);
   const panel = (0, sdk_compat_exports.useValue)($sidePanel);
+  const layer = usePortalLayer(canonical && pages.length > 0);
   if (!canonical || !pages.length) {
     return null;
   }
@@ -34819,7 +34820,7 @@ function SidePagesChip() {
         ]
       }
     ),
-    /* @__PURE__ */ jsx79("span", { className: "hbp-sp-anchor", children: /* @__PURE__ */ jsx79(SidePagesPanel, { activeId: mine ? panel.activeId : null, open, pages }) })
+    layer && rootPortal(/* @__PURE__ */ jsx79(SidePagesPanel, { activeId: mine ? panel.activeId : null, open, pages }), layer)
   ] });
 }
 function SidePageCard({ attrs, streaming }) {
@@ -34866,49 +34867,30 @@ function PageView({ page }) {
   const Frame = sdk_compat_exports.SandboxedFrame;
   return Frame ? /* @__PURE__ */ jsx79(Frame, { className: "hbp-sp-frame", src: pageFrameSrc(page), title: page.title }, page.id + page.content.length) : /* @__PURE__ */ jsx79("pre", { className: "hbp-sp-doc", children: page.content });
 }
-function useLiftToAppRoot(ref) {
-  useLayoutEffect2(() => {
-    const node = ref.current;
-    const home = node?.parentElement;
-    if (!node || !home) {
-      return;
-    }
-    let root = home;
-    while (root.parentElement && root.parentElement !== document.body) {
-      root = root.parentElement;
-    }
-    if (root === home) {
-      return;
-    }
-    root.appendChild(node);
-    return () => {
-      home.appendChild(node);
-    };
-  }, [ref]);
+var PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal");
+function rootPortal(children, container) {
+  return { $$typeof: PORTAL_TYPE, children, containerInfo: container, implementation: null, key: null };
 }
-function usePanelActions(ref, act) {
-  const latest = useRef19(act);
-  latest.current = act;
+function usePortalLayer(enabled) {
+  const [layer, setLayer] = useState48(null);
   useEffect29(() => {
-    const node = ref.current;
-    if (!node) {
+    if (!enabled || typeof document === "undefined") {
       return;
     }
-    const onClick = (event) => {
-      const button = event.target?.closest?.("[data-sp-act]");
-      if (button && node.contains(button) && !button.disabled) {
-        latest.current(button.getAttribute("data-sp-act") ?? "", button.getAttribute("data-sp-id") ?? "");
-      }
+    const node = document.createElement("div");
+    node.className = "hbp-sp-layer";
+    document.body.appendChild(node);
+    setLayer(node);
+    return () => {
+      setLayer(null);
+      node.remove();
     };
-    node.addEventListener("click", onClick);
-    return () => node.removeEventListener("click", onClick);
-  }, [ref]);
+  }, [enabled]);
+  return layer;
 }
 function SidePagesPanel({ activeId, open, pages }) {
   const copy = useSidePagesText();
   const [copied, setCopied] = useState48(false);
-  const panelRef = useRef19(null);
-  useLiftToAppRoot(panelRef);
   const active = pages.find((page) => page.id === activeId) ?? pages[pages.length - 1] ?? null;
   useEffect29(() => {
     if (!open) {
@@ -34931,17 +34913,6 @@ function SidePagesPanel({ activeId, open, pages }) {
       setCopied(false);
     }
   };
-  usePanelActions(panelRef, (action, id) => {
-    if (action === "copy") {
-      void copyPage();
-    } else if (action === "download") {
-      active && downloadPage(active);
-    } else if (action === "close") {
-      closeSidePages();
-    } else if (action === "select") {
-      openSidePage($sidePanel.get().sessionKey, id);
-    }
-  });
   return /* @__PURE__ */ jsxs76(
     "aside",
     {
@@ -34949,22 +34920,31 @@ function SidePagesPanel({ activeId, open, pages }) {
       "aria-label": copy.panelLabel,
       className: "hbp-sp-panel",
       "data-open": open || void 0,
-      ref: panelRef,
       children: [
         /* @__PURE__ */ jsxs76("header", { className: "hbp-sp-head", children: [
           /* @__PURE__ */ jsx79("span", { className: "hbp-sp-head-title", children: active?.title ?? copy.listLabel }),
           active && /* @__PURE__ */ jsx79("span", { className: "hbp-sp-badge", children: copy.kind[active.kind] }),
           /* @__PURE__ */ jsx79("span", { className: "hbp-sp-spacer" }),
-          /* @__PURE__ */ jsxs76("button", { className: "hbp-sp-act", "data-sp-act": "copy", disabled: !active, title: copy.copy, type: "button", children: [
-            /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: copied ? "check" : "copy", size: "0.85rem" }),
-            /* @__PURE__ */ jsx79("span", { children: copied ? copy.copied : copy.copy })
-          ] }),
           /* @__PURE__ */ jsxs76(
             "button",
             {
               className: "hbp-sp-act",
-              "data-sp-act": "download",
               disabled: !active,
+              onClick: () => void copyPage(),
+              title: copy.copy,
+              type: "button",
+              children: [
+                /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: copied ? "check" : "copy", size: "0.85rem" }),
+                /* @__PURE__ */ jsx79("span", { children: copied ? copy.copied : copy.copy })
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxs76(
+            "button",
+            {
+              className: "hbp-sp-act",
+              disabled: !active,
+              onClick: () => active && downloadPage(active),
               title: copy.download,
               type: "button",
               children: [
@@ -34978,7 +34958,7 @@ function SidePagesPanel({ activeId, open, pages }) {
             {
               "aria-label": copy.close,
               className: "hbp-sp-act hbp-sp-icon",
-              "data-sp-act": "close",
+              onClick: closeSidePages,
               title: copy.close,
               type: "button",
               children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "close", size: "0.85rem" })
@@ -34991,8 +34971,7 @@ function SidePagesPanel({ activeId, open, pages }) {
             {
               "aria-current": page.id === active?.id || void 0,
               className: (0, sdk_compat_exports.cn)("hbp-sp-item"),
-              "data-sp-act": "select",
-              "data-sp-id": page.id,
+              onClick: () => openSidePage($sidePanel.get().sessionKey, page.id),
               title: page.path,
               type: "button",
               children: [
@@ -35019,7 +34998,6 @@ function sidePagesStyleSheet() {
   const standard = "cubic-bezier(0.2,0,0,1)";
   return [
     `.hbp-sp-chip-row{display:flex;justify-content:flex-end;}`,
-    `.hbp-sp-anchor{display:contents;}`,
     `.hbp-sp-chip{display:inline-flex;align-items:center;gap:0.375rem;height:1.5rem;padding:0 0.625rem;border-radius:999px;`,
     `font-size:0.75rem;color:var(--ui-text-secondary);background:var(--ui-bg-quaternary);box-shadow:inset 0 0 0 1px var(--ui-stroke-tertiary);`,
     `transition:background-color ${fast} ${standard},color ${fast} ${standard},box-shadow ${fast} ${standard};}`,
@@ -35060,7 +35038,7 @@ function sidePagesStyleSheet() {
     `.hbp-sp-item-text{display:flex;flex-direction:column;min-width:0;}`,
     `.hbp-sp-item-title{font-size:0.78125rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}`,
     `.hbp-sp-item-meta{font-size:0.6875rem;color:var(--ui-text-tertiary);}`,
-    `.hbp-sp-view{flex:1;min-width:0;overflow:auto;background:var(--ui-bg-primary,transparent);}`,
+    `.hbp-sp-view{flex:1;min-width:0;overflow:auto;background:var(--ui-surface-background);}`,
     `.hbp-sp-frame{display:block;width:100%;height:100%;}`,
     `.hbp-sp-doc{padding:1rem 1.25rem;font-size:0.875rem;}`,
     `.hbp-sp-doc pre,pre.hbp-sp-doc{white-space:pre-wrap;}`
