@@ -403,12 +403,32 @@ const OPEN_MS = 2500
 const CLOSED_MS = 10_000
 const DOWN_MAX_MS = 60_000
 
-function useOffice(open) {
+// A 404 is not a blip: this gateway has no Pixel Pets backend at all. Note it
+// once and stop every background poll for the session (the Pets page can still
+// check again by hand), so a missing backend stays silent instead of 404-ing
+// on a timer.
+let officeMissing = false
+const isMissing = e => !!e && (e.status === 404 || /\b404\b|not found/i.test(String((e && e.message) || e)))
+
+async function fetchOffice() {
+  try {
+    const state = await ctxRest('/state', { method: 'GET' })
+    officeMissing = false
+    return state
+  } catch (e) {
+    if (isMissing(e)) officeMissing = true
+    throw e
+  }
+}
+
+function useOffice(open, page = false) {
   return useQuery({
     queryKey: [ID, 'state'],
-    queryFn: async () => ctxRest('/state', { method: 'GET' }),
+    queryFn: fetchOffice,
+    enabled: page || !officeMissing,
     retry: false,
     refetchInterval: query => {
+      if (officeMissing) return false
       const fails = query.state.fetchFailureCount || 0
       if (query.state.status === 'error' && fails > 0) {
         return Math.min(DOWN_MAX_MS, CLOSED_MS * 2 ** (fails - 1))
@@ -481,7 +501,7 @@ function waitingCount(data) {
 
 function PetsPage() {
   const [chatProfile, setChatProfile] = useState(null)
-  const { data, isError, isPending } = useOffice(true)
+  const { data, isError, isPending, refetch, isFetching } = useOffice(true, true)
 
   return jsxs('div', {
     className: 'flex h-full min-h-0 w-full flex-col overflow-y-auto',
@@ -494,7 +514,19 @@ function PetsPage() {
               className: 'flex flex-col gap-1 py-10 text-center',
               children: [
                 jsx('span', { className: 'text-sm font-semibold text-(--ui-text-primary)', children: '🐾 Pixel Pets' }),
-                jsx('span', { className: 'text-xs text-(--ui-text-tertiary)', children: 'The Pixel Pets backend is not running, so there are no pets to show right now.' })
+                jsx('span', {
+                  className: 'text-xs text-(--ui-text-tertiary)',
+                  children: officeMissing
+                    ? 'Pixel Pets is not installed on this Hermes backend, so there are no pets to show.'
+                    : 'The Pixel Pets backend is not running, so there are no pets to show right now.'
+                }),
+                jsx('button', {
+                  type: 'button',
+                  disabled: isFetching,
+                  onClick: () => void refetch(),
+                  className: 'mx-auto mt-2 rounded-md border border-(--ui-stroke-secondary) px-3 py-1 text-xs text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) disabled:opacity-50',
+                  children: isFetching ? 'Checking…' : 'Check again'
+                })
               ]
             })
           : isPending
@@ -665,7 +697,7 @@ export default {
     let fails = 0
     let stopped = false
     const tick = async () => {
-      if (stopped) return
+      if (stopped || officeMissing) return
       if (document.visibilityState !== 'hidden') {
         try {
           const next = waitingCount(await ctxRest('/state', { method: 'GET' }))
@@ -675,11 +707,13 @@ export default {
             disposeNav()
             disposeNav = registerNav()
           }
-        } catch {
+        } catch (e) {
+          // No backend at all: stop for this session rather than 404 every few minutes.
+          if (isMissing(e)) officeMissing = true
           fails += 1
         }
       }
-      if (!stopped) timer = setTimeout(tick, fails ? Math.min(ATTN_DOWN_MAX_MS, ATTN_MS * 2 ** fails) : ATTN_MS)
+      if (!stopped && !officeMissing) timer = setTimeout(tick, fails ? Math.min(ATTN_DOWN_MAX_MS, ATTN_MS * 2 ** fails) : ATTN_MS)
     }
     timer = setTimeout(tick, 1500)
     ctx.onDispose(() => {
