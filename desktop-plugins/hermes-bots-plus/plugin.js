@@ -23666,7 +23666,7 @@ function BotDeliverablesSection({ owner }) {
       {
         "aria-label": file.path,
         className: (0, sdk_compat_exports.cn)(
-          "flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors",
+          "hbp-enter flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors",
           "hover:bg-(--chrome-action-hover)"
         ),
         onClick: () => openLive(file),
@@ -27188,7 +27188,7 @@ function BotHero2({
           "p",
           {
             className: (0, sdk_compat_exports.cn)(
-              "mt-1 flex max-w-full items-start gap-1.5 text-xs leading-relaxed",
+              "hbp-enter mt-1 flex max-w-full items-start gap-1.5 text-xs leading-relaxed",
               tone === "waiting" ? "hbp-fg-warn" : "text-(--ui-text-tertiary)"
             ),
             "data-testid": "rail-live-line",
@@ -27206,7 +27206,8 @@ function BotHero2({
               ),
               /* @__PURE__ */ jsx56("span", { className: "min-w-0 wrap-anywhere", children: now ?? botLiveStatusLabel(live, b.roster) })
             ]
-          }
+          },
+          tone
         ),
         /* @__PURE__ */ jsx56("p", { className: "mt-1 max-w-full truncate text-xs text-(--ui-text-tertiary)", children: [subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : ""].filter(Boolean).join(" \xB7 ") })
       ] })
@@ -27242,7 +27243,7 @@ function ApprovalsPanel({ bot, name }) {
   const listed = sessionId ? items.filter((item) => item.sessionId === sessionId) : [];
   const mine = listed.length || !gate ? listed : [gate];
   return /* @__PURE__ */ jsxs54("div", { className: "grid gap-3 px-3 pb-3 pt-1", children: [
-    mine.length ? /* @__PURE__ */ jsx56("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs54("li", { className: "flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2", children: [
+    mine.length ? /* @__PURE__ */ jsx56("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs54("li", { className: "hbp-enter flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2", children: [
       /* @__PURE__ */ jsx56(
         sdk_compat_exports.Codicon,
         {
@@ -27371,7 +27372,7 @@ function MissionRail() {
       "div",
       {
         "aria-labelledby": `rail-tab-${tab}`,
-        className: "mt-3 min-h-0",
+        className: "hbp-enter mt-3 min-h-0",
         "data-testid": `rail-panel:${tab}`,
         id: `rail-panel-${tab}`,
         role: "tabpanel",
@@ -27466,7 +27467,8 @@ function MissionRail() {
             /* @__PURE__ */ jsx56("div", { className: "border-t border-(--ui-stroke-secondary)", children: /* @__PURE__ */ jsx56(BotDeliverablesSection, { owner }) })
           ] }) : null
         ]
-      }
+      },
+      tab
     ),
     /* @__PURE__ */ jsx56(
       RoutineDetailDialog,
@@ -32786,6 +32788,11 @@ function toneStyleSheet() {
       );
     }
   }
+  rules.push(
+    "@keyframes hbp-enter{from{opacity:0;transform:translateY(2px)}}",
+    ".hbp-enter{animation:hbp-enter 160ms ease-out both}",
+    "@media (prefers-reduced-motion: reduce){.hbp-enter{animation:none}}"
+  );
   return `@layer utilities{${rules.join("")}}`;
 }
 var STYLE_ID = "hermes-bots-plus-styles";

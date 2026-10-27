@@ -38,6 +38,15 @@ export function toneStyleSheet(): string {
     }
   }
 
+  // One quiet entrance for content that appears on its own (tab panels, the
+  // live line changing state, a new approval or delivered file). Short, a
+  // 2px rise, and off entirely for reduced motion.
+  rules.push(
+    '@keyframes hbp-enter{from{opacity:0;transform:translateY(2px)}}',
+    '.hbp-enter{animation:hbp-enter 160ms ease-out both}',
+    '@media (prefers-reduced-motion: reduce){.hbp-enter{animation:none}}'
+  )
+
   return `@layer utilities{${rules.join('')}}`
 }
 

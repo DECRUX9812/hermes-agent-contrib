@@ -220,7 +220,7 @@ export function BotDeliverablesSection({ owner }: { owner: RosterRow }) {
               <RowButton
                 aria-label={file.path}
                 className={cn(
-                  'flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors',
+                  'hbp-enter flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors',
                   'hover:bg-(--chrome-action-hover)'
                 )}
                 onClick={() => openLive(file)}
