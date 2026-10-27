@@ -265,6 +265,7 @@ export const ruOverrides = {
       'view.toggleSimpleMode': 'Переключить простой режим',
       'view.showFiles': 'Показать браузер файлов',
       'view.showBrowser': 'Переключить браузер',
+      'view.floatBrowser': 'Сделать браузер плавающим',
       'view.toggleHud': 'Включить / выключить режим HUD',
       'hud.snapToPointer': 'Переместить HUD под курсор (глобально, пока HUD открыт)',
       'view.showTerminal': 'Показать / скрыть терминал',
@@ -3346,6 +3347,15 @@ export const ruOverrides = {
     openPreview: 'Открыть предпросмотр',
     openInBrowser: 'Открыть в браузере',
     linkHint: '⌘/Ctrl-клик — открыть в браузере',
+    float: {
+      dock: 'Закрепить браузер',
+      dockLeft: 'Закрепить слева',
+      dockRight: 'Закрепить справа',
+      float: 'Поверх приложения',
+      label: 'Плавающий браузер',
+      minimize: 'Свернуть (Esc)',
+      restore: 'Показать плавающий браузер'
+    },
     sourceLineTitle: 'Клик — выбрать · Shift-клик — расширить · перетащите в композер',
     source: 'ИСТОЧНИК',
     renderedPreview: 'ПРЕДПРОСМОТР',

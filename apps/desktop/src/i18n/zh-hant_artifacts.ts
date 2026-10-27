@@ -73,6 +73,15 @@ export const zhHantArtifacts = {
     popIn: '彈回',
     popOut: '彈出',
     linkHint: '⌘/Ctrl+點擊在瀏覽器開啟',
+    float: {
+      dock: '停靠瀏覽器',
+      dockLeft: '停靠到左側',
+      dockRight: '停靠到右側',
+      float: '懸浮在應用程式上方',
+      label: '懸浮瀏覽器',
+      minimize: '最小化 (Esc)',
+      restore: '顯示懸浮瀏覽器'
+    },
     sourceLineTitle: '點擊選取 · shift 點擊擴展 · 拖曳至輸入框',
     source: '原始碼',
     renderedPreview: '預覽',
