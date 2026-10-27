@@ -38,30 +38,30 @@ export interface TunnelChange {
 const TUNNEL_START_TIMEOUT_MS = 35 * 60_000
 
 export function getGithubStatus(): Promise<GithubStatus> {
-  return hermesApi<GithubStatus>({ ...profileScoped(), path: '/api/setup/github' })
+  return hermesApi<GithubStatus>({ ...profileScoped(), path: '/api/plugins/hermes-connect/github' })
 }
 
 export function startGithubLogin(): Promise<GithubLogin> {
-  return hermesApi<GithubLogin>({ ...profileScoped(), method: 'POST', path: '/api/setup/github/login' })
+  return hermesApi<GithubLogin>({ ...profileScoped(), method: 'POST', path: '/api/plugins/hermes-connect/github/login' })
 }
 
 export function cancelGithubLogin(): Promise<{ ok: boolean }> {
-  return hermesApi<{ ok: boolean }>({ ...profileScoped(), method: 'DELETE', path: '/api/setup/github/login' })
+  return hermesApi<{ ok: boolean }>({ ...profileScoped(), method: 'DELETE', path: '/api/plugins/hermes-connect/github/login' })
 }
 
 export function getTunnelStatus(): Promise<TunnelStatus> {
-  return hermesApi<TunnelStatus>({ ...profileScoped(), path: '/api/setup/tunnel' })
+  return hermesApi<TunnelStatus>({ ...profileScoped(), path: '/api/plugins/hermes-connect/tunnel' })
 }
 
 export function startTunnel(): Promise<TunnelChange> {
   return hermesApi<TunnelChange>({
     ...profileScoped(),
     method: 'POST',
-    path: '/api/setup/tunnel/start',
+    path: '/api/plugins/hermes-connect/tunnel/start',
     timeoutMs: TUNNEL_START_TIMEOUT_MS
   })
 }
 
 export function stopTunnel(): Promise<TunnelChange> {
-  return hermesApi<TunnelChange>({ ...profileScoped(), method: 'POST', path: '/api/setup/tunnel/stop' })
+  return hermesApi<TunnelChange>({ ...profileScoped(), method: 'POST', path: '/api/plugins/hermes-connect/tunnel/stop' })
 }
