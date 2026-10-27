@@ -8,7 +8,7 @@ import type { ToolCardsCopy } from '@/i18n/types_tool_cards'
 import { cn } from '@/lib/utils'
 
 import { ToolCardDetails } from './tool-card-details'
-import { ScreenshotThumb, SiteFavicon } from './tool-card-thumb'
+import { OpenPageButton, ScreenshotThumb, SiteFavicon, stepPageUrl } from './tool-card-thumb'
 import type { ToolCardGroup } from './types'
 
 function TypingDots() {
@@ -76,6 +76,7 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }: CardBody
   const last = group.cards[group.cards.length - 1]
   const site = group.thumb?.kind === 'site' ? group.thumb : null
   const shot = group.thumb?.kind === 'screenshot' ? group.thumb.src : null
+  const pageUrl = stepPageUrl(group.cards)
 
   return (
     <>
@@ -124,6 +125,7 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }: CardBody
         </Button>
       ) : null}
       {shot ? <ScreenshotThumb src={shot} /> : null}
+      {pageUrl && group.state !== 'approval' ? <OpenPageButton iconOnly url={pageUrl} /> : null}
     </>
   )
 }
@@ -132,17 +134,27 @@ function QuietCardBody({ copy, group, toggle }: Pick<CardBodyProps, 'copy' | 'gr
   const last = group.cards[group.cards.length - 1]
   const header = group.cards.length > 1 ? copy.usedTimes(group.name, group.cards.length) : last.status
   const site = group.thumb?.kind === 'site' ? group.thumb : null
+  const pageUrl = stepPageUrl(group.cards)
 
   return (
-    <span {...toggle} className="focus-ring flex min-w-0 flex-1 items-center gap-2 rounded-row">
-      <ToolIcon className="shrink-0 text-fg-subtle" name={group.icon} size={14} />
-      <Codicon className="shrink-0 text-success" name="check" size={12} />
-      <span className="min-w-0 flex-1 truncate">{header}</span>
-      {site ? <SiteFavicon host={site.host} url={site.url} /> : null}
-      {last.durationLabel ? (
-        <span className="shrink-0 text-ui-2xs text-fg-subtle tabular-nums">{last.durationLabel}</span>
+    <>
+      <span {...toggle} className="focus-ring flex min-w-0 flex-1 items-center gap-2 rounded-row">
+        <ToolIcon className="shrink-0 text-fg-subtle" name={group.icon} size={14} />
+        <Codicon className="shrink-0 text-success" name="check" size={12} />
+        <span className="min-w-0 flex-1 truncate">{header}</span>
+        {site ? <SiteFavicon host={site.host} url={site.url} /> : null}
+        {last.durationLabel ? (
+          <span className="shrink-0 text-ui-2xs text-fg-subtle tabular-nums">{last.durationLabel}</span>
+        ) : null}
+      </span>
+      {pageUrl ? (
+        <OpenPageButton
+          className="opacity-0 transition-opacity duration-(--dur-fast) group-hover/tool-row:opacity-100 focus-visible:opacity-100"
+          iconOnly
+          url={pageUrl}
+        />
       ) : null}
-    </span>
+    </>
   )
 }
 
@@ -208,7 +220,7 @@ export function ToolCard({
           mountedLive && 'motion-arrive',
           live
             ? 'flex min-h-14 items-center gap-3 rounded-card border border-line bg-surface-raised px-3 py-2.5 text-left shadow-e1'
-            : 'flex min-h-7 items-center gap-2 rounded-row border border-transparent px-1.5 text-left text-ui-xs text-fg-muted hover:bg-hover'
+            : 'group/tool-row flex min-h-7 items-center gap-2 rounded-row border border-transparent px-1.5 text-left text-ui-xs text-fg-muted hover:bg-hover'
         )}
         onClick={toggleOnClick(toggle)}
       >
