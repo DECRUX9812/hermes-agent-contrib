@@ -236,6 +236,12 @@ const PAPER_CSS = `
   background-image: none;
 }
 
+/* One red (consistency M4): the palette's destructive is the only error colour,
+   so the stock --ui-red (status dots, inline errors, plugin banners) follows it. */
+:root[data-hermes-theme='paper'] {
+  --ui-red: var(--dt-destructive);
+}
+
 /* Loaders and catalog cards (consistency M2, M3): skeletons pulse on the warm
    muted tone instead of the soft indigo accent, and skill and plugin cards sit
    on the paper card colour. Cards mix 22% of the theme's card colour with a cool
@@ -352,6 +358,12 @@ const OVERRIDES = `
 :is(.rounded-\[8px\], .rounded-\[9px\], .rounded-\[0\.625rem\]) > .arc-border {
   --arc-radius: var(--radius-card);
 }
+/* Failed-turn banner (consistency M4): its text and Retry action mixed the error red two ways (78% and 80%);
+   both read the one danger ink token now. */
+[class*='var(--dt-destructive)_78%'],
+.aui-error-action {
+  color: var(--color-danger-ink);
+}
 /* Framed editors (audit m3): CodeMirror's default dotted focus outline read as a dashed box; the frame carries focus. */
 div.cm-editor.cm-focused { outline: none; }
 .rounded-md:has(> div > .cm-editor.cm-focused) { border-color: var(--color-ring); }
@@ -394,7 +406,8 @@ const TOKENS = `
   --color-selected: var(--ui-row-active-background);
   --color-success: var(--ui-green);
   --color-warning: var(--ui-yellow);
-  --color-danger: var(--ui-red);
+  --color-danger: var(--dt-destructive);
+  --color-danger-ink: color-mix(in srgb, var(--dt-destructive) 80%, var(--ui-text-secondary));
   --color-info: var(--ui-blue);
   --ds-focus-ring: 0 0 0 2px var(--ui-chat-surface-background), 0 0 0 4px color-mix(in srgb, var(--ui-accent) 55%, transparent);
 }
