@@ -9,6 +9,15 @@ export const STATUSBAR_AREAS = { left: 'statusBar.left', right: 'statusBar.right
  *  runs once per registration, not once per route. Page-owned controls that
  *  should exist only while a page is up go to `WORKSPACE_PAGE_HEADER_AREA`. */
 export const TITLEBAR_AREAS = { center: 'titleBar.center', left: 'titleBar.left', right: 'titleBar.right' } as const
+/** Draw a Bot Chat's plain tool activity runs (reads, commands, browser
+ *  steps) in place of core's rows. Core picks the calls; you draw them. */
+export {
+  isPlainToolActivity,
+  TOOL_RUN_RENDERER_AREA,
+  type ToolRunPart,
+  type ToolRunRendererContribution,
+  type ToolRunRendererProps
+} from '@/components/assistant-ui/tool/fallback'
 /** Per-card labels on Kanban tiles: register a `KANBAN_CARD_AREAS.badges`
  *  data contribution whose `decorate({ id, status, tenant, assignee },
  *  { tenants })` returns `{ label, tone?, tooltip? }` (or a few, or `null`). Core paints
