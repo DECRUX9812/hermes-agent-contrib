@@ -689,6 +689,18 @@ export default {
       let restoreDismissedOnRegister = true
 
       const syncRoutinesPane = () => {
+        // The pane-visibility listener can miss the first Bots-tab entry, so
+        // reconcile the cached flag from the atom before deciding.
+        const sidebarNow = Boolean($sidebarVisible.get())
+
+        if ($botsPaneVisible.get() !== sidebarNow) {
+          $botsPaneVisible.set(sidebarNow)
+
+          if (sidebarNow) {
+            restoreDismissedOnRegister = true
+          }
+        }
+
         if (botChatOwnsWorkspace()) {
           if (!unregisterRoutines) {
             unregisterRoutines = registerRoutinesPane(restoreDismissedOnRegister)

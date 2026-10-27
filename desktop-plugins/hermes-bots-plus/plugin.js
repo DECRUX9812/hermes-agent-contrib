@@ -35284,6 +35284,13 @@ var plugin_default = {
       let unregisterRoutines = null;
       let restoreDismissedOnRegister = true;
       const syncRoutinesPane = () => {
+        const sidebarNow = Boolean($sidebarVisible.get());
+        if ($botsPaneVisible.get() !== sidebarNow) {
+          $botsPaneVisible.set(sidebarNow);
+          if (sidebarNow) {
+            restoreDismissedOnRegister = true;
+          }
+        }
         if (botChatOwnsWorkspace()) {
           if (!unregisterRoutines) {
             unregisterRoutines = registerRoutinesPane(restoreDismissedOnRegister);
