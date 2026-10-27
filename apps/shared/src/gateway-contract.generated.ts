@@ -1495,38 +1495,6 @@ export interface DisplayLeaseReleaseParams {
   viewer_id?: string | null
   force?: boolean | null
 }
-export interface ForkApprovalsListParams {
-  session_id: string
-  profile?: string | null
-}
-export interface ForkApprovalsListResult {
-  approvals: ForkApproval[]
-}
-export interface ForkApproval {
-  request_id: string
-  tool_call_id: string
-  tool_name: string
-  command: string
-  description: string
-  created_at: number
-  status: ForkApprovalStatus
-  decided_at?: number | null
-  choice?: ApprovalChoice | null
-  ran_at?: number | null
-  reason?: string | null
-}
-export type ForkApprovalStatus = 'pending' | 'allowed' | 'denied' | 'expired' | 'withdrawn'
-export type ApprovalChoice = 'once' | 'session' | 'always' | 'deny'
-export interface ForkApprovalsDecideParams {
-  session_id: string
-  request_id: string
-  choice: ApprovalChoice
-  profile?: string | null
-}
-export interface ForkApprovalsDecideResult {
-  approval: ForkApproval
-  resolved: boolean
-}
 export interface GroupsCapabilitiesParams {
   profile?: string | null
 }
@@ -1754,6 +1722,7 @@ export interface GroupsApproveParams {
   choice: ApprovalChoice
   request_id: string
 }
+export type ApprovalChoice = 'once' | 'session' | 'always' | 'deny'
 /** ``result`` is the local ``approval.respond`` answer or the peer's run-action receipt. */
 export interface GroupsApproveResult {
   approved?: boolean
@@ -6158,10 +6127,6 @@ export interface RpcMethods {
   'display.thumbnail': { params: ProfileParams; result: DisplayThumbnailResult }
   /** Stage a non-image file into the session workspace and hand back its @file: ref. */
   'file.attach': { params: FileAttachParams; result: FileAttachResult }
-  /** Answer one pending approval. Idempotent: a request already decided resolves nothing and returns its recorded row. */
-  'fork.approvals.decide': { params: ForkApprovalsDecideParams; result: ForkApprovalsDecideResult }
-  /** Journal rows for one stored session, oldest to newest (at most 50). */
-  'fork.approvals.list': { params: ForkApprovalsListParams; result: ForkApprovalsListResult }
   /** Mark the one-time availability notice as shown on the free-tier identity. */
   'free_tier.ack_notice': { params: ProfileParams; result: FreeTierAckNoticeResult }
   /** Report a browser window outcome for the matching pending attempt; mint remains authoritative. */
@@ -6620,8 +6585,6 @@ export const RPC_METHODS = [
   'display.switchSandboxImage',
   'display.thumbnail',
   'file.attach',
-  'fork.approvals.decide',
-  'fork.approvals.list',
   'free_tier.ack_notice',
   'free_tier.challenge_result',
   'free_tier.claim_nudge',
