@@ -59,8 +59,44 @@ const INJECTED_FONT_URLS = new Set<string>()
 const resolveMode = (mode: ThemeMode, systemDark = matchesQuery('(prefers-color-scheme: dark)')): 'light' | 'dark' =>
   mode === 'system' ? (systemDark ? 'dark' : 'light') : mode
 
+// Plugin and backend skins register after first paint. The last one painted is replayed from storage until
+// the registry resolves it, so a contributed default (Warm Paper) never flashes the stock palette first.
+const BOOT_SKIN_KEY = 'hermes-boot-skin'
+
+const bootSkin = (name: string): DesktopTheme | undefined => {
+  try {
+    const seed = JSON.parse(window.localStorage.getItem(BOOT_SKIN_KEY) ?? 'null') as DesktopTheme | null
+
+    return seed?.name === name && seed.colors ? seed : undefined
+  } catch {
+    return undefined
+  }
+}
+
+const seedOf = (name: string): DesktopTheme | undefined => {
+  const seed = resolveTheme(name)
+
+  if (!seed) {
+    return typeof window === 'undefined' ? undefined : bootSkin(name)
+  }
+
+  if (typeof window !== 'undefined' && !BUILTIN_THEME_LIST.includes(seed)) {
+    try {
+      const json = JSON.stringify(seed)
+
+      if (window.localStorage.getItem(BOOT_SKIN_KEY) !== json) {
+        window.localStorage.setItem(BOOT_SKIN_KEY, json)
+      }
+    } catch {
+      // Storage unavailable: the plugin skin just paints once it registers.
+    }
+  }
+
+  return seed
+}
+
 const normalizeSkin = (name: string | null): string =>
-  name && resolveTheme(name) && !RETIRED_SKINS.has(name) ? name : DEFAULT_SKIN_NAME
+  name && seedOf(name) && !RETIRED_SKINS.has(name) ? name : DEFAULT_SKIN_NAME
 
 /**
  * A stored mode, or `system` when there isn't one.
@@ -139,7 +175,7 @@ const storedSkin = (profile: string): string =>
 
 /** The live profile's committed theme: what the ThemeProvider paints without a preview. */
 export const committedTheme = (): DesktopTheme =>
-  resolveTheme(normalizeSkin(storedSkin(normalizeProfileKey($activeGatewayProfile.get())))) ?? nousTheme
+  seedOf(normalizeSkin(storedSkin(normalizeProfileKey($activeGatewayProfile.get())))) ?? nousTheme
 
 /** Everything a peer window could change that this one has to repaint for. */
 const APPEARANCE_KEYS = new Set([SKIN_KEY, PROFILE_SKINS_KEY, MODE_KEY, PROFILE_MODES_KEY])
@@ -188,7 +224,7 @@ function synthLightColors(seed: DesktopTheme): DesktopThemeColors {
 
 /** Returns the seed palette for a given skin + mode (no overrides applied). */
 export function getBaseColors(skinName: string, mode: 'light' | 'dark'): DesktopThemeColors {
-  return paletteFor(resolveTheme(skinName) ?? nousTheme, mode)
+  return paletteFor(seedOf(skinName) ?? nousTheme, mode)
 }
 
 function paletteFor(seed: DesktopTheme, mode: 'light' | 'dark'): DesktopThemeColors {
@@ -217,7 +253,7 @@ function deriveFrom(seed: DesktopTheme, mode: 'light' | 'dark'): DesktopTheme {
 }
 
 const deriveTheme = (skinName: string, mode: 'light' | 'dark'): DesktopTheme =>
-  deriveFrom({ ...(resolveTheme(skinName) ?? nousTheme), name: skinName }, mode)
+  deriveFrom({ ...(seedOf(skinName) ?? nousTheme), name: skinName }, mode)
 
 /** The theme a saved accent was retinted from; any other theme is its own base. */
 export const accentBase = (theme: DesktopTheme): DesktopTheme =>
