@@ -3,7 +3,7 @@
 // refusals it can mean so the card and toast read like a classified turn:
 // plain words up front, raw text demoted to the detail line, and Retry gone
 // where retrying reproduces the failure.
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { $notifications } from '@/store/notifications'
 import { requestDesktopOnboarding } from '@/store/onboarding'
@@ -24,6 +24,7 @@ function errorContext(message: string, code?: string) {
 
   const ctx: GatewayEventContext = {
     deps: {
+      activeSessionIdRef: { current: null as null | string },
       compactedTurnRef: { current: new Set<string>() },
       failAssistantMessage,
       flushQueuedDeltas: vi.fn(),
@@ -45,7 +46,12 @@ function errorContext(message: string, code?: string) {
   return { ctx, failAssistantMessage }
 }
 
+beforeEach(() => {
+  vi.useFakeTimers()
+})
+
 afterEach(() => {
+  vi.useRealTimers()
   $notifications.set([])
   vi.mocked(requestDesktopOnboarding).mockClear()
 })
@@ -68,6 +74,7 @@ describe('gateway `error` event → error card + toast', () => {
     const { ctx } = errorContext(OWNED_REFUSAL)
 
     handleStatusEvent(ctx)
+    vi.advanceTimersByTime(2_000)
 
     const toast = $notifications.get()[0]
 
@@ -106,6 +113,7 @@ describe('gateway `error` event → error card + toast', () => {
     const { ctx, failAssistantMessage } = errorContext(serverCopy)
 
     handleStatusEvent(ctx)
+    vi.advanceTimersByTime(2_000)
 
     expect(failAssistantMessage).toHaveBeenCalledWith('sess-1', serverCopy, 1_700_000_100, null)
     const toast = $notifications.get()[0]
@@ -119,8 +127,30 @@ describe('gateway `error` event on the thread in view', () => {
     const { ctx, failAssistantMessage } = errorContext('The provider refused the request.')
 
     handleStatusEvent({ ...ctx, isActiveEvent: true })
+    vi.advanceTimersByTime(2_000)
 
     expect(failAssistantMessage).toHaveBeenCalled()
     expect($notifications.get()).toHaveLength(0)
+  })
+
+  it('drops the toast when the failing thread is the one being opened (resume binds it a beat later)', () => {
+    const { ctx, failAssistantMessage } = errorContext('Hermes could not start the assistant for this session.')
+
+    handleStatusEvent(ctx)
+    ctx.deps.activeSessionIdRef.current = 'sess-1'
+    vi.advanceTimersByTime(2_000)
+
+    expect(failAssistantMessage).toHaveBeenCalled()
+    expect($notifications.get()).toHaveLength(0)
+  })
+
+  it('still toasts a failure in a thread that stays in the background', () => {
+    const { ctx } = errorContext('The provider refused the request.')
+
+    handleStatusEvent(ctx)
+    ctx.deps.activeSessionIdRef.current = 'sess-2'
+    vi.advanceTimersByTime(2_000)
+
+    expect($notifications.get()).toHaveLength(1)
   })
 })
