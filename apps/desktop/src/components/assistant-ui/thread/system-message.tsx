@@ -14,6 +14,55 @@ import { cn } from '@/lib/utils'
 const SLASH_STATUS_RE = /^slash:(?<command>\/[^\n]+)\n(?<output>[\s\S]*)$/
 const STEER_NOTE_RE = /^steer:(?<text>[\s\S]+)$/
 const REVIEW_NOTE_RE = /^review:(?<label>[^:\n]+):?\s*(?<detail>[\s\S]*)$/
+// One applied operation in a review summary: `Skill '<name>' <verb>[ (<file>)]`.
+const REVIEW_SKILL_SEGMENT_RE = /^Skill\s+'(?<name>[^']+)'\s+\S/
+
+/** Collapse a review summary into one clause per skill: `name ×4`, or the bare name when it was
+ *  touched once. The backend emits a clause per applied write, so four edits to one skill read as
+ *  four near-identical `Skill 'x' patched …` runs and the row becomes a wall of filenames. The full
+ *  text stays reachable as the row's title; the files themselves are in the skill's own history. */
+export function compactReviewDetail(detail: string): string {
+  const segments = detail
+    .split(/\s+·\s+/)
+    .map(segment => segment.trim())
+    .filter(Boolean)
+
+  if (segments.length < 3) {
+    return detail
+  }
+
+  const order: string[] = []
+  const counts = new Map<string, number>()
+  const rest: string[] = []
+
+  for (const segment of segments) {
+    const name = segment.match(REVIEW_SKILL_SEGMENT_RE)?.groups?.name
+
+    if (!name) {
+      rest.push(segment)
+      continue
+    }
+
+    if (!counts.has(name)) {
+      order.push(name)
+    }
+
+    counts.set(name, (counts.get(name) ?? 0) + 1)
+  }
+
+  if (!order.length) {
+    return detail
+  }
+
+  const skills = order.map(name => {
+    const count = counts.get(name) ?? 1
+
+    return count > 1 ? `${name} ×${count}` : name
+  })
+
+  return [...skills, ...rest].join(' · ')
+}
+
 // A usage-window plan gauge exactly as the backend renders it: `[` + 10 cells of
 // `|` then spaces + `]`. Only a window plan's /usage output carries one.
 const USAGE_WINDOW_GAUGE_RE = /\[(?=[| ]{10}\])\|* *\]/
@@ -110,7 +159,12 @@ export const SystemMessage: FC = () => {
           {reviewNote.groups.label.trim()}
         </span>
         {detail && (
-          <span className={cn(SCAFFOLD_LABEL_CLASS, 'tool-memory-legendary-meta min-w-0 wrap-anywhere')}>{detail}</span>
+          <span
+            className={cn(SCAFFOLD_LABEL_CLASS, 'tool-memory-legendary-meta min-w-0 wrap-anywhere')}
+            title={detail}
+          >
+            {compactReviewDetail(detail)}
+          </span>
         )}
       </MessagePrimitive.Root>
     )

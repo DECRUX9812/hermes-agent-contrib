@@ -115,6 +115,50 @@ describe('system message timestamp text separation', () => {
   })
 })
 
+describe('self-improvement review row', () => {
+  const detailOf = (container: HTMLElement) =>
+    container.querySelector('[data-role="system"] .tool-memory-legendary-meta') as HTMLElement | null
+
+  it('collapses one clause per applied write into one clause per skill', () => {
+    const detail = [
+      "Skill 'auditing-delegated-work' patched",
+      "Skill 'auditing-delegated-work' patched (references/claim-probes.md)",
+      "Skill 'architecture-proposal-reality-check' patched",
+      "Skill 'auditing-delegated-work' written (scripts/paint-literals.py)",
+      "Skill 'auditing-delegated-work' patched (scripts/paint-literals.py)"
+    ].join(' · ')
+
+    const { container } = render(<Harness text={`review:Self-improvement review:${detail}`} />)
+    const detailRow = detailOf(container)
+
+    expect(detailRow?.textContent).toBe(
+      'auditing-delegated-work ×4 · architecture-proposal-reality-check'
+    )
+    // The full run-on stays reachable without occupying the row.
+    expect(detailRow?.getAttribute('title')).toBe(detail)
+  })
+
+  it('leaves a summary of two clauses alone', () => {
+    const detail = "Skill 'deploy' patched · Memory updated"
+    const { container } = render(<Harness text={`review:Self-improvement review:${detail}`} />)
+
+    expect(detailOf(container)?.textContent).toBe(detail)
+  })
+
+  it('keeps memory clauses beside the collapsed skills', () => {
+    const detail = [
+      "Skill 'a' patched",
+      "Skill 'a' patched (SKILL.md)",
+      'Memory updated',
+      "Skill 'b' created"
+    ].join(' · ')
+
+    const { container } = render(<Harness text={`review:Self-improvement review:${detail}`} />)
+
+    expect(detailOf(container)?.textContent).toBe('a ×2 · b · Memory updated')
+  })
+})
+
 describe('slash output face', () => {
   const body = (container: HTMLElement) => container.querySelector('[data-role="system"] .whitespace-pre-wrap')
 
