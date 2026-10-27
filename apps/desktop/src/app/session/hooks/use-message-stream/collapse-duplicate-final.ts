@@ -1,4 +1,4 @@
-import { type ChatMessage, chatMessageText, withUniqueToolCallIdsWithinMessage } from '@/lib/chat-messages'
+import { type ChatMessage, type ChatMessagePart, chatMessageText, withUniqueToolCallIdsWithinMessage } from '@/lib/chat-messages'
 
 export interface DuplicateFinalCollapse {
   /** The surviving bubble replaces the removed stream id at completion. */
@@ -58,12 +58,69 @@ function mergeLiveIntoKept(
   next[keptIndex] = completeMessage(
     withUniqueToolCallIdsWithinMessage({
       ...kept,
-      parts: [...kept.parts, ...messages[streamIndex].parts.filter(part => part.type !== 'text')]
+      parts: foldLiveParts(kept.parts, messages[streamIndex].parts)
     })
   )
   next.splice(streamIndex, 1)
 
   return { keptId: kept.id, messages: next }
+}
+
+/**
+ * The parts this fold moves from the live bubble onto the kept one.
+ *
+ * Both bubbles can describe the SAME tool call: the kept interim was sealed
+ * around the segment's tools (it keeps their cards), and a superseded attempt
+ * or a reconnect replay re-streams that segment, so its tools reach the live
+ * bubble under the same call ids. Appending them would put every card in the
+ * reply twice — `withUniqueToolCallIdsWithinMessage` then renames the copy
+ * (`<id>-dup-<index>`) rather than dropping it, because a rename is the right
+ * answer for two genuinely different calls whose ids collide, not for one call
+ * seen twice.
+ *
+ * So a call the kept bubble already carries is not appended. The newer copy
+ * replaces it only when it knows more: a sealed interim can hold a call that
+ * never reached its result before the seal.
+ */
+function foldLiveParts(kept: ChatMessage['parts'], live: ChatMessage['parts']): ChatMessage['parts'] {
+  const merged = kept.slice()
+  const appended: ChatMessagePart[] = []
+  const slots = new Map<string, number>()
+
+  kept.forEach((part, index) => {
+    if (part.type === 'tool-call' && part.toolCallId) {
+      slots.set(part.toolCallId, index)
+    }
+  })
+
+  for (const part of live) {
+    if (part.type === 'text') {
+      continue
+    }
+
+    if (part.type !== 'tool-call' || !part.toolCallId) {
+      appended.push(part)
+
+      continue
+    }
+
+    const slot = slots.get(part.toolCallId)
+
+    if (slot === undefined) {
+      slots.set(part.toolCallId, merged.length)
+      appended.push(part)
+
+      continue
+    }
+
+    const current = merged[slot]
+
+    if (current.type === 'tool-call' && current.completedAt === undefined && part.completedAt !== undefined) {
+      merged[slot] = part
+    }
+  }
+
+  return [...merged, ...appended]
 }
 
 /**
