@@ -8,8 +8,10 @@ Bans, in plugin sources and in lines our desktop patch adds:
 Escape one line with a trailing `raw-style-ok: <reason>` comment; fence a theme palette with
 `no-raw-style: palette-start` / `no-raw-style: palette-end` comments.
 
-  no-raw-style.py plugins <desktop-plugins dir>   [--baseline F] [--write-baseline]
+  no-raw-style.py plugins <dir> [<dir> ...]       [--baseline F] [--write-baseline]
   no-raw-style.py diff <git dir> <base> <ref>     [--baseline F] [--write-baseline]
+Plugins mode walks each dir (plugins/, desktop-plugins/) for .js/.mjs/.cjs/.css/.ts/.tsx, keyed
+<dir name>/<path>; tests, vendor/ and node_modules/ are skipped.
 The theme layer (apps/desktop/src/themes/, design/tokens.css) is exempt in diff mode.
 With --baseline it is a ratchet: exit 1 only when a file has more hits of a rule than
 the baseline records (old debt is listed by count, new debt fails). Without it, any hit fails.
@@ -28,6 +30,8 @@ RULES = [
 ]
 PLUGIN_VAR = re.compile(r'var\(--(?!hx-|ds-|ui-|color-|radius|font-|shadow-|chrome-|conversation-|speaker-color|dt-|text-ui-|titlebar-)([\w-]+)')
 ESCAPE = 'raw-style-ok'
+SOURCES = {'.js', '.mjs', '.cjs', '.css', '.ts', '.tsx'}
+SKIP_DIRS = {'node_modules', 'vendor', 'tests', '__tests__', 'dist'}
 
 def strip_comments(line):
     line = re.sub(r'/\*.*?\*/', '', line)
@@ -67,14 +71,17 @@ def main(argv):
     argv = [a for a in argv if a not in ('--write-baseline', baseline)]
     argv = [a for a in argv if a != '--baseline']
     if argv[:1] == ['plugins']:
-        root = pathlib.Path(argv[1])
-        for p in sorted(root.glob('*/*.js')) + sorted(root.glob('*/*.css')):
-            if p.is_file() and 'node_modules' not in p.parts:
+        for root in map(pathlib.Path, argv[1:]):
+            for p in sorted(q for q in root.rglob('*') if q.suffix in SOURCES):
+                rel = p.relative_to(root)
+                if not p.is_file() or SKIP_DIRS & set(rel.parts[:-1]) or '.test.' in p.name:
+                    continue
+                key = f'{root.resolve().name}/{rel}'
                 head = p.read_text(errors='ignore')[:400]
                 if 'no-raw-style: off' in head:
-                    print(f'skip {p.relative_to(root)} (opted out in its header)')
+                    print(f'skip {key} (opted out in its header)')
                     continue
-                out += [(f'{p.relative_to(root)}:{n}', r, s) for n, r, s in scan(p.read_text(errors='ignore'), True)]
+                out += [(f'{key}:{n}', r, s) for n, r, s in scan(p.read_text(errors='ignore'), True)]
     elif argv[:1] == ['diff']:
         git, base, ref = argv[1:4]
         diff = subprocess.run(['git', '-C', git, 'diff', '-U0', '--no-color', f'{base}..{ref}', '--',
