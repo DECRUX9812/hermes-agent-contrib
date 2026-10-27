@@ -65,6 +65,7 @@ export { type ExternalUrlTarget, externalUrlTarget } from './external-url'
 export { fileUrlToNativePath } from './file-url'
 export { compactNumber } from './format'
 export { type FuzzyMatch, fuzzyRank, fuzzyScore, fuzzyScoreMulti, type RankedItem } from './fuzzy'
+export * from './fork-approvals'
 export * from './gateway-events'
 export {
   applyDocumentLocale,
