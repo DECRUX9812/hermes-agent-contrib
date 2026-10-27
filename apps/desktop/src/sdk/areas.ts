@@ -18,6 +18,9 @@ export {
   type ToolRunRendererContribution,
   type ToolRunRendererProps
 } from '@/components/assistant-ui/tool/fallback'
+/** Under the empty-chat intro: starter prompts, first-run cards. Every
+ *  registration mounts; make clickable content `pointer-events-auto`. */
+export { CHAT_INTRO_AREA } from '@/components/chat/intro'
 /** Per-card labels on Kanban tiles: register a `KANBAN_CARD_AREAS.badges`
  *  data contribution whose `decorate({ id, status, tenant, assignee },
  *  { tenants })` returns `{ label, tone?, tooltip? }` (or a few, or `null`). Core paints

@@ -1,8 +1,8 @@
 import { useStore } from '@nanostores/react'
 
-import { requestComposerInsert } from '@/app/chat/composer/focus'
+import { Slot } from '@/contrib/react/slot'
 import { useI18n } from '@/i18n'
-import { Bug, Search, Zap } from '@/lib/icons'
+import { Zap } from '@/lib/icons'
 import { capitalize, normalize } from '@/lib/text'
 import { $freeTierSignInOpen } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
@@ -162,6 +162,10 @@ function resolveCopy(personality?: string, seed?: number): IntroCopy {
   return pickCopy(copies, seed)
 }
 
+/** Mounts under the intro (a new chat, and an empty session that shows it), every registration in
+ *  order: starter prompts, first-run cards. Contents set their own `pointer-events-auto`. */
+export const CHAT_INTRO_AREA = 'chat.intro'
+
 export function Intro({ personality, seed }: IntroProps) {
   // One stable line per personality (audit M13); `seed` still lets a caller vary it.
   const mountSeed = 0
@@ -175,12 +179,6 @@ export function Intro({ personality, seed }: IntroProps) {
 
   const body = bodies?.[Math.abs(rotationSeed) % bodies.length] ?? copy.body
   const canConnectPortal = useStore($freeTierSignInOpen)
-
-  const starters = [
-    { icon: Zap, ...t.intro.starters.featureSquad },
-    { icon: Bug, ...t.intro.starters.bugHunt },
-    { icon: Search, ...t.intro.starters.research }
-  ]
 
   return (
     <div
@@ -206,19 +204,7 @@ export function Intro({ personality, seed }: IntroProps) {
         </div>
       )}
 
-      <div className="pointer-events-auto mt-4 flex flex-wrap items-center justify-center gap-2">
-        {starters.map(({ icon: Icon, label, prompt }) => (
-          <button
-            className="inline-flex items-center gap-1.5 rounded-lg border border-(--ui-border-subtle) bg-(--ui-sidebar-surface-background)/60 px-2.5 py-1 text-xs text-muted-foreground transition-all hover:border-foreground/30 hover:text-foreground"
-            key={label}
-            onClick={() => requestComposerInsert(prompt, { mode: 'block' })}
-            type="button"
-          >
-            <Icon aria-hidden className="size-3.5" />
-            {label}
-          </button>
-        ))}
-      </div>
+      <Slot area={CHAT_INTRO_AREA} />
     </div>
   )
 }
