@@ -1,10 +1,11 @@
-"""Durable journal of gateway approval requests in the profile state.db database.
+"""Durable journal of gateway approval requests in the plugin's own database.
 
-Maintains the SQLite table ``fork_approvals``. A decision is recorded once: a row that is no
+Lives at ``<hermes home>/plugin-data/hermes-approvals/data.db`` (``plugins/plugin_storage.py``) in
+the table ``fork_approvals``. A decision is recorded once: a row that is no
 longer pending is never rewritten. A tool call that has run (``ran_at`` stamped) is never approved
 again. Each row records the process that opened it; rows are expired only when that process is
 provably dead, so a live process's pending request is never touched by another process sharing
-the profile's ``state.db``.
+the profile.
 """
 
 from __future__ import annotations
@@ -84,14 +85,19 @@ def public_approval(row: Any) -> dict[str, Any]:
     return {k: d.get(k) for k in _PUBLIC_FIELDS}
 
 
+PLUGIN_NAME = "hermes-approvals"
+_DB_FILE = "data.db"
+
+
 def get_db_path(home: Optional[str | Path] = None) -> Path:
+    """``<hermes home>/plugin-data/hermes-approvals/data.db`` (plugins/plugin_storage.py layout)."""
     if home is None:
         try:
-            from hermes_constants import get_hermes_home
-            home = get_hermes_home()
+            from plugins.plugin_storage import plugin_data_dir
+            return plugin_data_dir(PLUGIN_NAME) / _DB_FILE
         except ImportError:
             home = os.environ.get("HERMES_HOME") or (Path.home() / ".hermes")
-    return Path(home) / "state.db"
+    return Path(home) / "plugin-data" / PLUGIN_NAME / _DB_FILE
 
 
 def ensure_schema(conn: sqlite3.Connection) -> None:
@@ -122,28 +128,76 @@ def reset_sweep() -> None:
         _swept_paths.clear()
 
 
+def _open(home: Optional[str | Path]) -> tuple[sqlite3.Connection, Path]:
+    path = get_db_path(home)
+    if home is None:
+        try:
+            from plugins.plugin_storage import plugin_db
+            conn = plugin_db(PLUGIN_NAME, _DB_FILE)
+        except ImportError:
+            conn = None
+        if conn is not None:
+            conn.row_factory = sqlite3.Row
+            return conn, path
+    path.parent.mkdir(parents=True, exist_ok=True)
+    conn = sqlite3.connect(str(path), timeout=30.0, check_same_thread=False)
+    conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    return conn, path
+
+
 @contextlib.contextmanager
 def get_db(home: Optional[str | Path] = None, *, sweep: bool = True):
-    path = get_db_path(home)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    conn = sqlite3.connect(str(path), timeout=30.0)
-    conn.row_factory = sqlite3.Row
+    conn, path = _open(home)
     try:
-        conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA busy_timeout=5000")
         ensure_schema(conn)
         if sweep:
-            _sweep_once(conn, str(path))
+            _sweep_once(conn, path)
         yield conn
     finally:
         conn.close()
 
 
-def _sweep_once(conn: sqlite3.Connection, path_str: str) -> None:
+def migrate_from_state_db(conn: sqlite3.Connection, db_path: Path) -> int:
+    """Copy rows an older core build journaled into ``<home>/state.db`` (read-only; never deletes them)."""
+    state_db = db_path.parent.parent.parent / "state.db"
+    if not state_db.is_file():
+        return 0
+    try:
+        src = sqlite3.connect(f"file:{state_db}?mode=ro", uri=True, timeout=5.0)
+    except sqlite3.Error:
+        return 0
+    try:
+        src.row_factory = sqlite3.Row
+        has = src.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='fork_approvals'").fetchone()
+        if not has:
+            return 0
+        rows = src.execute(f"SELECT {_COLUMNS}, owner FROM fork_approvals").fetchall()
+    except sqlite3.Error:
+        logger.warning("approval journal migration read failed", exc_info=True)
+        return 0
+    finally:
+        src.close()
+    copied = 0
+    for row in rows:
+        cur = conn.execute(
+            f"INSERT OR IGNORE INTO fork_approvals ({_COLUMNS}, owner) VALUES ({', '.join('?' * 13)})",
+            tuple(row))
+        copied += cur.rowcount
+    conn.commit()
+    return copied
+
+
+def _sweep_once(conn: sqlite3.Connection, path: Path) -> None:
+    path_str = str(path)
     with _sweep_lock:
         if path_str in _swept_paths:
             return
         try:
+            migrated = migrate_from_state_db(conn, path)
+            if migrated:
+                logger.info("hermes-approvals: migrated %d journal rows from state.db", migrated)
             expire_approvals(conn, pending_reason=RESTART_REASON, ran_reason=RAN_BEFORE_RESTART_REASON)
         except Exception:
             logger.warning("approval journal sweep failed", exc_info=True)

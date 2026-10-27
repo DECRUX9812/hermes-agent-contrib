@@ -63,9 +63,11 @@ def test_journal_decide(temp_home):
     assert decided["decided_at"] is not None
 
 def test_rpc_handlers(temp_home, monkeypatch):
-    monkeypatch.setattr(journal, "get_db_path", lambda home=None: temp_home / "state.db")
-    
-    journal.record_request("req-3", session_id="sess-3", tool_call_id="tc-3", tool_name="bash", command="whoami", description="check user", home=temp_home)
+    monkeypatch.setenv("HERMES_HOME", str(temp_home))
+    journal.reset_sweep()
+
+    journal.record_request("req-3", session_id="sess-3", tool_call_id="tc-3", tool_name="bash", command="whoami", description="check user")
+    assert journal.get_db_path() == temp_home / "plugin-data" / "hermes-approvals" / "data.db"
     
     # Test handle_list
     list_res = rpc.handle_list(1, {"session_id": "sess-3"})
@@ -89,3 +91,69 @@ def test_registration_seam():
     assert "fork.approvals.decide" in names
     assert "fork.approvals.list" in server.methods
     assert "fork.approvals.decide" in server.methods
+
+
+hooks = mod.hooks
+
+
+@pytest.fixture
+def home_env(temp_home, monkeypatch):
+    monkeypatch.setenv("HERMES_HOME", str(temp_home))
+    journal.reset_sweep()
+    return temp_home
+
+
+def test_hooks_journal_a_prompt_its_answer_and_the_run(home_env):
+    hooks.HOOKS["pre_tool_call"](tool_name="terminal", args={}, tool_call_id="tc-h1", session_id="s-h")
+    hooks.HOOKS["pre_approval_request"](request_id="rq-h1", command="rm -rf build", description="delete",
+                                        session_key="k-h", session_id="s-h", tool_call_id="tc-h1")
+    row = journal.get_approval("rq-h1")
+    assert row["status"] == "pending" and row["tool_name"] == "terminal" and row["session_id"] == "s-h"
+
+    hooks.HOOKS["post_approval_response"](request_id="rq-h1", choice="once", session_key="k-h")
+    assert journal.get_approval("rq-h1")["status"] == "allowed"
+
+    hooks.HOOKS["post_tool_call"](tool_name="terminal", tool_call_id="tc-h1", result="ok")
+    assert journal.get_approval("rq-h1")["ran_at"] is not None
+    blocked = hooks.HOOKS["pre_tool_call"](tool_name="terminal", args={}, tool_call_id="tc-h1")
+    assert blocked == {"action": "block", "message": journal.ALREADY_RAN_REASON}
+
+
+def test_hooks_answer_once_and_withdraw_without_a_deny(home_env):
+    hooks.HOOKS["pre_approval_request"](request_id="rq-h2", command="x", session_key="k", session_id="s")
+    journal.decide_approval("rq-h2", "deny")
+    hooks.HOOKS["post_approval_response"](request_id="rq-h2", choice="once", session_key="k")
+    assert journal.get_approval("rq-h2")["choice"] == "deny"
+
+    hooks.HOOKS["pre_approval_request"](request_id="rq-h3", command="y", session_key="k", session_id="s")
+    hooks.HOOKS["post_approval_response"](request_id="rq-h3", choice="cancelled", cancelled="interrupt")
+    row = journal.get_approval("rq-h3")
+    assert row["status"] == "withdrawn" and row["reason"] == "interrupt"
+
+
+def test_hooks_skip_coalesced_followers_and_prompts_without_ids(home_env):
+    hooks.HOOKS["pre_approval_request"](request_id="rq-h4", command="z", session_key="k", coalesced=True)
+    hooks.HOOKS["pre_approval_request"](command="z", session_key="k")
+    assert journal.get_approval("rq-h4") is None
+    assert hooks.HOOKS["pre_tool_call"](tool_name="t", args={}, tool_call_id="") is None
+
+
+def test_migrates_rows_an_older_core_wrote_to_state_db(home_env):
+    conn = sqlite3.connect(str(home_env / "state.db"))
+    journal.ensure_schema(conn)
+    conn.execute("INSERT INTO fork_approvals (request_id, session_id, created_at, status, owner) "
+                 "VALUES ('old-1', 's-old', 1.0, 'denied', NULL)")
+    conn.commit()
+    conn.close()
+    assert journal.list_approvals("s-old")[0]["request_id"] == "old-1"
+
+
+def test_hooks_install_registers_the_stock_hooks():
+    seen = []
+
+    class Ctx:
+        def register_hook(self, name, fn):
+            seen.append(name)
+
+    assert hooks.install(Ctx()) == seen
+    assert set(seen) == {"pre_approval_request", "post_approval_response", "pre_tool_call", "post_tool_call"}

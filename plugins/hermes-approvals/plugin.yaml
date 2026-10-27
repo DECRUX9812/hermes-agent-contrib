@@ -1,6 +1,11 @@
 name: hermes-approvals
 version: "0.1.0"
-description: "Durable approval journal and fork.approvals.* gateway methods."
+description: "Durable approval journal (stock approval hooks) and fork.approvals.* gateway methods."
 author: "DECRUX9812"
 entrypoint: "__init__.py"
 enabled_by_default: true
+provides_hooks:
+  - pre_approval_request
+  - post_approval_response
+  - pre_tool_call
+  - post_tool_call

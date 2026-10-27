@@ -1,7 +1,8 @@
 """hermes-approvals plugin.
 
-Durable SQLite approval journal and fork.approvals.* RPC methods.
-Registers on the gateway server through its public ``register_method`` seam.
+Durable SQLite approval journal (plugin storage) kept through the stock pre/post approval and
+tool-call hooks, plus the fork.approvals.* RPC methods registered through the gateway's public
+``register_method`` seam.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ import logging
 import sys
 from typing import Any
 
-from . import journal, rpc
+from . import hooks, journal, rpc
 
 log = logging.getLogger(__name__)
 
@@ -54,6 +55,10 @@ class _AfterServerImport(importlib.abc.MetaPathFinder):
 
 
 def register(ctx: Any = None) -> None:
+    try:
+        hooks.install(ctx)
+    except Exception:
+        log.exception("hermes-approvals: hook registration failed")
     server = sys.modules.get(_SERVER)
     try:
         if server is not None and hasattr(server, "register_method"):
