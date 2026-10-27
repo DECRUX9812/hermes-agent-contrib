@@ -18803,6 +18803,7 @@ function AgentRow({ bot }) {
       "data-roster-key": botRosterKey(bot),
       "data-sidebar-row": "",
       onClick: () => void openRosterBot(bot),
+      onFocus: () => warmRosterBot(bot),
       onPointerEnter: () => warmRosterBot(bot),
       tabIndex: -1,
       children: [
@@ -27774,6 +27775,7 @@ function BotCard({
             isActive && "bg-(--ui-row-active-background)"
           ),
           "data-roster-key": botRosterKey(bot),
+          onFocus: warm,
           onPointerEnter: warm,
           children: [
             /* @__PURE__ */ jsxs57(
@@ -27965,6 +27967,7 @@ function BotRow({
         event.dataTransfer.effectAllowed = "move";
         $draggingBot.set(rosterKey);
       },
+      onFocus: warm,
       onPointerEnter: warm,
       children: [
         /* @__PURE__ */ jsxs58(

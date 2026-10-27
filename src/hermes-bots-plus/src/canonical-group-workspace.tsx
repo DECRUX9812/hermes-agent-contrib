@@ -72,6 +72,8 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
     return () => { cancelled = true; alive.current = false; revision.current++ }
   }, [binding])
 
+  const shownState = useRef('')
+
   const refresh = async () => {
     const version = ++revision.current
     const snapshot = await canonicalGroupRequest<RoomState>(binding, 'groups.state', { room_id: binding.roomId })
@@ -90,8 +92,17 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
     }
 
     if (alive.current && version === revision.current) {
-      setState(snapshot)
-      setEvents(log)
+      // The room re-reads every 2s; an unchanged read keeps the old objects so
+      // the transcript does not re-render (and jump) for nothing.
+      const shown = JSON.stringify(snapshot)
+      const lastSeq = log.at(-1)?.seq
+
+      if (shown !== shownState.current) {
+        shownState.current = shown
+        setState(snapshot)
+      }
+
+      setEvents(prev => (prev.length === log.length && prev.at(-1)?.seq === lastSeq ? prev : log))
       setReadError('')
     }
   }
@@ -102,6 +113,13 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
     let timer: ReturnType<typeof setTimeout>
 
     const poll = async () => {
+      // A hidden window skips the read; the next visible tick catches up.
+      if (document.hidden) {
+        timer = setTimeout(() => void poll(), 2000)
+
+        return
+      }
+
       try { await refresh() } catch (e) { if (!cancelled) {setReadError(String(e instanceof Error ? e.message : e))} }
 
       if (!cancelled) {timer = setTimeout(() => void poll(), 2000)}

@@ -304,6 +304,7 @@ function AgentRow({ bot }: { bot: RosterRow }) {
       // it, Tab doesn't stop on it).
       data-sidebar-row=""
       onClick={() => void openRosterBot(bot)}
+      onFocus={() => warmRosterBot(bot)}
       onPointerEnter={() => warmRosterBot(bot)}
       tabIndex={-1}
     >

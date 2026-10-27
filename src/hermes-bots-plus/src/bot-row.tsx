@@ -288,6 +288,7 @@ export function BotRow({
         event.dataTransfer.effectAllowed = 'move'
         $draggingBot.set(rosterKey)
       }}
+      onFocus={warm}
       onPointerEnter={warm}
     >
       <div

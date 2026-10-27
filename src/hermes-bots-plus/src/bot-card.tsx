@@ -130,6 +130,7 @@ export function BotCard({
           isActive && 'bg-(--ui-row-active-background)'
         )}
         data-roster-key={botRosterKey(bot)}
+        onFocus={warm}
         onPointerEnter={warm}
       >
         <button
