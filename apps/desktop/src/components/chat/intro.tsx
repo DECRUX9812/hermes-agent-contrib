@@ -204,7 +204,10 @@ export function Intro({ personality, seed }: IntroProps) {
         </div>
       )}
 
-      <Slot area={CHAT_INTRO_AREA} />
+      {/* Holds the starter row open while plugins load, so the intro does not jump when they land. */}
+      <div className="min-h-9 w-full">
+        <Slot area={CHAT_INTRO_AREA} />
+      </div>
     </div>
   )
 }
