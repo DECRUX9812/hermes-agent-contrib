@@ -140,6 +140,20 @@ describe('thumbs', () => {
 
     expect(card.thumb).toBeUndefined()
   })
+
+  it('gives any other tool a site chip for a url it was handed', () => {
+    const card = toolCardView(
+      part({ args: { url: 'https://docs.example.com/guide' }, result: 'fetched', toolName: 'mcp__fetch__fetch' })
+    )
+
+    expect(card.thumb).toEqual({ host: 'docs.example.com', kind: 'site', url: 'https://docs.example.com/guide' })
+  })
+
+  it('never fishes a page out of a non-web tool result text', () => {
+    const card = toolCardView(part({ args: { query: 'x' }, result: 'see https://example.com', toolName: 'mcp__fetch__fetch' }))
+
+    expect(card.thumb).toBeUndefined()
+  })
 })
 
 describe('arguments and output', () => {

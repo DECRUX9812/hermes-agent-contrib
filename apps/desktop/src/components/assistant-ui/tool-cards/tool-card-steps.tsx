@@ -1,18 +1,16 @@
 import { useState } from 'react'
 
-import { useSessionView } from '@/app/chat/session-view'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Favicon } from '@/components/ui/favicon'
-import { Tip } from '@/components/ui/tooltip'
 import { useMediaImage } from '@/hooks/use-media-image'
 import { useI18n } from '@/i18n'
 import { hostPathLabel } from '@/lib/external-link'
 import { cn } from '@/lib/utils'
-import { openPreview } from '@/store/preview'
 
 import { isPublicHost } from './public-host'
 import { CardBlock } from './tool-card-block'
+import { OpenPageButton, stepPageUrl } from './tool-card-thumb'
 import type { ToolCardGroup, ToolCardView } from './types'
 
 function stepHost(card: ToolCardView): string {
@@ -23,19 +21,7 @@ function stepScreenshot(card: ToolCardView): string {
   return card.thumb?.kind === 'screenshot' ? card.thumb.src : ''
 }
 
-/** The page a step was on: its own site, else the nearest earlier step's
- *  (a click or screenshot stays on the page the last navigation opened). */
-export function stepPageUrl(cards: readonly ToolCardView[], index: number): string {
-  for (let at = Math.min(index, cards.length - 1); at >= 0; at -= 1) {
-    const url = cards[at]?.thumb?.url
-
-    if (url && /^https?:\/\//i.test(url)) {
-      return url
-    }
-  }
-
-  return ''
-}
+export { stepPageUrl }
 
 /** The settled default is the latest step with a picture, else the last one. */
 function latestScreenshotIndex(cards: readonly ToolCardView[]): number | null {
@@ -84,19 +70,6 @@ export function BrowserSteps({ group }: { group: ToolCardGroup }) {
   const shot = stepScreenshot(step)
   const host = stepHost(step)
   const pageUrl = stepPageUrl(cards, selected)
-  const { $runtimeId, $storedId } = useSessionView()
-
-  const openPage = () => {
-    if (!pageUrl) {
-      return
-    }
-
-    openPreview(
-      { kind: 'url', label: hostPathLabel(pageUrl), source: pageUrl, url: pageUrl },
-      $storedId.get() ?? undefined,
-      $runtimeId.get()
-    )
-  }
 
   const move = (delta: number) => {
     setManual(Math.min(total - 1, Math.max(0, selected + delta)))
@@ -155,20 +128,7 @@ export function BrowserSteps({ group }: { group: ToolCardGroup }) {
         >
           <Codicon name="chevron-right" />
         </Button>
-        {pageUrl ? (
-          <Tip label={pageUrl}>
-            <Button
-              aria-label={copy.openPage}
-              className="h-6 gap-1 px-1.5 text-ui-xs"
-              onClick={openPage}
-              size="sm"
-              variant="ghost"
-            >
-              <Codicon name="link-external" />
-              {copy.openPage}
-            </Button>
-          </Tip>
-        ) : null}
+        {pageUrl ? <OpenPageButton url={pageUrl} /> : null}
       </div>
       <ol className="mt-1 flex flex-col gap-0.5">
         {cards.map((card, index) => {

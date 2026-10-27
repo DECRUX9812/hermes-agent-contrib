@@ -165,6 +165,13 @@ function toolCardStatus(part: ToolPart, view: ToolView, family: ToolCardFamily, 
   return view.status === 'running' ? t('working') : ''
 }
 
+/** A url argument the tool was handed directly, never one fished out of text. */
+function explicitPageUrl(args: unknown): string | undefined {
+  const url = parseMaybeObject(args).url
+
+  return typeof url === 'string' && /^https?:\/\//i.test(url.trim()) && URL.canParse(url.trim()) ? url.trim() : undefined
+}
+
 function epochMs(value: number | undefined): number | undefined {
   if (value === undefined || !Number.isFinite(value)) {
     return undefined
@@ -177,7 +184,8 @@ export function toolCardView(part: ToolPart, options: { approvalPending?: boolea
   const view = buildToolView(part, '')
   const family = toolCardFamily(part.toolName)
   const state = toolCardState(part, view, options.approvalPending === true)
-  const pageUrl = toolCardPageUrl(part.args, part.result)
+  const webish = family === 'browser' || family === 'web'
+  const pageUrl = webish ? toolCardPageUrl(part.args, part.result) : explicitPageUrl(part.args)
 
   const card: ToolCardView = {
     id: part.toolCallId || stableHash(part.toolName + JSON.stringify(part.args ?? {})),
