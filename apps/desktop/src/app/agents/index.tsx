@@ -232,8 +232,7 @@ function SubagentTree({ tree }: { tree: SubagentNode[] }) {
       return
     }
 
-    // Ages render in whole seconds, so a faster tick only re-renders the tree for nothing.
-    const id = window.setInterval(() => setNowMs(Date.now()), 1_000)
+    const id = window.setInterval(() => setNowMs(Date.now()), 500)
 
     return () => window.clearInterval(id)
   }, [active, visible])
