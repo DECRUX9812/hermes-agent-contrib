@@ -119,45 +119,61 @@ describe('self-improvement review row', () => {
   const detailOf = (container: HTMLElement) =>
     container.querySelector('[data-role="system"] .tool-memory-legendary-meta') as HTMLElement | null
 
-  it('collapses one clause per applied write into one clause per skill', () => {
-    const detail = [
-      "Skill 'auditing-delegated-work' patched",
-      "Skill 'auditing-delegated-work' patched (references/claim-probes.md)",
-      "Skill 'architecture-proposal-reality-check' patched",
-      "Skill 'auditing-delegated-work' written (scripts/paint-literals.py)",
-      "Skill 'auditing-delegated-work' patched (scripts/paint-literals.py)"
-    ].join(' · ')
+  const fiveWrites = [
+    "Skill 'auditing-delegated-work' patched",
+    "Skill 'auditing-delegated-work' patched (references/claim-probes.md)",
+    "Skill 'architecture-proposal-reality-check' patched",
+    "Skill 'auditing-delegated-work' written (scripts/paint-literals.py)",
+    "Skill 'auditing-delegated-work' patched (scripts/paint-literals.py)"
+  ].join(' · ')
 
-    const { container } = render(<Harness text={`review:Self-improvement review:${detail}`} />)
+  it('collapses one clause per applied write into one clause per skill', () => {
+    const { container } = render(<Harness text={`review:Self-improvement review:${fiveWrites}`} />)
     const detailRow = detailOf(container)
 
     expect(detailRow?.textContent).toBe(
-      'auditing-delegated-work ×4 · architecture-proposal-reality-check'
+      'auditing-delegated-work ×4 · architecture-proposal-reality-check patched'
     )
     // The full run-on stays reachable without occupying the row.
-    expect(detailRow?.getAttribute('title')).toBe(detail)
+    expect(detailRow?.getAttribute('title')).toBe(fiveWrites)
   })
 
-  it('leaves a summary of two clauses alone', () => {
+  it('compacts every review row, however short', () => {
     const detail = "Skill 'deploy' patched · Memory updated"
     const { container } = render(<Harness text={`review:Self-improvement review:${detail}`} />)
 
-    expect(detailOf(container)?.textContent).toBe(detail)
+    expect(detailOf(container)?.textContent).toBe('deploy patched · Memory updated')
   })
 
   it('keeps memory clauses beside the collapsed skills', () => {
-    const detail = [
-      "Skill 'a' patched",
-      "Skill 'a' patched (SKILL.md)",
-      'Memory updated',
-      "Skill 'b' created"
-    ].join(' · ')
+    const detail = ["Skill 'a' patched", "Skill 'a' patched (SKILL.md)", 'Memory updated', "Skill 'b' created"].join(
+      ' · '
+    )
 
     const { container } = render(<Harness text={`review:Self-improvement review:${detail}`} />)
 
-    expect(detailOf(container)?.textContent).toBe('a ×2 · b · Memory updated')
+    expect(detailOf(container)?.textContent).toBe('a ×2 · b created · Memory updated')
+  })
+
+  it('opens the writes behind the count, and closes them again', () => {
+    const { container, getByRole } = render(<Harness text={`review:Self-improvement review:${fiveWrites}`} />)
+
+    expect(container.textContent).not.toContain('claim-probes')
+
+    const toggle = getByRole('button', { name: /auditing-delegated-work/ })
+    expect(toggle.getAttribute('aria-expanded')).toBe('false')
+
+    fireEvent.click(toggle)
+    expect(toggle.getAttribute('aria-expanded')).toBe('true')
+    // Every write is listed with its verb and file, grouped under its skill.
+    expect(container.textContent).toContain('patched references/claim-probes.md')
+    expect(container.textContent).toContain('written scripts/paint-literals.py')
+
+    fireEvent.click(toggle)
+    expect(container.textContent).not.toContain('claim-probes')
   })
 })
+
 
 describe('slash output face', () => {
   const body = (container: HTMLElement) => container.querySelector('[data-role="system"] .whitespace-pre-wrap')
