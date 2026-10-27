@@ -1,7 +1,6 @@
-import type { ForkApproval } from '@hermes/shared'
 import { describe, expect, it } from 'vitest'
 
-import { journalRequestId, mergePendingApprovals } from './approval-journal'
+import { type ForkApproval, journalRequestId, mergePendingApprovals } from './approval-journal'
 
 const journalRow = (requestId: string, status: ForkApproval['status'] = 'pending'): ForkApproval => ({
   command: `echo ${requestId}`,

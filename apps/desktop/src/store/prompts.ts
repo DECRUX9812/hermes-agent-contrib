@@ -1,12 +1,12 @@
-import type {
-  ApprovalChoice,
-  ForkApproval,
-  ForkApprovalsDecideResult,
-  ForkApprovalsListResult
-} from '@hermes/shared'
+import type { ApprovalChoice } from '@hermes/shared'
 import { atom, computed, type ReadableAtom } from 'nanostores'
 
-import { journalRequestId } from '@/lib/approval-journal'
+import {
+  type ForkApproval,
+  type ForkApprovalsDecideResult,
+  type ForkApprovalsListResult,
+  journalRequestId
+} from '@/lib/approval-journal'
 
 import { $clarifyRequest, $clarifyRequests } from './clarify'
 import { isSessionGone, isSessionGoneForBackgroundPolling, markSessionGone } from './runtime-gone'

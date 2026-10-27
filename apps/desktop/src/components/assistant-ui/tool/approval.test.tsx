@@ -1,7 +1,8 @@
-import type { ApprovalChoice, ForkApproval } from '@hermes/shared'
+import type { ApprovalChoice } from '@hermes/shared'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { ForkApproval } from '@/lib/approval-journal'
 import type { ApprovalDecision, ApprovalRequest } from '@/store/prompts'
 
 import { ApprovalCard } from './approval'

@@ -383,7 +383,10 @@ class TestClassicCliPromptsFireGatewayTwinHooks:
 
         assert result == approved
         assert [name for name, _ in cli_hooks] == ["pre_approval_request", "post_approval_response"]
-        expected = [(name, {**kw, "surface": cli_surface}) for name, kw in gateway_hooks]
+        # Only a gateway prompt has a request id; the CLI panel answers in-process.
+        assert all(kw.get("request_id") for _name, kw in gateway_hooks)
+        expected = [(name, {**{k: v for k, v in kw.items() if k != "request_id"}, "surface": cli_surface})
+                    for name, kw in gateway_hooks]
         assert cli_hooks == expected
 
     def test_protected_write_without_a_human_channel_fires_no_hooks(self, isolated_session, monkeypatch):

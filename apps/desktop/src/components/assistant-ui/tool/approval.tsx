@@ -1,13 +1,13 @@
 'use client'
 
-import type { ApprovalChoice, ForkApproval } from '@hermes/shared'
+import type { ApprovalChoice } from '@hermes/shared'
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { LogView } from '@/components/ui/log-view'
 import { useI18n } from '@/i18n'
-import { journalRequestId, mergePendingApprovals } from '@/lib/approval-journal'
+import { type ForkApproval, journalRequestId, mergePendingApprovals } from '@/lib/approval-journal'
 import { triggerHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 import { $gateway } from '@/store/gateway'
