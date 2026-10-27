@@ -112,6 +112,7 @@ import { armInstantAck } from './instant-ack'
 import { InstantAckLine, wireInstantAck } from './instant-ack-line'
 import { displayName } from './labels'
 import { hydrateRosterSortMode } from './live-status'
+import { LIVE_VIEW_LOCALES } from './live-view-i18n'
 import { MissionRail } from './mission-rail'
 import { hydrateNeedsYou } from './needs-you'
 import { wireLiveTurns } from './rail-live'
@@ -183,6 +184,7 @@ export default {
     loadBotSections()
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES)
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES)
+    const disposeLiveViewLocales = ctx.i18n.register(LIVE_VIEW_LOCALES)
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
     const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
@@ -200,6 +202,7 @@ export default {
       ctx.onDispose(unmountStyles)
       ctx.onDispose(disposeLocales)
       ctx.onDispose(disposeTeamLocales)
+      ctx.onDispose(disposeLiveViewLocales)
       ctx.onDispose(disposeHireLocales)
       ctx.onDispose(disposeShareLocales)
       ctx.onDispose(disposeAutopilotLocales)

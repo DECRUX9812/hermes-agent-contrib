@@ -23386,6 +23386,21 @@ function InstantAckLine() {
 // src/plugin.tsx
 init_labels();
 
+// src/live-view-i18n.ts
+init_sdk_compat();
+init_shared();
+var LIVE_VIEW_EN = {
+  expand: "Open screenshot in the preview",
+  live: "Live",
+  waiting: "Waiting for the first screenshot\u2026",
+  shotLabel: (host2, step) => host2 ? `${host2} \xB7 step ${step}` : `Screenshot \xB7 step ${step}`
+};
+var LIVE_VIEW_LOCALES = { en: { liveView: LIVE_VIEW_EN } };
+function useLiveViewText() {
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, LIVE_VIEW_EN, "liveView");
+}
+
 // src/mission-rail.tsx
 init_sdk_compat();
 import { useState as useState36 } from "react";
@@ -32786,7 +32801,11 @@ var UTILITIES = [
   ".hbp-tc-face{box-shadow:0 0 0 2px var(--ui-bg-elevated)}",
   `.hbp-tc-surface{transition-property:background-color,border-color,box-shadow,padding,min-height;transition-duration:180ms;transition-timing-function:${SPRING}}`,
   ".hbp-tc-reveal{opacity:0;transition:opacity 120ms ease-out}",
-  ".hbp-tc-row:hover .hbp-tc-reveal,.hbp-tc-reveal:focus-visible{opacity:1}"
+  ".hbp-tc-row:hover .hbp-tc-reveal,.hbp-tc-reveal:focus-visible{opacity:1}",
+  ".hbp-lv-badge{background-color:var(--ui-bg-elevated);color:var(--ui-text-primary);box-shadow:0 0 0 1px var(--ui-bg-quaternary)}",
+  ".hbp-lv-dot{background-color:var(--ui-red)}",
+  ".hbp-lv-zoom{opacity:0;transition:opacity 120ms ease-out}",
+  ".hbp-lv-frame:hover .hbp-lv-zoom,.hbp-lv-frame:focus-visible .hbp-lv-zoom{opacity:1}"
 ];
 var MOTION = [
   `.hbp-tc-arrive{animation:hbp-tc-arrive 200ms ${OUT_QUINT} both}`,
@@ -32799,17 +32818,23 @@ var MOTION = [
   ".hbp-tc-typing>span:nth-child(3){animation-delay:0.3s}",
   `.hbp-tc-collapse{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows 180ms ${STANDARD},opacity 180ms ${STANDARD}}`,
   ".hbp-tc-collapse[data-open='true']{grid-template-rows:1fr;opacity:1}",
-  ".hbp-tc-collapse>*{min-height:0;overflow:hidden}"
+  ".hbp-tc-collapse>*{min-height:0;overflow:hidden}",
+  `.hbp-lv-layer{opacity:0;transition:opacity 180ms ${STANDARD}}`,
+  ".hbp-lv-layer[data-ready='true']{opacity:1}",
+  ".hbp-lv-dot{animation:hbp-lv-pulse 1.6s ease-in-out infinite}",
+  `::view-transition-group(hbp-shot-morph){animation-duration:260ms;animation-timing-function:${OUT_QUINT}}`,
+  "::view-transition-old(hbp-shot-morph),::view-transition-new(hbp-shot-morph){height:100%;object-fit:contain}"
 ];
 var KEYFRAMES = [
   "@keyframes hbp-tc-arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
   "@keyframes hbp-tc-ring{0%{opacity:0.55;transform:scale(1)}100%{opacity:0;transform:scale(1.18)}}",
   "@keyframes hbp-tc-shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}",
+  "@keyframes hbp-lv-pulse{0%,100%{opacity:1}50%{opacity:0.35}}",
   "@keyframes hbp-tc-typing{0%,60%,100%{opacity:0.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}"
 ];
 var QUIET = [
-  "@media (prefers-reduced-motion: reduce){.hbp-tc-ring::after,.hbp-tc-shimmer::after,.hbp-tc-typing>span,.hbp-tc-arrive{animation:none!important}.hbp-tc-ring::after{opacity:0.55}.hbp-tc-shimmer::after{display:none}.hbp-tc-collapse,.hbp-tc-surface{transition:none}}",
-  ":root[data-renderer-animations-paused] :is(.hbp-tc-ring,.hbp-tc-shimmer)::after,:root[data-renderer-animations-paused] .hbp-tc-typing>span{animation-play-state:paused}"
+  "@media (prefers-reduced-motion: reduce){.hbp-tc-ring::after,.hbp-tc-shimmer::after,.hbp-tc-typing>span,.hbp-tc-arrive{animation:none!important}.hbp-tc-ring::after{opacity:0.55}.hbp-tc-shimmer::after{display:none}.hbp-tc-collapse,.hbp-tc-surface,.hbp-lv-layer{transition:none}.hbp-lv-dot{animation:none}}",
+  ":root[data-renderer-animations-paused] :is(.hbp-tc-ring,.hbp-tc-shimmer)::after,:root[data-renderer-animations-paused] :is(.hbp-tc-typing>span,.hbp-lv-dot){animation-play-state:paused}"
 ];
 function toolCardStyleSheet() {
   return `@layer utilities{${[...UTILITIES, ...MOTION].join("")}}${KEYFRAMES.join("")}${QUIET.join("")}`;
@@ -32862,13 +32887,17 @@ function mountPluginStyles(utilities = "") {
 // src/tool-card.tsx
 init_sdk_compat();
 import {
-  createContext,
   memo,
-  useContext,
+  useContext as useContext2,
+  useEffect as useEffect29,
   useMemo as useMemo11,
-  useRef as useRef17,
-  useState as useState46
+  useRef as useRef18,
+  useState as useState47
 } from "react";
+
+// src/tool-card-live.tsx
+init_sdk_compat();
+import { useContext, useEffect as useEffect28, useRef as useRef17, useState as useState46 } from "react";
 
 // src/tool-card-model.ts
 init_sdk_compat();
@@ -33275,24 +33304,234 @@ function toolCardsFromParts(parts, options = {}) {
   return groupToolCards(cards);
 }
 
-// src/tool-card.tsx
-import { Fragment as Fragment17, jsx as jsx76, jsxs as jsxs74 } from "react/jsx-runtime";
+// src/tool-card-session.ts
+import { createContext } from "react";
 var PreviewSessionContext = createContext({
   runtimeId: null,
   storedId: null
 });
+
+// src/tool-card-live.tsx
+import { jsx as jsx76, jsxs as jsxs74 } from "react/jsx-runtime";
+var MORPH_NAME = "hbp-shot-morph";
+var FADE_MS = 180;
+var TARGET_WAIT_MS = 450;
+function ShotLayer({
+  onReady,
+  ready,
+  src
+}) {
+  const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 9);
+  if (!image.src || image.failed) {
+    return null;
+  }
+  return /* @__PURE__ */ jsx76(
+    "img",
+    {
+      alt: "",
+      "aria-hidden": true,
+      className: "hbp-lv-layer absolute inset-0 h-full w-full object-contain",
+      "data-ready": ready,
+      "data-shot-src": src,
+      onError: image.onError,
+      onLoad: (event) => {
+        image.onLoad(event.currentTarget);
+        onReady(src);
+      },
+      src: image.src
+    }
+  );
+}
+function CrossfadeShot({ src }) {
+  const nextId = useRef17(1);
+  const [layers, setLayers] = useState46(() => [{ id: 0, src }]);
+  const [readySrc, setReadySrc] = useState46("");
+  useEffect28(() => {
+    setLayers((current) => {
+      if (current[current.length - 1]?.src === src) {
+        return current;
+      }
+      const layer = { id: nextId.current++, src };
+      return [...current.slice(-1), layer];
+    });
+  }, [src]);
+  useEffect28(() => {
+    if (readySrc !== src || layers.length < 2) {
+      return;
+    }
+    const timer = window.setTimeout(() => setLayers((current) => current.slice(-1)), FADE_MS + 40);
+    return () => window.clearTimeout(timer);
+  }, [layers.length, readySrc, src]);
+  return /* @__PURE__ */ jsx76("span", { className: "relative block h-full w-full", children: layers.map((layer, index) => /* @__PURE__ */ jsx76(
+    ShotLayer,
+    {
+      onReady: setReadySrc,
+      ready: index === 0 || readySrc === layer.src,
+      src: layer.src
+    },
+    layer.id
+  )) });
+}
+function prefersReducedMotion() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+async function imageDataUrl(img) {
+  if (img.src.startsWith("data:")) {
+    return img.src;
+  }
+  const blob = await (await fetch(img.src)).blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+    reader.readAsDataURL(blob);
+  });
+}
+function waitForElement(find, timeoutMs) {
+  return new Promise((resolve) => {
+    const started = performance.now();
+    const tick = () => {
+      const found = find();
+      if (found || performance.now() - started > timeoutMs) {
+        resolve(found);
+        return;
+      }
+      requestAnimationFrame(tick);
+    };
+    tick();
+  });
+}
+async function expandShot(frame, shotSrc, label, session) {
+  const img = [...frame.querySelectorAll("img[data-shot-src]")].reverse().find((candidate) => candidate.dataset.shotSrc === shotSrc && candidate.complete);
+  if (!img) {
+    return;
+  }
+  const dataUrl = await imageDataUrl(img).catch(() => "");
+  const mimeType = dataUrl && dataUrl.slice(5, dataUrl.indexOf(";")) || "image/png";
+  const open = () => (0, sdk_compat_exports.openPreview)(
+    {
+      ...dataUrl ? { dataUrl } : {},
+      kind: "file",
+      label,
+      mimeType,
+      path: shotSrc,
+      previewKind: "image",
+      source: shotSrc
+    },
+    session.storedId ?? void 0,
+    session.runtimeId
+  );
+  const doc = document;
+  if (!doc.startViewTransition || prefersReducedMotion()) {
+    open();
+    return;
+  }
+  let target = null;
+  frame.style.setProperty("view-transition-name", MORPH_NAME);
+  const transition = doc.startViewTransition(async () => {
+    frame.style.removeProperty("view-transition-name");
+    open();
+    target = await waitForElement(
+      () => [...document.querySelectorAll("img")].find(
+        (candidate) => candidate.alt === label && !frame.contains(candidate)
+      ) ?? null,
+      TARGET_WAIT_MS
+    );
+    target?.style.setProperty("view-transition-name", MORPH_NAME);
+  });
+  await transition.finished.catch(() => void 0);
+  frame.style.removeProperty("view-transition-name");
+  target?.style.removeProperty("view-transition-name");
+}
+function latestShot(cards) {
+  for (let index = cards.length - 1; index >= 0; index -= 1) {
+    const thumb = cards[index]?.thumb;
+    if (thumb?.kind === "screenshot") {
+      return { index, src: thumb.src };
+    }
+  }
+  return null;
+}
+function latestPage(cards) {
+  for (let index = cards.length - 1; index >= 0; index -= 1) {
+    const url = cards[index]?.thumb?.url;
+    if (url && /^https?:\/\//i.test(url)) {
+      return url;
+    }
+  }
+  return "";
+}
+function safeHost(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+function ExpandableShot({
+  className,
+  host: host2,
+  src,
+  step
+}) {
+  const text2 = useLiveViewText();
+  const session = useContext(PreviewSessionContext);
+  const frameRef = useRef17(null);
+  return /* @__PURE__ */ jsxs74(
+    "button",
+    {
+      "aria-label": text2.expand,
+      className: (0, sdk_compat_exports.cn)("hbp-lv-frame relative block h-full w-full cursor-zoom-in", className),
+      "data-live-shot": "",
+      onClick: (event) => {
+        event.stopPropagation();
+        if (frameRef.current) {
+          void expandShot(frameRef.current, src, text2.shotLabel(host2, step), session);
+        }
+      },
+      onKeyDown: (event) => event.stopPropagation(),
+      ref: frameRef,
+      type: "button",
+      children: [
+        /* @__PURE__ */ jsx76(CrossfadeShot, { src }),
+        /* @__PURE__ */ jsx76("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
+      ]
+    }
+  );
+}
+function LiveFrame({ group, open }) {
+  const text2 = useLiveViewText();
+  const shot = latestShot(group.cards);
+  const pageUrl = latestPage(group.cards);
+  const host2 = safeHost(shot ? group.cards[shot.index]?.thumb?.url ?? pageUrl : pageUrl);
+  const running = group.state === "running";
+  return /* @__PURE__ */ jsx76("div", { className: "hbp-tc-collapse", "data-live-frame": "", "data-open": open, inert: !open, children: /* @__PURE__ */ jsx76("div", { children: /* @__PURE__ */ jsx76("div", { className: "hbp-tc-pl12 pt-1.5", children: /* @__PURE__ */ jsxs74("div", { className: "relative aspect-video w-full max-w-sm overflow-hidden rounded-card border border-line hbp-tc-sunken", children: [
+    shot ? /* @__PURE__ */ jsx76(ExpandableShot, { host: host2, src: shot.src, step: shot.index + 1 }) : /* @__PURE__ */ jsxs74("div", { className: "hbp-tc-shimmer flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+      pageUrl && isPublicHost(host2) ? /* @__PURE__ */ jsx76("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx76(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "globe", size: 20 }),
+      pageUrl ? /* @__PURE__ */ jsx76("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : null,
+      /* @__PURE__ */ jsx76("span", { children: text2.waiting })
+    ] }),
+    running ? /* @__PURE__ */ jsxs74("span", { className: "pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 text-ui-2xs hbp-lv-badge", children: [
+      /* @__PURE__ */ jsx76("span", { "aria-hidden": true, className: "hbp-lv-dot size-1.5 rounded-full" }),
+      text2.live
+    ] }) : null
+  ] }) }) }) });
+}
+
+// src/tool-card.tsx
+import { Fragment as Fragment17, jsx as jsx77, jsxs as jsxs75 } from "react/jsx-runtime";
 function SiteFavicon({ host: host2, url }) {
   if (!isPublicHost(host2)) {
     return null;
   }
-  return /* @__PURE__ */ jsx76("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx76(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx76("span", { className: "block size-full" }), url }) });
+  return /* @__PURE__ */ jsx77("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx77(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx77("span", { className: "block size-full" }), url }) });
 }
 function ScreenshotThumb({ src }) {
   const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 10);
   if (image.failed) {
     return null;
   }
-  return /* @__PURE__ */ jsx76("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx76(
+  return /* @__PURE__ */ jsx77("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx77(
     "img",
     {
       alt: "",
@@ -33320,7 +33559,7 @@ function OpenPageButton({
 }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const label = t2.assistant.toolCards.viewer.openPage;
-  const session = useContext(PreviewSessionContext);
+  const session = useContext2(PreviewSessionContext);
   const open = (event) => {
     event.stopPropagation();
     (0, sdk_compat_exports.openPreview)(
@@ -33329,7 +33568,7 @@ function OpenPageButton({
       session.runtimeId
     );
   };
-  return /* @__PURE__ */ jsx76(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs74(
+  return /* @__PURE__ */ jsx77(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs75(
     sdk_compat_exports.Button,
     {
       "aria-label": label,
@@ -33341,7 +33580,7 @@ function OpenPageButton({
       type: "button",
       variant: "ghost",
       children: [
-        /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "link-external" }),
+        /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "link-external" }),
         iconOnly ? null : label
       ]
     }
@@ -33352,29 +33591,29 @@ function CardBlock({ card, showStatus }) {
   const copy = t2.assistant.toolCards;
   const pageUrl = card.family === "browser" ? "" : stepPageUrl([card]);
   const shot = card.family !== "browser" && card.thumb?.kind === "screenshot" ? card.thumb.src : "";
-  return /* @__PURE__ */ jsxs74("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
-    showStatus ? /* @__PURE__ */ jsx76("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
-    pageUrl || shot ? /* @__PURE__ */ jsxs74("div", { className: "flex min-w-0 items-center gap-2", "data-card-page": "", children: [
-      shot ? /* @__PURE__ */ jsx76(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx76("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx76(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
-      pageUrl ? /* @__PURE__ */ jsxs74(Fragment17, { children: [
-        /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
-        /* @__PURE__ */ jsx76(OpenPageButton, { url: pageUrl })
+  return /* @__PURE__ */ jsxs75("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
+    showStatus ? /* @__PURE__ */ jsx77("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
+    pageUrl || shot ? /* @__PURE__ */ jsxs75("div", { className: "flex min-w-0 items-center gap-2", "data-card-page": "", children: [
+      shot ? /* @__PURE__ */ jsx77(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx77("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx77(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
+      pageUrl ? /* @__PURE__ */ jsxs75(Fragment17, { children: [
+        /* @__PURE__ */ jsx77("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
+        /* @__PURE__ */ jsx77(OpenPageButton, { url: pageUrl })
       ] }) : null
     ] }) : null,
-    card.args.length > 0 ? /* @__PURE__ */ jsxs74("div", { className: "flex min-w-0 flex-col gap-1", children: [
-      /* @__PURE__ */ jsx76("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
-      card.args.map((detail) => /* @__PURE__ */ jsxs74("div", { className: "flex min-w-0 gap-2", children: [
-        /* @__PURE__ */ jsx76("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
-        /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
+    card.args.length > 0 ? /* @__PURE__ */ jsxs75("div", { className: "flex min-w-0 flex-col gap-1", children: [
+      /* @__PURE__ */ jsx77("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
+      card.args.map((detail) => /* @__PURE__ */ jsxs75("div", { className: "flex min-w-0 gap-2", children: [
+        /* @__PURE__ */ jsx77("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
+        /* @__PURE__ */ jsx77("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
       ] }, detail.label))
     ] }) : null,
-    /* @__PURE__ */ jsx76("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
-    card.output ? /* @__PURE__ */ jsx76("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx76("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
-    card.reason ? /* @__PURE__ */ jsx76("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
-    card.durationLabel ? /* @__PURE__ */ jsxs74("div", { className: "text-ui-2xs hbp-tc-subtle", children: [
+    /* @__PURE__ */ jsx77("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
+    card.output ? /* @__PURE__ */ jsx77("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx77("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
+    card.reason ? /* @__PURE__ */ jsx77("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
+    card.durationLabel ? /* @__PURE__ */ jsxs75("div", { className: "text-ui-2xs hbp-tc-subtle", children: [
       copy.details.duration,
       " ",
-      /* @__PURE__ */ jsx76("span", { className: "tabular-nums", children: card.durationLabel })
+      /* @__PURE__ */ jsx77("span", { className: "tabular-nums", children: card.durationLabel })
     ] }) : null
   ] });
 }
@@ -33392,29 +33631,12 @@ function latestScreenshotIndex(cards) {
   }
   return null;
 }
-function StepShot({ src }) {
-  const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 9);
-  if (!image.src || image.failed) {
-    return null;
-  }
-  return /* @__PURE__ */ jsx76(
-    "img",
-    {
-      alt: "",
-      "aria-hidden": true,
-      className: "h-full w-full object-contain",
-      onError: image.onError,
-      onLoad: (event) => image.onLoad(event.currentTarget),
-      src: image.src
-    }
-  );
-}
 function BrowserSteps({ group }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const copy = t2.assistant.toolCards.viewer;
   const { cards, name } = group;
   const total = cards.length;
-  const [manual, setManual] = useState46(null);
+  const [manual, setManual] = useState47(null);
   const live = group.state !== "done";
   const settledDefault = latestScreenshotIndex(cards) ?? total - 1;
   const selected = Math.min(manual ?? (live ? total - 1 : settledDefault), total - 1);
@@ -33425,7 +33647,7 @@ function BrowserSteps({ group }) {
   const move = (delta) => {
     setManual(Math.min(total - 1, Math.max(0, selected + delta)));
   };
-  return /* @__PURE__ */ jsxs74(
+  return /* @__PURE__ */ jsxs75(
     "section",
     {
       "aria-label": copy.title(name),
@@ -33437,14 +33659,14 @@ function BrowserSteps({ group }) {
         }
       },
       children: [
-        /* @__PURE__ */ jsx76("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
-        /* @__PURE__ */ jsx76("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx76(StepShot, { src: shot }, shot) : /* @__PURE__ */ jsxs74("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
-          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx76("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx76(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
-          pageUrl ? /* @__PURE__ */ jsx76("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx76("span", { className: "truncate", children: host2 }) : null,
-          /* @__PURE__ */ jsx76("span", { children: copy.noScreenshot })
+        /* @__PURE__ */ jsx77("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
+        /* @__PURE__ */ jsx77("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx77(ExpandableShot, { host: host2, src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs75("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx77("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx77(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
+          pageUrl ? /* @__PURE__ */ jsx77("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx77("span", { className: "truncate", children: host2 }) : null,
+          /* @__PURE__ */ jsx77("span", { children: copy.noScreenshot })
         ] }) }),
-        /* @__PURE__ */ jsxs74("div", { className: "mt-1 flex items-center gap-1", children: [
-          /* @__PURE__ */ jsx76(
+        /* @__PURE__ */ jsxs75("div", { className: "mt-1 flex items-center gap-1", children: [
+          /* @__PURE__ */ jsx77(
             sdk_compat_exports.Button,
             {
               "aria-label": copy.previous,
@@ -33452,11 +33674,11 @@ function BrowserSteps({ group }) {
               onClick: () => move(-1),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "chevron-left" })
+              children: /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "chevron-left" })
             }
           ),
-          /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
-          /* @__PURE__ */ jsx76(
+          /* @__PURE__ */ jsx77("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
+          /* @__PURE__ */ jsx77(
             sdk_compat_exports.Button,
             {
               "aria-label": copy.next,
@@ -33464,14 +33686,14 @@ function BrowserSteps({ group }) {
               onClick: () => move(1),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "chevron-right" })
+              children: /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "chevron-right" })
             }
           ),
-          pageUrl ? /* @__PURE__ */ jsx76(OpenPageButton, { url: pageUrl }) : null
+          pageUrl ? /* @__PURE__ */ jsx77(OpenPageButton, { url: pageUrl }) : null
         ] }),
-        /* @__PURE__ */ jsx76("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
+        /* @__PURE__ */ jsx77("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
           const rowHost = stepHost(card);
-          return /* @__PURE__ */ jsx76("li", { children: /* @__PURE__ */ jsxs74(
+          return /* @__PURE__ */ jsx77("li", { children: /* @__PURE__ */ jsxs75(
             "button",
             {
               "aria-current": index === selected ? "true" : void 0,
@@ -33482,14 +33704,14 @@ function BrowserSteps({ group }) {
               onClick: () => setManual(index),
               type: "button",
               children: [
-                /* @__PURE__ */ jsx76("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
-                /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
-                rowHost ? /* @__PURE__ */ jsx76("span", { className: "shrink-0 truncate", children: rowHost }) : null
+                /* @__PURE__ */ jsx77("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
+                /* @__PURE__ */ jsx77("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
+                rowHost ? /* @__PURE__ */ jsx77("span", { className: "shrink-0 truncate", children: rowHost }) : null
               ]
             }
           ) }, card.id);
         }) }),
-        /* @__PURE__ */ jsx76("div", { className: "mt-2", children: /* @__PURE__ */ jsx76(CardBlock, { card: step, showStatus: false }) })
+        /* @__PURE__ */ jsx77("div", { className: "mt-2", children: /* @__PURE__ */ jsx77(CardBlock, { card: step, showStatus: false }) })
       ]
     }
   );
@@ -33500,13 +33722,13 @@ function ToolCardDetails({
   open
 }) {
   const multi = group.cards.length > 1;
-  return /* @__PURE__ */ jsx76("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx76("div", { children: /* @__PURE__ */ jsx76("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx76(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx76(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
+  return /* @__PURE__ */ jsx77("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx77("div", { children: /* @__PURE__ */ jsx77("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx77(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx77(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
 }
 function TypingDots() {
-  return /* @__PURE__ */ jsxs74("span", { "aria-hidden": "true", className: "hbp-tc-typing inline-flex shrink-0 items-center gap-0.5", "data-typing": "", children: [
-    /* @__PURE__ */ jsx76("span", { className: "size-1 rounded-full bg-current" }),
-    /* @__PURE__ */ jsx76("span", { className: "size-1 rounded-full bg-current" }),
-    /* @__PURE__ */ jsx76("span", { className: "size-1 rounded-full bg-current" })
+  return /* @__PURE__ */ jsxs75("span", { "aria-hidden": "true", className: "hbp-tc-typing inline-flex shrink-0 items-center gap-0.5", "data-typing": "", children: [
+    /* @__PURE__ */ jsx77("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx77("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx77("span", { className: "size-1 rounded-full bg-current" })
   ] });
 }
 function isLiveState(state) {
@@ -33531,24 +33753,24 @@ function toggleOnClick(toggle) {
 function LiveStatus({ copy, group }) {
   const status = group.cards[group.cards.length - 1].status;
   if (group.state === "running") {
-    return /* @__PURE__ */ jsxs74(Fragment17, { children: [
-      /* @__PURE__ */ jsx76("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
-      /* @__PURE__ */ jsx76(TypingDots, {})
+    return /* @__PURE__ */ jsxs75(Fragment17, { children: [
+      /* @__PURE__ */ jsx77("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
+      /* @__PURE__ */ jsx77(TypingDots, {})
     ] });
   }
   if (group.state === "approval") {
-    return /* @__PURE__ */ jsx76("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
+    return /* @__PURE__ */ jsx77("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
   }
-  return /* @__PURE__ */ jsx76("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
+  return /* @__PURE__ */ jsx77("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
 }
 function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
   const last = group.cards[group.cards.length - 1];
   const site = group.thumb?.kind === "site" ? group.thumb : null;
   const shot = group.thumb?.kind === "screenshot" ? group.thumb.src : null;
   const pageUrl = stepPageUrl(group.cards);
-  return /* @__PURE__ */ jsxs74(Fragment17, { children: [
-    /* @__PURE__ */ jsxs74("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-3 hbp-tc-rc", children: [
-      /* @__PURE__ */ jsxs74(
+  return /* @__PURE__ */ jsxs75(Fragment17, { children: [
+    /* @__PURE__ */ jsxs75("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-3 hbp-tc-rc", children: [
+      /* @__PURE__ */ jsxs75(
         "span",
         {
           className: (0, sdk_compat_exports.cn)(
@@ -33558,27 +33780,27 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
             group.state === "approval" && "hbp-bg-warn-10 text-warning"
           ),
           children: [
-            /* @__PURE__ */ jsx76(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
-            actor ? /* @__PURE__ */ jsx76("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
+            /* @__PURE__ */ jsx77(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
+            actor ? /* @__PURE__ */ jsx77("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
           ]
         }
       ),
-      /* @__PURE__ */ jsxs74("span", { className: "flex min-w-0 flex-1 flex-col", children: [
-        /* @__PURE__ */ jsxs74("span", { className: "truncate text-ui-sm font-semibold text-fg", children: [
+      /* @__PURE__ */ jsxs75("span", { className: "flex min-w-0 flex-1 flex-col", children: [
+        /* @__PURE__ */ jsxs75("span", { className: "truncate text-ui-sm font-semibold text-fg", children: [
           group.name,
-          group.cards.length > 1 ? /* @__PURE__ */ jsxs74("span", { className: "font-normal hbp-tc-subtle tabular-nums", children: [
+          group.cards.length > 1 ? /* @__PURE__ */ jsxs75("span", { className: "font-normal hbp-tc-subtle tabular-nums", children: [
             " \xB7 ",
             group.cards.length
           ] }) : null
         ] }),
-        /* @__PURE__ */ jsxs74("span", { className: "flex min-w-0 items-center gap-1.5 truncate text-ui-xs", children: [
-          site ? /* @__PURE__ */ jsx76(SiteFavicon, { host: site.host, url: site.url }) : null,
-          /* @__PURE__ */ jsx76(LiveStatus, { copy, group })
+        /* @__PURE__ */ jsxs75("span", { className: "flex min-w-0 items-center gap-1.5 truncate text-ui-xs", children: [
+          site ? /* @__PURE__ */ jsx77(SiteFavicon, { host: site.host, url: site.url }) : null,
+          /* @__PURE__ */ jsx77(LiveStatus, { copy, group })
         ] }),
-        group.state === "error" && last.reason ? /* @__PURE__ */ jsx76("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
+        group.state === "error" && last.reason ? /* @__PURE__ */ jsx77("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
       ] })
     ] }),
-    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx76(
+    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx77(
       sdk_compat_exports.Button,
       {
         onClick: (event) => {
@@ -33590,8 +33812,8 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
         children: copy.reviewApproval
       }
     ) : null,
-    shot ? /* @__PURE__ */ jsx76(ScreenshotThumb, { src: shot }) : null,
-    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx76(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
+    shot && group.family !== "browser" ? /* @__PURE__ */ jsx77(ScreenshotThumb, { src: shot }) : null,
+    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx77(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
   ] });
 }
 function QuietCardBody({ copy, group, toggle }) {
@@ -33599,15 +33821,15 @@ function QuietCardBody({ copy, group, toggle }) {
   const header = group.cards.length > 1 ? copy.usedTimes(group.name, group.cards.length) : last.status;
   const site = group.thumb?.kind === "site" ? group.thumb : null;
   const pageUrl = stepPageUrl(group.cards);
-  return /* @__PURE__ */ jsxs74(Fragment17, { children: [
-    /* @__PURE__ */ jsxs74("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-2 hbp-tc-rr", children: [
-      /* @__PURE__ */ jsx76(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
-      /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
-      /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 truncate", children: header }),
-      site ? /* @__PURE__ */ jsx76(SiteFavicon, { host: site.host, url: site.url }) : null,
-      last.durationLabel ? /* @__PURE__ */ jsx76("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
+  return /* @__PURE__ */ jsxs75(Fragment17, { children: [
+    /* @__PURE__ */ jsxs75("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-2 hbp-tc-rr", children: [
+      /* @__PURE__ */ jsx77(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
+      /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
+      /* @__PURE__ */ jsx77("span", { className: "min-w-0 flex-1 truncate", children: header }),
+      site ? /* @__PURE__ */ jsx77(SiteFavicon, { host: site.host, url: site.url }) : null,
+      last.durationLabel ? /* @__PURE__ */ jsx77("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
     ] }),
-    pageUrl ? /* @__PURE__ */ jsx76(
+    pageUrl ? /* @__PURE__ */ jsx77(
       OpenPageButton,
       {
         className: "hbp-tc-reveal",
@@ -33634,10 +33856,20 @@ function ToolCard({
 }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const copy = t2.assistant.toolCards;
-  const [open, setOpen] = useState46(false);
-  const [everOpened, setEverOpened] = useState46(false);
-  const [mountedLive] = useState46(() => isLiveState(group.state));
+  const [open, setOpen] = useState47(false);
+  const [everOpened, setEverOpened] = useState47(false);
+  const [mountedLive] = useState47(() => isLiveState(group.state));
   const live = isLiveState(group.state);
+  const frameOpen = group.family === "browser" && live && !open;
+  const [frameMounted, setFrameMounted] = useState47(frameOpen);
+  useEffect29(() => {
+    if (frameOpen) {
+      setFrameMounted(true);
+      return;
+    }
+    const timer = window.setTimeout(() => setFrameMounted(false), 240);
+    return () => window.clearTimeout(timer);
+  }, [frameOpen]);
   const toggle = () => {
     if (everOpened) {
       setOpen((current) => !current);
@@ -33653,8 +33885,8 @@ function ToolCard({
     role: "button",
     tabIndex: 0
   };
-  return /* @__PURE__ */ jsxs74("div", { "data-tool-card": group.state, "data-tool-card-key": group.key, role: "listitem", children: [
-    /* @__PURE__ */ jsx76(
+  return /* @__PURE__ */ jsxs75("div", { "data-tool-card": group.state, "data-tool-card-key": group.key, role: "listitem", children: [
+    /* @__PURE__ */ jsx77(
       "div",
       {
         className: (0, sdk_compat_exports.cn)(
@@ -33663,10 +33895,11 @@ function ToolCard({
           live ? "flex min-h-14 items-center gap-3 rounded-card border border-line bg-surface-raised px-3 py-2.5 text-left" : "hbp-tc-row flex min-h-7 items-center gap-2 hbp-tc-rr border border-transparent px-1.5 text-left text-ui-xs hbp-tc-muted hbp-tc-hover"
         ),
         onClick: toggleOnClick(toggle),
-        children: live ? /* @__PURE__ */ jsx76(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx76(QuietCardBody, { copy, group, toggle: toggleProps })
+        children: live ? /* @__PURE__ */ jsx77(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx77(QuietCardBody, { copy, group, toggle: toggleProps })
       }
     ),
-    everOpened ? /* @__PURE__ */ jsx76(ToolCardDetails, { group, live, open }) : null
+    frameMounted ? /* @__PURE__ */ jsx77(LiveFrame, { group, open: frameOpen }) : null,
+    everOpened ? /* @__PURE__ */ jsx77(ToolCardDetails, { group, live, open }) : null
   ] });
 }
 function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
@@ -33674,14 +33907,14 @@ function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
   if (groups.length === 0) {
     return null;
   }
-  return /* @__PURE__ */ jsx76(
+  return /* @__PURE__ */ jsx77(
     "div",
     {
       "aria-label": t2.assistant.toolCards.activityLabel,
       className: (0, sdk_compat_exports.cn)("flex min-w-0 max-w-full flex-col gap-1.5", className),
       "data-slot": "tool-activity-stack",
       role: "list",
-      children: groups.map((group) => /* @__PURE__ */ jsx76(ToolCard, { actor, group, onReviewApproval }, group.key))
+      children: groups.map((group) => /* @__PURE__ */ jsx77(ToolCard, { actor, group, onReviewApproval }, group.key))
     }
   );
 }
@@ -33704,19 +33937,19 @@ function ToolRunCards({
   storedSessionId
 }) {
   const freshGroups = useMemo11(() => toolCardsFromParts(parts, { approvalCallId }), [parts, approvalCallId]);
-  const cacheRef = useRef17({ groups: [], signature: "" });
+  const cacheRef = useRef18({ groups: [], signature: "" });
   const signature = useMemo11(() => groupsSignature(freshGroups), [freshGroups]);
   if (cacheRef.current.signature !== signature || cacheRef.current.groups.length !== freshGroups.length) {
     cacheRef.current = { groups: freshGroups, signature };
   }
   const session = useMemo11(() => ({ runtimeId: sessionId, storedId: storedSessionId }), [sessionId, storedSessionId]);
-  return /* @__PURE__ */ jsx76(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx76(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
+  return /* @__PURE__ */ jsx77(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx77(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
 }
 
 // src/plugin.tsx
-import { Fragment as Fragment18, jsx as jsx77 } from "react/jsx-runtime";
+import { Fragment as Fragment18, jsx as jsx78 } from "react/jsx-runtime";
 function RailTabTitle() {
-  return /* @__PURE__ */ jsx77(Fragment18, { children: useBots().rail.title });
+  return /* @__PURE__ */ jsx78(Fragment18, { children: useBots().rail.title });
 }
 var plugin_default = {
   id: "hermes-bots-plus",
@@ -33729,6 +33962,7 @@ var plugin_default = {
     loadBotSections();
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES);
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES);
+    const disposeLiveViewLocales = ctx.i18n.register(LIVE_VIEW_LOCALES);
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES);
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES);
     const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES);
@@ -33740,6 +33974,7 @@ var plugin_default = {
       ctx.onDispose(unmountStyles);
       ctx.onDispose(disposeLocales);
       ctx.onDispose(disposeTeamLocales);
+      ctx.onDispose(disposeLiveViewLocales);
       ctx.onDispose(disposeHireLocales);
       ctx.onDispose(disposeShareLocales);
       ctx.onDispose(disposeAutopilotLocales);
@@ -33940,17 +34175,17 @@ var plugin_default = {
     ctx.register({
       id: "screen-portal",
       area: sdk_compat_exports.SIDEBAR_PROFILE_GROUP_HEADER_AREA,
-      data: { render: (route) => /* @__PURE__ */ jsx77(ProfileGroupScreenPortal, { route }) }
+      data: { render: (route) => /* @__PURE__ */ jsx78(ProfileGroupScreenPortal, { route }) }
     });
     ctx.register({
       id: "agents-section",
       area: SIDEBAR_LIST_TOP_AREA,
-      data: { render: () => /* @__PURE__ */ jsx77(AgentsSection, {}), searchable: true }
+      data: { render: () => /* @__PURE__ */ jsx78(AgentsSection, {}), searchable: true }
     });
     ctx.register({
       id: "bot-header-identity",
       area: CHAT_HEADER_AREAS.title,
-      data: { render: (props) => /* @__PURE__ */ jsx77(BotHeaderIdentity, { ...props }) }
+      data: { render: (props) => /* @__PURE__ */ jsx78(BotHeaderIdentity, { ...props }) }
     });
     ctx.register({
       id: "pane",
@@ -33985,7 +34220,7 @@ var plugin_default = {
         width: "260px",
         collapsible: true,
         hideOnly: true,
-        tabTitle: () => /* @__PURE__ */ jsx77(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
+        tabTitle: () => /* @__PURE__ */ jsx78(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
         tabTitleText: () => (0, sdk_compat_exports.translateNow)("common.bots"),
         dock: {
           pane: "sessions",
@@ -33993,7 +34228,7 @@ var plugin_default = {
           enforce: true
         }
       },
-      render: () => /* @__PURE__ */ jsx77(BotsPane, {})
+      render: () => /* @__PURE__ */ jsx78(BotsPane, {})
     });
     const registerRoutinesPane = (restoreDismissed) => {
       const dispose = ctx.register({
@@ -34005,7 +34240,7 @@ var plugin_default = {
         // not `useI18n`: a pane title is read at registration, outside React.
         title: botsText().rail.title,
         data: {
-          tabTitle: () => /* @__PURE__ */ jsx77(RailTabTitle, {}),
+          tabTitle: () => /* @__PURE__ */ jsx78(RailTabTitle, {}),
           tabTitleText: () => botsText().rail.title,
           placement: "main",
           // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
@@ -34020,7 +34255,7 @@ var plugin_default = {
           defaultCollapsed: true,
           width: "320px"
         },
-        render: () => /* @__PURE__ */ jsx77(MissionRail, {})
+        render: () => /* @__PURE__ */ jsx78(MissionRail, {})
       });
       if (restoreDismissed && typeof host.undismissPane === "function") {
         host.undismissPane(`${ID}:routines`);
@@ -34131,37 +34366,37 @@ var plugin_default = {
       id: "bot-tool-cards",
       area: sdk_compat_exports.TOOL_RUN_RENDERER_AREA,
       data: {
-        render: (props) => /* @__PURE__ */ jsx77(ToolRunCards, { ...props })
+        render: (props) => /* @__PURE__ */ jsx78(ToolRunCards, { ...props })
       }
     });
     ctx.register({
       id: "chat-empty",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx77(BotChatEmpty, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx78(BotChatEmpty, { sessionId })
       }
     });
     ctx.register({
       id: "chat-empty-tips",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx77(BotChatTips, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx78(BotChatTips, { sessionId })
       }
     });
     ctx.register({
       id: "bot-inbound-cards",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx77(BotInboundCards, {})
+      render: () => /* @__PURE__ */ jsx78(BotInboundCards, {})
     });
     ctx.register({
       id: "bot-context-nudge",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx77(BotContextNudge, {})
+      render: () => /* @__PURE__ */ jsx78(BotContextNudge, {})
     });
     ctx.register({
       id: "bot-delegate-hint",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx77(BotDelegateHint, {})
+      render: () => /* @__PURE__ */ jsx78(BotDelegateHint, {})
     });
     ctx.register({
       id: "new-agent",
@@ -34200,7 +34435,7 @@ var plugin_default = {
             label: displayName(bot, botRosterMeta(bot, meta)),
             keywords: ["bot", "agent", "chat", bot.name, botHandle(bot.name, bot)].filter(Boolean),
             detail: () => bot.remoteSource ? "remote" : "local",
-            icon: (props) => /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "robot", ...props }),
+            icon: (props) => /* @__PURE__ */ jsx78(sdk_compat_exports.Codicon, { name: "robot", ...props }),
             run: () => void openRosterBot(bot)
           }));
         }
@@ -34224,13 +34459,13 @@ var plugin_default = {
       area: sdk_compat_exports.TRANSCRIPT_DIRECTIVE_AREA,
       data: {
         name: BOT_PLAN_DIRECTIVE,
-        render: (props) => /* @__PURE__ */ jsx77(BotPlanCard, { ...props })
+        render: (props) => /* @__PURE__ */ jsx78(BotPlanCard, { ...props })
       }
     });
     ctx.register({
       id: "bot-plan-checklist",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx77(BotPlanChecklist, {})
+      render: () => /* @__PURE__ */ jsx78(BotPlanChecklist, {})
     });
     ctx.register({
       id: "mention-middleware",
@@ -34325,7 +34560,7 @@ var plugin_default = {
       ctx.register({
         id: "instant-ack",
         area: sdk_compat_exports.COMPOSER_AREAS.top,
-        render: () => /* @__PURE__ */ jsx77(InstantAckLine, {})
+        render: () => /* @__PURE__ */ jsx78(InstantAckLine, {})
       });
     }
     for (const contribution of [
@@ -34333,7 +34568,7 @@ var plugin_default = {
         id: "team-page",
         area: sdk_compat_exports.ROUTES_AREA,
         data: { path: "/team" },
-        render: () => /* @__PURE__ */ jsx77(TeamPage, {})
+        render: () => /* @__PURE__ */ jsx78(TeamPage, {})
       },
       {
         id: "team-nav",

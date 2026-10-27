@@ -13,7 +13,6 @@ import {
   useMediaImage
 } from '@hermes/plugin-sdk'
 import {
-  createContext,
   type HTMLAttributes,
   type JSX,
   type KeyboardEvent,
@@ -21,19 +20,15 @@ import {
   type MouseEvent,
   type ReactNode,
   useContext,
+  useEffect,
   useMemo,
   useRef,
   useState
 } from 'react'
 
+import { ExpandableShot, LiveFrame } from './tool-card-live'
 import { isPublicHost, type ToolCardGroup, toolCardsFromParts, type ToolCardView } from './tool-card-model'
-
-/** The Bot Chat whose transcript the cards sit in, so "Open page" lands in
- *  that chat's preview pane. */
-const PreviewSessionContext = createContext<{ runtimeId: null | string; storedId: null | string }>({
-  runtimeId: null,
-  storedId: null
-})
+import { PreviewSessionContext } from './tool-card-session'
 
 /** A site's icon, inline at 14px. Renders nothing for private hosts so the
  *  lookup never touches the LAN; the fixed empty fallback keeps local names
@@ -215,25 +210,6 @@ function latestScreenshotIndex(cards: readonly ToolCardView[]): number | null {
   return null
 }
 
-function StepShot({ src }: { src: string }) {
-  const image = useMediaImage(src, 16 / 9)
-
-  if (!image.src || image.failed) {
-    return null
-  }
-
-  return (
-    <img
-      alt=""
-      aria-hidden
-      className="h-full w-full object-contain"
-      onError={image.onError}
-      onLoad={event => image.onLoad(event.currentTarget)}
-      src={image.src}
-    />
-  )
-}
-
 /** The browser steps viewer: a frame on the selected step plus an ordered
  *  step list. Key handling sits on the section so arrows work from any of
  *  its buttons without adding a tab stop. */
@@ -270,7 +246,7 @@ export function BrowserSteps({ group }: { group: ToolCardGroup }) {
       <div className="text-ui-xs font-semibold text-fg">{copy.title(name)}</div>
       <div className="mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken">
         {shot ? (
-          <StepShot key={shot} src={shot} />
+          <ExpandableShot host={host} src={shot} step={selected + 1} />
         ) : (
           <div className="flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle">
             {pageUrl && isPublicHost(new URL(pageUrl).hostname) ? (
@@ -482,7 +458,7 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }: CardBody
           {copy.reviewApproval}
         </Button>
       ) : null}
-      {shot ? <ScreenshotThumb src={shot} /> : null}
+      {shot && group.family !== 'browser' ? <ScreenshotThumb src={shot} /> : null}
       {pageUrl && group.state !== 'approval' ? <OpenPageButton iconOnly url={pageUrl} /> : null}
     </>
   )
@@ -548,6 +524,21 @@ export function ToolCard({
   const [everOpened, setEverOpened] = useState(false)
   const [mountedLive] = useState(() => isLiveState(group.state))
   const live = isLiveState(group.state)
+  const frameOpen = group.family === 'browser' && live && !open
+  const [frameMounted, setFrameMounted] = useState(frameOpen)
+
+  // Keep the frame mounted while it folds shut, then drop its images.
+  useEffect(() => {
+    if (frameOpen) {
+      setFrameMounted(true)
+
+      return
+    }
+
+    const timer = window.setTimeout(() => setFrameMounted(false), 240)
+
+    return () => window.clearTimeout(timer)
+  }, [frameOpen])
 
   const toggle = () => {
     if (everOpened) {
@@ -588,6 +579,7 @@ export function ToolCard({
           <QuietCardBody copy={copy} group={group} toggle={toggleProps} />
         )}
       </div>
+      {frameMounted ? <LiveFrame group={group} open={frameOpen} /> : null}
       {everOpened ? <ToolCardDetails group={group} live={live} open={open} /> : null}
     </div>
   )
