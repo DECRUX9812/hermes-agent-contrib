@@ -740,6 +740,50 @@ describe('PreviewPane console state', () => {
     })
   })
 
+  // A guest that is attached but has not reached dom-ready THROWS from
+  // loadURL rather than rejecting. A float opens a second pane for the tab it
+  // lifts, which lands exactly in that window: uncaught, the throw escaped the
+  // sync effect into the error boundary and blanked the whole view.
+  it('keeps the pane alive when the guest refuses loadURL until dom-ready', async () => {
+    const target = { kind: 'url', label: 'Preview', source: 'http://localhost:5174', url: 'http://localhost:5174' } as const
+
+    let rendered!: ReturnType<typeof render>
+    await act(async () => {
+      rendered = render(<PreviewPane tabId="loadurl-race" target={target} />)
+    })
+
+    const webview = rendered.container.querySelector('webview') as HTMLElement & Record<string, unknown>
+    const notAttached = new Error('The WebView must be attached to the DOM and the dom-ready event emitted')
+
+    const loadURL = vi.fn((_url: string) => {
+      throw notAttached
+    })
+
+    Object.assign(webview, { loadURL })
+
+    // The session opens a new URL while the guest still refuses to load.
+    await act(async () => {
+      rendered.rerender(
+        <PreviewPane
+          tabId="loadurl-race"
+          target={{ ...target, source: 'https://example.com/next', url: 'https://example.com/next' }}
+        />
+      )
+    })
+
+    expect(loadURL).toHaveBeenCalledWith('https://example.com/next')
+    // The refusal is a "not yet", not a failed page: nothing was reported.
+    expect(rendered.container.textContent).not.toContain('Preview failed to load')
+
+    loadURL.mockImplementation(async () => {})
+    await act(async () => {
+      webview.dispatchEvent(new Event('dom-ready'))
+    })
+
+    expect(loadURL).toHaveBeenCalledTimes(2)
+    expect(loadURL).toHaveBeenLastCalledWith('https://example.com/next')
+  })
+
   // `about:blank` in a webview is a white void that reads as broken against
   // the app's chrome — the pane should say it's empty on purpose.
   it('shows the blank-page empty state instead of a white void', async () => {

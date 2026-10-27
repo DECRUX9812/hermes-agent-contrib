@@ -1468,13 +1468,44 @@ export function PreviewPane({
     setHistory({ back: false, forward: false })
     setLoading(true)
     setCurrentUrl(nextUrl)
-    void navigation.loadURL?.(nextUrl)?.catch((error: unknown) => {
+
+    const report = (error: unknown) => {
       setLoadError({
         description: error instanceof Error ? error.message : copy.unreachableDescription,
         url: nextUrl
       })
       setLoading(false)
-    })
+    }
+
+    const load = () => {
+      try {
+        void navigation.loadURL?.(nextUrl)?.catch(report)
+
+        return true
+      } catch {
+        // `loadURL` THROWS (it does not reject) while the guest is attached but
+        // has not reached dom-ready — the state a pane spends its first frames
+        // in, and the one a float opening another pane lands in. Left uncaught
+        // it escapes this effect into the error boundary and takes the whole
+        // view down; the guest's own dom-ready is the cue to try again.
+        return false
+      }
+    }
+
+    if (!load()) {
+      webviewRef.current?.addEventListener(
+        'dom-ready',
+        () => {
+          try {
+            void navigation.loadURL?.(nextUrl)?.catch(report)
+          } catch {
+            // Still not ready: the element is already loading its own `src`,
+            // so the address the pane mounted with is on screen either way.
+          }
+        },
+        { once: true }
+      )
+    }
   }, [annotateGuest, consoleState, copy.unreachableDescription, isRemoteHtml, isWebPreview, target.url])
 
   return (
