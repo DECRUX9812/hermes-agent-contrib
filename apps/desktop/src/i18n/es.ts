@@ -609,6 +609,7 @@ export const esOverrides = {
       'view.toggleSimpleMode': 'Activar o desactivar el modo simple',
       'view.showFiles': 'Mostrar explorador de archivos',
       'view.showBrowser': 'Alternar navegador',
+      'view.floatBrowser': 'Hacer flotar el navegador',
       'view.toggleHud': 'Alternar modo HUD',
       'hud.snapToPointer': 'Mover HUD al puntero (global, mientras el HUD esté abierto)',
       'view.showTerminal': 'Mostrar terminal',
@@ -4661,6 +4662,15 @@ export const esOverrides = {
     popIn: 'Acoplar',
     popOut: 'Desacoplar',
     linkHint: '⌘/Ctrl-clic para abrir en el navegador',
+    float: {
+      dock: 'Acoplar navegador',
+      dockLeft: 'Acoplar a la izquierda',
+      dockRight: 'Acoplar a la derecha',
+      float: 'Flotar sobre la app',
+      label: 'Navegador flotante',
+      minimize: 'Minimizar (Esc)',
+      restore: 'Mostrar navegador flotante'
+    },
     sourceLineTitle: 'Haz clic para seleccionar · Mayús-clic para ampliar · arrastra al compositor',
     source: 'FUENTE',
     renderedPreview: 'VISTA PREVIA',
