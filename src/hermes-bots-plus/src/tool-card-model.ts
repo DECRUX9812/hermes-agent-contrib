@@ -476,6 +476,13 @@ function toolCardIcon(toolName: string, family: ToolCardFamily): string {
   return FAMILY_ICON[family]
 }
 
+/** The icon and display name a tool card would use, for compact step lists. */
+export function toolStepIdentity(toolName: string): { icon: string; name: string } {
+  const family = toolCardFamily(toolName)
+
+  return { icon: toolCardIcon(toolName, family), name: toolCardName(toolName, family) }
+}
+
 function titleCase(value: string): string {
   return value
     .split(/[\s_-]+/)
