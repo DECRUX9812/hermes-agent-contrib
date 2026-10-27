@@ -115,5 +115,11 @@ export const introJa: Translations['intro'] = {
     '問題、ファイル、アイデアを送ってください。設定された人格に従います。',
     'タスクをここに送ってください。リポジトリの実情に沿って作業します。',
     `背景を教えてください。${label} モードで答えます。`
-  ]
+  ],
+  starters: {
+    featureSquad: { label: '機能チーム', prompt: '機能を並行して計画・実装・テストして: ' },
+    bugHunt: { label: 'バグ調査', prompt: 'このバグを再現して修正して: ' },
+    research: { label: 'リサーチ', prompt: 'Web とドキュメントを調べて要約して: ' }
+  },
+  connectPortal: 'Nous Portal に接続'
 }

@@ -97,6 +97,13 @@ export interface Translations extends NoticeTranslations {
   intro: {
     stock: Record<string, string[]>
     custom: (label: string) => string[]
+    /** Starter chips under the splash; `prompt` is inserted into the composer as-is. */
+    starters: {
+      featureSquad: { label: string; prompt: string }
+      bugHunt: { label: string; prompt: string }
+      research: { label: string; prompt: string }
+    }
+    connectPortal: string
   }
   connectors: ConnectorCardTranslations
 catalog: CatalogTranslations
