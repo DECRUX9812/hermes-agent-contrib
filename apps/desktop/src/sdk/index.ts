@@ -24,7 +24,7 @@ import type { ReactNode } from 'react'
 import { capabilityScoped, getApiRequestConnection } from '@/api/client'
 import { mutateSessionFenced } from '@/api/sessions'
 import { PRIMARY_SESSION_VIEW } from '@/app/chat/session-view'
-import { openSession as coreOpenSession, type OpenSessionIntent } from '@/app/open-session'
+import { openSession, type OpenSessionIntent } from '@/app/open-session'
 import { syncWorkspaceRoute } from '@/app/routes'
 import type { ClientSessionState } from '@/app/types'
 import {
@@ -124,6 +124,7 @@ import { $viewport, type ViewportRect } from './viewport'
 
 /** Pane, status bar and titlebar slots; see `./areas` for the mount rules. */
 export * from './areas'
+export * from './overlay-exports'
 /** The plugin authoring contract (`HermesPlugin`, `PluginContext`, `ctx.*` door types). */
 export type * from './plugin-contract'
 export type { PluginProfileRequestOptions, PluginProfileRoute } from './profile-request'
@@ -1046,14 +1047,14 @@ export const host = {
           }
 
           if (options.workspaceMode === 'bots') {
-            coreOpenSession(storedSessionId, navigate, intent, {
+            openSession(storedSessionId, navigate, intent, {
               ownerRoute: ownerRoute ?? undefined,
               workspaceMode: 'bots',
               workspaceOwnerKey: options.workspaceOwnerKey,
               ...(options.tabTitle ? { workspaceTabTitle: options.tabTitle } : {})
             })
           } else {
-            coreOpenSession(storedSessionId, navigate, intent)
+            openSession(storedSessionId, navigate, intent)
           }
 
           // Judge the main surface AFTER the open: on a cold start the persisted
@@ -1553,24 +1554,6 @@ export const host = {
   i18n: i18nHost
 }
 
-/** Top-level `openSession` — the SAME function as `host.openSession`.
- *
- *  The runtime plugin shim re-exports a namespace's own keys
- *  (`sdk/runtime.ts` builds `export const { … } = m` from
- *  `Object.keys(__HERMES_PLUGIN_SDK__)`), so a member reachable only as
- *  `host.openSession` is NOT a named export. Plugin code that does
- *  `import { openSession } from '@hermes/plugin-sdk'` then fails at link time
- *  ("does not provide an export named 'openSession'") and the whole plugin
- *  vanishes — the failure mode every fork-era plugin using this call hits.
- *  Alias it here rather than duplicating the implementation. */
-export const openSession = (storedSessionId: string, options?: PluginOpenSessionOptions): Promise<void> =>
-  host.openSession(storedSessionId, options)
-
-/** Top-level `navigate` — the SAME function as `host.navigate`, re-exported
- *  for the same reason as `openSession` (`import { navigate } from
- *  '@hermes/plugin-sdk'`). */
-export const navigate = (path: string): void => host.navigate(path)
-
 // -- react bridge -------------------------------------------------------------
 
 export type { DesktopSettingKey, DesktopSettingValues } from './settings'
@@ -1722,18 +1705,6 @@ export type { TitlebarTool } from '@/app/shell/titlebar-controls'
  * `MEDIA:` delivery directives) and the same rich Markdown/media components as
  * core chat. Prefer this over raw Streamdown for transcript-style messages. */
 export { MessageTextContent } from '@/components/assistant-ui/markdown-text'
-export { ApprovalCard, type ApprovalCardProps } from '@/components/assistant-ui/tool/approval'
-/** Tool-run renderer building blocks: the tool view model core's rows read,
- *  a media loader that resolves backend image paths, and the side preview. */
-export {
-  buildToolView,
-  compactPreview,
-  findFirstUrl,
-  parseMaybeObject,
-  stableHash,
-  type ToolPart,
-  type ToolView
-} from '@/components/assistant-ui/tool/fallback-model'
 /** The oversized Collapse lettering an empty chat is titled with — core writes
  *  "HERMES AGENT" with it, a `chat.empty` contribution writes its own name. */
 export { Wordmark } from '@/components/chat/wordmark'
@@ -1792,8 +1763,6 @@ export {
 export { EmptyState } from '@/components/ui/empty-state'
 export { ErrorState } from '@/components/ui/error-state'
 export { FadeScroll } from '@/components/ui/fade-scroll'
-/** A site's favicon with a fallback while it loads or when it has none. */
-export { Favicon } from '@/components/ui/favicon'
 export { GlyphSpinner } from '@/components/ui/glyph-spinner'
 export { Input } from '@/components/ui/input'
 export { Kbd, KbdGroup } from '@/components/ui/kbd'
@@ -1819,19 +1788,17 @@ export { Skeleton } from '@/components/ui/skeleton'
 export { Switch } from '@/components/ui/switch'
 export { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 export { Textarea } from '@/components/ui/textarea'
-/** The icon a tool's rows use, by tool icon name. */
-export { ToolIcon } from '@/components/ui/tool-icon'
 export { Tip, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 export type { GatewayEventListener } from '@/contrib/events'
-
-// -- contracts ----------------------------------------------------------------
-
 /** Mount-scoped contribution: while the rendering component is mounted, its
  *  children render in the target area's slot; unmount disposes it. Use for
  *  page-owned chrome (a page's titlebar control leaves with the page) —
  *  `ctx.register` stays the door for permanent contributions. Namespace the
  *  id with your plugin slug (`kanban:board-switcher`). */
 export { Contribute, type ContributeProps } from '@/contrib/react/contribute'
+
+// -- contracts ----------------------------------------------------------------
+
 /** Settings ▸ Plugins entries (`ctx.registerSettingsPage`); `pluginSettingsHref` deep-links one. */
 export { pluginSettingsHref, SETTINGS_PLUGINS_AREA } from '@/contrib/settings-pages'
 export type { Contribution } from '@/contrib/types'
@@ -1841,7 +1808,6 @@ export type { HermesGateway } from '@/hermes'
 /** Grab-to-pan for overflow containers (boards, timelines, wide tables) —
  *  the shared scrub primitive; don't hand-roll drag-to-scroll. */
 export { type GrabScroll, useGrabScroll } from '@/hooks/use-grab-scroll'
-export { useMediaImage } from '@/hooks/use-media-image'
 /** Localized copy. `useI18n` reuses the app's strings; `usePluginI18n(id)` +
  *  `ctx.i18n.register` let a plugin ship its OWN locale bundles, scoped like
  *  `ctx.storage` and resolved against the app's active locale — no core edit.
@@ -1874,7 +1840,6 @@ export { type BudgetedLoop, type BudgetedLoopOptions, createBudgetedLoop } from 
 /** The blank transcript as a contribution area: claim the sessions you own and
  *  render what stands in the gap. Core's own splash keeps a fresh draft. */
 export { CHAT_EMPTY_AREA, type ChatEmptyContribution, type ChatEmptyProps } from '@/lib/chat-empty'
-export { hostPathLabel } from '@/lib/external-link'
 /** THE confirm flow for guarded model switches — when a gateway model-switch
  *  RPC answers `confirm_required` (data-policy / expensive-model guard),
  *  route it through this shared applier instead of forking a per-surface
@@ -1900,10 +1865,8 @@ export { formatModifierToken } from '@/lib/keybinds/combo'
  *  a renderer that stays open for days. Only for values that can be
  *  regenerated — eviction costs a recompute or a refetch, never correctness. */
 export { LruCache } from '@/lib/lru-cache'
-
 /** Capture a gateway file download alongside a REST read (see the SDK guide). */
 export { captureGatewayFileDownload } from '@/lib/media'
-
 /** True when a saved provider id names this `model.options` row: its slug,
  *  display name, or a custom-provider alias (`custom:<key>` vs the bare key). */
 export { catalogProviderMatches } from '@/lib/model-options'
@@ -1918,9 +1881,11 @@ export { PROFILE_SWATCHES, profileColor, profileColorSoft } from '@/lib/profile-
  *  `ctx.socket` frame invalidating a query). Inside components keep using
  *  `useQueryClient`. */
 export { queryClient } from '@/lib/query-client'
+
 /** Compact labels for the reasoning levels exported from @hermes/shared, so a
  *  plugin surfacing a thinking depth uses the same spelling as the app. */
 export { reasoningEffortLabel } from '@/lib/reasoning-effort'
+
 /** The app's own gateway-readiness evaluation (setup.status +
  *  setup.runtime_check, reconciled) — pass `host.request`. Don't hand-roll
  *  readiness from raw RPC shapes. */
@@ -1948,7 +1913,6 @@ export {
 } from '@/lib/transcript-directives'
 export { cn } from '@/lib/utils'
 export { gatewayActivationEpoch } from '@/store/gateway'
-export { openPreview } from '@/store/preview'
 /** THE unread store behind `SessionStatusDot`'s emerald dot. A plugin that
  *  learns out-of-band that a session produced something the user hasn't seen
  *  (a roster poll's activity watermark, say) writes HERE rather than keeping
@@ -2021,7 +1985,6 @@ export {
   REASONING_EFFORTS,
   type ReasoningEffort
 } from '@hermes/shared'
-export { stripAnsi } from '@hermes/shared/ansi'
 /** WCAG contrast, from the sRGB primitives shared with the TUI (`null` for
  *  an unparseable colour, never a fake 0). */
 export { contrastRatio } from '@hermes/shared/color'
