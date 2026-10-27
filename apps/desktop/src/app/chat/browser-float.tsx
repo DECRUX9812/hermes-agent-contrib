@@ -12,6 +12,7 @@ import {
   clearBrowserFloat,
   dockBrowserFloat,
   dockSideForPointer,
+  FLOAT_MARGIN,
   floatPillOffset,
   type FloatRect,
   setBrowserFloatMinimized,
@@ -30,11 +31,20 @@ const viewport = () => ({ height: window.innerHeight, width: window.innerWidth }
 /** Fallback for `--titlebar-height` when the shell hasn't defined it. */
 const TITLEBAR_FALLBACK = 34
 const PILL_HEIGHT_FALLBACK = 32
+const PILL_WIDTH_FALLBACK = 160
 
 /** Where the pill goes now: measured against the status bar and title bar. */
 function pillOffset(pill: HTMLElement | null) {
   const statusbar = document.querySelector<HTMLElement>('[data-slot="statusbar"]')
-  const bottom = statusbar ? Math.max(0, window.innerHeight - statusbar.getBoundingClientRect().top) : 0
+  const pillLeft = window.innerWidth - (pill?.offsetWidth || PILL_WIDTH_FALLBACK) - FLOAT_MARGIN
+
+  // Anything under the pill's lane that it must sit above: the status bar, and
+  // a composer that reaches into the bottom-right corner.
+  const below = [statusbar, ...document.querySelectorAll<HTMLElement>('[data-slot="composer-root"]')]
+    .map(el => el?.getBoundingClientRect())
+    .filter(box => box && box.height > 0 && box.right > pillLeft)
+
+  const bottom = Math.max(0, ...below.map(box => window.innerHeight - box!.top))
   const titlebar = parseFloat(getComputedStyle(statusbar ?? document.documentElement).getPropertyValue('--titlebar-height'))
 
   return floatPillOffset(

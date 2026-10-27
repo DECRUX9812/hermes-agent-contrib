@@ -75,6 +75,21 @@ describe('BrowserFloat', () => {
     expect(screen.getByRole('region', { name: 'Floating browser' })).toBeTruthy()
   })
 
+  it('seats the pill above a composer that reaches into its corner', () => {
+    const composer = window.document.createElement('div')
+
+    composer.dataset.slot = 'composer-root'
+    composer.getBoundingClientRect = () =>
+      ({ bottom: window.innerHeight - 20, height: 80, left: 0, right: window.innerWidth - 20, top: window.innerHeight - 100 }) as DOMRect
+    window.document.body.append(composer)
+    floatExample()
+    $browserFloat.set({ ...$browserFloat.get(), minimized: true })
+    render(<BrowserFloat />)
+
+    expect(screen.getByRole('button', { name: 'Show floating browser' }).style.bottom).toBe('112px')
+    composer.remove()
+  })
+
   it('docks back into the layout from the title bar', () => {
     const id = floatExample()
 
