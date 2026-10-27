@@ -86,9 +86,8 @@ describe('coveredByToolCards', () => {
       ).toBe(false)
     })
 
-    it('returns false for card tools (diffs, clarify, visualization, catalog, connections)', () => {
+    it('returns false for card tools (diffs, clarify, catalog, connections)', () => {
       expect(coveredByToolCards({ toolName: 'clarify' })).toBe(false)
-      expect(coveredByToolCards({ toolName: 'create_visualization' })).toBe(false)
       expect(coveredByToolCards({ toolName: 'delegate_task' })).toBe(false)
       expect(coveredByToolCards({ toolName: 'image_generate' })).toBe(false)
       expect(coveredByToolCards({ toolName: 'manage_catalog' })).toBe(false)
