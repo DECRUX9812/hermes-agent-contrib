@@ -4,6 +4,7 @@ import { useSessionView } from '@/app/chat/session-view'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Favicon } from '@/components/ui/favicon'
+import { Tip } from '@/components/ui/tooltip'
 import { useMediaImage } from '@/hooks/use-media-image'
 import { useI18n } from '@/i18n'
 import { hostPathLabel } from '@/lib/external-link'
@@ -155,17 +156,18 @@ export function BrowserSteps({ group }: { group: ToolCardGroup }) {
           <Codicon name="chevron-right" />
         </Button>
         {pageUrl ? (
-          <Button
-            aria-label={copy.openPage}
-            className="h-6 gap-1 px-1.5 text-ui-xs"
-            onClick={openPage}
-            size="sm"
-            title={pageUrl}
-            variant="ghost"
-          >
-            <Codicon name="link-external" />
-            {copy.openPage}
-          </Button>
+          <Tip label={pageUrl}>
+            <Button
+              aria-label={copy.openPage}
+              className="h-6 gap-1 px-1.5 text-ui-xs"
+              onClick={openPage}
+              size="sm"
+              variant="ghost"
+            >
+              <Codicon name="link-external" />
+              {copy.openPage}
+            </Button>
+          </Tip>
         ) : null}
       </div>
       <ol className="mt-1 flex flex-col gap-0.5">
