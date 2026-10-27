@@ -1,4 +1,7 @@
-// hermes-design: the design-system layer as a plugin, so core keeps only token names (styles.css @theme).
+// hermes-design: the design-system layer as a plugin. Core styles.css stays stock.
+//   • Design tokens: the ui type ladder, radius roles, easings, durations, the semantic colour names (fg, surface,
+//     line, success, warning, danger…) and the utility classes built on them, for core and plugin cards alike.
+//   • Composer fill and dock fade (the conversation no longer ghosts through the composer).
 //   • Warm Paper skin, contributed through the SDK themes slot (THEMES_AREA): palette, terminal and its customCSS.
 //   • Design-system overrides for every skin: arbitrary sizes and radii snap to the type ladder and radius roles,
 //     sentence-case labels, the narrow-drawer scrim, the ink wordmark, the featured row, mobile overlay sheets,
@@ -336,9 +339,91 @@ div.cm-editor.cm-focused { outline: none; }
 .rounded-md:has(> div > .cm-editor.cm-focused) { border-color: var(--color-ring); }
 `
 
-// Paper also carries the overrides in its own customCSS: the core replays the last painted skin from storage on
-// boot, so the default look lands on the first frame instead of when this plugin loads.
 paperTheme.customCSS = PAPER_CSS + OVERRIDES
+
+const COLOR_NAMES = ['fg', 'fg-secondary', 'fg-muted', 'fg-subtle', 'surface', 'surface-raised', 'surface-sunken',
+  'line', 'hover', 'selected', 'success', 'warning', 'danger', 'info']
+
+/* Semantic tokens. Every colour name resolves to the live theme's --ui-* variables, so all skins restyle them. */
+const TOKENS = `
+:root {
+  --text-ui-2xs: 0.6875rem;
+  --text-ui-2xs--line-height: 1rem;
+  --text-ui-xs: 0.75rem;
+  --text-ui-xs--line-height: 1rem;
+  --text-ui-sm: 0.8125rem;
+  --text-ui-sm--line-height: 1.25rem;
+  --radius-control: 0.375rem;
+  --radius-row: 0.4375rem;
+  --radius-card: 0.625rem;
+  --radius-pill: 9999px;
+  --ease-out-quint: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-spring: cubic-bezier(0.34, 1.36, 0.64, 1);
+  --dur-instant: 80ms;
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --dur-slow: 260ms;
+  --color-fg: var(--ui-text-primary);
+  --color-fg-secondary: var(--ui-text-secondary);
+  --color-fg-muted: var(--ui-text-tertiary);
+  --color-fg-subtle: var(--ui-text-quaternary);
+  --color-surface: var(--ui-chat-surface-background);
+  --color-surface-raised: var(--ui-bg-elevated);
+  --color-surface-sunken: var(--ui-bg-quaternary);
+  --color-line: var(--ui-stroke-tertiary);
+  --color-hover: var(--ui-row-hover-background);
+  --color-selected: var(--ui-row-active-background);
+  --color-success: var(--ui-green);
+  --color-warning: var(--ui-yellow);
+  --color-danger: var(--ui-red);
+  --color-info: var(--ui-blue);
+  --ds-focus-ring: 0 0 0 2px var(--ui-chat-surface-background), 0 0 0 4px color-mix(in srgb, var(--ui-accent) 55%, transparent);
+}
+@layer utilities {
+${['2xs', 'xs', 'sm']
+  .map(k => `  .text-ui-${k} { font-size: var(--text-ui-${k}); line-height: var(--tw-leading, var(--text-ui-${k}--line-height)); }`) // raw-style-ok: token layer
+  .join('\n')}
+${['control', 'row', 'card', 'pill'].map(k => `  .rounded-${k} { border-radius: var(--radius-${k}); }`).join('\n')}
+${['out-quint', 'standard', 'spring']
+  .map(k => `  .ease-${k} { --tw-ease: var(--ease-${k}); transition-timing-function: var(--ease-${k}); }`) // raw-style-ok: token layer
+  .join('\n')}
+${COLOR_NAMES.map(
+  k => `  .text-${k} { color: var(--color-${k}); }
+  .bg-${k} { background-color: var(--color-${k}); }
+  .border-${k} { border-color: var(--color-${k}); }
+  .ring-${k} { --tw-ring-color: var(--color-${k}); }`
+).join('\n')}
+  .focus-ring { outline: none; }
+  .focus-ring:focus-visible { box-shadow: var(--ds-focus-ring); }
+}
+`
+
+/* Composer: the card colour mixes with the chat surface underneath, not with transparent, so scrolled text never
+   ghosts through it (transparent wallpaper windows keep their glass since that surface is see-through); a short
+   fade above the docked composer; scrolled up it recedes to 60% instead of 30%. */
+const COMPOSER = `
+[data-slot='composer-root'] {
+  --composer-under: var(--ui-chat-surface-background, var(--dt-background));
+  --composer-fill: color-mix(in srgb, var(--dt-card) 88%, var(--composer-under)); /* raw-style-ok: composer token */
+}
+[data-slot='composer-root'][data-thread-scrolled-up] {
+  --composer-fill: color-mix(in srgb, var(--dt-card) 80%, var(--composer-under)); /* raw-style-ok: composer token */
+}
+[data-slot='composer-dock']:is(:hover, :focus-within) [data-slot='composer-root'][data-thread-scrolled-up] {
+  --composer-fill: color-mix(in srgb, var(--dt-card) 88%, var(--composer-under)); /* raw-style-ok: composer token */
+}
+[data-slot='composer-dock']:not([data-popped-out])::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  bottom: 100%;
+  height: 1rem;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent, var(--ui-chat-surface-background, transparent));
+}
+[data-slot='composer-fade'].opacity-30 { opacity: 0.6; }
+`
 
 const ADOPTED_KEY = 'hermes-design-default-v1'
 const STYLE_ID = 'hermes-design-overrides'
@@ -347,7 +432,8 @@ export default {
   id: 'hermes-design',
   name: 'Design system',
   defaultEnabled: true,
-  description: 'Warm Paper skin and the design-system overrides (type ladder, radius roles, mobile sheets).',
+  description:
+    'Warm Paper skin, the design tokens and utility classes, and the design-system overrides.',
   register(ctx) {
     ctx.register({ id: 'paper', area: THEMES_AREA, data: paperTheme })
     // Warm Paper is the calm default: adopt it once for anyone who never picked a skin.
@@ -368,7 +454,7 @@ export default {
       el.id = STYLE_ID
       document.head.appendChild(el)
     }
-    el.textContent = OVERRIDES
+    el.textContent = TOKENS + COMPOSER + OVERRIDES
     ctx.onDispose(() => el.remove())
   },
 }
