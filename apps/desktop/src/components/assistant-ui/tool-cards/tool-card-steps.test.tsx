@@ -1,10 +1,10 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+import type { ToolCardGroup, ToolCardView } from './model'
 import { ToolCard } from './tool-card'
-import { CardBlock } from './tool-card-block'
-import { BrowserSteps, stepPageUrl } from './tool-card-steps'
-import type { ToolCardGroup, ToolCardView } from './types'
+import { CardBlock } from './tool-card'
+import { BrowserSteps, stepPageUrl } from './tool-card'
 
 const openPreview = vi.fn()
 
