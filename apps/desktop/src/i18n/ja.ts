@@ -23,7 +23,6 @@ import { jaPreviewWeb } from './ja_preview_web'
 import { jaProjects } from './ja_projects'
 import { jaSharedMetrics } from './ja_shared_metrics'
 import { jaThemePicker } from './ja_theme_picker'
-import { jaToolCards } from './ja_tool_cards'
 import { jaUpdateChannel } from './ja_update_channel'
 
 export const jaOverrides = {
@@ -3402,7 +3401,6 @@ export const jaOverrides = {
       deniedSessionStopped: '拒否しました。セッションは停止しました。'
     },
     clarify: jaClarify,
-    toolCards: jaToolCards,
     themePicker: jaThemePicker,
     tool: {
       copyCode: 'コードをコピー',

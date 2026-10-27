@@ -28,7 +28,6 @@ import { enProjects } from './en_projects'
 import { enSetupConnect } from './en_setup_connect'
 import { enSharedMetrics } from './en_shared_metrics'
 import { enThemePicker } from './en_theme_picker'
-import { enToolCards } from './en_tool_cards'
 import { enUninstallSection } from './en_uninstall_section'
 import { enUpdateChannel } from './en_update_channel'
 import type { Translations } from './types'
@@ -4528,7 +4527,6 @@ export const en: Translations = {
       deniedSessionStopped: 'Denied, session stopped.'
     },
     clarify: enClarify,
-    toolCards: enToolCards,
     themePicker: enThemePicker,
     catalogInstall: enCatalogInstall,
     mcpSetup: {

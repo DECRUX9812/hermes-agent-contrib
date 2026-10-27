@@ -1866,7 +1866,6 @@ export {
   useI18n,
   usePluginI18n
 } from '@/i18n'
-export type { ToolCardsCopy } from '@/i18n/types_tool_cards'
 /** THE way to run a decorative rAF animation (avatars, shimmer, sprites):
  *  fps budget + hidden/minimized/unfocused pause + idle dormancy + teardown.
  *  Plugins must route animation clocks through this instead of raw rAF loops
