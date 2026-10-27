@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { coveredByToolCards } from './covered'
+import { coveredByToolCards } from './model'
 
 describe('coveredByToolCards', () => {
   describe('covered tools (returns true)', () => {

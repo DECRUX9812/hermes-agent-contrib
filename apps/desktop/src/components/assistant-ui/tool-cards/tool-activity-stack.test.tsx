@@ -1,8 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import { ToolActivityStack } from './tool-activity-stack'
-import type { ToolCardGroup, ToolCardThumb, ToolCardView } from './types'
+import type { ToolCardGroup, ToolCardThumb, ToolCardView } from './model'
+import { ToolActivityStack } from './tool-card'
 
 const SHOT = 'data:image/png;base64,iVBORw0KGgo='
 

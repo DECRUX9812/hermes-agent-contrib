@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { isPublicHost } from './public-host'
+import { isPublicHost } from './model'
 
 describe('isPublicHost', () => {
   it('rejects empty and local names', () => {
