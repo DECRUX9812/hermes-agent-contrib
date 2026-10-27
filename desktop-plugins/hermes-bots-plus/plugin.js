@@ -6377,34 +6377,34 @@ var rfb_exports = {};
 __export(rfb_exports, {
   loadNovnc: () => loadNovnc
 });
-async function readAsset() {
+async function readAsset2() {
   const desktop = globalThis.hermesDesktop;
-  const root = await desktop?.desktopPluginsRoot?.();
-  if (!root) throw new Error("desktop plugins root unavailable");
-  const path = String(root).replace(/[\/]+$/, "") + "/" + FOLDER + "/" + ASSET;
+  const root2 = await desktop?.desktopPluginsRoot?.();
+  if (!root2) throw new Error("desktop plugins root unavailable");
+  const path = String(root2).replace(/[\/]+$/, "") + "/" + FOLDER2 + "/" + ASSET2;
   if (desktop.readPluginSource) return (await desktop.readPluginSource(path)).text;
   const read = await desktop.readFileText?.(path);
   if (!read || typeof read.text !== "string" || read.truncated) throw new Error("screen viewer asset unreadable");
   return read.text;
 }
 function loadNovnc() {
-  if (!loading) {
-    loading = readAsset().then((source) => {
+  if (!loading2) {
+    loading2 = readAsset2().then((source) => {
       const url = URL.createObjectURL(new Blob([source], { type: "text/javascript" }));
       return import(url).finally(() => URL.revokeObjectURL(url));
     });
-    loading.catch(() => {
-      loading = null;
+    loading2.catch(() => {
+      loading2 = null;
     });
   }
-  return loading;
+  return loading2;
 }
-var FOLDER, ASSET, loading;
+var FOLDER2, ASSET2, loading2;
 var init_rfb = __esm({
   "novnc:rfb"() {
-    FOLDER = "hermes-bots-plus";
-    ASSET = "vendor/novnc-rfb.mjs";
-    loading = null;
+    FOLDER2 = "hermes-bots-plus";
+    ASSET2 = "vendor/novnc-rfb.mjs";
+    loading2 = null;
   }
 });
 
@@ -6981,12 +6981,12 @@ function paintMathFace(svg, t2) {
   svg.style.transform = `rotate(${pose.tilt}deg)`;
   svg.style.transformOrigin = "50% 70%";
 }
-function walkMathFaces(root, acc) {
-  if (!root || !root.querySelectorAll) {
+function walkMathFaces(root2, acc) {
+  if (!root2 || !root2.querySelectorAll) {
     return acc;
   }
-  root.querySelectorAll("svg[data-hb-math]").forEach((node) => acc.push(node));
-  root.querySelectorAll("*").forEach((el) => {
+  root2.querySelectorAll("svg[data-hb-math]").forEach((node) => acc.push(node));
+  root2.querySelectorAll("*").forEach((el) => {
     if (el.shadowRoot) {
       walkMathFaces(el.shadowRoot, acc);
     }
@@ -7220,7 +7220,7 @@ function BotFace({
   const eyeFill = isDarkColor(color) ? "rgba(232,220,195,0.95)" : "rgba(0,0,0,0.85)";
   const hlFill = isDarkColor(color) ? "rgba(0,0,0,0.6)" : "rgba(255,255,255,0.85)";
   const ring = sampleFaceRing(shape);
-  const rest = facePose(mood, 0);
+  const rest2 = facePose(mood, 0);
   const eyeY0 = shape === "cloud" ? 22 : 17.2;
   return /* @__PURE__ */ jsxs(
     "svg",
@@ -7263,9 +7263,9 @@ function BotFace({
           }
         ),
         /* @__PURE__ */ jsxs("g", { children: [
-          /* @__PURE__ */ jsx("circle", { cx: 16.4, cy: 41.2, "data-hb-dot": "1", fill: color, opacity: rest.d0, r: 1.15 }),
-          /* @__PURE__ */ jsx("circle", { cx: 20, cy: 41.2, "data-hb-dot": "1", fill: color, opacity: rest.d1, r: 1.15 }),
-          /* @__PURE__ */ jsx("circle", { cx: 23.6, cy: 41.2, "data-hb-dot": "1", fill: color, opacity: rest.d2, r: 1.15 })
+          /* @__PURE__ */ jsx("circle", { cx: 16.4, cy: 41.2, "data-hb-dot": "1", fill: color, opacity: rest2.d0, r: 1.15 }),
+          /* @__PURE__ */ jsx("circle", { cx: 20, cy: 41.2, "data-hb-dot": "1", fill: color, opacity: rest2.d1, r: 1.15 }),
+          /* @__PURE__ */ jsx("circle", { cx: 23.6, cy: 41.2, "data-hb-dot": "1", fill: color, opacity: rest2.d2, r: 1.15 })
         ] })
       ]
     }
@@ -9938,17 +9938,17 @@ function groupSessionMemberKey(key) {
   if (!key.startsWith(GROUP_SESSION_THREAD_PREFIX)) {
     return key;
   }
-  const rest = key.slice(GROUP_SESSION_THREAD_PREFIX.length);
-  const boundary = rest.indexOf("::");
-  return boundary === -1 ? rest : rest.slice(boundary + 2);
+  const rest2 = key.slice(GROUP_SESSION_THREAD_PREFIX.length);
+  const boundary = rest2.indexOf("::");
+  return boundary === -1 ? rest2 : rest2.slice(boundary + 2);
 }
 function groupSessionThread(key) {
   if (!key.startsWith(GROUP_SESSION_THREAD_PREFIX)) {
     return "legacy";
   }
-  const rest = key.slice(GROUP_SESSION_THREAD_PREFIX.length);
-  const boundary = rest.indexOf("::");
-  return (boundary === -1 ? rest : rest.slice(0, boundary)) || "legacy";
+  const rest2 = key.slice(GROUP_SESSION_THREAD_PREFIX.length);
+  const boundary = rest2.indexOf("::");
+  return (boundary === -1 ? rest2 : rest2.slice(0, boundary)) || "legacy";
 }
 function hasThreadScopedGroupSession(sessions, memberKey) {
   return Object.keys(sessions || {}).some(
@@ -13123,8 +13123,8 @@ function deliveredPath(payload) {
   return FILE_TOOLS.has(tool) && p.is_error !== true && path ? path : null;
 }
 function recordLiveFile(file) {
-  const rest = $liveFiles.get().filter((f) => f.path !== file.path);
-  $liveFiles.set([file, ...rest].slice(0, LIVE_FILES_LIMIT));
+  const rest2 = $liveFiles.get().filter((f) => f.path !== file.path);
+  $liveFiles.set([file, ...rest2].slice(0, LIVE_FILES_LIMIT));
 }
 var LIVE_TURN_EVENTS = [
   "approval.cancelled",
@@ -14054,10 +14054,10 @@ function parseHandoffLine(text3, members) {
     if (!match || !to) {
       continue;
     }
-    const [task = "", ...rest] = match[2].split(FIELD_SPLIT2).map((part) => part.trim());
+    const [task = "", ...rest2] = match[2].split(FIELD_SPLIT2).map((part) => part.trim());
     let doneWhen = "";
     let dueMinutes = null;
-    for (const part of rest) {
+    for (const part of rest2) {
       const due = part.match(DUE);
       if (DONE_WHEN.test(part)) {
         doneWhen = part.replace(DONE_WHEN, "").trim();
@@ -15608,14 +15608,14 @@ function SeatCard({
 var RAIL = "relative px-2 pt-4 before:absolute before:left-0 before:right-0 before:top-0 before:h-px before:bg-(--ui-stroke-secondary) after:absolute after:left-1/2 after:top-0 after:h-4 after:w-px after:bg-(--ui-stroke-secondary) first:before:left-1/2 last:before:right-1/2 only:before:hidden";
 function OrgBranch({
   nodes,
-  root,
-  ...rest
+  root: root2,
+  ...rest2
 }) {
-  return /* @__PURE__ */ jsx20("ul", { className: "flex justify-center", children: nodes.map((node) => /* @__PURE__ */ jsxs19("li", { className: (0, sdk_compat_exports.cn)("flex flex-col items-center", !root && RAIL), children: [
-    /* @__PURE__ */ jsx20(SeatCard, { node, ...rest }),
+  return /* @__PURE__ */ jsx20("ul", { className: "flex justify-center", children: nodes.map((node) => /* @__PURE__ */ jsxs19("li", { className: (0, sdk_compat_exports.cn)("flex flex-col items-center", !root2 && RAIL), children: [
+    /* @__PURE__ */ jsx20(SeatCard, { node, ...rest2 }),
     node.reports.length > 0 && /* @__PURE__ */ jsxs19(Fragment6, { children: [
       /* @__PURE__ */ jsx20("span", { "aria-hidden": "true", className: "h-4 w-px bg-(--ui-stroke-secondary)" }),
-      /* @__PURE__ */ jsx20(OrgBranch, { nodes: node.reports, ...rest })
+      /* @__PURE__ */ jsx20(OrgBranch, { nodes: node.reports, ...rest2 })
     ] })
   ] }, node.slot)) });
 }
@@ -16265,7 +16265,7 @@ function GroupThreadRail({
   const pins = prefs.pins[roomKey] || [];
   const snoozed = snoozedThreads(prefs, roomKey);
   const pinned = pins.map((thread) => matching.find((item) => item.thread === thread)).filter(Boolean);
-  const rest = matching.filter((item) => !pins.includes(item.thread) && !snoozed.has(item.thread));
+  const rest2 = matching.filter((item) => !pins.includes(item.thread) && !snoozed.has(item.thread));
   const sleeping = matching.filter((item) => snoozed.has(item.thread) && !pins.includes(item.thread));
   const unseenTotal = Object.values(unseen).reduce((sum, count) => sum + count, 0);
   const nameOf = (name) => {
@@ -16486,7 +16486,7 @@ function GroupThreadRail({
             /* @__PURE__ */ jsx23("ul", { className: "m-0 flex list-none flex-col gap-0.5 p-0", children: pinned.map(renderRow) })
           ] }) : null,
           SECTIONS.map((status) => {
-            const rows = rest.filter((item) => item.status === status);
+            const rows = rest2.filter((item) => item.status === status);
             if (!rows.length) {
               return null;
             }
@@ -16748,11 +16748,11 @@ function useRoomUnread({
     wasVisibleRef.current = visible;
   }, [visible]);
   const onLogScroll = () => {
-    const viewport = scroller.current;
-    if (!viewport) {
+    const viewport2 = scroller.current;
+    if (!viewport2) {
       return;
     }
-    const near = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < NEAR_BOTTOM_PX;
+    const near = viewport2.scrollHeight - viewport2.scrollTop - viewport2.clientHeight < NEAR_BOTTOM_PX;
     stickToBottom.current = near;
     setLeftAtLength((current) => near ? null : current ?? log.length);
     if (near) {
@@ -18975,7 +18975,7 @@ function AgentsSection() {
     return hay.some((field2) => field2?.toLowerCase().includes(searchQuery));
   }) : visible;
   const shown = searchQuery ? matched : visible.slice(0, AGENTS_ROW_CAP);
-  const loading2 = !data && !error;
+  const loading3 = !data && !error;
   if (searchQuery && shown.length === 0) {
     return null;
   }
@@ -19030,7 +19030,7 @@ function AgentsSection() {
     ] }),
     open && /* @__PURE__ */ jsxs25("div", { className: "grid grid-cols-[minmax(0,1fr)] gap-px pb-1", children: [
       shown.map((bot) => /* @__PURE__ */ jsx26(AgentRow, { bot }, botRosterKey(bot))),
-      !loading2 && visible.length === 0 && error && /* @__PURE__ */ jsxs25("div", { className: "grid gap-1 px-2 py-1.5", children: [
+      !loading3 && visible.length === 0 && error && /* @__PURE__ */ jsxs25("div", { className: "grid gap-1 px-2 py-1.5", children: [
         /* @__PURE__ */ jsx26("span", { className: "text-[0.8125rem] leading-snug text-(--ui-text-tertiary)", children: gatewayUp ? b.roster.rosterUnavailable(error instanceof Error ? error.message : "gateway error") : b.roster.waitingForGateway }),
         /* @__PURE__ */ jsxs25(
           sdk_compat_exports.RowButton,
@@ -19044,7 +19044,7 @@ function AgentsSection() {
           }
         )
       ] }),
-      !loading2 && !error && visible.length === 0 && /* @__PURE__ */ jsxs25(
+      !loading3 && !error && visible.length === 0 && /* @__PURE__ */ jsxs25(
         sdk_compat_exports.RowButton,
         {
           className: "flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--ui-control-hover-background) hover:text-foreground",
@@ -22206,8 +22206,11 @@ init_routing();
 
 // src/screen-open.tsx
 init_sdk_compat();
+
+// src/browser/open.tsx
+init_sdk_compat();
+init_sdk_compat();
 init_data();
-init_i18n();
 init_labels();
 
 // src/screen-autoraise.ts
@@ -22288,10 +22291,341 @@ function startScreenAutoRaise() {
   });
 }
 
-// src/screen-pane.tsx
+// src/browser/open.tsx
+init_shared();
+
+// src/browser/api.ts
+init_shared();
+function rest() {
+  const ctx = getPluginCtx();
+  if (!ctx?.rest) {
+    throw new Error("plugin api unavailable");
+  }
+  return ctx.rest;
+}
+function probePage(url) {
+  const origin = typeof location === "undefined" ? "" : location.origin;
+  const query = `url=${encodeURIComponent(url)}&origin=${encodeURIComponent(origin)}`;
+  return rest()(`/browser/probe?${query}`, { timeoutMs: 8e3 });
+}
+function viewPage(body) {
+  return rest()("/browser/view", { method: "POST", body, timeoutMs: 3e4 });
+}
+function dropView(tab) {
+  try {
+    void rest()(`/browser/view/${encodeURIComponent(tab)}`, { method: "DELETE", timeoutMs: 5e3 }).catch(() => void 0);
+  } catch {
+  }
+}
+async function reachableHere(url, timeoutMs = 2e3) {
+  const controller = new AbortController();
+  const timer = window.setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    await fetch(url, { mode: "no-cors", cache: "no-store", credentials: "omit", signal: controller.signal });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    window.clearTimeout(timer);
+  }
+}
+function getBrowserMode(profile) {
+  return rest()(`/browser/mode/${encodeURIComponent(profile)}`, { timeoutMs: 8e3 });
+}
+function setBrowserMode(profile, mode) {
+  return rest()("/browser/mode", { method: "POST", body: { profile, mode }, timeoutMs: 15e3 });
+}
+
+// src/browser/browser-i18n.ts
 init_sdk_compat();
-init_i18n();
-import { useCallback as useCallback2, useEffect as useEffect10, useRef as useRef6, useState as useState25 } from "react";
+init_shared();
+var BROWSER_EN = {
+  title: "Browser",
+  open: "Open browser",
+  newTab: "New tab",
+  closeTab: "Close tab",
+  back: "Back",
+  forward: "Forward",
+  reload: "Reload",
+  stop: "Stop",
+  address: "Search or enter address",
+  openExternal: "Open in a new browser tab",
+  askBot: "Ask a bot to open this page",
+  askBotPrompt: (url) => `Open ${url} in your browser and tell me what you see.`,
+  viaGateway: "Shown through Hermes",
+  viaGatewayHint: "This page is rendered by the browser on your Hermes machine and streamed here.",
+  showDirect: "Show directly",
+  loadingPage: (host2) => `Loading ${host2}\u2026`,
+  checking: "Checking the page\u2026",
+  blockedTitle: (host2) => `${host2} can't be shown inside another app`,
+  blockedBody: "The site tells browsers not to display it in a frame. You can still view it here through Hermes, or open it in a new tab.",
+  viewHere: "View it here",
+  unreachableTitle: (host2) => `Can't reach ${host2}`,
+  unreachableLocal: "Nothing answered on this address, on this computer or on your Hermes machine. Is the dev server running?",
+  unreachableRemote: "The page didn't answer. Check the address or try again in a moment.",
+  tryAgain: "Try again",
+  remoteFailed: "Hermes couldn't render this page.",
+  emptyTitle: "Browse without leaving Hermes",
+  emptyBody: "Links from your chats open here. Local dev servers render inline, and sites that refuse frames are shown through Hermes.",
+  emptyHint: "Type an address, or try one of these",
+  linksHere: "Open chat links here",
+  linksHereHint: "When off, chat links open in your own browser",
+  botTab: (name) => `${name} \xB7 Screen`,
+  activityTab: (name) => `${name} \xB7 Browsing`,
+  activityIdle: "Finished",
+  activityWaiting: "Waiting for the first screenshot\u2026",
+  activityGone: "This browsing session is no longer in view. Scroll the chat back to it to follow along.",
+  following: "Following live",
+  followLatest: "Jump to latest",
+  stepOf: (step, total) => `Step ${step} of ${total}`,
+  openPageHere: "Open this page in a tab",
+  watchScreen: "Watch live screen",
+  showMe: "Show me",
+  showMeHint: "Follow the bot's browsing in the Browser",
+  stepsLabel: "Steps",
+  needsUpdate: "Update Hermes to open the in-app browser.",
+  openedHere: (host2) => `Opened ${host2} in the Hermes browser`,
+  popOut: "Float over the app",
+  floating: "Floating browser",
+  dockLeft: "Dock to the left",
+  dockRight: "Dock to the right",
+  undock: "Float freely",
+  toTab: "Put back in a tab",
+  minimise: "Minimise (Esc)",
+  restore: (title) => `Restore ${title}`,
+  closeBrowser: "Close browser",
+  takeOver: "Take over",
+  handBack: "Hand back",
+  botActive: "A bot is working",
+  toggleFloating: "Toggle floating browser",
+  moveHint: "Drag to move. Drop on a screen edge to dock.",
+  resize: "Resize",
+  floatUnavailable: "This Hermes can't float the browser yet, so it opened as a tab.",
+  pageKeys: "Keys for the page",
+  cloudWatching: "Watching a cloud browser, take-over not available",
+  cloudWatchingShort: "Cloud browser",
+  cloudTip: "This bot browses in a cloud browser, which only it can drive. To take over, switch it to a local headed browser in Settings, Plugins, Browser.",
+  settingsTitle: "Browser",
+  settingsIntro: "Where each bot's browser runs. Cloud browsers can be watched but not taken over. A local headed browser opens on this machine's desktop, so you can take over and hand back.",
+  settingsEmpty: "No local bots yet.",
+  settingsLoading: "Checking\u2026",
+  settingsUnknown: "Unknown",
+  modeLocal: "Local, headed",
+  modeCloud: "Cloud",
+  modeOther: "Custom",
+  useLocal: "Use local headed browser",
+  useCloud: "Back to cloud",
+  confirmLocalTitle: "Switch {bot} to a local headed browser?",
+  confirmLocalBody: "{bot}'s browser tasks will open a visible browser on this machine's desktop, which you can take over. The current config is backed up first.",
+  confirmCloudTitle: "Switch {bot} back to its cloud browser?",
+  confirmCloudBody: "{bot}'s browser tasks go back to the cloud browser it used before. The current config is backed up first.",
+  confirmSwitch: "Switch",
+  switching: "Switching\u2026",
+  switched: "Switched",
+  cancel: "Cancel",
+  backupSaved: "Backup: {file}",
+  modeFailed: "Couldn't change the browser: {error}"
+};
+var BROWSER_LOCALES = { en: { browser: BROWSER_EN } };
+function useBrowserText() {
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, BROWSER_EN, "browser");
+}
+function browserText() {
+  const translate = getPluginCtx()?.i18n?.t;
+  if (!translate) {
+    return BROWSER_EN;
+  }
+  return bindTree(translate, BROWSER_EN, "browser");
+}
+
+// src/browser/store.ts
+init_nanostores();
+var $tabs = atom([]);
+var $activeTab = atom(null);
+var $activity = atom({});
+var nextId = 1;
+function newTabId(kind) {
+  return `${kind}-${Date.now().toString(36)}-${nextId++}`;
+}
+function getTab(id) {
+  return id ? $tabs.get().find((tab) => tab.id === id) : void 0;
+}
+function addTab(tab, activate = true) {
+  $tabs.set([...$tabs.get(), tab]);
+  if (activate || !$activeTab.get()) {
+    $activeTab.set(tab.id);
+  }
+}
+function patchTab(id, patch) {
+  $tabs.set($tabs.get().map((tab) => tab.id === id ? { ...tab, ...patch } : tab));
+}
+function removeTab(id) {
+  const tabs = $tabs.get();
+  const index = tabs.findIndex((tab) => tab.id === id);
+  if (index < 0) {
+    return void 0;
+  }
+  const closed = tabs[index];
+  const rest2 = tabs.filter((tab) => tab.id !== id);
+  $tabs.set(rest2);
+  if ($activeTab.get() === id) {
+    $activeTab.set(rest2[Math.min(index, rest2.length - 1)]?.id ?? null);
+  }
+  return closed;
+}
+function blankWebTab(url = "") {
+  return {
+    id: newTabId("web"),
+    kind: "web",
+    url,
+    title: "",
+    target: url,
+    nav: url ? 1 : 0,
+    history: url ? [url] : [],
+    index: url ? 0 : -1,
+    mode: url ? "checking" : "idle",
+    loading: Boolean(url)
+  };
+}
+function navigateTab(id, url) {
+  const tab = getTab(id);
+  if (!tab || tab.kind !== "web") {
+    return;
+  }
+  const history = [...tab.history.slice(0, tab.index + 1), url];
+  patchTab(id, {
+    url,
+    target: url,
+    title: "",
+    nav: tab.nav + 1,
+    history,
+    index: history.length - 1,
+    mode: "checking",
+    loading: true,
+    reason: void 0,
+    preferRemote: false
+  });
+}
+function stepHistory(id, delta) {
+  const tab = getTab(id);
+  if (!tab || tab.kind !== "web") {
+    return;
+  }
+  const index = tab.index + delta;
+  if (index < 0 || index >= tab.history.length) {
+    return;
+  }
+  const url = tab.history[index];
+  patchTab(id, { url, target: url, title: "", index, nav: tab.nav + 1, mode: "checking", loading: true, reason: void 0 });
+}
+function reloadTab(id) {
+  const tab = getTab(id);
+  if (tab?.kind === "web" && tab.target) {
+    patchTab(id, { nav: tab.nav + 1, loading: true });
+  }
+}
+function publishActivity(snapshot) {
+  const all = $activity.get();
+  const prev = all[snapshot.key];
+  if (prev && activitySignature(prev) === activitySignature(snapshot)) {
+    return;
+  }
+  $activity.set({ ...all, [snapshot.key]: snapshot });
+}
+function activitySignature(s) {
+  return `${s.running}|${s.botName}|${s.onDesktop}|${s.backend}|${s.bot ? 1 : 0}|${s.steps.map((step) => `${step.state}:${step.status}:${step.url}:${step.shot.slice(-48)}`).join(",")}`;
+}
+var LINKS_KEY = "hermes-bots-plus.browser.links";
+function readLinksHere() {
+  try {
+    return globalThis.localStorage?.getItem(LINKS_KEY) !== "system";
+  } catch {
+    return true;
+  }
+}
+var $linksHere = atom(readLinksHere());
+function setLinksHere(value) {
+  $linksHere.set(value);
+  try {
+    globalThis.localStorage?.setItem(LINKS_KEY, value ? "here" : "system");
+  } catch {
+  }
+}
+var remoteCommands = /* @__PURE__ */ new Map();
+function setRemoteCommand(id, run) {
+  if (run) {
+    remoteCommands.set(id, run);
+  } else {
+    remoteCommands.delete(id);
+  }
+}
+function remoteCommand(id, kind) {
+  const run = remoteCommands.get(id);
+  run?.(kind);
+  return Boolean(run);
+}
+
+// src/browser/url.ts
+var LOOPBACK = /^(localhost|127(?:\.\d{1,3}){3}|0\.0\.0\.0|\[::1\]|::1)$/i;
+var LOCAL_SUFFIX = /\.(localhost|local|internal|lan|test)$/i;
+var HOSTISH = /^([a-z0-9-]+\.)+[a-z]{2,}(:\d+)?(\/|$)|^(localhost|\d{1,3}(\.\d{1,3}){3})(:\d+)?(\/|$)/i;
+var AUTH_PATH = /\/(oauth2?|authorize|login|signin|sign-in|sso|device|consent)(\/|\?|$)/i;
+var AUTH_HOST = /^(accounts\.google\.com|login\.microsoftonline\.com|appleid\.apple\.com|auth\.|login\.|sso\.)/i;
+var SEARCH_URL = "https://duckduckgo.com/?q=";
+function normalizeAddress(input) {
+  const text3 = input.trim();
+  if (!text3) {
+    return "";
+  }
+  if (/^https?:\/\//i.test(text3)) {
+    return text3;
+  }
+  if (!/\s/.test(text3) && HOSTISH.test(text3)) {
+    const host2 = text3.split(/[/:?#]/)[0];
+    return `${LOOPBACK.test(host2) || LOCAL_SUFFIX.test(host2) || /^\d/.test(host2) ? "http" : "https"}://${text3}`;
+  }
+  return SEARCH_URL + encodeURIComponent(text3);
+}
+function parseUrl(url) {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === "http:" || parsed.protocol === "https:" ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+function isWebUrl(url) {
+  return parseUrl(url) !== null;
+}
+function isLoopbackHost(host2) {
+  return LOOPBACK.test(host2);
+}
+function isAuthUrl(url) {
+  const parsed = parseUrl(url);
+  return Boolean(parsed && (AUTH_HOST.test(parsed.hostname) || AUTH_PATH.test(parsed.pathname)));
+}
+function addressLabel(url) {
+  const parsed = parseUrl(url);
+  if (!parsed) {
+    return url;
+  }
+  const path = parsed.pathname === "/" ? "" : parsed.pathname.replace(/\/$/, "");
+  return `${parsed.host.replace(/^www\./, "")}${path}`;
+}
+function hostOf(url) {
+  return parseUrl(url)?.host.replace(/^www\./, "") ?? "";
+}
+
+// src/browser/float.tsx
+init_sdk_compat();
+init_nanostores();
+import {
+  useEffect as useEffect21,
+  useLayoutEffect,
+  useRef as useRef13,
+  useState as useState33
+} from "react";
 
 // src/screen-connection.ts
 init_sdk_compat();
@@ -22378,102 +22712,8 @@ async function resolveScreenWsUrl(bot, ticket) {
   return url.toString();
 }
 
-// src/screen-install.tsx
-init_sdk_compat();
-init_i18n();
-import { useCallback, useEffect as useEffect9, useRef as useRef5, useState as useState24 } from "react";
-import { jsx as jsx36, jsxs as jsxs35 } from "react/jsx-runtime";
-var LOG_KEEP = 200;
-function ScreenNotInstalled(props) {
-  const t2 = useBots();
-  if (isManagedBackend(props.bot)) {
-    return /* @__PURE__ */ jsx36(sdk_compat_exports.EmptyState, { description: t2.screen.managedNotIncludedBody, title: t2.screen.managedNotIncludedTitle });
-  }
-  return /* @__PURE__ */ jsx36(ScreenInstallCard, { ...props });
-}
-function ScreenInstallCard({ bot, status, onInstalled }) {
-  const t2 = useBots();
-  const [phase, setPhase] = useState24("idle");
-  const [log, setLog] = useState24([]);
-  const [error, setError] = useState24(null);
-  const logEnd = useRef5(null);
-  const retention = useRef5(null);
-  const unmounted = useRef5(false);
-  const releaseRetention = useCallback(() => {
-    retention.current?.();
-    retention.current = null;
-  }, []);
-  useEffect9(
-    () => () => {
-      unmounted.current = true;
-      releaseRetention();
-    },
-    [releaseRetention]
-  );
-  useEffect9(() => {
-    logEnd.current?.scrollIntoView({ block: "end" });
-  }, [log]);
-  useEffect9(() => {
-    const offLog = host.onEvent("display.install.log", (event) => {
-      const payload = event.payload;
-      if (isEventForBotScreen(bot, event, status.profile_key) && typeof payload?.line === "string") {
-        const line = payload.line;
-        setLog((prev) => prev.length >= LOG_KEEP ? [...prev.slice(1), line] : [...prev, line]);
-      }
-    });
-    const offDone = host.onEvent("display.install.done", (event) => {
-      const payload = event.payload;
-      if (!payload || !isEventForBotScreen(bot, event, status.profile_key)) {
-        return;
-      }
-      releaseRetention();
-      if (payload.code === 0 && payload.status?.installed) {
-        setPhase("idle");
-        onInstalled(payload.status);
-      } else {
-        setPhase("failed");
-        setError(payload.code === -1 ? t2.screen.installCancelled : t2.screen.installFailed);
-      }
-    });
-    return () => {
-      offLog();
-      offDone();
-    };
-  }, [bot, onInstalled, releaseRetention, status.profile_key, t2.screen.installCancelled, t2.screen.installFailed]);
-  const install = useCallback(async () => {
-    setPhase("running");
-    setLog([]);
-    setError(null);
-    try {
-      const retain = await retainBotScreen(bot);
-      if (unmounted.current) {
-        retain();
-        return;
-      }
-      retention.current = retain;
-      await displayRequest(bot, "display.install");
-    } catch (err) {
-      releaseRetention();
-      setPhase("failed");
-      setError(err instanceof Error ? err.message : String(err));
-    }
-  }, [bot, releaseRetention]);
-  return /* @__PURE__ */ jsx36("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs35("div", { className: "flex w-full max-w-lg flex-col gap-2", children: [
-    /* @__PURE__ */ jsx36("div", { className: "text-sm font-medium", children: t2.screen.notInstalledTitle }),
-    /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t2.screen.notInstalledBody }),
-    status.install_command ? /* @__PURE__ */ jsx36("code", { className: "select-text break-all rounded bg-muted px-2 py-1 text-left text-xs", children: status.install_command }) : /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t2.screen.noPackageManager }),
-    status.install_command ? /* @__PURE__ */ jsxs35(sdk_compat_exports.Button, { disabled: phase === "running", onClick: () => void install(), size: "sm", children: [
-      phase === "running" ? /* @__PURE__ */ jsx36(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx36(sdk_compat_exports.Codicon, { name: "cloud-download" }),
-      phase === "running" ? t2.screen.installing : t2.screen.install
-    ] }) : null,
-    log.length > 0 ? /* @__PURE__ */ jsxs35("pre", { className: "max-h-48 overflow-auto rounded bg-black/80 p-2 text-left font-mono text-[0.65rem] leading-tight text-white/85", children: [
-      log.join("\n"),
-      /* @__PURE__ */ jsx36("div", { ref: logEnd })
-    ] }) : null,
-    error ? /* @__PURE__ */ jsx36("div", { className: "text-xs hbp-fg-danger", children: error }) : null,
-    /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t2.screen.installHint })
-  ] }) });
-}
+// src/screen-actions.ts
+init_routing();
 
 // src/screen-state.ts
 init_nanostores();
@@ -22535,8 +22775,626 @@ function setScreenViewer(bot, viewer) {
   $screenState.set({ ...current, [key]: { status: prev?.status ?? null, lease: prev?.lease ?? null, viewer } });
 }
 
+// src/screen-actions.ts
+async function ensureScreenViewer(bot) {
+  const existing = screenStateFor($screenState.get(), bot)?.viewer ?? null;
+  if (existing) {
+    return existing;
+  }
+  const observe = await displayRequest(bot, "display.observe", {});
+  const viewer = { id: observe.viewer_id, hash: await viewerHash(observe.viewer_id) };
+  setScreenStatus(bot, observe);
+  setScreenViewer(bot, viewer);
+  return viewer;
+}
+async function acquireScreenLease(bot) {
+  const viewer = await ensureScreenViewer(bot);
+  const result = await displayRequest(bot, "display.lease.acquire", {
+    viewer_id: viewer.id
+  });
+  setScreenLease(bot, result.lease);
+  return result.lease;
+}
+async function releaseScreenLease(bot, force = false) {
+  const viewer = screenStateFor($screenState.get(), bot)?.viewer ?? null;
+  const result = await displayRequest(
+    bot,
+    "display.lease.release",
+    force ? { force: true } : { viewer_id: viewer?.id }
+  );
+  setScreenLease(bot, result.lease);
+}
+async function restartBotScreen(bot) {
+  await displayRequest(bot, "display.stop", { force: true }).catch(() => void 0);
+  const next = await displayRequest(bot, "display.start");
+  setScreenStatus(bot, next);
+  return next;
+}
+async function frameDataUrlToPngBlob(dataUrl) {
+  const image = new Image();
+  await new Promise((resolve, reject) => {
+    image.onload = () => resolve();
+    image.onerror = () => reject(new Error("Could not decode the screen frame"));
+    image.src = dataUrl;
+  });
+  const canvas = document.createElement("canvas");
+  canvas.width = image.naturalWidth;
+  canvas.height = image.naturalHeight;
+  const context = canvas.getContext("2d");
+  if (!context) {
+    throw new Error("Canvas is unavailable");
+  }
+  context.drawImage(image, 0, 0);
+  return await new Promise(
+    (resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Could not encode the screen frame")), "image/png")
+  );
+}
+async function copyBotScreenshot(bot) {
+  const shot = await displayRequest(bot, "display.thumbnail");
+  const dataUrl = shot?.data_url;
+  if (!dataUrl) {
+    throw new Error("No screen frame to copy");
+  }
+  const blob = await frameDataUrlToPngBlob(dataUrl);
+  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+}
+function canOpenBotWorkdir(bot) {
+  if (!bot || bot.remoteSource === true || resolveBotConnectionRoute(bot).route?.mode === "remote") {
+    return false;
+  }
+  const bridge = window.hermesDesktop;
+  return typeof bridge?.openSessionInTerminal === "function" || typeof bridge?.revealPath === "function" || typeof bridge?.openDir === "function";
+}
+async function openBotWorkdir(bot) {
+  const bridge = window.hermesDesktop;
+  const project = await requestForBot(bot, "config.get", { key: "project" }).catch(() => null);
+  const cwd = project?.cwd?.trim() || void 0;
+  const sessionId = botCanonicalSessionId(bot);
+  if (sessionId && typeof bridge?.openSessionInTerminal === "function") {
+    const result = await bridge.openSessionInTerminal(sessionId, { cwd, profile: bot.name }).catch(() => null);
+    if (result?.ok) {
+      return true;
+    }
+  }
+  if (cwd && typeof bridge?.revealPath === "function") {
+    if (await bridge.revealPath(cwd).catch(() => false)) {
+      return true;
+    }
+  }
+  if (cwd && typeof bridge?.openDir === "function") {
+    const result = await bridge.openDir(cwd).catch(() => null);
+    return result?.ok === true;
+  }
+  return false;
+}
+
+// src/screen-portal.tsx
+init_sdk_compat();
+init_data();
+init_i18n();
+init_routing();
+import { useEffect as useEffect9, useMemo as useMemo6 } from "react";
+import { jsx as jsx36, jsxs as jsxs35 } from "react/jsx-runtime";
+function portalTone(status, lease, viewer = null, unavailable = false) {
+  if (unavailable) {
+    return "unavailable";
+  }
+  if (!status) {
+    return "unknown";
+  }
+  if (!status.supported) {
+    return "unsupported";
+  }
+  if (!status.installed) {
+    return "missing";
+  }
+  if (!status.running) {
+    return "off";
+  }
+  if (lease?.holder === "human") {
+    return leaseHeldBy(lease, viewer) ? "human" : "other";
+  }
+  return "live";
+}
+var TONE_ICON = {
+  live: "device-desktop",
+  human: "record-keys",
+  other: "eye",
+  off: "debug-stop",
+  missing: "cloud-download",
+  unsupported: "circle-slash",
+  unavailable: "circle-slash",
+  unknown: "device-desktop"
+};
+var TONE_DOT = {
+  live: "hbp-bg-ok",
+  human: "hbp-bg-danger",
+  other: "hbp-bg-warn",
+  off: "bg-(--ui-text-quaternary)",
+  missing: "bg-(--ui-text-quaternary)",
+  unsupported: "bg-(--ui-text-quaternary)",
+  unavailable: "bg-(--ui-text-quaternary)",
+  unknown: "bg-(--ui-text-quaternary)"
+};
+function useScreenPortalState(bot) {
+  const all = (0, sdk_compat_exports.useValue)($screenState);
+  const state = screenStateFor(all, bot);
+  const status = state?.status ?? null;
+  const profileKey = status?.profile_key;
+  useEffect9(() => {
+    if (status || state?.unavailable) {
+      return;
+    }
+    let cancelled = false;
+    const request2 = beginScreenStatusRequest(bot);
+    void displayRequest(bot, "display.status").then((next) => {
+      if (!cancelled) {
+        setScreenStatus(bot, next, request2);
+      }
+    }).catch((error) => {
+      if (!cancelled && isDisplayUnavailable(error)) {
+        setScreenUnavailable(bot);
+      }
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [bot, state?.unavailable, status]);
+  useEffect9(
+    () => host.onEvent("display.lease", (event) => {
+      const payload = event.payload;
+      if (payload?.lease && isEventForBotScreen(bot, event, profileKey)) {
+        setScreenLease(bot, payload.lease);
+      }
+    }),
+    [bot, profileKey]
+  );
+  useEffect9(
+    () => host.onEvent("display.status", (event) => {
+      const payload = event.payload;
+      if (payload?.profile_key && isEventForBotScreen(bot, event, profileKey)) {
+        setScreenStatus(bot, payload);
+      }
+    }),
+    [bot, profileKey]
+  );
+  return {
+    status,
+    lease: state?.lease ?? null,
+    tone: portalTone(status, state?.lease ?? null, state?.viewer ?? null, state?.unavailable)
+  };
+}
+function ScreenPortal({ bot }) {
+  const t2 = useBots();
+  const { status, tone } = useScreenPortalState(bot);
+  const subtitle = {
+    live: t2.screen.portalWatching,
+    human: t2.screen.portalYouControl,
+    other: t2.screen.portalOtherControls,
+    off: t2.screen.portalStopped,
+    missing: t2.screen.portalNotInstalled,
+    unsupported: t2.screen.portalUnsupported,
+    unavailable: isManagedBackend(bot) ? t2.screen.portalUnavailableManaged : t2.screen.portalUnavailable,
+    unknown: status?.display ?? ""
+  }[tone];
+  if (tone === "unsupported" || tone === "unavailable") {
+    return null;
+  }
+  return /* @__PURE__ */ jsxs35(
+    "button",
+    {
+      "aria-label": `${t2.screen.portalTitle}: ${subtitle}`,
+      className: "group flex w-full items-center gap-2 rounded-md border border-(--ui-stroke-secondary) bg-(--chrome-action-hover)/40 px-2 py-1.5 text-left transition-colors hover:bg-(--chrome-action-hover)",
+      onClick: () => openBotScreen(bot, null),
+      type: "button",
+      children: [
+        /* @__PURE__ */ jsxs35("span", { className: "relative grid size-7 shrink-0 place-items-center rounded bg-black/70 text-white/90", children: [
+          /* @__PURE__ */ jsx36(sdk_compat_exports.Codicon, { name: TONE_ICON[tone] }),
+          /* @__PURE__ */ jsx36(
+            "span",
+            {
+              className: `absolute -right-0.5 -top-0.5 size-2 rounded-full ring-2 ring-(--ui-bg-primary) ${TONE_DOT[tone]}`
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxs35("span", { className: "min-w-0 flex-1", children: [
+          /* @__PURE__ */ jsx36("span", { className: "block truncate text-xs font-medium", children: t2.screen.portalTitle }),
+          subtitle ? /* @__PURE__ */ jsx36("span", { className: "block truncate text-[0.65rem] text-(--ui-text-tertiary)", children: subtitle }) : null
+        ] }),
+        /* @__PURE__ */ jsxs35("span", { className: "flex shrink-0 items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary) opacity-0 transition-opacity group-hover:opacity-100", children: [
+          t2.screen.portalOpen,
+          " ",
+          /* @__PURE__ */ jsx36(sdk_compat_exports.Codicon, { name: "arrow-right" })
+        ] })
+      ]
+    }
+  );
+}
+function ProfileGroupScreenPortal({ route }) {
+  const roster = (0, sdk_compat_exports.useValue)($lastRoster);
+  const { connectionId, profile } = route;
+  const bot = useMemo6(
+    () => roster.find((row) => {
+      const resolved = resolveBotConnectionRoute(row);
+      return resolved.route ? resolved.route.profile === profile && resolved.route.connectionId === (connectionId ?? "local") : row.name === profile && connectionId === null;
+    }) ?? (connectionId ? {
+      name: profile,
+      sourceScoped: true,
+      connectionId,
+      connectionKind: connectionId === "local" ? "local" : "remote"
+    } : { name: profile }),
+    [connectionId, profile, roster]
+  );
+  return /* @__PURE__ */ jsx36(ScreenPortal, { bot });
+}
+
+// src/browser/cloud.tsx
+init_sdk_compat();
+import { useEffect as useEffect11, useState as useState25 } from "react";
+
+// src/browser-backend.ts
+init_data();
+init_routing();
+import { useEffect as useEffect10, useState as useState24 } from "react";
+var TRUTHY = /* @__PURE__ */ new Set(["1", "true", "yes", "on"]);
+function truthy(value) {
+  return typeof value === "string" ? TRUTHY.has(value.trim().toLowerCase()) : Boolean(value);
+}
+function record(value) {
+  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
+}
+function browserBackendFrom(config, cdpUrl) {
+  const root2 = record(config);
+  if (!root2) {
+    return "unknown";
+  }
+  const browser = record(root2.browser) ?? {};
+  if (String(cdpUrl ?? "").trim() || String(browser.cdp_url ?? "").trim()) {
+    return "elsewhere";
+  }
+  if (!("cloud_provider" in browser)) {
+    return "unknown";
+  }
+  const provider = String(browser.cloud_provider ?? "").trim().toLowerCase();
+  if (provider && provider !== "local") {
+    return "elsewhere";
+  }
+  if (String(browser.engine ?? "").trim().toLowerCase() === "lightpanda") {
+    return "elsewhere";
+  }
+  return truthy(browser.headed) ? "desktop" : "elsewhere";
+}
+var FRESH_MS = 3e4;
+var verdicts = /* @__PURE__ */ new Map();
+async function readBackend(bot) {
+  try {
+    const [config, status] = await Promise.all([
+      requestForBot(bot, "config.get", { key: "full" }),
+      requestForBot(bot, "browser.manage", { action: "status" })
+    ]);
+    return browserBackendFrom(config?.config, status?.url);
+  } catch {
+    return "unknown";
+  }
+}
+function browserBackendFor(bot, now = Date.now()) {
+  const key = botRosterKey(bot);
+  const entry = verdicts.get(key);
+  if (entry?.pending) {
+    return entry.pending;
+  }
+  if (entry && now - entry.at < FRESH_MS) {
+    return Promise.resolve(entry.value);
+  }
+  const pending = readBackend(bot).then((value) => {
+    verdicts.set(key, { at: Date.now(), value });
+    return value;
+  });
+  verdicts.set(key, { at: entry?.at ?? 0, value: entry?.value ?? "unknown", pending });
+  return pending;
+}
+function forgetBrowserBackends() {
+  verdicts.clear();
+}
+function useBrowserBackend(bot) {
+  const key = bot ? botRosterKey(bot) : "";
+  const [verdict, setVerdict] = useState24({ key: "", value: "unknown" });
+  useEffect10(() => {
+    if (!bot) {
+      return;
+    }
+    let alive = true;
+    void browserBackendFor(bot).then((value) => {
+      if (alive) {
+        setVerdict({ key, value });
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [key]);
+  return verdict.key === key ? verdict.value : "unknown";
+}
+
+// src/browser/cloud.tsx
+init_data();
+import { jsx as jsx37, jsxs as jsxs36 } from "react/jsx-runtime";
+var BROWSER_SETTINGS_PAGE = "browser";
+function fill(template, vars) {
+  return template.replace(/\{(\w+)\}/g, (whole, key) => vars[key] ?? whole);
+}
+function CloudTakeOver({ compact = false }) {
+  const text3 = useBrowserText();
+  return /* @__PURE__ */ jsx37(sdk_compat_exports.Tip, { label: text3.cloudTip, children: /* @__PURE__ */ jsx37("span", { "aria-label": `${text3.cloudWatching}. ${text3.cloudTip}`, className: "hbf-cloud-wrap", role: "note", tabIndex: 0, children: /* @__PURE__ */ jsxs36(
+    "button",
+    {
+      "aria-label": text3.cloudWatching,
+      className: "hbf-lease",
+      "data-cloud": "true",
+      "data-compact": compact ? "true" : "false",
+      disabled: true,
+      type: "button",
+      children: [
+        /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "cloud", size: 13 }),
+        /* @__PURE__ */ jsx37("span", { className: "hbf-lease-long", children: text3.cloudWatching }),
+        /* @__PURE__ */ jsx37("span", { className: "hbf-lease-short", children: text3.cloudWatchingShort })
+      ]
+    }
+  ) }) });
+}
+function localBots(rows) {
+  const seen = /* @__PURE__ */ new Set();
+  return rows.filter((row) => {
+    if (row.remoteSource || !row.name || seen.has(row.name)) {
+      return false;
+    }
+    seen.add(row.name);
+    return true;
+  });
+}
+function BotBrowserRow({ bot }) {
+  const text3 = useBrowserText();
+  const [load2, setLoad] = useState25({ state: "loading" });
+  const [confirm2, setConfirm] = useState25(null);
+  const [note, setNote] = useState25("");
+  useEffect11(() => {
+    let live = true;
+    getBrowserMode(bot.name).then(
+      (info) => live && setLoad({ state: "ready", info }),
+      () => live && setLoad({ state: "error" })
+    );
+    return () => {
+      live = false;
+    };
+  }, [bot.name]);
+  const mode = load2.state === "ready" ? load2.info.mode : null;
+  const label = mode === "local" ? text3.modeLocal : mode === "cloud" ? text3.modeCloud : mode === "other" ? text3.modeOther : load2.state === "loading" ? text3.settingsLoading : text3.settingsUnknown;
+  const target = mode === "local" ? "cloud" : "local";
+  const vars = { bot: bot.name };
+  return /* @__PURE__ */ jsxs36("div", { className: "hbs-row", "data-bot": bot.name, children: [
+    /* @__PURE__ */ jsx37("span", { className: "hbs-name", children: bot.name }),
+    note && /* @__PURE__ */ jsx37("span", { className: "hbs-note", children: note }),
+    /* @__PURE__ */ jsxs36("span", { className: "hbs-chip", "data-mode": mode ?? "unknown", children: [
+      /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: mode === "local" ? "device-desktop" : mode === "cloud" ? "cloud" : "question", size: 12 }),
+      label
+    ] }),
+    /* @__PURE__ */ jsx37("button", { className: "hbs-act", disabled: load2.state !== "ready", onClick: () => setConfirm(target), type: "button", children: target === "local" ? text3.useLocal : text3.useCloud }),
+    /* @__PURE__ */ jsx37(
+      sdk_compat_exports.ConfirmDialog,
+      {
+        busyLabel: text3.switching,
+        cancelLabel: text3.cancel,
+        confirmLabel: text3.confirmSwitch,
+        description: fill(confirm2 === "cloud" ? text3.confirmCloudBody : text3.confirmLocalBody, vars),
+        doneLabel: text3.switched,
+        onClose: () => setConfirm(null),
+        onConfirm: async () => {
+          if (!confirm2) {
+            return;
+          }
+          try {
+            const change = await setBrowserMode(bot.name, confirm2);
+            setLoad({ state: "ready", info: change });
+            setNote(fill(text3.backupSaved, { file: change.backup }));
+            forgetBrowserBackends();
+          } catch (error) {
+            throw new Error(fill(text3.modeFailed, { error: error instanceof Error ? error.message : String(error) }));
+          }
+        },
+        open: confirm2 !== null,
+        title: fill(confirm2 === "cloud" ? text3.confirmCloudTitle : text3.confirmLocalTitle, vars)
+      }
+    )
+  ] });
+}
+function BrowserSettingsPage() {
+  const text3 = useBrowserText();
+  const bots = localBots((0, sdk_compat_exports.useValue)($lastRoster));
+  return /* @__PURE__ */ jsxs36("div", { className: "hbs-page", "data-hermes-browser-settings": "", children: [
+    /* @__PURE__ */ jsx37("p", { className: "hbs-intro", children: text3.settingsIntro }),
+    bots.length === 0 ? /* @__PURE__ */ jsx37("p", { className: "hbs-note", children: text3.settingsEmpty }) : /* @__PURE__ */ jsx37("div", { className: "hbs-list", children: bots.map((bot) => /* @__PURE__ */ jsx37(BotBrowserRow, { bot }, bot.name)) })
+  ] });
+}
+
+// src/browser/focus.ts
+function floatKeyAction(event) {
+  if (event.key !== "Escape" || event.defaultPrevented || event.isComposing) {
+    return "none";
+  }
+  if (event.altKey || event.ctrlKey || event.metaKey) {
+    return "none";
+  }
+  return "minimise";
+}
+var REMOTE_KEYS = /* @__PURE__ */ new Set([
+  "Enter",
+  "Tab",
+  "Backspace",
+  "Delete",
+  "ArrowUp",
+  "ArrowDown",
+  "ArrowLeft",
+  "ArrowRight",
+  "Home",
+  "End",
+  "PageUp",
+  "PageDown",
+  "Escape"
+]);
+function remoteKeyRoute(event, floating) {
+  if (event.defaultPrevented || event.isComposing || event.metaKey || event.ctrlKey || event.altKey) {
+    return "pass";
+  }
+  if (event.key === "Escape" && floating) {
+    return "pass";
+  }
+  if (event.key.length === 1) {
+    return "text";
+  }
+  return REMOTE_KEYS.has(event.key) ? "key" : "pass";
+}
+
+// react-dom-loader:client
+var FOLDER = "hermes-bots-plus";
+var ASSET = "vendor/react-dom-client.mjs";
+var loading = null;
+async function readAsset() {
+  const desktop = globalThis.hermesDesktop;
+  const root2 = await desktop?.desktopPluginsRoot?.();
+  if (!root2) throw new Error("desktop plugins root unavailable");
+  const path = String(root2).replace(/[\/]+$/, "") + "/" + FOLDER + "/" + ASSET;
+  if (desktop.readPluginSource) return (await desktop.readPluginSource(path)).text;
+  const read = await desktop.readFileText?.(path);
+  if (!read || typeof read.text !== "string" || read.truncated) throw new Error("react-dom asset unreadable");
+  return read.text;
+}
+function loadReactDom() {
+  if (!loading) {
+    loading = (async () => {
+      const React = globalThis.__HERMES_REACT__;
+      if (!React || React.version !== "19.3.0") throw new Error("host React " + (React && React.version) + " does not match react-dom 19.3.0");
+      const url = URL.createObjectURL(new Blob([await readAsset()], { type: "text/javascript" }));
+      try {
+        return await import(url);
+      } finally {
+        URL.revokeObjectURL(url);
+      }
+    })();
+    loading.catch(() => {
+      loading = null;
+    });
+  }
+  return loading;
+}
+
+// src/browser/workspace.tsx
+init_sdk_compat();
+import { useEffect as useEffect20, useRef as useRef12 } from "react";
+
 // src/screen-pane.tsx
-import { Fragment as Fragment9, jsx as jsx37, jsxs as jsxs36 } from "react/jsx-runtime";
+init_sdk_compat();
+init_i18n();
+import { useCallback as useCallback2, useEffect as useEffect13, useRef as useRef6, useState as useState27 } from "react";
+
+// src/screen-install.tsx
+init_sdk_compat();
+init_i18n();
+import { useCallback, useEffect as useEffect12, useRef as useRef5, useState as useState26 } from "react";
+import { jsx as jsx38, jsxs as jsxs37 } from "react/jsx-runtime";
+var LOG_KEEP = 200;
+function ScreenNotInstalled(props) {
+  const t2 = useBots();
+  if (isManagedBackend(props.bot)) {
+    return /* @__PURE__ */ jsx38(sdk_compat_exports.EmptyState, { description: t2.screen.managedNotIncludedBody, title: t2.screen.managedNotIncludedTitle });
+  }
+  return /* @__PURE__ */ jsx38(ScreenInstallCard, { ...props });
+}
+function ScreenInstallCard({ bot, status, onInstalled }) {
+  const t2 = useBots();
+  const [phase, setPhase] = useState26("idle");
+  const [log, setLog] = useState26([]);
+  const [error, setError] = useState26(null);
+  const logEnd = useRef5(null);
+  const retention = useRef5(null);
+  const unmounted = useRef5(false);
+  const releaseRetention = useCallback(() => {
+    retention.current?.();
+    retention.current = null;
+  }, []);
+  useEffect12(
+    () => () => {
+      unmounted.current = true;
+      releaseRetention();
+    },
+    [releaseRetention]
+  );
+  useEffect12(() => {
+    logEnd.current?.scrollIntoView({ block: "end" });
+  }, [log]);
+  useEffect12(() => {
+    const offLog = host.onEvent("display.install.log", (event) => {
+      const payload = event.payload;
+      if (isEventForBotScreen(bot, event, status.profile_key) && typeof payload?.line === "string") {
+        const line = payload.line;
+        setLog((prev) => prev.length >= LOG_KEEP ? [...prev.slice(1), line] : [...prev, line]);
+      }
+    });
+    const offDone = host.onEvent("display.install.done", (event) => {
+      const payload = event.payload;
+      if (!payload || !isEventForBotScreen(bot, event, status.profile_key)) {
+        return;
+      }
+      releaseRetention();
+      if (payload.code === 0 && payload.status?.installed) {
+        setPhase("idle");
+        onInstalled(payload.status);
+      } else {
+        setPhase("failed");
+        setError(payload.code === -1 ? t2.screen.installCancelled : t2.screen.installFailed);
+      }
+    });
+    return () => {
+      offLog();
+      offDone();
+    };
+  }, [bot, onInstalled, releaseRetention, status.profile_key, t2.screen.installCancelled, t2.screen.installFailed]);
+  const install = useCallback(async () => {
+    setPhase("running");
+    setLog([]);
+    setError(null);
+    try {
+      const retain = await retainBotScreen(bot);
+      if (unmounted.current) {
+        retain();
+        return;
+      }
+      retention.current = retain;
+      await displayRequest(bot, "display.install");
+    } catch (err) {
+      releaseRetention();
+      setPhase("failed");
+      setError(err instanceof Error ? err.message : String(err));
+    }
+  }, [bot, releaseRetention]);
+  return /* @__PURE__ */ jsx38("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs37("div", { className: "flex w-full max-w-lg flex-col gap-2", children: [
+    /* @__PURE__ */ jsx38("div", { className: "text-sm font-medium", children: t2.screen.notInstalledTitle }),
+    /* @__PURE__ */ jsx38("div", { className: "text-xs text-muted-foreground", children: t2.screen.notInstalledBody }),
+    status.install_command ? /* @__PURE__ */ jsx38("code", { className: "select-text break-all rounded bg-muted px-2 py-1 text-left text-xs", children: status.install_command }) : /* @__PURE__ */ jsx38("div", { className: "text-xs text-muted-foreground", children: t2.screen.noPackageManager }),
+    status.install_command ? /* @__PURE__ */ jsxs37(sdk_compat_exports.Button, { disabled: phase === "running", onClick: () => void install(), size: "sm", children: [
+      phase === "running" ? /* @__PURE__ */ jsx38(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx38(sdk_compat_exports.Codicon, { name: "cloud-download" }),
+      phase === "running" ? t2.screen.installing : t2.screen.install
+    ] }) : null,
+    log.length > 0 ? /* @__PURE__ */ jsxs37("pre", { className: "max-h-48 overflow-auto rounded bg-black/80 p-2 text-left font-mono text-[0.65rem] leading-tight text-white/85", children: [
+      log.join("\n"),
+      /* @__PURE__ */ jsx38("div", { ref: logEnd })
+    ] }) : null,
+    error ? /* @__PURE__ */ jsx38("div", { className: "text-xs hbp-fg-danger", children: error }) : null,
+    /* @__PURE__ */ jsx38("div", { className: "text-xs text-muted-foreground", children: t2.screen.installHint })
+  ] }) });
+}
+
+// src/screen-pane.tsx
+import { Fragment as Fragment9, jsx as jsx39, jsxs as jsxs38 } from "react/jsx-runtime";
 var CLOSE_CONTROL_TAKEN = 4e3;
 var EVICTION_LOOP_WINDOW_MS = 1e4;
 var MAX_RAPID_EVICTIONS = 3;
@@ -22559,10 +23417,10 @@ function BotScreenPane({ bot }) {
   const socket = useRef6(null);
   const retention = useRef6(null);
   const pasteCleanup = useRef6(null);
-  const [conn, setConn] = useState25("idle");
-  const [error, setError] = useState25(null);
-  const [busy, setBusy] = useState25(false);
-  const [evicted, setEvicted] = useState25(false);
+  const [conn, setConn] = useState27("idle");
+  const [error, setError] = useState27(null);
+  const [busy, setBusy] = useState27(false);
+  const [evicted, setEvicted] = useState27(false);
   const attachGeneration = useRef6(0);
   const dialedAt = useRef6(0);
   const rapidEvictions = useRef6(0);
@@ -22579,7 +23437,7 @@ function BotScreenPane({ bot }) {
       setError(err instanceof Error ? err.message : String(err));
     }
   }, [bot]);
-  useEffect10(() => {
+  useEffect13(() => {
     void refresh();
     const offLease = host.onEvent("display.lease", (event) => {
       const payload = event.payload;
@@ -22715,13 +23573,13 @@ function BotScreenPane({ bot }) {
     },
     [bot, detach, refresh, t2.screen.controlTaken, t2.screen.streamLost]
   );
-  useEffect10(() => () => detach(true), [detach]);
-  useEffect10(() => {
+  useEffect13(() => () => detach(true), [detach]);
+  useEffect13(() => {
     if (status?.running && conn === "idle") {
       void attach(true);
     }
   }, [attach, conn, status?.running]);
-  useEffect10(() => {
+  useEffect13(() => {
     if (rfb.current) {
       rfb.current.viewOnly = !iHold;
       if (iHold) {
@@ -22791,46 +23649,46 @@ function BotScreenPane({ bot }) {
   );
   if (state?.unavailable) {
     const description = isManagedBackend(bot) ? t2.screen.portalUnavailableManaged : t2.screen.portalUnavailable;
-    return /* @__PURE__ */ jsx37(sdk_compat_exports.EmptyState, { description, title: t2.screen.unavailableTitle });
+    return /* @__PURE__ */ jsx39(sdk_compat_exports.EmptyState, { description, title: t2.screen.unavailableTitle });
   }
   if (status && !status.supported) {
-    return /* @__PURE__ */ jsx37(sdk_compat_exports.EmptyState, { description: t2.screen.unsupportedBody, title: t2.screen.unsupportedTitle });
+    return /* @__PURE__ */ jsx39(sdk_compat_exports.EmptyState, { description: t2.screen.unsupportedBody, title: t2.screen.unsupportedTitle });
   }
   if (status && !status.installed) {
-    return /* @__PURE__ */ jsx37(ScreenNotInstalled, { bot, onInstalled: (next) => setScreenStatus(bot, next), status });
+    return /* @__PURE__ */ jsx39(ScreenNotInstalled, { bot, onInstalled: (next) => setScreenStatus(bot, next), status });
   }
   if (status && !status.running && status.image_switch) {
     const sw = status.image_switch;
-    return /* @__PURE__ */ jsx37("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs36("div", { className: "flex max-w-md flex-col items-center gap-2", children: [
-      /* @__PURE__ */ jsx37("div", { className: "text-sm font-medium", children: t2.screen.imageSwitchTitle }),
-      /* @__PURE__ */ jsx37("div", { className: "text-xs text-muted-foreground", children: t2.screen.imageSwitchBody(sw.current_image, sw.target_image) }),
-      /* @__PURE__ */ jsxs36("div", { className: "flex gap-2", children: [
-        /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy, onClick: () => void decideImageSwitch(true), size: "sm", children: [
-          busy ? /* @__PURE__ */ jsx37(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "arrow-swap" }),
+    return /* @__PURE__ */ jsx39("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs38("div", { className: "flex max-w-md flex-col items-center gap-2", children: [
+      /* @__PURE__ */ jsx39("div", { className: "text-sm font-medium", children: t2.screen.imageSwitchTitle }),
+      /* @__PURE__ */ jsx39("div", { className: "text-xs text-muted-foreground", children: t2.screen.imageSwitchBody(sw.current_image, sw.target_image) }),
+      /* @__PURE__ */ jsxs38("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsxs38(sdk_compat_exports.Button, { disabled: busy, onClick: () => void decideImageSwitch(true), size: "sm", children: [
+          busy ? /* @__PURE__ */ jsx39(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "arrow-swap" }),
           t2.screen.imageSwitchApprove
         ] }),
-        /* @__PURE__ */ jsx37(sdk_compat_exports.Button, { disabled: busy, onClick: () => void decideImageSwitch(false), size: "sm", variant: "ghost", children: t2.screen.imageSwitchKeep })
+        /* @__PURE__ */ jsx39(sdk_compat_exports.Button, { disabled: busy, onClick: () => void decideImageSwitch(false), size: "sm", variant: "ghost", children: t2.screen.imageSwitchKeep })
       ] }),
-      error ? /* @__PURE__ */ jsx37("div", { className: "text-xs hbp-fg-danger", children: error }) : null
+      error ? /* @__PURE__ */ jsx39("div", { className: "text-xs hbp-fg-danger", children: error }) : null
     ] }) });
   }
   if (status && !status.running) {
-    return /* @__PURE__ */ jsx37("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs36("div", { className: "flex flex-col items-center gap-2", children: [
-      /* @__PURE__ */ jsx37("div", { className: "text-sm font-medium", children: t2.screen.stoppedTitle }),
-      /* @__PURE__ */ jsx37("div", { className: "text-xs text-muted-foreground", children: status.blocker ?? t2.screen.stoppedBody }),
-      /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy || Boolean(status.blocker), onClick: () => void start(), size: "sm", children: [
-        busy ? /* @__PURE__ */ jsx37(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "play" }),
+    return /* @__PURE__ */ jsx39("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs38("div", { className: "flex flex-col items-center gap-2", children: [
+      /* @__PURE__ */ jsx39("div", { className: "text-sm font-medium", children: t2.screen.stoppedTitle }),
+      /* @__PURE__ */ jsx39("div", { className: "text-xs text-muted-foreground", children: status.blocker ?? t2.screen.stoppedBody }),
+      /* @__PURE__ */ jsxs38(sdk_compat_exports.Button, { disabled: busy || Boolean(status.blocker), onClick: () => void start(), size: "sm", children: [
+        busy ? /* @__PURE__ */ jsx39(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "play" }),
         t2.screen.start
       ] }),
-      error ? /* @__PURE__ */ jsx37("div", { className: "text-xs hbp-fg-danger", children: error }) : null
+      error ? /* @__PURE__ */ jsx39("div", { className: "text-xs hbp-fg-danger", children: error }) : null
     ] }) });
   }
   const humanOther = lease?.holder === "human" && !iHold;
-  return /* @__PURE__ */ jsxs36("div", { className: "flex h-full min-h-0 flex-col", children: [
-    /* @__PURE__ */ jsxs36("div", { className: "flex items-center gap-2 border-b px-3 py-1.5 text-xs", children: [
-      /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "device-desktop" }),
-      /* @__PURE__ */ jsx37("span", { className: "font-medium", children: t2.screen.title }),
-      status?.display ? /* @__PURE__ */ jsxs36("span", { className: "text-muted-foreground", children: [
+  return /* @__PURE__ */ jsxs38("div", { className: "flex h-full min-h-0 flex-col", children: [
+    /* @__PURE__ */ jsxs38("div", { className: "flex items-center gap-2 border-b px-3 py-1.5 text-xs", children: [
+      /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "device-desktop" }),
+      /* @__PURE__ */ jsx39("span", { className: "font-medium", children: t2.screen.title }),
+      status?.display ? /* @__PURE__ */ jsxs38("span", { className: "text-muted-foreground", children: [
         status.display,
         " \xB7 ",
         status.geometry
@@ -22838,42 +23696,42 @@ function BotScreenPane({ bot }) {
       status?.placement?.startsWith("terminal:") ? (
         // Where the desktop lives matters for what a takeover can reach: inside the terminal's sandbox,
         // not on the gateway host.
-        /* @__PURE__ */ jsx37("span", { className: "rounded bg-(--ui-bg-tertiary) px-1.5 py-0.5 text-muted-foreground", children: t2.screen.placementSandbox(status.placement.slice("terminal:".length)) })
+        /* @__PURE__ */ jsx39("span", { className: "rounded bg-(--ui-bg-tertiary) px-1.5 py-0.5 text-muted-foreground", children: t2.screen.placementSandbox(status.placement.slice("terminal:".length)) })
       ) : null,
-      /* @__PURE__ */ jsx37("span", { className: "grow" }),
+      /* @__PURE__ */ jsx39("span", { className: "grow" }),
       lease?.holder === "human" && lease.reason ? (
         // Why control was taken stays readable while the human acts.
-        /* @__PURE__ */ jsxs36(
+        /* @__PURE__ */ jsxs38(
           "span",
           {
             className: "max-w-[40%] truncate rounded hbp-bg-warn-15 px-2 py-0.5 hbp-fg-warn",
             title: lease.reason,
             children: [
-              /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "bell" }),
+              /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "bell" }),
               " ",
               lease.reason
             ]
           }
         )
       ) : null,
-      iHold ? /* @__PURE__ */ jsx37("span", { className: "rounded hbp-bg-danger-15 px-2 py-0.5 font-medium hbp-fg-danger", children: t2.screen.youControl }) : humanOther ? /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t2.screen.otherControls }) : /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t2.screen.agentControls }),
-      iHold ? /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy, onClick: () => void handBack(), size: "sm", variant: "secondary", children: [
-        /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "debug-continue" }),
+      iHold ? /* @__PURE__ */ jsx39("span", { className: "rounded hbp-bg-danger-15 px-2 py-0.5 font-medium hbp-fg-danger", children: t2.screen.youControl }) : humanOther ? /* @__PURE__ */ jsx39("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t2.screen.otherControls }) : /* @__PURE__ */ jsx39("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t2.screen.agentControls }),
+      iHold ? /* @__PURE__ */ jsxs38(sdk_compat_exports.Button, { disabled: busy, onClick: () => void handBack(), size: "sm", variant: "secondary", children: [
+        /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "debug-continue" }),
         " ",
         t2.screen.handBack
-      ] }) : /* @__PURE__ */ jsxs36(Fragment9, { children: [
-        humanOther ? /* @__PURE__ */ jsx37(sdk_compat_exports.Tip, { label: t2.screen.handBackForceHint, children: /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy, onClick: () => void handBack(true), size: "sm", variant: "secondary", children: [
-          /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "debug-continue" }),
+      ] }) : /* @__PURE__ */ jsxs38(Fragment9, { children: [
+        humanOther ? /* @__PURE__ */ jsx39(sdk_compat_exports.Tip, { label: t2.screen.handBackForceHint, children: /* @__PURE__ */ jsxs38(sdk_compat_exports.Button, { disabled: busy, onClick: () => void handBack(true), size: "sm", variant: "secondary", children: [
+          /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "debug-continue" }),
           " ",
           t2.screen.handBackForce
         ] }) }) : null,
-        /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy || conn === "attaching" || !viewer, onClick: () => void takeOver(), size: "sm", children: [
-          /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "record-keys" }),
+        /* @__PURE__ */ jsxs38(sdk_compat_exports.Button, { disabled: busy || conn === "attaching" || !viewer, onClick: () => void takeOver(), size: "sm", children: [
+          /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "record-keys" }),
           " ",
           t2.screen.takeOver
         ] })
       ] }),
-      /* @__PURE__ */ jsx37(sdk_compat_exports.Tip, { label: t2.screen.reconnect, children: /* @__PURE__ */ jsx37(
+      /* @__PURE__ */ jsx39(sdk_compat_exports.Tip, { label: t2.screen.reconnect, children: /* @__PURE__ */ jsx39(
         sdk_compat_exports.Button,
         {
           "aria-label": t2.screen.reconnect,
@@ -22881,572 +23739,100 @@ function BotScreenPane({ bot }) {
           onClick: () => void attach(),
           size: "sm",
           variant: "ghost",
-          children: /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "refresh" })
+          children: /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "refresh" })
         }
       ) })
     ] }),
-    /* @__PURE__ */ jsxs36(
+    /* @__PURE__ */ jsxs38(
       "div",
       {
         className: iHold ? "relative min-h-0 grow bg-black ring-2 ring-inset hbp-ring-danger-70" : "relative min-h-0 grow bg-black",
         children: [
-          /* @__PURE__ */ jsx37("div", { className: "absolute inset-0", "data-remote-screen": "", "data-terminal": "", ref: canvasHost }),
-          conn === "attaching" ? /* @__PURE__ */ jsxs36("div", { className: "pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-white/70", children: [
-            /* @__PURE__ */ jsx37(sdk_compat_exports.GlyphSpinner, {}),
+          /* @__PURE__ */ jsx39("div", { className: "absolute inset-0", "data-remote-screen": "", "data-terminal": "", ref: canvasHost }),
+          conn === "attaching" ? /* @__PURE__ */ jsxs38("div", { className: "pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-white/70", children: [
+            /* @__PURE__ */ jsx39(sdk_compat_exports.GlyphSpinner, {}),
             " ",
             t2.screen.attaching
           ] }) : null,
-          evicted ? /* @__PURE__ */ jsx37("div", { className: "pointer-events-none absolute inset-x-0 top-0 bg-amber-950/80 px-3 py-1.5 text-center text-xs text-amber-100", children: t2.screen.controlTaken }) : null,
-          conn === "error" && error ? /* @__PURE__ */ jsx37("div", { className: "absolute inset-x-0 bottom-0 bg-red-950/80 px-3 py-1.5 text-xs text-red-200", children: error }) : null
+          evicted ? /* @__PURE__ */ jsx39("div", { className: "pointer-events-none absolute inset-x-0 top-0 bg-amber-950/80 px-3 py-1.5 text-center text-xs text-amber-100", children: t2.screen.controlTaken }) : null,
+          conn === "error" && error ? /* @__PURE__ */ jsx39("div", { className: "absolute inset-x-0 bottom-0 bg-red-950/80 px-3 py-1.5 text-xs text-red-200", children: error }) : null
         ]
       }
     )
   ] });
 }
 
-// src/screen-open.tsx
-init_shared();
-import { jsx as jsx38 } from "react/jsx-runtime";
-var openTabs2 = /* @__PURE__ */ new Map();
-function screenPaneId(bot) {
-  return `plugin-workspace:${ID}:screen:${botSelectionKey(bot)}`;
-}
-function openBotScreen(bot, meta) {
-  if (typeof host.openWorkspace !== "function") {
-    host.notify({ kind: "info", message: botsText().screen.openNeedsUpdate });
-    return;
-  }
-  const key = botSelectionKey(bot);
-  if (openTabs2.has(key)) {
-    host.revealPane(screenPaneId(bot));
-    return;
-  }
-  const close = host.openWorkspace(`${ID}:screen:${key}`, {
-    title: `${displayName(bot, meta ?? null)} \xB7 ${botsText().screen.title}`,
-    minWidth: "28rem",
-    render: () => /* @__PURE__ */ jsx38(BotScreenPane, { bot }),
-    onClose: () => {
-      openTabs2.delete(key);
-      noteScreenTabClosed(bot);
-    }
-  });
-  openTabs2.set(key, close);
-  noteScreenTabOpened(bot);
-}
-
-// src/bot-tips-view.tsx
-import { jsx as jsx39, jsxs as jsxs37 } from "react/jsx-runtime";
-function botTips(bot, meta) {
-  return [
-    {
-      icon: "globe",
-      id: "computer",
-      run: () => openBotScreen(bot, meta)
-    },
-    {
-      icon: "history",
-      id: "schedule",
-      run: () => void host.revealPane(paneId("routines"))
-    },
-    {
-      icon: "organization",
-      id: "delegate",
-      run: () => void host.revealPane(paneId("pane"))
-    }
-  ];
-}
-function BotChatTips({ sessionId }) {
-  const t2 = useBots();
-  const roster = (0, sdk_compat_exports.useValue)($lastRoster);
-  const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
-  const dismissed2 = (0, sdk_compat_exports.useValue)($dismissedBotTips);
-  (0, sdk_compat_exports.useValue)(host.state.focusedStoredSessionId);
-  const bot = botForChat(roster, sessionId);
-  if (!bot) {
-    return null;
-  }
-  const key = botSelectionKey(bot);
-  const cleared = new Set(dismissed2[key] ?? []);
-  const tips = botTips(bot, botRosterMeta(bot, allMeta)).filter((tip) => !cleared.has(tip.id));
-  if (!tips.length) {
-    return null;
-  }
-  const copy = {
-    computer: { action: t2.tips.openComputer, text: t2.tips.computer },
-    delegate: { action: t2.tips.openBots, text: t2.tips.delegate },
-    schedule: { action: t2.tips.openRoutines, text: t2.tips.schedule }
-  };
-  return /* @__PURE__ */ jsx39("div", { className: "pointer-events-auto flex w-full max-w-lg flex-col gap-1.5 px-6 pt-2", "data-slot": "bot_chat_tips", children: tips.map((tip) => /* @__PURE__ */ jsxs37(
-    "div",
-    {
-      className: "flex items-center gap-2.5 rounded-lg border border-(--dt-composer-ring)/25 bg-accent/12 px-3 py-2 text-left",
-      "data-bot-tip": tip.id,
-      children: [
-        /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.8rem] text-(--ui-text-tertiary)", name: tip.icon }),
-        /* @__PURE__ */ jsx39("p", { className: "m-0 min-w-0 flex-1 text-[0.72rem] leading-snug text-muted-foreground/90", children: copy[tip.id].text }),
-        /* @__PURE__ */ jsx39(
-          "button",
-          {
-            className: "shrink-0 cursor-pointer rounded-md px-2 py-1 text-[0.7rem] font-medium text-(--ui-accent-primary, var(--primary)) transition-colors hover:bg-accent/40",
-            onClick: tip.run,
-            type: "button",
-            children: copy[tip.id].action
-          }
-        ),
-        /* @__PURE__ */ jsx39(
-          "button",
-          {
-            "aria-label": t2.tips.dismiss,
-            className: "flex shrink-0 cursor-pointer items-center text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
-            onClick: () => dismissBotTip(key, tip.id),
-            type: "button",
-            children: /* @__PURE__ */ jsx39(sdk_compat_exports.Codicon, { name: "close" })
-          }
-        )
-      ]
-    },
-    tip.id
-  )) });
-}
-
-// src/plugin.tsx
-init_canonical_chat();
-
-// src/context-nudge.ts
+// src/browser/activity-tab.tsx
 init_sdk_compat();
-init_canonical_chat();
-init_routing();
-init_shared();
-var NUDGE_STORAGE_KEY = "bot-context-nudge-dismissed-v1";
-var NUDGE_MIN_MESSAGES = 60;
-var NUDGE_MIN_INPUT_TOKENS = 15e4;
-var NUDGE_REGROWTH_FACTOR = 1.5;
-var $dismissedNudgeCounts = (0, sdk_compat_exports.atom)({});
-function hydrateDismissedNudges() {
-  try {
-    Promise.resolve(getPluginCtx()?.storage?.get?.(NUDGE_STORAGE_KEY, null)).then((value) => {
-      if (value && typeof value === "object" && !Array.isArray(value)) {
-        $dismissedNudgeCounts.set(
-          Object.fromEntries(
-            Object.entries(value).filter(([, count]) => typeof count === "number" && Number.isFinite(count) && count >= 0).map(([key, count]) => [key, count])
-          )
-        );
-      }
-    }).catch(() => void 0);
-  } catch {
-  }
-}
-function dismissContextNudge(botKey, messageCount) {
-  const next = { ...$dismissedNudgeCounts.get(), [botKey]: messageCount };
-  $dismissedNudgeCounts.set(next);
-  try {
-    void getPluginCtx()?.storage?.set?.(NUDGE_STORAGE_KEY, next);
-  } catch {
-  }
-}
-function contextNudgeEligible(size) {
-  if (!size) {
-    return false;
-  }
-  const tokens = typeof size.input_tokens === "number" && Number.isFinite(size.input_tokens) ? size.input_tokens : 0;
-  const messages = typeof size.message_count === "number" && Number.isFinite(size.message_count) ? size.message_count : 0;
-  return tokens >= NUDGE_MIN_INPUT_TOKENS || messages >= NUDGE_MIN_MESSAGES;
-}
-function contextNudgeSuppressed(dismissedAt, size) {
-  if (dismissedAt == null) {
-    return false;
-  }
-  const messages = size && typeof size.message_count === "number" && Number.isFinite(size.message_count) ? size.message_count : 0;
-  return messages < dismissedAt * NUDGE_REGROWTH_FACTOR;
-}
-async function canonicalChatSize(bot) {
-  const route = botConnectionRoute(bot);
-  if (!route || !bot?.name) {
-    return null;
-  }
-  try {
-    const res = await requestForBot(bot, "session.list", {
-      profile: backendTargetProfile(route, bot.name),
-      title: CANONICAL_CHAT_TITLE,
-      limit: PROFILE_SESSION_LIST_LIMIT,
-      include_hidden: true
-    });
-    const match = (res?.sessions ?? []).find((row) => isCanonicalBotChatHistory(row));
-    return match ?? null;
-  } catch {
-    return null;
-  }
-}
+import { useContext as useContext3, useEffect as useEffect17, useRef as useRef9 } from "react";
 
-// src/context-nudge-view.tsx
+// src/card-bot.ts
 init_sdk_compat();
-init_canonical_chat();
-import { useEffect as useEffect11, useState as useState26 } from "react";
+import { useContext, useEffect as useEffect14, useState as useState28 } from "react";
 init_data();
-init_i18n();
-import { jsx as jsx40, jsxs as jsxs38 } from "react/jsx-runtime";
-var sizeCache = /* @__PURE__ */ new Map();
-var SIZE_TTL_MS = 6e4;
-function BotContextNudge() {
-  const t2 = useBots();
-  const roster = (0, sdk_compat_exports.useValue)($lastRoster);
-  const dismissed2 = (0, sdk_compat_exports.useValue)($dismissedNudgeCounts);
-  const storedId = String(host.state.focusedStoredSessionId?.get?.() ?? "");
-  (0, sdk_compat_exports.useValue)(host.state.focusedStoredSessionId);
-  const bot = botForChat(roster, storedId);
-  const canonical = isCanonicalChatOnScreen(bot, storedId);
-  const botKey = bot ? botSelectionKey(bot) : "";
-  const cacheKey = `${botKey}:${storedId}`;
-  const [reading, setReading] = useState26(() => {
-    const hit2 = sizeCache.get(cacheKey);
-    return { key: cacheKey, size: hit2 && Date.now() - hit2.at < SIZE_TTL_MS ? hit2.size : null };
+
+// src/tool-card-session.ts
+import { createContext } from "react";
+var PreviewSessionContext = createContext({
+  runtimeId: null,
+  storedId: null
+});
+
+// src/card-bot.ts
+var RETRY_MS = 1e4;
+var priming = null;
+var primedAt = 0;
+function primeOnce(now = Date.now()) {
+  if (priming) {
+    return priming;
+  }
+  if (now - primedAt < RETRY_MS) {
+    return Promise.resolve();
+  }
+  primedAt = now;
+  priming = primeRoster().finally(() => {
+    priming = null;
   });
-  const size = reading.key === cacheKey ? reading.size : null;
-  useEffect11(() => {
-    if (!bot || !canonical) {
-      return;
-    }
-    const hit2 = sizeCache.get(cacheKey);
-    if (hit2 && Date.now() - hit2.at < SIZE_TTL_MS) {
-      setReading({ key: cacheKey, size: hit2.size });
+  return priming;
+}
+function cachedRows() {
+  const rows = cachedUnionRoster()?.profiles;
+  return Array.isArray(rows) ? rows.filter((row) => row && !row.ghost) : [];
+}
+function useCardBot() {
+  const session = useContext(PreviewSessionContext);
+  const live = (0, sdk_compat_exports.useValue)($lastRoster);
+  const [cached, setCached] = useState28(() => live.length ? [] : cachedRows());
+  const inChat = Boolean(session.storedId || session.runtimeId);
+  const roster = live.length ? live : cached;
+  const bot = inChat ? botForChat(roster, session.storedId ?? "") : null;
+  const missing = inChat && !bot;
+  useEffect14(() => {
+    if (!missing) {
       return;
     }
     let alive = true;
-    void canonicalChatSize(bot).then((next) => {
-      sizeCache.set(cacheKey, { at: Date.now(), size: next });
+    void primeOnce().then(() => {
       if (alive) {
-        setReading({ key: cacheKey, size: next });
+        setCached(cachedRows());
       }
     });
     return () => {
       alive = false;
     };
-  }, [bot, canonical, cacheKey]);
-  if (!bot || !canonical || !contextNudgeEligible(size)) {
-    return null;
-  }
-  const dismissedAt = dismissed2[botKey];
-  if (contextNudgeSuppressed(dismissedAt ?? null, size)) {
-    return null;
-  }
-  const messages = typeof size?.message_count === "number" && Number.isFinite(size.message_count) ? size.message_count : 0;
-  return /* @__PURE__ */ jsxs38(
-    "div",
-    {
-      className: "pointer-events-auto mx-3 mb-1.5 flex items-center gap-2.5 rounded-lg border border-(--dt-composer-ring)/25 bg-accent/12 px-3 py-2 text-left",
-      "data-slot": "bot_context_nudge",
-      children: [
-        /* @__PURE__ */ jsx40(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.8rem] text-(--ui-text-tertiary)", name: "comment-discussion" }),
-        /* @__PURE__ */ jsx40("p", { className: "m-0 min-w-0 flex-1 text-[0.72rem] leading-snug text-muted-foreground/90", children: t2.nudge.text }),
-        /* @__PURE__ */ jsx40(
-          "button",
-          {
-            className: "shrink-0 cursor-pointer rounded-md px-2 py-1 text-[0.7rem] font-medium text-(--ui-accent-primary, var(--primary)) transition-colors hover:bg-accent/40",
-            onClick: () => void newBotChat(bot),
-            type: "button",
-            children: t2.nudge.action
-          }
-        ),
-        /* @__PURE__ */ jsx40(
-          "button",
-          {
-            "aria-label": t2.nudge.dismiss,
-            className: "flex shrink-0 cursor-pointer items-center text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
-            onClick: () => dismissContextNudge(botKey, messages),
-            type: "button",
-            children: /* @__PURE__ */ jsx40(sdk_compat_exports.Codicon, { name: "close" })
-          }
-        )
-      ]
-    }
-  );
+  }, [missing]);
+  return bot;
 }
 
-// src/context-panel-i18n.ts
-init_sdk_compat();
-init_shared();
-var CONTEXT_PANEL_EN = {
-  title: "Context window",
-  reading: (percent, used, max) => `${percent}% \xB7 ${used} / ${max}`,
-  meterLabel: (percent) => `Context window ${percent}% used`,
-  waiting: "No reading yet",
-  estimated: "Estimate",
-  estimatedHint: "Counted from the transcript, not reported by the model provider",
-  compacted: (count) => count === 1 ? "Summarised once" : `Summarised ${count}\xD7`,
-  compactedHint: "Older turns were folded into a summary to free up room",
-  nearlyFull: "Almost full",
-  nearlyFullHint: "Hermes will soon fold older turns into a summary",
-  steps: "Steps",
-  showSteps: "Show what happened in each turn",
-  hideSteps: "Hide the turn timeline",
-  loading: "Reading this chat\u2026",
-  failed: "Could not read the steps for this chat.",
-  retry: "Retry",
-  none: "Nothing has run in this chat yet.",
-  overview: (turns, steps) => `${turns === 1 ? "1 turn" : `${turns} turns`} \xB7 ${steps === 1 ? "1 step" : `${steps} steps`}`,
-  turn: (index) => `Turn ${index}`,
-  stepCount: (count) => count === 1 ? "1 step" : `${count} steps`,
-  answered: "Answered",
-  working: "Still working",
-  noAnswer: "No answer saved",
-  slowest: (name, took) => `Longest wait: ${name}, ${took}`,
-  tookHint: "Time since the step before it finished, thinking included"
-};
-var CONTEXT_PANEL_LOCALES = { en: { contextPanel: CONTEXT_PANEL_EN } };
-function useContextPanelText() {
-  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
-  return bindTree(t2, CONTEXT_PANEL_EN, "contextPanel");
-}
-
-// src/plugin.tsx
+// src/browser/activity-tab.tsx
 init_data();
-
-// src/hire-i18n.ts
-init_sdk_compat();
-init_shared();
-var HIRE_EN = {
-  title: "Hire a teammate",
-  subtitle: "Pick a starter, describe one, or hire a whole team.",
-  search: "Search teammates",
-  featured: "Featured",
-  category: {
-    research: "Research",
-    coding: "Coding",
-    writing: "Writing",
-    creative: "Creative",
-    ops: "Operations",
-    review: "Review"
-  },
-  packsNav: "Team packs",
-  yours: "Yours",
-  importBot: "Import a bot\u2026",
-  describeLabel: "Describe the teammate you want",
-  describePlaceholder: "e.g. \u201Ca skeptical code reviewer who catches edge cases\u201D",
-  describeAction: "Draft it",
-  packsHeading: "Team packs \u2014 hire several at once",
-  teammatesHeading: "Teammates",
-  noMatch: (query) => `No teammate matches \u201C${query}\u201D.`,
-  seatCount: (n) => n === 1 ? "1 seat" : `${n} seats`,
-  drafted: "Drafted from your description",
-  startsWith: "Starts with",
-  firstThings: "Things to ask first",
-  brain: "Brain",
-  brainDefault: "Your default model",
-  brainHint: "Change it any time from the bot\u2019s header.",
-  name: "Name",
-  hire: (name) => `Hire ${name}`,
-  customize: "Customize instructions, skills and tools\u2026",
-  hirePack: (name) => `Hire ${name}`,
-  packHint: "Creates the team with open seats. Fill each seat with a bot on the Team page.",
-  packCreated: (name) => `${name} is ready \u2014 fill its seats`,
-  packFailed: "Could not create the team",
-  blankTitle: "Start from scratch",
-  blankBody: "A blank bot with your default model and skills.",
-  pickOne: "Pick a teammate to see what it does.",
-  back: "Back"
-};
-var HIRE_LOCALES = { en: { hire: HIRE_EN } };
-function useHireText() {
-  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
-  return bindTree(t2, HIRE_EN, "hire");
-}
-
-// src/plugin.tsx
-init_i18n();
-
-// src/instant-ack.ts
-init_sdk_compat();
-var RECEIPT_MAX_WORDS = 8;
-var WAITING_AFTER_MS = 1200;
-var FENCE = /```[\s\S]*?```/g;
-var MD_LINK = /\[([^\]]*)\]\([^)]*\)/g;
-var NOISE_TOKEN = /^(?:https?:\/\/\S+|www\.\S+|\/[\w./-]+|~\/\S+|@\S+|#\S+)$/i;
-var LEADING_MARKER = /^(?:[\s>*#–—•\])]+|[-–—]\s+|\d+[.)]\s*|\[[ xX]?\]\s*)/u;
-function stripLeadingMarkers(text3) {
-  let out = text3;
-  for (let pass = 0; pass < 6; pass += 1) {
-    const next = out.replace(LEADING_MARKER, "");
-    if (next === out) {
-      break;
-    }
-    out = next;
-  }
-  return out;
-}
-function receiptFromPrompt(text3) {
-  const cleaned = text3.replace(FENCE, " ").replace(MD_LINK, "$1").replace(/`([^`]*)`/g, "$1").replace(/\s+/g, " ").trim();
-  if (!cleaned) {
-    return null;
-  }
-  const command = /^\/([a-z0-9][\w-]*)/i.exec(cleaned);
-  if (command) {
-    return { kind: "command", text: `/${command[1].toLowerCase()}` };
-  }
-  const words = stripLeadingMarkers(cleaned).split(" ").filter((word) => word && !NOISE_TOKEN.test(word));
-  const kept = words.slice(0, RECEIPT_MAX_WORDS).join(" ").replace(/[\s,;:.!?…-]+$/u, "");
-  return kept ? { kind: "prompt", text: kept } : null;
-}
-function ackToolKind(name) {
-  const tool = name.toLowerCase();
-  if (/^(terminal|execute_code|process|shell|bash)/.test(tool)) {
-    return "run";
-  }
-  if (/^(web_search|search_web|search)$/.test(tool)) {
-    return "search";
-  }
-  if (/^(browser_|web_extract|web_fetch|fetch_url)/.test(tool)) {
-    return "browse";
-  }
-  if (/^(read_file|search_files|list_files|grep|glob)/.test(tool)) {
-    return "read";
-  }
-  if (/^(write_file|patch|edit_file|apply_patch)/.test(tool)) {
-    return "edit";
-  }
-  if (/^(delegate_task|message_agent)/.test(tool)) {
-    return "delegate";
-  }
-  return "tool";
-}
-function reduceInstantAck(current, event, at) {
-  if (event.type === "arm") {
-    return { armedAt: at, kind: event.kind, state: "receipt", storedId: event.storedId, text: event.text };
-  }
-  if (!current || event.type === "hand-off") {
-    return null;
-  }
-  if (event.type === "tool-start") {
-    return { armedAt: current.armedAt, name: event.name, state: "working", storedId: current.storedId, tool: ackToolKind(event.name) };
-  }
-  return current.state === "receipt" ? { armedAt: current.armedAt, state: "waiting", storedId: current.storedId } : current;
-}
-var $instantAcks = (0, sdk_compat_exports.atom)({});
-function noteInstantAck(runtimeId, event, at = Date.now()) {
-  const all = $instantAcks.get();
-  const next = reduceInstantAck(all[runtimeId] ?? null, event, at);
-  if (next === (all[runtimeId] ?? null)) {
-    return;
-  }
-  const copy = { ...all };
-  if (next) {
-    copy[runtimeId] = next;
-  } else {
-    delete copy[runtimeId];
-  }
-  $instantAcks.set(copy);
-}
-function armInstantAck(runtimeId, storedId, text3, busy) {
-  const receipt = receiptFromPrompt(text3);
-  if (!runtimeId || !storedId || !receipt || busy) {
-    return false;
-  }
-  noteInstantAck(runtimeId, { ...receipt, storedId, type: "arm" });
-  return true;
-}
-function payloadField(payload, key) {
-  const value = payload && typeof payload === "object" ? payload[key] : void 0;
-  return typeof value === "string" ? value : "";
-}
-function feedInstantAck(event) {
-  const runtimeId = event.session_id;
-  if (!runtimeId || !$instantAcks.get()[runtimeId]) {
-    return;
-  }
-  if (event.type === "tool.generating" || event.type === "tool.start") {
-    const name = payloadField(event.payload, "name") || payloadField(event.payload, "tool_name");
-    if (name) {
-      noteInstantAck(runtimeId, { name, type: "tool-start" });
-    }
-    return;
-  }
-  if (event.type === "message.delta") {
-    if ((payloadField(event.payload, "text") || payloadField(event.payload, "delta")).trim()) {
-      noteInstantAck(runtimeId, { type: "hand-off" });
-    }
-    return;
-  }
-  noteInstantAck(runtimeId, { type: "hand-off" });
-}
-var INSTANT_ACK_EVENTS = [
-  "approval.request",
-  "error",
-  "message.complete",
-  "message.delta",
-  "tool.complete",
-  "tool.generating",
-  "tool.start"
-];
-var IDLE_GRACE_MS = 2e3;
-function sweepInstantAcks(busyBySession, now = Date.now()) {
-  for (const [runtimeId, ack] of Object.entries($instantAcks.get())) {
-    if (!busyBySession[runtimeId] && (ack.state === "working" || now - ack.armedAt >= IDLE_GRACE_MS)) {
-      noteInstantAck(runtimeId, { type: "hand-off" }, now);
-    }
-  }
-}
-
-// src/instant-ack-line.tsx
-init_sdk_compat();
-import { useEffect as useEffect12 } from "react";
-init_data();
-init_i18n();
-import { jsx as jsx41, jsxs as jsxs39 } from "react/jsx-runtime";
-function wireInstantAck(onDispose) {
-  if (typeof host.onEvent !== "function" || !host.state.busyBySession) {
-    return false;
-  }
-  for (const type of INSTANT_ACK_EVENTS) {
-    onDispose(host.onEvent(type, feedInstantAck));
-  }
-  onDispose(host.state.busyBySession.listen((busy) => sweepInstantAcks(busy)));
-  return true;
-}
-function InstantAckLine() {
-  const runtimeId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
-  const storedId = (0, sdk_compat_exports.useValue)(host.state.focusedStoredSessionId);
-  const ack = (0, sdk_compat_exports.useValue)($instantAcks)[runtimeId ?? ""] ?? null;
-  (0, sdk_compat_exports.useValue)($lastRoster);
-  const t2 = useBots().ack;
-  const state = ack?.state;
-  const armedAt = ack?.armedAt ?? 0;
-  useEffect12(() => {
-    if (!runtimeId || state !== "receipt" && state !== "waiting") {
-      return;
-    }
-    const due = state === "receipt" ? WAITING_AFTER_MS : IDLE_GRACE_MS;
-    const timer = window.setTimeout(
-      () => {
-        if (state === "receipt") {
-          noteInstantAck(runtimeId, { type: "waiting" });
-        }
-        sweepInstantAcks(host.state.busyBySession.get());
-      },
-      Math.max(0, armedAt + due - Date.now())
-    );
-    return () => window.clearTimeout(timer);
-  }, [armedAt, runtimeId, state]);
-  if (!ack || ack.storedId !== storedId || !canonicalBotChatOnScreen(storedId)) {
-    return null;
-  }
-  const label = ack.state === "receipt" ? ack.kind === "command" ? t2.command(ack.text) : t2.prompt(ack.text) : ack.state === "working" ? ack.tool === "tool" ? t2.using(ack.name.replace(/_/g, " ")) : t2.verbs[ack.tool] : t2.waiting;
-  return /* @__PURE__ */ jsxs39(
-    "div",
-    {
-      "aria-live": "polite",
-      className: "flex min-w-0 items-center gap-1.5 px-1 text-xs text-(--conversation-scaffold-text)",
-      "data-ack-state": ack.state,
-      "data-slot": "instant-ack",
-      role: "status",
-      children: [
-        /* @__PURE__ */ jsx41(sdk_compat_exports.StatusDot, { className: "shrink-0 animate-pulse", tone: ack.state === "waiting" ? "muted" : "good" }),
-        /* @__PURE__ */ jsx41("span", { className: "min-w-0 truncate", children: label })
-      ]
-    }
-  );
-}
-
-// src/plugin.tsx
 init_labels();
+init_routing();
+
+// src/tool-card-live.tsx
+init_sdk_compat();
+import { useContext as useContext2, useEffect as useEffect16, useRef as useRef8, useState as useState30 } from "react";
+init_data();
 
 // src/live-view-i18n.ts
 init_sdk_compat();
@@ -23464,9 +23850,15 @@ function useLiveViewText() {
   return bindTree(t2, LIVE_VIEW_EN, "liveView");
 }
 
+// src/tool-card-live.tsx
+init_routing();
+
+// src/tool-card-model.ts
+init_sdk_compat();
+
 // src/tool-cards-i18n.ts
 init_sdk_compat();
-import { useMemo as useMemo6 } from "react";
+import { useMemo as useMemo7 } from "react";
 
 // src/i18n-bind.ts
 function bind2(t2, template, prefix = "") {
@@ -24044,643 +24436,10 @@ function toolCardsT(key, ...args) {
 }
 function useToolCardsText() {
   const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
-  return useMemo6(() => bind2(withFallback(t2), TOOL_CARDS_EN, "toolCards"), [t2]);
+  return useMemo7(() => bind2(withFallback(t2), TOOL_CARDS_EN, "toolCards"), [t2]);
 }
-
-// src/mission-rail.tsx
-init_sdk_compat();
-import { useState as useState38 } from "react";
-
-// src/autopilot.ts
-var AUTOPILOT_ICONS = { brief: "coffee", review: "checklist", watch: "eye" };
-function autopilotPresets(a) {
-  return [
-    {
-      id: "brief",
-      label: a.brief.label,
-      preset: {
-        deliverToChat: true,
-        instruction: a.brief.instruction,
-        schedule: { freq: "weekdays", time: "8:0" },
-        title: a.brief.label
-      }
-    },
-    {
-      id: "review",
-      label: a.review.label,
-      preset: {
-        deliverToChat: true,
-        instruction: a.review.instruction,
-        schedule: { freq: "weekly", time: "16:0", weekday: "5" },
-        title: a.review.label
-      }
-    },
-    {
-      id: "watch",
-      label: a.watch.label,
-      preset: {
-        deliverToChat: false,
-        instruction: a.watch.instruction,
-        schedule: { freq: "interval", intervalN: "2", intervalUnit: "h" },
-        title: a.watch.label
-      }
-    }
-  ];
-}
-
-// src/bot-teammates.ts
-init_sdk_compat();
-init_routing();
-init_shared();
-function botTeammates(teams, profileName) {
-  const name = String(profileName || "").trim();
-  const leads = /* @__PURE__ */ new Set();
-  const reports = /* @__PURE__ */ new Set();
-  for (const view of Array.isArray(teams) ? teams : []) {
-    const members = Array.isArray(view?.team?.members) ? view.team.members : [];
-    const me = members.find((member) => member?.profile === name);
-    if (!me) {
-      continue;
-    }
-    const boss = members.find((member) => member?.slot === me.reports_to);
-    if (boss?.profile && boss.profile !== name) {
-      leads.add(boss.profile);
-    }
-    for (const member of members) {
-      if (member?.reports_to === me.slot && member.profile && member.profile !== name) {
-        reports.add(member.profile);
-      }
-    }
-  }
-  return { leads: [...leads].sort(), reports: [...reports].sort() };
-}
-var fetchBotTeams = async (bot) => {
-  const route = resolveBotConnectionRoute(bot).route;
-  const local = !route || route.mode === "local";
-  const ambientLocal = String(host.state.connectionId?.get?.() || "local").trim() === "local";
-  if (local && !ambientLocal) {
-    return [];
-  }
-  const call = (method, params) => local ? host.request(method, params) : requestForBot(bot, method, params);
-  const res = await call("bots_team.list", {});
-  const summaries = Array.isArray(res?.teams) ? res.teams : [];
-  const views = await Promise.all(
-    summaries.map((team) => call("bots_team.get", { team_id: team.id }).catch(() => null))
-  );
-  return views.filter((view) => Boolean(view?.team?.id));
-};
-function useBotTeammates(bot) {
-  const { data } = (0, sdk_compat_exports.useQuery)({
-    enabled: Boolean(bot?.name) && !bot?.ghost,
-    queryFn: async () => {
-      try {
-        return await fetchBotTeams(bot);
-      } catch {
-        return [];
-      }
-    },
-    queryKey: [ID, "bot-teams", bot?.connectionId || "local", bot?.name || ""],
-    retry: false,
-    staleTime: 3e4
-  });
-  return botTeammates(data, bot?.name || "");
-}
-
-// src/bot-card-meta.tsx
-init_i18n();
-import { jsx as jsx42, jsxs as jsxs40 } from "react/jsx-runtime";
-var REPORTS_SHOWN = 3;
-function botCardMetaItems(bot, teammates, card) {
-  const items = [];
-  const model = String(bot?.model || "").trim();
-  if (model) {
-    items.push({ key: "model", mono: true, text: model });
-  }
-  const skills = Number(bot?.skill_count || 0);
-  if (skills > 0) {
-    items.push({ key: "skills", text: card.skills(skills) });
-  }
-  for (const lead of teammates.leads) {
-    items.push({ key: `lead:${lead}`, text: card.ledBy(lead) });
-  }
-  if (teammates.reports.length > 0) {
-    const shown = teammates.reports.slice(0, REPORTS_SHOWN);
-    const extra = teammates.reports.length - shown.length;
-    items.push({ key: "reports", text: card.leads(extra > 0 ? `${shown.join(", ")} +${extra}` : shown.join(", ")) });
-  }
-  return items;
-}
-function BotCardMeta({ bot }) {
-  const b = useBots();
-  const teammates = useBotTeammates(bot);
-  const items = botCardMetaItems(bot, teammates, b.card);
-  if (items.length === 0) {
-    return null;
-  }
-  return /* @__PURE__ */ jsx42(
-    "div",
-    {
-      className: "mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[0.6875rem] text-(--ui-text-tertiary)",
-      "data-testid": "bot-card-meta",
-      children: items.map((item, index) => /* @__PURE__ */ jsxs40("span", { className: "flex min-w-0 items-center gap-1.5", children: [
-        index > 0 ? /* @__PURE__ */ jsx42("span", { className: "text-(--ui-text-quaternary)", children: "\xB7" }) : null,
-        item.key === "model" ? (
-          // The model reads as the one-click switcher, same chip as the Bot Chat header.
-          /* @__PURE__ */ jsx42(BotModelChip, { bot })
-        ) : /* @__PURE__ */ jsx42("span", { className: item.mono ? "truncate font-mono" : "truncate", children: item.text })
-      ] }, item.key))
-    }
-  );
-}
-
-// src/bot-deliverables.tsx
-init_sdk_compat();
-init_i18n();
-import { useCallback as useCallback3, useEffect as useEffect13, useRef as useRef7, useState as useState27 } from "react";
-init_routing();
-import { jsx as jsx43, jsxs as jsxs41 } from "react/jsx-runtime";
-var DELIVERABLES_LIMIT = 20;
-var KIND_GLYPH = {
-  artifact: "file-code",
-  file: "file",
-  image: "file-media",
-  link: "link"
-};
-function itemSessionId(item) {
-  return item.transcript?.sessionId || item.registry?.sessionId || null;
-}
-function ownerLiveFiles(files, owner, storedByRuntime) {
-  if (!owner?.name) {
-    return [];
-  }
-  const canonical = botCanonicalRuntimeId(owner, storedByRuntime);
-  return files.filter((file) => file.profile === owner.name || !!canonical && file.runtimeId === canonical);
-}
-var baseName = (path) => path.split("/").filter(Boolean).at(-1) || path;
-function BotDeliverablesSection({ owner }) {
-  const b = useBots();
-  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
-  const [view, setView] = useState27({
-    ownerKey: "",
-    items: [],
-    sessions: /* @__PURE__ */ new Map(),
-    status: "loading"
-  });
-  const seq = useRef7(0);
-  const ownerKey = `${owner?.connectionId || "local"}::${owner?.name || ""}`;
-  const ownerRef = useRef7(owner);
-  ownerRef.current = owner;
-  const load2 = useCallback3(() => {
-    const owner2 = ownerRef.current;
-    const key = `${owner2?.connectionId || "local"}::${owner2?.name || ""}`;
-    const current = ++seq.current;
-    const empty = { ownerKey: key, items: [], sessions: /* @__PURE__ */ new Map() };
-    if (typeof host.listProfileArtifacts !== "function" || !owner2?.name) {
-      setView({ ...empty, status: "unavailable" });
-      return;
-    }
-    setView((prior) => ({ ...prior.ownerKey === key ? prior : empty, status: "loading" }));
-    void Promise.resolve().then(() => host.listProfileArtifacts(botConnectionRoute(owner2), { profile: owner2.name })).then((result) => {
-      if (seq.current !== current) {
-        return;
-      }
-      setView({
-        ownerKey: key,
-        items: result.items.slice(0, DELIVERABLES_LIMIT),
-        sessions: new Map(result.sessions.map((session) => [session.id, session])),
-        status: "ready"
-      });
-    }).catch(() => {
-      if (seq.current !== current) {
-        return;
-      }
-      setView((prior) => ({ ...prior.ownerKey === key ? prior : empty, status: "error" }));
-    });
-  }, []);
-  useEffect13(() => {
-    load2();
-    const requestSequence = seq;
-    return () => {
-      requestSequence.current++;
-    };
-  }, [load2, ownerKey]);
-  const currentView = view.ownerKey === ownerKey ? view : null;
-  const items = currentView?.items ?? [];
-  const sessionsById = currentView?.sessions ?? /* @__PURE__ */ new Map();
-  const status = currentView?.status ?? "loading";
-  const refreshing = status === "loading";
-  const learned = (0, sdk_compat_exports.useValue)($learnedStoredByRuntime);
-  const allLive = (0, sdk_compat_exports.useValue)($liveFiles);
-  const live = items.length ? [] : ownerLiveFiles(allLive, owner, learned);
-  const openLive = (file) => {
-    const storedId = file.storedId || learned[file.runtimeId];
-    if (!storedId) {
-      return;
-    }
-    const route = botConnectionRoute(ownerRef.current);
-    void host.openSession(storedId, { ...route ? { route } : {}, profile: ownerRef.current.name, intent: "tab" }).catch((err) => host.notifyError(err, b.deliverables.title));
-  };
-  const open = (item) => {
-    const owner2 = ownerRef.current;
-    const sessionId = itemSessionId(item);
-    if (!sessionId) {
-      return;
-    }
-    try {
-      const route = botConnectionRoute(owner2);
-      if (typeof armTranscriptReplayJump === "function") {
-        armTranscriptReplayJump(sessionId, item.timestamp);
-      }
-      void host.openSession(sessionId, {
-        ...route ? { route } : {},
-        profile: owner2.name,
-        intent: "tab"
-      }).catch((err) => host.notifyError(err, b.deliverables.title));
-    } catch (err) {
-      host.notifyError(err, b.deliverables.title);
-    }
-  };
-  return /* @__PURE__ */ jsxs41("div", { "aria-busy": refreshing, className: "px-3 pb-3", "data-testid": "bot-deliverables", children: [
-    /* @__PURE__ */ jsxs41("div", { className: "flex items-baseline justify-between gap-2 pb-1", children: [
-      /* @__PURE__ */ jsx43("span", { className: "ui-section-label", children: b.deliverables.title }),
-      /* @__PURE__ */ jsxs41("span", { className: "flex items-center gap-1.5", children: [
-        items.length ? /* @__PURE__ */ jsx43("span", { className: "text-xs tabular-nums text-(--ui-text-tertiary)", children: items.length }) : null,
-        /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: b.deliverables.refresh, children: /* @__PURE__ */ jsx43(
-          sdk_compat_exports.Button,
-          {
-            "aria-label": b.deliverables.refresh,
-            disabled: refreshing || status === "unavailable",
-            onClick: load2,
-            size: "icon-xs",
-            variant: "ghost",
-            children: /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { name: "refresh", spinning: refreshing })
-          }
-        ) })
-      ] })
-    ] }),
-    status === "error" ? /* @__PURE__ */ jsxs41("div", { className: "grid gap-2 pb-2 text-xs text-(--ui-text-secondary)", role: "alert", children: [
-      /* @__PURE__ */ jsx43("p", { children: items.length ? b.deliverables.stale : b.deliverables.failed }),
-      /* @__PURE__ */ jsx43(sdk_compat_exports.Button, { className: "justify-self-start", onClick: load2, size: "xs", variant: "secondary", children: t2.common.retry })
-    ] }) : null,
-    live.length ? /* @__PURE__ */ jsx43("div", { className: "grid gap-0.5", "data-testid": "bot-deliverables-live", children: live.map((file) => /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: file.path, children: /* @__PURE__ */ jsxs41(
-      sdk_compat_exports.RowButton,
-      {
-        "aria-label": file.path,
-        className: (0, sdk_compat_exports.cn)(
-          "hbp-enter flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors",
-          "hover:bg-(--chrome-action-hover)"
-        ),
-        onClick: () => openLive(file),
-        children: [
-          /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { "aria-hidden": true, className: "shrink-0 text-xs text-(--ui-text-tertiary)", name: "file" }),
-          /* @__PURE__ */ jsx43("span", { className: "min-w-0 flex-1 truncate text-xs font-medium text-(--ui-text-secondary)", children: baseName(file.path) }),
-          /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(file.at, t2.sidebar.row) })
-        ]
-      }
-    ) }, file.path)) }) : refreshing && items.length === 0 ? /* @__PURE__ */ jsxs41("div", { className: "flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)", role: "status", children: [
-      /* @__PURE__ */ jsx43(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.deliverables.loading, className: "text-xs" }),
-      b.deliverables.loading
-    ] }) : status === "unavailable" ? /* @__PURE__ */ jsx43("p", { className: "py-2 text-xs text-(--ui-text-tertiary)", children: b.deliverables.unavailable }) : status === "ready" && items.length === 0 ? /* @__PURE__ */ jsx43("p", { className: "py-2 text-xs leading-relaxed text-(--ui-text-tertiary)", children: b.deliverables.empty }) : /* @__PURE__ */ jsx43("div", { className: "grid gap-0.5", children: items.map((item) => {
-      const session = itemSessionId(item);
-      const sessionTitle = item.transcript?.sessionTitle || (session ? sessionsById.get(session)?.title || "" : "");
-      return /* @__PURE__ */ jsxs41(
-        sdk_compat_exports.RowButton,
-        {
-          "aria-label": item.label,
-          className: (0, sdk_compat_exports.cn)(
-            "flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors",
-            "hover:bg-(--chrome-action-hover)"
-          ),
-          onClick: () => open(item),
-          children: [
-            /* @__PURE__ */ jsx43(
-              sdk_compat_exports.Codicon,
-              {
-                "aria-label": item.kind,
-                className: "shrink-0 text-[0.75rem] text-(--ui-text-tertiary)",
-                name: KIND_GLYPH[item.kind] || "file"
-              }
-            ),
-            /* @__PURE__ */ jsxs41("span", { className: "min-w-0 flex-1", children: [
-              /* @__PURE__ */ jsx43("span", { className: "block min-w-0 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: item.label }),
-              sessionTitle ? /* @__PURE__ */ jsx43("span", { className: "block min-w-0 truncate text-xs text-(--ui-text-tertiary)", children: sessionTitle }) : null
-            ] }),
-            /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(item.timestamp, t2.sidebar.row) })
-          ]
-        },
-        item.id
-      );
-    }) })
-  ] });
-}
-
-// src/mission-rail.tsx
-init_bot_state();
-
-// src/bot-task-log.tsx
-init_sdk_compat();
-init_bot_state();
-init_data();
-init_i18n();
-init_routing();
-
-// src/run-controls.ts
-init_sdk_compat();
-init_routing();
-async function stopBotTurn(bot) {
-  const storedByRuntime = host.state.storedSessionByRuntimeId?.get?.() || {};
-  const runtimeId = botCanonicalRuntimeId(bot, storedByRuntime);
-  if (!runtimeId) {
-    return "idle";
-  }
-  try {
-    const res = await requestForBot(
-      bot,
-      "session.interrupt",
-      { session_id: runtimeId },
-      // A user gesture against a possibly-cold backend — same foreground
-      // class as the roster click's registry lookup.
-      { spawnPriority: "foreground" }
-    );
-    return res?.status === "interrupted" ? "stopped" : "idle";
-  } catch {
-    return "failed";
-  }
-}
-function retryBotDeliveries() {
-  retryRelayOutbox();
-}
-
-// src/task-log.ts
-function dayStart(ms) {
-  const d = new Date(ms);
-  d.setHours(0, 0, 0, 0);
-  return d.getTime();
-}
-function taskLogPreview(run) {
-  return (run.title || "").trim() || (run.summary || "").trim();
-}
-function taskLogLine(run) {
-  return clipWords((run.title || "").trim()) || clipWords((run.summary || "").trim());
-}
-function taskLogGroups(runs, now = Date.now()) {
-  const todayStart = dayStart(now);
-  const yesterdayStart = todayStart - 864e5;
-  const groups = /* @__PURE__ */ new Map();
-  for (const run of runs) {
-    if (!Number.isFinite(run.at) || run.at <= 0) {
-      continue;
-    }
-    const start = dayStart(run.at);
-    let group = groups.get(start);
-    if (!group) {
-      group = {
-        at: start,
-        label: start === todayStart ? "today" : start === yesterdayStart ? "yesterday" : "date",
-        runs: []
-      };
-      groups.set(start, group);
-    }
-    group.runs.push(run);
-  }
-  return [...groups.values()].sort((a, b) => b.at - a.at);
-}
-
-// src/bot-task-log.tsx
-import { jsx as jsx44, jsxs as jsxs42 } from "react/jsx-runtime";
-var RUN_KIND_GLYPHS = {
-  chat: "comment",
-  group: "organization",
-  relay: "mail-read",
-  routine: "watch"
-};
-function runStatusGlyph(status) {
-  switch (status) {
-    case "attention":
-      return "warning";
-    case "failed":
-      return "error";
-    case "running":
-      return "sync";
-    default:
-      return "check";
-  }
-}
-function runStatusClass(status) {
-  switch (status) {
-    case "attention":
-      return "hbp-fg-warn";
-    case "failed":
-      return "text-destructive";
-    case "running":
-      return "text-(--ui-accent)";
-    default:
-      return "text-(--ui-text-tertiary)";
-  }
-}
-function useBotRunsFeed(owner, jobs, onOpenRoutine) {
-  const rooms = (0, sdk_compat_exports.useValue)($groupChats);
-  const groupActivity = (0, sdk_compat_exports.useValue)($groupActivity);
-  const attentionMap = (0, sdk_compat_exports.useValue)($botAttention);
-  const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
-  const focusedOwner = focusedRosterOwner((0, sdk_compat_exports.useValue)($focusedBotOwner));
-  const turnBusy = useTurnBusy();
-  const activeConnectionId = String(host.state.connectionId?.get?.() || "local").trim();
-  const attention = attentionMap[botSelectionKey(owner)] || attentionMap[botRosterKey(owner)] || attentionMap[`${owner?.connectionId || activeConnectionId}::${owner?.name || "default"}`] || null;
-  const chatBusy = Boolean(turnBusy && focusedOwner && isActiveRosterBot(owner, focusedOwner));
-  const live = useBotLiveStatus(owner);
-  const chatWorking = live.kind === "working" || live.kind === "stalled";
-  const runs = deriveBotRuns({
-    attention,
-    bot: owner,
-    chatBusy,
-    chatWorking,
-    groupActivity,
-    jobs,
-    meta: owner ? botRosterMeta(owner, allMeta) : null,
-    rooms
-  });
-  const stoppable = (run) => run.status === "running" && (run.kind === "chat" || run.kind === "relay");
-  const retryable = (run) => run.kind === "relay" && (run.status === "attention" || run.status === "failed");
-  const stopRun = () => {
-    void stopBotTurn(owner).then((result) => {
-      if (result === "failed") {
-        host.notifyError?.(new Error("session.interrupt rejected"), botsText().roster.stopRunFailed);
-      }
-    });
-  };
-  const retryOutbox = () => {
-    retryBotDeliveries();
-  };
-  const open = (run) => {
-    if (run.kind === "group" && run.group) {
-      openGroupChat(run.group);
-    } else if (run.kind === "routine" && run.jobId) {
-      onOpenRoutine(run.jobId);
-    } else {
-      void openRosterBot(owner);
-    }
-  };
-  const replay = async (run) => {
-    const target = run.replay;
-    if (!target) {
-      return;
-    }
-    let route = null;
-    try {
-      route = botConnectionRoute(owner);
-    } catch {
-      route = null;
-    }
-    let sessionId = target.sessionId ?? null;
-    if (!sessionId && run.jobId && typeof host.listCronJobRuns === "function") {
-      try {
-        const runs2 = await host.listCronJobRuns(route, {
-          jobId: run.jobId,
-          limit: 50,
-          profile: owner.name
-        });
-        sessionId = pickCronRunSessionId(runs2, run.at);
-      } catch {
-        sessionId = null;
-      }
-    }
-    if (!sessionId) {
-      open(run);
-      return;
-    }
-    if (typeof armTranscriptReplayJump === "function") {
-      armTranscriptReplayJump(sessionId, run.at);
-    }
-    void host.openSession(sessionId, {
-      ...route ? { route } : {},
-      profile: owner.name,
-      // A run session opens beside the canonical chat, never in its place.
-      intent: "tab"
-    });
-  };
-  return { open, replay, retryable, retryOutbox, runs, stopRun, stoppable };
-}
-var timeFormat = new Intl.DateTimeFormat(void 0, { hour: "numeric", minute: "2-digit" });
-var dayFormat = new Intl.DateTimeFormat(void 0, { day: "numeric", month: "short" });
-function BotTaskLog({ jobs, onOpenRoutine, owner }) {
-  const b = useBots();
-  const { open, replay, retryable, retryOutbox, runs, stopRun, stoppable } = useBotRunsFeed(owner, jobs, onOpenRoutine);
-  const days = taskLogGroups(runs);
-  if (!days.length) {
-    return /* @__PURE__ */ jsx44("div", { className: "px-3 pb-2 text-xs text-(--ui-text-quaternary)", children: b.runs.empty });
-  }
-  return /* @__PURE__ */ jsx44("div", { className: "px-3 pb-2", children: days.map((day) => /* @__PURE__ */ jsxs42("div", { children: [
-    /* @__PURE__ */ jsx44("div", { className: "pt-2 pb-1 ui-section-label", children: day.label === "today" ? b.rail.today : day.label === "yesterday" ? b.rail.yesterday : dayFormat.format(day.at) }),
-    /* @__PURE__ */ jsx44("div", { className: "grid gap-0.5", children: day.runs.map((run) => {
-      const kindLabel = b.runs[`kind${run.kind[0].toUpperCase()}${run.kind.slice(1)}`];
-      const statusLabel2 = b.runs[run.status];
-      const preview = taskLogPreview(run) || kindLabel;
-      const line = taskLogLine(run) || kindLabel;
-      const lineClass = "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)";
-      return /* @__PURE__ */ jsxs42(
-        sdk_compat_exports.RowButton,
-        {
-          "aria-label": `${preview} \u2014 ${statusLabel2}`,
-          className: (0, sdk_compat_exports.cn)(
-            "flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors",
-            "hover:bg-(--chrome-action-hover)"
-          ),
-          onClick: () => open(run),
-          children: [
-            /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: statusLabel2, children: /* @__PURE__ */ jsx44(
-              sdk_compat_exports.Codicon,
-              {
-                "aria-label": statusLabel2,
-                className: (0, sdk_compat_exports.cn)("shrink-0 text-[0.6875rem]", runStatusClass(run.status)),
-                name: runStatusGlyph(run.status),
-                spinning: run.status === "running"
-              }
-            ) }),
-            /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: kindLabel, children: /* @__PURE__ */ jsx44(
-              sdk_compat_exports.Codicon,
-              {
-                "aria-label": kindLabel,
-                className: "shrink-0 text-[0.7rem] text-(--ui-text-quaternary)",
-                name: RUN_KIND_GLYPHS[run.kind]
-              }
-            ) }),
-            preview === line ? /* @__PURE__ */ jsx44("span", { className: lineClass, children: line }) : /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: preview, children: /* @__PURE__ */ jsx44("span", { className: lineClass, children: line }) }),
-            run.replay ? /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: b.runs.replay, children: /* @__PURE__ */ jsx44(
-              "span",
-              {
-                "aria-label": b.runs.replay,
-                className: "flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
-                onClick: (event) => {
-                  event.stopPropagation();
-                  void replay(run);
-                },
-                role: "button",
-                children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "history" })
-              }
-            ) }) : null,
-            stoppable(run) ? /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: b.roster.stopRun, children: /* @__PURE__ */ jsx44(
-              "span",
-              {
-                "aria-label": b.roster.stopRun,
-                className: "flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-destructive",
-                onClick: (event) => {
-                  event.stopPropagation();
-                  stopRun();
-                },
-                role: "button",
-                children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "debug-stop" })
-              }
-            ) }) : null,
-            retryable(run) ? /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: b.roster.retryDeliveries, children: /* @__PURE__ */ jsx44(
-              "span",
-              {
-                "aria-label": b.roster.retryDeliveries,
-                className: "flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-(--ui-accent)",
-                onClick: (event) => {
-                  event.stopPropagation();
-                  retryOutbox();
-                },
-                role: "button",
-                children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "refresh" })
-              }
-            ) }) : null,
-            /* @__PURE__ */ jsx44("span", { className: "shrink-0 text-[0.65rem] tabular-nums text-(--ui-text-quaternary)", children: timeFormat.format(run.at) })
-          ]
-        },
-        run.id
-      );
-    }) })
-  ] }, day.at)) });
-}
-
-// src/bot-topic-project-menu.tsx
-init_sdk_compat();
-init_data();
-init_i18n();
-import { jsx as jsx45, jsxs as jsxs43 } from "react/jsx-runtime";
-var EMPTY2 = (0, sdk_compat_exports.atom)([]);
-function BotTopicProjectMenu({ bot }) {
-  const b = useBots();
-  const projects = (0, sdk_compat_exports.useValue)(host.state?.projects ?? EMPTY2) || [];
-  if (bot.remoteSource || !projects.length) {
-    return null;
-  }
-  return /* @__PURE__ */ jsxs43(sdk_compat_exports.DropdownMenu, { children: [
-    /* @__PURE__ */ jsx45(sdk_compat_exports.Tip, { label: b.bot.newTopicInProject, children: /* @__PURE__ */ jsx45(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx45(sdk_compat_exports.Button, { "aria-label": b.bot.newTopicInProject, size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "folder" }) }) }) }),
-    /* @__PURE__ */ jsx45(sdk_compat_exports.DropdownMenuContent, { align: "start", children: projects.map((project) => /* @__PURE__ */ jsxs43(sdk_compat_exports.DropdownMenuItem, { onSelect: () => newBotChat(bot, { cwd: project.cwd }), children: [
-      /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "folder" }),
-      project.label
-    ] }, project.id)) })
-  ] });
-}
-
-// src/context-panel.tsx
-init_sdk_compat();
-import { useCallback as useCallback4, useEffect as useEffect14, useRef as useRef8, useState as useState28 } from "react";
 
 // src/tool-card-model.ts
-init_sdk_compat();
 var isRecord = (value) => Boolean(value && typeof value === "object" && !Array.isArray(value));
 var capitalize = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
 var PRIVATE_SUFFIXES = [".localhost", ".local", ".internal", ".lan", ".home.arpa"];
@@ -25031,6 +24790,7 @@ function toolCardView(part, options = {}) {
     family,
     icon: toolCardIcon(part.toolName, family),
     name: toolCardName(part.toolName, family),
+    tool: part.toolName,
     status: toolCardStatus(part, view, family, pageUrl),
     state,
     args: toolCardArgs(part.args),
@@ -25090,6 +24850,3279 @@ function toolCardsFromParts(parts, options = {}) {
   }
   return groupToolCards(cards);
 }
+
+// src/tool-card-screen.tsx
+init_sdk_compat();
+import { useEffect as useEffect15, useRef as useRef7, useState as useState29 } from "react";
+import { jsx as jsx40 } from "react/jsx-runtime";
+var CLOSE_CONTROL_TAKEN2 = 4e3;
+var MAX_REDIALS = 2;
+var MORPH_NAME = "hbp-screen-morph";
+var TARGET_WAIT_MS = 450;
+function reducedMotion() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+function findScreenTarget(frame) {
+  return new Promise((resolve) => {
+    const started = performance.now();
+    const look = () => {
+      const target = [...document.querySelectorAll("[data-remote-screen]")].find(
+        (node) => !frame.contains(node)
+      );
+      if (target || performance.now() - started > TARGET_WAIT_MS) {
+        resolve(target ?? null);
+        return;
+      }
+      window.setTimeout(look, 16);
+    };
+    look();
+  });
+}
+async function expandToScreen(frame, bot, meta) {
+  const doc = document;
+  if (!doc.startViewTransition || reducedMotion()) {
+    openBotScreen(bot, meta);
+    return;
+  }
+  let target = null;
+  frame.style.setProperty("view-transition-name", MORPH_NAME);
+  const transition = doc.startViewTransition(async () => {
+    frame.style.removeProperty("view-transition-name");
+    openBotScreen(bot, meta);
+    target = await findScreenTarget(frame);
+    target?.style.setProperty("view-transition-name", MORPH_NAME);
+  });
+  await transition.finished.catch(() => void 0);
+  frame.style.removeProperty("view-transition-name");
+  target?.style.removeProperty("view-transition-name");
+}
+function CardScreenStream({
+  bot,
+  botKey,
+  onLive
+}) {
+  const canvasHost = useRef7(null);
+  const report = useRef7(onLive);
+  const botRef = useRef7(bot);
+  const [painted, setPainted] = useState29(false);
+  report.current = onLive;
+  botRef.current = bot;
+  useEffect15(() => {
+    const bot2 = botRef.current;
+    let disposed = false;
+    let redials = 0;
+    let release = () => void 0;
+    let socket = null;
+    let client = null;
+    const teardown = () => {
+      try {
+        client?.disconnect();
+      } catch {
+      }
+      client = null;
+      socket?.close();
+      socket = null;
+    };
+    const fail2 = () => {
+      if (!disposed) {
+        setPainted(false);
+        report.current(false);
+      }
+    };
+    const dial = async () => {
+      try {
+        const Rfb = await loadRfb();
+        const observe = await displayRequest(bot2, "display.observe");
+        setScreenStatus(bot2, observe);
+        const url = await resolveScreenWsUrl(bot2, observe.ticket);
+        if (disposed || !canvasHost.current) {
+          return;
+        }
+        let closeCode = 0;
+        const ws = new WebSocket(url);
+        ws.binaryType = "arraybuffer";
+        ws.addEventListener("close", (event) => {
+          closeCode = event.code;
+        });
+        socket = ws;
+        const rfb = new Rfb(canvasHost.current, ws, { shared: true });
+        rfb.viewOnly = true;
+        rfb.scaleViewport = true;
+        rfb.resizeSession = false;
+        rfb.focusOnClick = false;
+        rfb.background = "transparent";
+        rfb.qualityLevel = 5;
+        rfb.addEventListener("connect", () => {
+          if (!disposed) {
+            setPainted(true);
+            report.current(true);
+          }
+        });
+        rfb.addEventListener("disconnect", (event) => {
+          if (disposed || client !== rfb) {
+            return;
+          }
+          client = null;
+          const evicted = closeCode === CLOSE_CONTROL_TAKEN2 || (event.detail?.reason ?? "").includes("control-taken");
+          if (evicted && redials < MAX_REDIALS) {
+            redials += 1;
+            void dial();
+            return;
+          }
+          fail2();
+        });
+        client = rfb;
+      } catch {
+        fail2();
+      }
+    };
+    void (async () => {
+      release = await retainBotScreen(bot2);
+      if (disposed) {
+        release();
+        return;
+      }
+      await dial();
+    })();
+    return () => {
+      disposed = true;
+      teardown();
+      release();
+    };
+  }, [botKey]);
+  return /* @__PURE__ */ jsx40("span", { className: "hbp-lv-layer absolute inset-0 block hbp-tc-sunken", "data-ready": painted, "data-live-screen": "", children: /* @__PURE__ */ jsx40("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 block", ref: canvasHost }) });
+}
+function ScreenExpandButton({
+  bot,
+  label,
+  meta
+}) {
+  const ref = useRef7(null);
+  return /* @__PURE__ */ jsx40(
+    "button",
+    {
+      "aria-label": label,
+      className: "hbp-lv-frame absolute inset-0 block cursor-zoom-in",
+      onClick: (event) => {
+        event.stopPropagation();
+        const frame = ref.current?.parentElement;
+        if (frame) {
+          void expandToScreen(frame, bot, meta);
+        }
+      },
+      onKeyDown: (event) => event.stopPropagation(),
+      ref,
+      type: "button",
+      children: /* @__PURE__ */ jsx40("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx40(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
+    }
+  );
+}
+
+// src/tool-card-live.tsx
+import { Fragment as Fragment10, jsx as jsx41, jsxs as jsxs39 } from "react/jsx-runtime";
+var MORPH_NAME2 = "hbp-shot-morph";
+var FADE_MS = 180;
+var TARGET_WAIT_MS2 = 450;
+function ShotLayer({
+  onReady,
+  ready,
+  src
+}) {
+  const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 9);
+  if (!image.src || image.failed) {
+    return null;
+  }
+  return /* @__PURE__ */ jsx41(
+    "img",
+    {
+      alt: "",
+      "aria-hidden": true,
+      className: "hbp-lv-layer absolute inset-0 h-full w-full object-contain",
+      "data-ready": ready,
+      "data-shot-src": src,
+      onError: image.onError,
+      onLoad: (event) => {
+        image.onLoad(event.currentTarget);
+        onReady(src);
+      },
+      src: image.src
+    }
+  );
+}
+function CrossfadeShot({ src }) {
+  const nextId2 = useRef8(1);
+  const [layers, setLayers] = useState30(() => [{ id: 0, src }]);
+  const [readySrc, setReadySrc] = useState30("");
+  useEffect16(() => {
+    setLayers((current) => {
+      if (current[current.length - 1]?.src === src) {
+        return current;
+      }
+      const layer = { id: nextId2.current++, src };
+      return [...current.slice(-1), layer];
+    });
+  }, [src]);
+  useEffect16(() => {
+    if (readySrc !== src || layers.length < 2) {
+      return;
+    }
+    const timer = window.setTimeout(() => setLayers((current) => current.slice(-1)), FADE_MS + 40);
+    return () => window.clearTimeout(timer);
+  }, [layers.length, readySrc, src]);
+  return /* @__PURE__ */ jsx41("span", { className: "relative block h-full w-full", children: layers.map((layer, index) => /* @__PURE__ */ jsx41(
+    ShotLayer,
+    {
+      onReady: setReadySrc,
+      ready: index === 0 || readySrc === layer.src,
+      src: layer.src
+    },
+    layer.id
+  )) });
+}
+function prefersReducedMotion() {
+  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+async function imageDataUrl(img) {
+  if (img.src.startsWith("data:")) {
+    return img.src;
+  }
+  const blob = await (await fetch(img.src)).blob();
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
+    reader.readAsDataURL(blob);
+  });
+}
+function waitForElement(find, timeoutMs) {
+  return new Promise((resolve) => {
+    const started = performance.now();
+    const tick = () => {
+      const found = find();
+      if (found || performance.now() - started > timeoutMs) {
+        resolve(found);
+        return;
+      }
+      window.setTimeout(tick, 16);
+    };
+    tick();
+  });
+}
+function shotKey(src) {
+  let hash = 2166136261;
+  for (let index = 0; index < src.length; index += 1) {
+    hash ^= src.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
+}
+async function expandShot(frame, shotSrc, label, session) {
+  const img = [...frame.querySelectorAll("img[data-shot-src]")].reverse().find((candidate) => candidate.dataset.shotSrc === shotSrc && candidate.complete);
+  if (!img) {
+    return;
+  }
+  const dataUrl = await imageDataUrl(img).catch(() => "");
+  const mimeType = dataUrl && dataUrl.slice(5, dataUrl.indexOf(";")) || "image/png";
+  const inline = shotSrc.startsWith("data:");
+  const key = inline ? `screenshot-${shotKey(shotSrc)}.${mimeType.split("/")[1] || "png"}` : shotSrc;
+  const open = () => (0, sdk_compat_exports.openPreview)(
+    {
+      ...dataUrl ? { dataUrl } : {},
+      kind: "file",
+      label,
+      mimeType,
+      path: key,
+      previewKind: "image",
+      source: key,
+      ...inline ? { transient: true } : {},
+      url: key
+    },
+    session.storedId ?? void 0,
+    session.runtimeId
+  );
+  const doc = document;
+  if (!doc.startViewTransition || prefersReducedMotion()) {
+    open();
+    return;
+  }
+  let target = null;
+  frame.style.setProperty("view-transition-name", MORPH_NAME2);
+  const transition = doc.startViewTransition(async () => {
+    frame.style.removeProperty("view-transition-name");
+    open();
+    target = await waitForElement(
+      () => [...document.querySelectorAll("img")].find(
+        (candidate) => candidate.alt === label && !frame.contains(candidate)
+      ) ?? null,
+      TARGET_WAIT_MS2
+    );
+    target?.style.setProperty("view-transition-name", MORPH_NAME2);
+  });
+  await transition.finished.catch(() => void 0);
+  frame.style.removeProperty("view-transition-name");
+  target?.style.removeProperty("view-transition-name");
+}
+function latestShot(cards) {
+  for (let index = cards.length - 1; index >= 0; index -= 1) {
+    const thumb = cards[index]?.thumb;
+    if (thumb?.kind === "screenshot") {
+      return { index, src: thumb.src };
+    }
+  }
+  return null;
+}
+function latestPage(cards) {
+  for (let index = cards.length - 1; index >= 0; index -= 1) {
+    const url = cards[index]?.thumb?.url;
+    if (url && /^https?:\/\//i.test(url)) {
+      return url;
+    }
+  }
+  return "";
+}
+function safeHost(url) {
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return "";
+  }
+}
+function ExpandableShot({
+  className,
+  host: host2,
+  src,
+  step
+}) {
+  const text3 = useLiveViewText();
+  const session = useContext2(PreviewSessionContext);
+  const frameRef = useRef8(null);
+  return /* @__PURE__ */ jsxs39(
+    "button",
+    {
+      "aria-label": text3.expand,
+      className: (0, sdk_compat_exports.cn)("hbp-lv-frame relative block h-full w-full cursor-zoom-in", className),
+      "data-live-shot": "",
+      onClick: (event) => {
+        event.stopPropagation();
+        if (frameRef.current) {
+          void expandShot(frameRef.current, src, text3.shotLabel(host2, step), session);
+        }
+      },
+      onKeyDown: (event) => event.stopPropagation(),
+      ref: frameRef,
+      type: "button",
+      children: [
+        /* @__PURE__ */ jsx41(CrossfadeShot, { src }),
+        /* @__PURE__ */ jsx41("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx41(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
+      ]
+    }
+  );
+}
+function ScreenLayer({ bot }) {
+  const text3 = useLiveViewText();
+  const { tone } = useScreenPortalState(bot);
+  const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
+  const [painted, setPainted] = useState30(false);
+  const [ended, setEnded] = useState30(false);
+  const streamable = tone === "live" || tone === "human" || tone === "other";
+  if (!streamable || ended) {
+    return null;
+  }
+  return /* @__PURE__ */ jsxs39(Fragment10, { children: [
+    /* @__PURE__ */ jsx41(
+      CardScreenStream,
+      {
+        bot,
+        botKey: botRosterKey(bot),
+        onLive: (live) => {
+          setPainted(live);
+          if (!live) {
+            setEnded(true);
+          }
+        }
+      }
+    ),
+    painted ? /* @__PURE__ */ jsx41(ScreenExpandButton, { bot, label: text3.expandScreen, meta: botRosterMeta(bot, allMeta) }) : null
+  ] });
+}
+function LiveFrame({ group, open }) {
+  const text3 = useLiveViewText();
+  const shot = latestShot(group.cards);
+  const pageUrl = latestPage(group.cards);
+  const host2 = safeHost(shot ? group.cards[shot.index]?.thumb?.url ?? pageUrl : pageUrl);
+  const running = group.state === "running";
+  const bot = useCardBot();
+  const onDesktop = useBrowserBackend(running ? bot : null) === "desktop";
+  const realProfile = group.cards.some((card) => card.realProfile);
+  return /* @__PURE__ */ jsx41("div", { className: "hbp-tc-collapse", "data-live-frame": "", "data-open": open, inert: !open, children: /* @__PURE__ */ jsx41("div", { children: /* @__PURE__ */ jsx41("div", { className: "hbp-tc-pl12 pt-1.5", children: /* @__PURE__ */ jsxs39("div", { className: "relative aspect-video w-full max-w-sm overflow-hidden rounded-card border border-line hbp-tc-sunken", children: [
+    shot ? /* @__PURE__ */ jsx41(ExpandableShot, { host: host2, src: shot.src, step: shot.index + 1 }) : /* @__PURE__ */ jsxs39("div", { className: "hbp-tc-shimmer flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+      pageUrl && isPublicHost(host2) ? /* @__PURE__ */ jsx41("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx41(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx41(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : /* @__PURE__ */ jsx41(sdk_compat_exports.Codicon, { name: "globe", size: 20 }),
+      pageUrl ? /* @__PURE__ */ jsx41("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : null,
+      /* @__PURE__ */ jsx41("span", { children: text3.waiting })
+    ] }),
+    bot && running && open && onDesktop && !realProfile ? /* @__PURE__ */ jsx41(ScreenLayer, { bot }) : null,
+    running ? /* @__PURE__ */ jsxs39("span", { className: "pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 text-ui-2xs hbp-lv-badge", children: [
+      /* @__PURE__ */ jsx41("span", { "aria-hidden": true, className: "hbp-lv-dot size-1.5 rounded-full" }),
+      text3.live
+    ] }) : null,
+    /* @__PURE__ */ jsx41("span", { className: "absolute top-1.5 right-1.5", children: /* @__PURE__ */ jsx41(ShowMeButton, { group }) })
+  ] }) }) }) });
+}
+
+// src/browser/activity-tab.tsx
+import { jsx as jsx42, jsxs as jsxs40 } from "react/jsx-runtime";
+var VERB_ICON = {
+  back: "arrow-left",
+  click: "target",
+  console: "terminal",
+  forward: "arrow-right",
+  get_images: "file-media",
+  navigate: "globe",
+  press: "keyboard",
+  reload: "refresh",
+  scroll: "fold-down",
+  snapshot: "list-tree",
+  type: "edit",
+  vision: "eye"
+};
+function verbIcon(tool) {
+  return VERB_ICON[tool.replace(/^browser_/, "")] ?? "globe";
+}
+function useBrowserActivity(group) {
+  const session = useContext3(PreviewSessionContext);
+  const bot = useCardBot();
+  const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
+  const running = group.state === "running" || group.state === "approval";
+  const backend = useBrowserBackend(group.family === "browser" && running ? bot : null);
+  const onDesktop = backend === "desktop";
+  const realProfile = group.cards.some((card) => card.realProfile);
+  useEffect17(() => {
+    if (group.family !== "browser") {
+      return;
+    }
+    let lastUrl = "";
+    const steps = group.cards.map((card) => {
+      lastUrl = card.thumb?.url && /^https?:\/\//i.test(card.thumb.url) ? card.thumb.url : lastUrl;
+      return {
+        tool: card.tool ?? "",
+        status: card.status,
+        state: card.state,
+        url: lastUrl,
+        shot: card.thumb?.kind === "screenshot" ? card.thumb.src : ""
+      };
+    });
+    publishActivity({
+      key: group.key,
+      botName: bot ? displayName(bot, botRosterMeta(bot, allMeta) ?? null) : "",
+      running,
+      steps,
+      sessionId: session.storedId,
+      runtimeId: session.runtimeId,
+      bot,
+      onDesktop: onDesktop && !realProfile,
+      backend: realProfile ? "unknown" : backend
+    });
+  }, [allMeta, backend, bot, group, onDesktop, realProfile, running, session.runtimeId, session.storedId]);
+}
+function ShowMeButton({ group, step = null }) {
+  const text3 = useBrowserText();
+  const activity = (0, sdk_compat_exports.useValue)($activity);
+  const name = activity[group.key]?.botName || group.name;
+  return /* @__PURE__ */ jsx42(sdk_compat_exports.Tip, { label: text3.showMeHint, children: /* @__PURE__ */ jsxs40(
+    "button",
+    {
+      className: "inline-flex h-6 items-center gap-1 rounded-full px-2 text-ui-2xs hbp-lv-badge hbp-tc-hover",
+      "data-show-me": "",
+      onClick: (event) => {
+        event.stopPropagation();
+        openActivityInBrowser(group.key, text3.activityTab(name), step);
+      },
+      onKeyDown: (event) => event.stopPropagation(),
+      type: "button",
+      children: [
+        /* @__PURE__ */ jsx42(sdk_compat_exports.Codicon, { name: "eye", size: 12 }),
+        text3.showMe
+      ]
+    }
+  ) });
+}
+function ActivityTabView({ tab }) {
+  const text3 = useBrowserText();
+  const snapshot = (0, sdk_compat_exports.useValue)($activity)[tab.key];
+  const listRef = useRef9(null);
+  const steps = snapshot?.steps ?? [];
+  const total = steps.length;
+  const following = tab.step === null;
+  const selected = Math.min(tab.step ?? total - 1, total - 1);
+  const step = steps[selected];
+  const shot = latestShotUpTo(steps, selected);
+  const pageUrl = step?.url ?? "";
+  useEffect17(() => {
+    listRef.current?.querySelector("[data-selected='true']")?.scrollIntoView({ block: "nearest" });
+  }, [selected, total]);
+  if (!snapshot) {
+    return /* @__PURE__ */ jsx42("div", { className: "hbb-center", children: /* @__PURE__ */ jsxs40("div", { className: "hbb-card hbb-enter", children: [
+      /* @__PURE__ */ jsx42("span", { className: "hbb-card-icon", children: /* @__PURE__ */ jsx42(sdk_compat_exports.Codicon, { name: "eye-closed", size: 20 }) }),
+      /* @__PURE__ */ jsx42("p", { children: text3.activityGone })
+    ] }) });
+  }
+  const select = (index) => patchTab(tab.id, { step: index });
+  return /* @__PURE__ */ jsxs40("div", { className: "hbb-act hbb-enter", children: [
+    /* @__PURE__ */ jsxs40("div", { className: "hbb-act-status", children: [
+      snapshot.running ? /* @__PURE__ */ jsxs40("span", { className: "hbb-chip hbb-chip-live", children: [
+        /* @__PURE__ */ jsx42("span", { "aria-hidden": true, className: "hbp-lv-dot size-1.5 rounded-full" }),
+        snapshot.botName || text3.title
+      ] }) : /* @__PURE__ */ jsx42("strong", { children: snapshot.botName }),
+      /* @__PURE__ */ jsx42("span", { className: snapshot.running && following ? "hbb-act-status-text hbp-tc-shimmer" : "hbb-act-status-text", children: step ? step.status : text3.activityWaiting }),
+      !snapshot.running && /* @__PURE__ */ jsx42("span", { className: "hbp-tc-subtle text-ui-xs", children: text3.activityIdle })
+    ] }),
+    /* @__PURE__ */ jsx42("div", { className: "hbb-act-shot", children: shot ? /* @__PURE__ */ jsx42(CrossfadeShot, { src: shot }) : /* @__PURE__ */ jsx42("div", { className: "hbb-center hbp-tc-shimmer", children: /* @__PURE__ */ jsx42("span", { className: "text-ui-xs hbp-tc-subtle", children: text3.activityWaiting }) }) }),
+    /* @__PURE__ */ jsxs40("div", { className: "hbb-act-foot", children: [
+      /* @__PURE__ */ jsxs40("span", { className: "min-w-0 flex-1 truncate text-ui-xs hbp-tc-muted tabular-nums", children: [
+        total ? text3.stepOf(selected + 1, total) : "",
+        pageUrl ? ` \xB7 ${hostOf(pageUrl)}` : ""
+      ] }),
+      !following && /* @__PURE__ */ jsxs40(sdk_compat_exports.Button, { onClick: () => select(null), size: "xs", variant: "ghost", children: [
+        /* @__PURE__ */ jsx42(sdk_compat_exports.Codicon, { name: "debug-step-into" }),
+        text3.followLatest
+      ] }),
+      pageUrl && /* @__PURE__ */ jsxs40(sdk_compat_exports.Button, { onClick: () => openInBrowser(pageUrl), size: "xs", variant: "outline", children: [
+        /* @__PURE__ */ jsx42(sdk_compat_exports.Codicon, { name: "globe" }),
+        text3.openPageHere
+      ] }),
+      snapshot.bot && snapshot.running && snapshot.onDesktop && /* @__PURE__ */ jsxs40(
+        sdk_compat_exports.Button,
+        {
+          onClick: () => snapshot.bot && openBotInBrowser(snapshot.bot, botRosterMeta(snapshot.bot, $botMeta.get()) ?? null),
+          size: "xs",
+          children: [
+            /* @__PURE__ */ jsx42(sdk_compat_exports.Codicon, { name: "device-desktop" }),
+            text3.watchScreen
+          ]
+        }
+      ),
+      snapshot.bot && snapshot.running && !snapshot.onDesktop && snapshot.backend === "elsewhere" && /* @__PURE__ */ jsx42(CloudTakeOver, {})
+    ] }),
+    /* @__PURE__ */ jsx42("div", { "aria-label": text3.stepsLabel, className: "hbb-steps", ref: listRef, role: "list", children: steps.map((item, index) => /* @__PURE__ */ jsxs40(
+      "button",
+      {
+        className: "hbb-step",
+        "data-selected": index === selected ? "true" : "false",
+        "data-state": item.state,
+        onClick: () => select(index === total - 1 && snapshot.running ? null : index),
+        role: "listitem",
+        type: "button",
+        children: [
+          /* @__PURE__ */ jsx42("span", { className: "hbb-step-no", children: index + 1 }),
+          /* @__PURE__ */ jsx42("span", { className: "hbb-step-icon", children: /* @__PURE__ */ jsx42(sdk_compat_exports.Codicon, { name: item.state === "running" ? "loading" : verbIcon(item.tool), size: 13, spinning: item.state === "running" }) }),
+          /* @__PURE__ */ jsx42("span", { className: "hbb-step-text", children: item.status }),
+          item.url && /* @__PURE__ */ jsx42("span", { className: "hbb-step-host", children: hostOf(item.url) })
+        ]
+      },
+      index
+    )) })
+  ] });
+}
+function latestShotUpTo(steps, index) {
+  for (let at = index; at >= 0; at -= 1) {
+    if (steps[at]?.shot) {
+      return steps[at].shot;
+    }
+  }
+  return "";
+}
+
+// src/browser/web-tab.tsx
+init_sdk_compat();
+import { useEffect as useEffect19, useRef as useRef11, useState as useState32 } from "react";
+
+// src/browser/gateway-view.tsx
+init_sdk_compat();
+import { useCallback as useCallback3, useEffect as useEffect18, useRef as useRef10, useState as useState31 } from "react";
+import { jsx as jsx43, jsxs as jsxs41 } from "react/jsx-runtime";
+var POLL_MS = 1500;
+var TYPE_FLUSH_MS = 140;
+var WHEEL_FLUSH_MS = 90;
+function GatewayView({ tab, visible }) {
+  const text3 = useBrowserText();
+  const boxRef = useRef10(null);
+  const sinkRef = useRef10(null);
+  const shotRef = useRef10(null);
+  const [frame, setFrame] = useState31(null);
+  const [failed, setFailed] = useState31(null);
+  const queue = useRef10(Promise.resolve());
+  const pending = useRef10(0);
+  const alive = useRef10(true);
+  const typed = useRef10("");
+  const typeTimer = useRef10(0);
+  const wheel = useRef10({ dx: 0, dy: 0, x: 0, y: 0, timer: 0 });
+  useEffect18(() => {
+    alive.current = true;
+    return () => {
+      alive.current = false;
+    };
+  }, []);
+  const run = useCallback3(
+    (body) => {
+      pending.current += 1;
+      queue.current = queue.current.then(async () => {
+        const box = boxRef.current;
+        const width = Math.round(box?.clientWidth || 1024);
+        const height = Math.round(box?.clientHeight || 720);
+        try {
+          const result = await viewPage({ tab: tab.id, width, height, ...body });
+          if (!alive.current) {
+            return;
+          }
+          if (!result.image) {
+            setFailed(result.error || text3.remoteFailed);
+            patchTab(tab.id, { loading: false });
+            return;
+          }
+          setFailed(null);
+          setFrame({ image: result.image, width: result.width, height: result.height });
+          patchTab(tab.id, {
+            loading: false,
+            url: result.url || tab.url,
+            title: result.title || "",
+            remoteBack: result.canGoBack,
+            remoteForward: result.canGoForward
+          });
+        } catch (error) {
+          if (alive.current) {
+            setFailed(error instanceof Error ? error.message : String(error));
+            patchTab(tab.id, { loading: false });
+          }
+        } finally {
+          pending.current -= 1;
+        }
+      });
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tab.id]
+  );
+  useEffect18(() => {
+    if (tab.target) {
+      setFailed(null);
+      run({ url: tab.target });
+    }
+  }, [tab.nav, tab.id]);
+  useEffect18(() => {
+    setRemoteCommand(tab.id, (kind) => {
+      patchTab(tab.id, { loading: true });
+      run({ action: { kind } });
+    });
+    return () => setRemoteCommand(tab.id, null);
+  }, [run, tab.id]);
+  useEffect18(() => {
+    if (!visible || failed) {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      if (pending.current === 0 && document.visibilityState === "visible") {
+        run({});
+      }
+    }, POLL_MS);
+    return () => window.clearInterval(timer);
+  }, [failed, run, visible]);
+  const toPage = (clientX, clientY) => {
+    const shot = shotRef.current;
+    if (!shot || !frame) {
+      return null;
+    }
+    const rect = shot.getBoundingClientRect();
+    const x = (clientX - rect.left) / rect.width * frame.width;
+    const y = (clientY - rect.top) / rect.height * frame.height;
+    return x < 0 || y < 0 || x > frame.width || y > frame.height ? null : { x: Math.round(x), y: Math.round(y) };
+  };
+  const flushTyped = () => {
+    window.clearTimeout(typeTimer.current);
+    if (typed.current) {
+      run({ action: { kind: "type", text: typed.current } });
+      typed.current = "";
+    }
+  };
+  const onClick = (event) => {
+    sinkRef.current?.focus({ preventScroll: true });
+    const point = toPage(event.clientX, event.clientY);
+    if (point) {
+      flushTyped();
+      run({ action: { kind: "click", ...point } });
+    }
+  };
+  const onWheel = (event) => {
+    const point = toPage(event.clientX, event.clientY) ?? { x: 10, y: 10 };
+    const state = wheel.current;
+    state.dx += event.deltaX;
+    state.dy += event.deltaY;
+    state.x = point.x;
+    state.y = point.y;
+    if (!state.timer) {
+      state.timer = window.setTimeout(() => {
+        const { dx, dy, x, y } = state;
+        state.dx = 0;
+        state.dy = 0;
+        state.timer = 0;
+        run({ action: { kind: "scroll", x, y, dx, dy } });
+      }, WHEEL_FLUSH_MS);
+    }
+  };
+  const onKeyDown = (event) => {
+    const floating = Boolean(boxRef.current?.closest("[data-hermes-browser-float]"));
+    const route = remoteKeyRoute(event.nativeEvent, floating);
+    if (route === "text") {
+      event.preventDefault();
+      typed.current += event.key;
+      window.clearTimeout(typeTimer.current);
+      typeTimer.current = window.setTimeout(flushTyped, TYPE_FLUSH_MS);
+    } else if (route === "key") {
+      event.preventDefault();
+      flushTyped();
+      run({ action: { kind: "key", key: event.key } });
+    }
+  };
+  if (failed && !frame) {
+    return /* @__PURE__ */ jsx43("div", { className: "hbb-center", children: /* @__PURE__ */ jsxs41("div", { className: "hbb-card hbb-enter", children: [
+      /* @__PURE__ */ jsx43("span", { className: "hbb-card-icon", "data-tone": "warn", children: /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { name: "warning", size: 20 }) }),
+      /* @__PURE__ */ jsx43("h3", { children: text3.remoteFailed }),
+      /* @__PURE__ */ jsx43("p", { children: failed }),
+      /* @__PURE__ */ jsx43("div", { className: "hbb-actions", children: /* @__PURE__ */ jsxs41(sdk_compat_exports.Button, { onClick: () => reloadTab(tab.id), size: "sm", children: [
+        /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { name: "refresh" }),
+        text3.tryAgain
+      ] }) })
+    ] }) });
+  }
+  return /* @__PURE__ */ jsxs41(
+    "div",
+    {
+      "aria-label": tab.title || tab.url,
+      className: "hbb-remote",
+      "data-hermes-browser-remote": "",
+      "data-terminal": "",
+      onClick,
+      onWheel,
+      ref: boxRef,
+      role: "application",
+      children: [
+        /* @__PURE__ */ jsx43(
+          "textarea",
+          {
+            "aria-label": text3.pageKeys,
+            autoCapitalize: "off",
+            autoComplete: "off",
+            className: "hbb-keysink",
+            "data-browser-keysink": "",
+            onChange: (event) => {
+              event.currentTarget.value = "";
+            },
+            onKeyDown,
+            ref: sinkRef,
+            spellCheck: false,
+            value: ""
+          }
+        ),
+        frame && /* @__PURE__ */ jsx43(
+          "span",
+          {
+            className: "relative block",
+            ref: shotRef,
+            style: { aspectRatio: `${frame.width} / ${frame.height}`, width: "100%", maxHeight: "100%" },
+            children: /* @__PURE__ */ jsx43(CrossfadeShot, { src: frame.image })
+          }
+        )
+      ]
+    }
+  );
+}
+
+// src/browser/web-tab.tsx
+import { jsx as jsx44, jsxs as jsxs42 } from "react/jsx-runtime";
+var FRAME_TIMEOUT_MS = 15e3;
+function viewerIsLocal() {
+  if (typeof location === "undefined") {
+    return true;
+  }
+  return !/^https?:$/.test(location.protocol) || isLoopbackHost(location.hostname);
+}
+function openOutside(url) {
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+function askBotToOpen(url, text3) {
+  void host.composer?.insertText?.(null, text3.askBotPrompt(url), { mode: "block" });
+}
+function WebTabView({ tab, visible }) {
+  usePageLoader(tab);
+  return /* @__PURE__ */ jsxs42("div", { className: "hbb-shell", children: [
+    /* @__PURE__ */ jsx44(Toolbar, { tab }),
+    /* @__PURE__ */ jsx44("div", { className: "hbb-body", children: /* @__PURE__ */ jsx44(PageContent, { tab, visible }) })
+  ] });
+}
+function usePageLoader(tab) {
+  useEffect19(() => {
+    const url = tab.target;
+    if (!url) {
+      return;
+    }
+    let cancelled = false;
+    const set = (patch) => !cancelled && patchTab(tab.id, patch);
+    if (tab.preferRemote) {
+      set({ mode: "remote", loading: true });
+      return () => {
+        cancelled = true;
+      };
+    }
+    const parsed = parseUrl(url);
+    if (!parsed) {
+      set({ mode: "unreachable", loading: false, reason: "invalid" });
+      return () => {
+        cancelled = true;
+      };
+    }
+    set({ mode: "checking", loading: true, reason: void 0 });
+    void (async () => {
+      if (isLoopbackHost(parsed.hostname)) {
+        if (viewerIsLocal() || await reachableHere(url)) {
+          set({ mode: "frame" });
+          return;
+        }
+        const probe2 = await probePage(url).catch(() => null);
+        set(probe2?.reachable ? { mode: "remote", title: probe2.title ?? "" } : { mode: "unreachable", loading: false, reason: "local" });
+        return;
+      }
+      const probe = await probePage(url).catch(() => null);
+      if (!probe || !probe.reachable) {
+        set({ mode: "frame" });
+      } else if (probe.embeddable === false) {
+        set({ mode: "blocked", loading: false, reason: probe.reason, title: probe.title ?? "" });
+      } else {
+        set({ mode: "frame", title: probe.title ?? "" });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [tab.id, tab.nav, tab.preferRemote]);
+}
+function Toolbar({ tab }) {
+  const text3 = useBrowserText();
+  const remote = tab.mode === "remote";
+  const canBack = remote ? Boolean(tab.remoteBack) || tab.index > 0 : tab.index > 0;
+  const canForward = remote ? Boolean(tab.remoteForward) || tab.index < tab.history.length - 1 : tab.index < tab.history.length - 1;
+  const go = (delta) => {
+    if (remote && (delta < 0 ? tab.remoteBack : tab.remoteForward)) {
+      remoteCommand(tab.id, delta < 0 ? "back" : "forward");
+    } else {
+      stepHistory(tab.id, delta);
+    }
+  };
+  return /* @__PURE__ */ jsxs42("div", { className: "hbb-bar", children: [
+    /* @__PURE__ */ jsx44(NavButton, { disabled: !canBack, icon: "arrow-left", label: text3.back, onClick: () => go(-1) }),
+    /* @__PURE__ */ jsx44(NavButton, { disabled: !canForward, icon: "arrow-right", label: text3.forward, onClick: () => go(1) }),
+    tab.loading ? /* @__PURE__ */ jsx44(NavButton, { icon: "close", label: text3.stop, onClick: () => patchTab(tab.id, { loading: false }) }) : /* @__PURE__ */ jsx44(
+      NavButton,
+      {
+        disabled: !tab.target,
+        icon: "refresh",
+        label: text3.reload,
+        onClick: () => remote ? remoteCommand(tab.id, "reload") : reloadTab(tab.id)
+      }
+    ),
+    /* @__PURE__ */ jsx44(AddressBar, { tab }),
+    /* @__PURE__ */ jsx44(NavButton, { disabled: !tab.url, icon: "hubot", label: text3.askBot, onClick: () => askBotToOpen(tab.url, text3) }),
+    /* @__PURE__ */ jsx44(NavButton, { disabled: !tab.url, icon: "link-external", label: text3.openExternal, onClick: () => openOutside(tab.url) }),
+    /* @__PURE__ */ jsx44("div", { className: "hbb-progress", "data-state": tab.loading ? "loading" : tab.target ? "done" : "idle" }, `${tab.nav}:${tab.loading}`)
+  ] });
+}
+function NavButton({ disabled, icon, label, onClick }) {
+  return /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label, children: /* @__PURE__ */ jsx44("button", { "aria-label": label, className: "hbb-nav", disabled, onClick, type: "button", children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: icon }) }) });
+}
+function AddressBar({ tab }) {
+  const text3 = useBrowserText();
+  const [draft, setDraft] = useState32(tab.url);
+  const [editing, setEditing] = useState32(false);
+  const inputRef = useRef11(null);
+  useEffect19(() => {
+    if (!editing) {
+      setDraft(tab.url);
+    }
+  }, [editing, tab.url]);
+  useEffect19(() => {
+    if (!tab.target) {
+      inputRef.current?.focus();
+    }
+  }, [tab.target]);
+  const submit = (event) => {
+    event.preventDefault();
+    const url = normalizeAddress(draft);
+    if (url) {
+      navigateTab(tab.id, url);
+      setEditing(false);
+      inputRef.current?.blur();
+    }
+  };
+  const parsed = parseUrl(tab.url);
+  const local = Boolean(parsed && isLoopbackHost(parsed.hostname));
+  const tone = !parsed ? "idle" : local ? "local" : parsed.protocol === "https:" ? "secure" : "plain";
+  const icon = !parsed ? "search" : local ? "server-environment" : parsed.protocol === "https:" ? "lock" : "globe";
+  return /* @__PURE__ */ jsxs42("form", { className: "hbb-addr", onSubmit: submit, children: [
+    /* @__PURE__ */ jsx44("span", { className: "hbb-addr-icon", "data-tone": tone, children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: icon, size: 13 }) }),
+    /* @__PURE__ */ jsx44(
+      "input",
+      {
+        "aria-label": text3.address,
+        autoComplete: "off",
+        "data-address": tab.id,
+        onBlur: () => setEditing(false),
+        onChange: (event) => {
+          setEditing(true);
+          setDraft(event.target.value);
+        },
+        onFocus: (event) => event.currentTarget.select(),
+        onKeyDown: (event) => {
+          if (event.key === "Escape" && !event.nativeEvent.isComposing) {
+            if (draft !== tab.url) {
+              event.preventDefault();
+            }
+            setEditing(false);
+            setDraft(tab.url);
+            event.currentTarget.blur();
+          }
+        },
+        placeholder: text3.address,
+        ref: inputRef,
+        spellCheck: false,
+        value: draft
+      }
+    ),
+    tab.mode === "remote" && /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: text3.viaGatewayHint, children: /* @__PURE__ */ jsxs42("span", { className: "hbb-chip", children: [
+      /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "server", size: 11 }),
+      text3.viaGateway
+    ] }) })
+  ] });
+}
+function PageContent({ tab, visible }) {
+  const text3 = useBrowserText();
+  switch (tab.mode) {
+    case "idle":
+      return /* @__PURE__ */ jsx44(NewTabPage, { tab });
+    case "checking":
+      return null;
+    case "frame":
+      return /* @__PURE__ */ jsx44(FramedPage, { tab });
+    case "remote":
+      return /* @__PURE__ */ jsx44(GatewayView, { tab, visible });
+    case "blocked":
+      return /* @__PURE__ */ jsxs42(
+        CenterCard,
+        {
+          body: text3.blockedBody,
+          icon: "shield",
+          title: text3.blockedTitle(hostOf(tab.url)),
+          tone: "warn",
+          children: [
+            /* @__PURE__ */ jsxs42(sdk_compat_exports.Button, { onClick: () => patchTab(tab.id, { preferRemote: true, mode: "remote", loading: true }), size: "sm", children: [
+              /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "eye" }),
+              text3.viewHere
+            ] }),
+            /* @__PURE__ */ jsxs42(sdk_compat_exports.Button, { onClick: () => openOutside(tab.url), size: "sm", variant: "outline", children: [
+              /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "link-external" }),
+              text3.openExternal
+            ] }),
+            /* @__PURE__ */ jsxs42(sdk_compat_exports.Button, { onClick: () => askBotToOpen(tab.url, text3), size: "sm", variant: "ghost", children: [
+              /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "hubot" }),
+              text3.askBot
+            ] })
+          ]
+        }
+      );
+    case "unreachable":
+      return /* @__PURE__ */ jsxs42(
+        CenterCard,
+        {
+          body: tab.reason === "local" ? text3.unreachableLocal : text3.unreachableRemote,
+          icon: "debug-disconnect",
+          title: text3.unreachableTitle(hostOf(tab.url) || tab.url),
+          tone: "warn",
+          children: [
+            /* @__PURE__ */ jsxs42(sdk_compat_exports.Button, { onClick: () => reloadTab(tab.id), size: "sm", children: [
+              /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "refresh" }),
+              text3.tryAgain
+            ] }),
+            /* @__PURE__ */ jsxs42(sdk_compat_exports.Button, { onClick: () => openOutside(tab.url), size: "sm", variant: "outline", children: [
+              /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "link-external" }),
+              text3.openExternal
+            ] })
+          ]
+        }
+      );
+  }
+}
+function FramedPage({ tab }) {
+  const [ready, setReady] = useState32(false);
+  const sameOrigin = parseUrl(tab.target)?.origin === location.origin;
+  useEffect19(() => {
+    setReady(false);
+    const timer = window.setTimeout(() => patchTab(tab.id, { loading: false }), FRAME_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, [tab.id, tab.nav]);
+  return /* @__PURE__ */ jsx44(
+    "iframe",
+    {
+      allow: "clipboard-write; fullscreen",
+      className: "hbb-frame",
+      "data-ready": ready ? "true" : "false",
+      onLoad: () => {
+        setReady(true);
+        patchTab(tab.id, { loading: false });
+      },
+      referrerPolicy: "no-referrer",
+      sandbox: `allow-forms allow-modals allow-popups allow-popups-to-escape-sandbox allow-scripts allow-downloads${sameOrigin ? "" : " allow-same-origin"}`,
+      src: tab.target,
+      title: tab.title || hostOf(tab.url)
+    },
+    tab.nav
+  );
+}
+var SUGGESTIONS = ["localhost:3000", "localhost:5173", "localhost:8000"];
+function NewTabPage({ tab }) {
+  const text3 = useBrowserText();
+  const linksHere = (0, sdk_compat_exports.useValue)($linksHere);
+  return /* @__PURE__ */ jsxs42(CenterCard, { body: text3.emptyBody, icon: "globe", title: text3.emptyTitle, tone: "info", children: [
+    /* @__PURE__ */ jsx44("div", { className: "hbb-suggest", "aria-label": text3.emptyHint, children: SUGGESTIONS.map((address) => /* @__PURE__ */ jsxs42("button", { onClick: () => navigateTab(tab.id, normalizeAddress(address)), type: "button", children: [
+      /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: "server-environment", size: 12 }),
+      address
+    ] }, address)) }),
+    /* @__PURE__ */ jsx44(sdk_compat_exports.Tip, { label: text3.linksHereHint, children: /* @__PURE__ */ jsxs42("label", { className: "hbb-toggle", children: [
+      /* @__PURE__ */ jsx44("input", { checked: linksHere, onChange: (event) => setLinksHere(event.target.checked), type: "checkbox" }),
+      text3.linksHere
+    ] }) })
+  ] });
+}
+function CenterCard({
+  body,
+  children,
+  icon,
+  title,
+  tone
+}) {
+  return /* @__PURE__ */ jsx44("div", { className: "hbb-center", children: /* @__PURE__ */ jsxs42("div", { className: "hbb-card hbb-enter", children: [
+    /* @__PURE__ */ jsx44("span", { className: "hbb-card-icon", "data-tone": tone, children: /* @__PURE__ */ jsx44(sdk_compat_exports.Codicon, { name: icon, size: 20 }) }),
+    /* @__PURE__ */ jsx44("h3", { children: title }),
+    /* @__PURE__ */ jsx44("p", { children: body }),
+    children && /* @__PURE__ */ jsx44("div", { className: "hbb-actions", children })
+  ] }) });
+}
+
+// src/browser/workspace.tsx
+import { Fragment as Fragment11, jsx as jsx45, jsxs as jsxs43 } from "react/jsx-runtime";
+function BrowserWorkspace({ docked = null, floating = false }) {
+  const tabs = (0, sdk_compat_exports.useValue)($tabs);
+  const active = (0, sdk_compat_exports.useValue)($activeTab);
+  const shellRef = useRef12(null);
+  const onKeyDown = (event) => {
+    const mod = event.metaKey || event.ctrlKey;
+    if (event.defaultPrevented || !mod || event.altKey || event.shiftKey) {
+      return;
+    }
+    const key = event.key.toLowerCase();
+    if (key === "t") {
+      event.preventDefault();
+      newBrowserTab();
+    } else if (key === "w" && active) {
+      event.preventDefault();
+      closeBrowserTab(active);
+    } else if (key === "l") {
+      event.preventDefault();
+      shellRef.current?.querySelector(`[data-address='${active}']`)?.focus();
+    }
+  };
+  return /* @__PURE__ */ jsxs43("div", { className: "hbb-shell", "data-hermes-browser": "", onKeyDown, ref: shellRef, children: [
+    /* @__PURE__ */ jsx45(TabStrip, { active, docked, floating, tabs }),
+    /* @__PURE__ */ jsx45("div", { className: "hbb-body", children: tabs.map((tab) => {
+      const visible = tab.id === active;
+      if (!visible && tab.kind !== "web") {
+        return null;
+      }
+      return /* @__PURE__ */ jsx45("div", { className: "hbb-pane", "data-hidden": visible ? "false" : "true", children: tab.kind === "web" ? /* @__PURE__ */ jsx45(WebTabView, { tab, visible }) : tab.kind === "bot" ? /* @__PURE__ */ jsx45("div", { className: "hbb-pane hbb-enter", children: /* @__PURE__ */ jsx45(BotScreenPane, { bot: tab.bot }) }) : /* @__PURE__ */ jsx45(ActivityTabView, { tab }) }, tab.id);
+    }) })
+  ] });
+}
+function TabStrip({
+  active,
+  docked,
+  floating,
+  tabs
+}) {
+  const text3 = useBrowserText();
+  const seen = useRef12(/* @__PURE__ */ new Set());
+  const stripRef = useRef12(null);
+  const first = seen.current.size === 0;
+  const fresh = new Set(tabs.filter((tab) => !seen.current.has(tab.id)).map((tab) => tab.id));
+  useEffect20(() => {
+    tabs.forEach((tab) => seen.current.add(tab.id));
+  }, [tabs]);
+  useEffect20(() => {
+    stripRef.current?.querySelector("[data-active='true']")?.scrollIntoView({ block: "nearest", inline: "nearest" });
+  }, [active]);
+  return /* @__PURE__ */ jsxs43("div", { "aria-label": text3.title, className: "hbb-tabs", ref: stripRef, role: "tablist", children: [
+    tabs.map((tab) => /* @__PURE__ */ jsx45(TabButton, { active: tab.id === active, fresh: !first && fresh.has(tab.id), tab }, tab.id)),
+    /* @__PURE__ */ jsx45(sdk_compat_exports.Tip, { label: text3.newTab, children: /* @__PURE__ */ jsx45("button", { "aria-label": text3.newTab, className: "hbb-tab-new", onClick: newBrowserTab, type: "button", children: /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "add" }) }) }),
+    !floating && /* @__PURE__ */ jsxs43(Fragment11, { children: [
+      /* @__PURE__ */ jsx45("span", { className: "hbb-tabs-spacer" }),
+      /* @__PURE__ */ jsx45(sdk_compat_exports.Tip, { label: text3.popOut, children: /* @__PURE__ */ jsx45("button", { "aria-label": text3.popOut, className: "hbb-tab-new", onClick: floatBrowser, type: "button", children: /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "multiple-windows" }) }) }),
+      docked && /* @__PURE__ */ jsxs43(Fragment11, { children: [
+        /* @__PURE__ */ jsx45(sdk_compat_exports.Tip, { label: text3.toTab, children: /* @__PURE__ */ jsx45("button", { "aria-label": text3.toTab, className: "hbb-tab-new", onClick: browserToTab, type: "button", children: /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "window" }) }) }),
+        /* @__PURE__ */ jsx45(sdk_compat_exports.Tip, { label: text3.closeBrowser, children: /* @__PURE__ */ jsx45("button", { "aria-label": text3.closeBrowser, className: "hbb-tab-new", onClick: closeBrowser, type: "button", children: /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "close" }) }) })
+      ] })
+    ] })
+  ] });
+}
+function TabButton({ active, fresh, tab }) {
+  const text3 = useBrowserText();
+  const activity = (0, sdk_compat_exports.useValue)($activity);
+  const label = tabLabel(tab, text3.newTab);
+  const close = (event) => {
+    event.stopPropagation();
+    closeBrowserTab(tab.id);
+  };
+  return /* @__PURE__ */ jsxs43(
+    "div",
+    {
+      "aria-selected": active,
+      className: "hbb-tab",
+      "data-active": active ? "true" : "false",
+      "data-fresh": fresh ? "true" : "false",
+      onAuxClick: (event) => {
+        if (event.button === 1) {
+          close(event);
+        }
+      },
+      onClick: () => $activeTab.set(tab.id),
+      onKeyDown: (event) => {
+        if (event.key === "Enter" || event.key === " ") {
+          event.preventDefault();
+          $activeTab.set(tab.id);
+        }
+      },
+      role: "tab",
+      tabIndex: 0,
+      title: tab.kind === "web" && tab.url ? tab.url : label,
+      children: [
+        /* @__PURE__ */ jsx45("span", { className: "hbb-tab-icon", children: /* @__PURE__ */ jsx45(TabIcon, { running: tab.kind === "activity" && Boolean(activity[tab.key]?.running), tab }) }),
+        /* @__PURE__ */ jsx45("span", { className: "hbb-tab-label", children: label }),
+        /* @__PURE__ */ jsx45("button", { "aria-label": text3.closeTab, className: "hbb-tab-x", onClick: close, type: "button", children: /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "close", size: 12 }) })
+      ]
+    }
+  );
+}
+function TabIcon({ running, tab }) {
+  if (tab.kind === "bot") {
+    return /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "device-desktop", size: 14 });
+  }
+  if (tab.kind === "activity") {
+    return running ? /* @__PURE__ */ jsx45("span", { className: "hbp-lv-dot size-1.5 rounded-full" }) : /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "eye", size: 14 });
+  }
+  if (tab.loading) {
+    return /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "loading", size: 14, spinning: true });
+  }
+  if (!tab.url) {
+    return /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "globe", size: 14 });
+  }
+  return /* @__PURE__ */ jsx45(sdk_compat_exports.Favicon, { className: "size-3.5", fallback: /* @__PURE__ */ jsx45(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: tab.url });
+}
+function tabLabel(tab, blank) {
+  if (tab.kind !== "web") {
+    return tab.title;
+  }
+  return tab.title || (tab.url ? addressLabel(tab.url) : blank);
+}
+
+// src/browser/float.tsx
+import { jsx as jsx46, jsxs as jsxs44 } from "react/jsx-runtime";
+var GEOMETRY_KEY = "hermes-bots-plus.browser.float";
+var SURFACE_KEY = "hermes-bots-plus.browser.surface";
+var MARGIN = 12;
+var SNAP = 28;
+var DOCK_EDGE = 10;
+var MIN_W = 340;
+var MIN_H = 240;
+var PILL_INSET = 16;
+var SPRING = "cubic-bezier(0.34, 1.36, 0.64, 1)";
+var STANDARD = "cubic-bezier(0.2, 0, 0, 1)";
+function viewport() {
+  return { vw: window.innerWidth || 1280, vh: window.innerHeight || 800 };
+}
+function defaultGeometry() {
+  const { vw, vh } = viewport();
+  const w = Math.round(Math.min(560, Math.max(MIN_W, vw * 0.42)));
+  const h = Math.round(Math.min(420, Math.max(MIN_H, vh * 0.55)));
+  return { min: false, x: vw - w - MARGIN * 2, y: vh - h - MARGIN * 2, w, h };
+}
+function readJson(key) {
+  try {
+    const raw = window.localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+function writeJson(key, value) {
+  try {
+    window.localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+  }
+}
+function readGeometry() {
+  const saved = readJson(GEOMETRY_KEY);
+  const base = defaultGeometry();
+  if (!saved) {
+    return base;
+  }
+  const num2 = (value, fallback) => typeof value === "number" && Number.isFinite(value) ? value : fallback;
+  return {
+    min: saved.min === true,
+    x: num2(saved.x, base.x),
+    y: num2(saved.y, base.y),
+    w: num2(saved.w, base.w),
+    h: num2(saved.h, base.h)
+  };
+}
+function readSurface() {
+  const saved = readJson(SURFACE_KEY);
+  return saved === "float" || saved === "left" || saved === "right" ? saved : "tab";
+}
+var $surface = atom(readSurface());
+var $floatGeometry = atom(readGeometry());
+function setSurface(surface) {
+  $surface.set(surface);
+  writeJson(SURFACE_KEY, surface);
+}
+function patchGeometry(patch) {
+  const next = { ...$floatGeometry.get(), ...patch };
+  $floatGeometry.set(next);
+  writeJson(GEOMETRY_KEY, next);
+}
+function clampRect(rect, vw, vh) {
+  const w = Math.min(Math.max(rect.w, MIN_W), vw - MARGIN * 2);
+  const h = Math.min(Math.max(rect.h, MIN_H), vh - MARGIN * 2);
+  return {
+    w,
+    h,
+    x: Math.min(Math.max(rect.x, MARGIN), vw - w - MARGIN),
+    y: Math.min(Math.max(rect.y, MARGIN), vh - h - MARGIN)
+  };
+}
+function rectFor(geometry, vw, vh) {
+  return clampRect(geometry, vw, vh);
+}
+function snapRect(rect, vw, vh) {
+  const next = clampRect(rect, vw, vh);
+  if (next.x - MARGIN < SNAP) {
+    next.x = MARGIN;
+  } else if (vw - MARGIN - (next.x + next.w) < SNAP) {
+    next.x = vw - MARGIN - next.w;
+  }
+  if (next.y - MARGIN < SNAP) {
+    next.y = MARGIN;
+  } else if (vh - MARGIN - (next.y + next.h) < SNAP) {
+    next.y = vh - MARGIN - next.h;
+  }
+  return next;
+}
+function pillCorner(rect, vw, vh) {
+  const cx = rect.x + rect.w / 2;
+  const cy = rect.y + rect.h / 2;
+  return { right: cx >= vw / 2, bottom: cy >= vh / 2 };
+}
+function visualFor(geometry, vw, vh) {
+  const rect = rectFor(geometry, vw, vh);
+  if (!geometry.min) {
+    return { ...rect, s: 1, o: 1 };
+  }
+  const corner = pillCorner(rect, vw, vh);
+  const s = 0.1;
+  const px = corner.right ? vw - PILL_INSET - 90 : PILL_INSET + 90;
+  const py = corner.bottom ? vh - PILL_INSET - 16 : PILL_INSET + 16;
+  return { ...rect, x: px - rect.w * s / 2, y: py - rect.h * s / 2, s, o: 0 };
+}
+function applyVisual(el, visual) {
+  el.style.width = `${visual.w}px`;
+  el.style.height = `${visual.h}px`;
+  el.style.transform = `translate3d(${visual.x}px, ${visual.y}px, 0) scale(${visual.s})`;
+  el.style.opacity = String(visual.o);
+}
+function reducedMotion2() {
+  return window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+}
+function useViewport() {
+  const [size, setSize] = useState33(viewport);
+  useEffect21(() => {
+    let frame = 0;
+    const onResize = () => {
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => setSize(viewport()));
+    };
+    window.addEventListener("resize", onResize);
+    return () => {
+      cancelAnimationFrame(frame);
+      window.removeEventListener("resize", onResize);
+    };
+  }, []);
+  return size;
+}
+var CURSOR = {
+  e: "ew-resize",
+  w: "ew-resize",
+  n: "ns-resize",
+  s: "ns-resize",
+  ne: "nesw-resize",
+  sw: "nesw-resize",
+  nw: "nwse-resize",
+  se: "nwse-resize"
+};
+function FloatingBrowser({ onClose, onDock, onToTab }) {
+  const text3 = useBrowserText();
+  const geometry = (0, sdk_compat_exports.useValue)($floatGeometry);
+  const { vw, vh } = useViewport();
+  const winRef = useRef13(null);
+  const shown = useRef13(null);
+  const gesture = useRef13(null);
+  const [shield, setShield] = useState33(null);
+  const [dockHint, setDockHint] = useState33(null);
+  const target = visualFor(geometry, vw, vh);
+  const targetKey = `${target.x}|${target.y}|${target.w}|${target.h}|${target.s}|${target.o}`;
+  useLayoutEffect(() => {
+    const el = winRef.current;
+    if (!el || gesture.current) {
+      return;
+    }
+    const from = shown.current;
+    applyVisual(el, target);
+    shown.current = target;
+    if (!from || reducedMotion2()) {
+      return;
+    }
+    if (from.x === target.x && from.y === target.y && from.w === target.w && from.h === target.h && from.s === target.s) {
+      return;
+    }
+    const sx = from.w * from.s / target.w;
+    const sy = from.h * from.s / target.h;
+    const shrinking = target.s < 1;
+    el.animate(
+      [
+        { transform: `translate3d(${from.x}px, ${from.y}px, 0) scale(${sx}, ${sy})`, opacity: from.o },
+        { transform: `translate3d(${target.x}px, ${target.y}px, 0) scale(${target.s})`, opacity: target.o }
+      ],
+      { duration: shrinking ? 240 : 420, easing: shrinking ? STANDARD : SPRING }
+    );
+  }, [targetKey]);
+  const begin = (event, kind, dir) => {
+    if (event.button !== 0 || kind === "drag" && event.target.closest("button,input,a")) {
+      return;
+    }
+    const start = rectFor(geometry, vw, vh);
+    event.currentTarget.setPointerCapture(event.pointerId);
+    event.preventDefault();
+    gesture.current = {
+      kind,
+      dir,
+      pointerId: event.pointerId,
+      sx: event.clientX,
+      sy: event.clientY,
+      start,
+      live: start,
+      moved: false,
+      hint: null
+    };
+    setShield(kind === "drag" ? "grabbing" : CURSOR[dir ?? "se"]);
+  };
+  const move = (event) => {
+    const g = gesture.current;
+    const el = winRef.current;
+    if (!g || !el || event.pointerId !== g.pointerId) {
+      return;
+    }
+    const dx = event.clientX - g.sx;
+    const dy = event.clientY - g.sy;
+    if (!g.moved && Math.abs(dx) + Math.abs(dy) < 4) {
+      return;
+    }
+    g.moved = true;
+    let next;
+    if (g.kind === "drag") {
+      next = clampRect(
+        { ...g.start, x: g.start.x + event.clientX - g.sx, y: g.start.y + event.clientY - g.sy },
+        vw,
+        vh
+      );
+      const hint = event.clientX <= DOCK_EDGE ? "left" : event.clientX >= vw - DOCK_EDGE ? "right" : null;
+      if (hint !== g.hint) {
+        g.hint = hint;
+        setDockHint(hint);
+      }
+    } else {
+      next = resizeRect(g.start, g.dir ?? "se", dx, dy, vw, vh);
+    }
+    g.live = next;
+    const visual = { ...next, s: 1, o: 1 };
+    applyVisual(el, visual);
+    shown.current = visual;
+  };
+  const end = (event) => {
+    const g = gesture.current;
+    if (!g || event.pointerId !== g.pointerId) {
+      return;
+    }
+    if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+      event.currentTarget.releasePointerCapture(event.pointerId);
+    }
+    gesture.current = null;
+    setShield(null);
+    const hint = g.hint;
+    setDockHint(null);
+    if (!g.moved) {
+      return;
+    }
+    if (g.kind === "drag" && hint) {
+      onDock(hint, g.start.w);
+    } else if (g.kind === "drag") {
+      patchGeometry(snapRect(g.live, vw, vh));
+    } else {
+      patchGeometry(clampRect(g.live, vw, vh));
+    }
+  };
+  const gestureHandlers = { onLostPointerCapture: end, onPointerCancel: end, onPointerMove: move, onPointerUp: end };
+  const onKeyDown = (event) => {
+    if (floatKeyAction(event.nativeEvent) === "minimise") {
+      event.preventDefault();
+      event.stopPropagation();
+      patchGeometry({ min: true });
+      document.activeElement?.blur?.();
+    }
+  };
+  const handles = ["n", "s", "e", "w", "ne", "nw", "se", "sw"];
+  const pillSide = pillCorner(rectFor(geometry, vw, vh), vw, vh);
+  return /* @__PURE__ */ jsxs44("div", { className: "hbf-root", "data-gesture": shield ? "true" : "false", children: [
+    dockHint && /* @__PURE__ */ jsx46("div", { "aria-hidden": true, className: "hbf-dock-hint", "data-side": dockHint }),
+    /* @__PURE__ */ jsxs44(
+      "div",
+      {
+        "aria-hidden": geometry.min,
+        "aria-label": text3.floating,
+        className: "hbf-window",
+        "data-hermes-browser-float": "",
+        "data-min": geometry.min ? "true" : "false",
+        "data-mode": "float",
+        onKeyDown,
+        ref: winRef,
+        role: "region",
+        tabIndex: -1,
+        children: [
+          /* @__PURE__ */ jsx46(
+            TitleBar,
+            {
+              dragHandlers: { ...gestureHandlers, onPointerDown: (event) => begin(event, "drag") },
+              onClose,
+              onDock,
+              onToTab
+            }
+          ),
+          /* @__PURE__ */ jsx46("div", { className: "hbf-content", children: /* @__PURE__ */ jsx46(BrowserWorkspace, { floating: true }) }),
+          handles.map((dir) => /* @__PURE__ */ jsx46(
+            "div",
+            {
+              "aria-label": text3.resize,
+              className: "hbf-handle",
+              "data-dir": dir,
+              ...gestureHandlers,
+              onPointerDown: (event) => begin(event, "resize", dir)
+            },
+            dir
+          ))
+        ]
+      }
+    ),
+    geometry.min && /* @__PURE__ */ jsx46(Pill, { bottom: pillSide.bottom, right: pillSide.right }),
+    shield && /* @__PURE__ */ jsx46("div", { "aria-hidden": true, className: "hbf-shield", style: { cursor: shield } })
+  ] });
+}
+function resizeRect(start, dir, dx, dy, vw, vh) {
+  let { x, y, w, h } = start;
+  if (dir.includes("e")) {
+    w = Math.min(Math.max(start.w + dx, MIN_W), vw - MARGIN - start.x);
+  }
+  if (dir.includes("s")) {
+    h = Math.min(Math.max(start.h + dy, MIN_H), vh - MARGIN - start.y);
+  }
+  if (dir.includes("w")) {
+    w = Math.min(Math.max(start.w - dx, MIN_W), start.x + start.w - MARGIN);
+    x = start.x + start.w - w;
+  }
+  if (dir.includes("n")) {
+    h = Math.min(Math.max(start.h - dy, MIN_H), start.y + start.h - MARGIN);
+    y = start.y + start.h - h;
+  }
+  return { x, y, w, h };
+}
+function useActiveTab() {
+  const tabs = (0, sdk_compat_exports.useValue)($tabs);
+  const active = (0, sdk_compat_exports.useValue)($activeTab);
+  return tabs.find((tab) => tab.id === active);
+}
+function useBotBusy() {
+  const tabs = (0, sdk_compat_exports.useValue)($tabs);
+  const activity = (0, sdk_compat_exports.useValue)($activity);
+  return Object.values(activity).some((item) => item.running) || tabs.some((tab) => tab.kind === "bot");
+}
+function frontBot(tab, activity) {
+  if (tab?.kind === "bot") {
+    return { bot: tab.bot, cloud: false };
+  }
+  if (tab?.kind === "activity") {
+    const snapshot = activity[tab.key];
+    if (!snapshot?.bot) {
+      return null;
+    }
+    if (snapshot.onDesktop) {
+      return { bot: snapshot.bot, cloud: false };
+    }
+    return snapshot.backend === "elsewhere" ? { bot: snapshot.bot, cloud: true } : null;
+  }
+  return null;
+}
+function TitleBar({ dragHandlers, onClose, onDock, onToTab }) {
+  const text3 = useBrowserText();
+  const tab = useActiveTab();
+  const activity = (0, sdk_compat_exports.useValue)($activity);
+  const busy = useBotBusy();
+  const front = frontBot(tab, activity);
+  const title = tab ? tabLabel(tab, text3.newTab) : text3.title;
+  return /* @__PURE__ */ jsxs44(
+    "div",
+    {
+      className: "hbf-title",
+      ...dragHandlers,
+      onDoubleClick: (event) => {
+        if (!event.target.closest("button")) {
+          onDock("right");
+        }
+      },
+      children: [
+        /* @__PURE__ */ jsx46("span", { className: "hbf-title-icon", children: tab ? /* @__PURE__ */ jsx46(TabIcon, { running: busy, tab }) : /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
+        /* @__PURE__ */ jsx46("span", { className: "hbf-title-text", title: text3.moveHint, children: title }),
+        busy && /* @__PURE__ */ jsx46("span", { "aria-label": text3.botActive, className: "hbf-live", role: "img" }),
+        /* @__PURE__ */ jsx46("span", { className: "hbf-title-spacer" }),
+        front && (front.cloud ? /* @__PURE__ */ jsx46(CloudTakeOver, { compact: true }) : /* @__PURE__ */ jsx46(LeaseControls, { bot: front.bot })),
+        /* @__PURE__ */ jsx46(TitleButton, { icon: "layout-sidebar-left", label: text3.dockLeft, onClick: () => onDock("left") }),
+        /* @__PURE__ */ jsx46(TitleButton, { icon: "layout-sidebar-right", label: text3.dockRight, onClick: () => onDock("right") }),
+        /* @__PURE__ */ jsx46(TitleButton, { icon: "window", label: text3.toTab, onClick: onToTab }),
+        /* @__PURE__ */ jsx46(TitleButton, { icon: "chrome-minimize", label: text3.minimise, onClick: () => patchGeometry({ min: true }) }),
+        /* @__PURE__ */ jsx46(TitleButton, { icon: "close", label: text3.closeBrowser, onClick: onClose })
+      ]
+    }
+  );
+}
+function TitleButton({ icon, label, onClick, pressed }) {
+  return /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label, children: /* @__PURE__ */ jsx46("button", { "aria-label": label, "aria-pressed": pressed, className: "hbf-tbtn", onClick, type: "button", children: /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { name: icon, size: 14 }) }) });
+}
+function LeaseControls({ bot }) {
+  const text3 = useBrowserText();
+  const { lease } = useScreenPortalState(bot);
+  const viewer = screenStateFor((0, sdk_compat_exports.useValue)($screenState), bot)?.viewer ?? null;
+  const mine = leaseHeldBy(lease, viewer);
+  const [busy, setBusy] = useState33(false);
+  const run = (work) => {
+    if (busy) {
+      return;
+    }
+    setBusy(true);
+    void work().catch(() => void 0).finally(() => setBusy(false));
+  };
+  return /* @__PURE__ */ jsxs44(
+    "button",
+    {
+      className: "hbf-lease",
+      "data-mine": mine ? "true" : "false",
+      disabled: busy,
+      onClick: () => run(() => mine ? releaseScreenLease(bot) : acquireScreenLease(bot)),
+      type: "button",
+      children: [
+        /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { name: busy ? "loading" : mine ? "debug-disconnect" : "record-keys", size: 13, spinning: busy }),
+        /* @__PURE__ */ jsx46("span", { children: mine ? text3.handBack : text3.takeOver })
+      ]
+    }
+  );
+}
+function Pill({ bottom, right }) {
+  const text3 = useBrowserText();
+  const tab = useActiveTab();
+  const busy = useBotBusy();
+  const title = tab ? tabLabel(tab, text3.newTab) : text3.title;
+  return /* @__PURE__ */ jsxs44(
+    "button",
+    {
+      "aria-label": text3.restore(title),
+      className: "hbf-pill",
+      "data-bottom": bottom ? "true" : "false",
+      "data-right": right ? "true" : "false",
+      onClick: () => patchGeometry({ min: false }),
+      type: "button",
+      children: [
+        /* @__PURE__ */ jsx46("span", { className: "hbf-title-icon", children: tab ? /* @__PURE__ */ jsx46(TabIcon, { running: busy, tab }) : /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
+        /* @__PURE__ */ jsx46("span", { className: "hbf-pill-text", children: title }),
+        busy && /* @__PURE__ */ jsx46("span", { "aria-label": text3.botActive, className: "hbf-live", role: "img" })
+      ]
+    }
+  );
+}
+var root = null;
+var container = null;
+var mounting = null;
+function floatMounted() {
+  return root !== null;
+}
+function mountFloat(props) {
+  if (root) {
+    return Promise.resolve(true);
+  }
+  mounting ??= loadReactDom().then((dom) => {
+    container = document.createElement("div");
+    container.dataset.hermesBrowserFloat = "";
+    document.body.appendChild(container);
+    root = dom.createRoot(container);
+    root.render(/* @__PURE__ */ jsx46(FloatingBrowser, { ...props }));
+    return true;
+  }).catch(() => false).finally(() => {
+    mounting = null;
+  });
+  return mounting;
+}
+function unmountFloat() {
+  root?.unmount();
+  root = null;
+  container?.remove();
+  container = null;
+}
+function floatUnavailableText() {
+  return browserText().floatUnavailable;
+}
+
+// src/browser/open.tsx
+import { jsx as jsx47 } from "react/jsx-runtime";
+var BROWSER_WORKSPACE = `${ID}:browser`;
+var BROWSER_PANE = `plugin-workspace:${BROWSER_WORKSPACE}`;
+var BROWSER_DOCK_PANE = "hermes-bots-plus:browser-dock";
+var DOCK_WIDTH = "30rem";
+var closeWorkspace = null;
+var closeDock = null;
+var dockSide = null;
+var moving = false;
+function browserAvailable() {
+  return typeof host.openWorkspace === "function";
+}
+function seedDockWidth(width) {
+  const setWidth = sdk_compat_exports.setPaneWidthOverride;
+  if (width && typeof setWidth === "function") {
+    setWidth(BROWSER_DOCK_PANE, Math.round(width));
+  }
+}
+function leaveTiled() {
+  moving = true;
+  try {
+    closeWorkspace?.();
+    closeDock?.();
+  } finally {
+    moving = false;
+  }
+  closeWorkspace = null;
+  closeDock = null;
+  dockSide = null;
+}
+function forgetLiveTabs() {
+  for (const tab of $tabs.get()) {
+    if (tab.kind === "bot") {
+      noteScreenTabClosed(tab.bot);
+    } else if (tab.kind === "web" && tab.mode === "remote") {
+      dropView(tab.id);
+    }
+  }
+  const kept = $tabs.get().filter((tab) => tab.kind !== "bot");
+  $tabs.set(kept);
+  if (!kept.some((tab) => tab.id === $activeTab.get())) {
+    $activeTab.set(kept[kept.length - 1]?.id ?? null);
+  }
+}
+function ensureTab() {
+  if (!$tabs.get().length) {
+    addTab(blankWebTab());
+  }
+}
+var floatProps = { onClose: closeFloatingBrowser, onDock: (side, width) => dockBrowser(side, width), onToTab: browserToTab };
+function showFloating() {
+  ensureTab();
+  if ($floatGeometry.get().min) {
+    patchGeometry({ min: false });
+  }
+  if (!floatMounted()) {
+    void mountFloat(floatProps).then((ok) => {
+      if (!ok) {
+        setSurface("tab");
+        host.notify({ kind: "info", message: floatUnavailableText() });
+        showBrowser();
+      }
+    });
+  }
+  return true;
+}
+function floatBrowser() {
+  leaveTiled();
+  setSurface("float");
+  showFloating();
+}
+function browserToTab() {
+  unmountFloat();
+  leaveTiled();
+  setSurface("tab");
+  showBrowser();
+}
+function dockBrowser(side, width) {
+  if (dockSide === side && closeDock) {
+    host.revealPane(BROWSER_DOCK_PANE);
+    return;
+  }
+  unmountFloat();
+  leaveTiled();
+  setSurface(side);
+  seedDockWidth(width);
+  showBrowser();
+}
+function closeBrowser() {
+  closeWorkspace?.();
+  closeDock?.();
+  closeWorkspace = null;
+  closeDock = null;
+  dockSide = null;
+  closeFloatingBrowser();
+}
+function openDock(side) {
+  const ctx = getPluginCtx();
+  if (!ctx?.register) {
+    return false;
+  }
+  ensureTab();
+  const dispose = ctx.register({
+    area: "panes",
+    // The host scopes this to BROWSER_DOCK_PANE.
+    id: "browser-dock",
+    title: browserText().title,
+    render: () => /* @__PURE__ */ jsx47(BrowserWorkspace, { docked: side }),
+    data: {
+      dock: { pane: "workspace", pos: side },
+      placement: side,
+      width: DOCK_WIDTH,
+      minWidth: "22rem",
+      maxWidth: "70vw",
+      // Closing goes through the browser's own close button, which also stops
+      // live screens; a stray tab-menu Close would leave them streaming.
+      uncloseable: true
+    }
+  });
+  closeDock = () => {
+    dispose();
+    if (!moving) {
+      forgetLiveTabs();
+    }
+  };
+  dockSide = side;
+  host.revealPane(BROWSER_DOCK_PANE);
+  return true;
+}
+function closeFloatingBrowser() {
+  unmountFloat();
+  forgetLiveTabs();
+  setSurface("tab");
+}
+function toggleFloatingBrowser() {
+  if ($surface.get() !== "float" || !floatMounted()) {
+    floatBrowser();
+    return;
+  }
+  patchGeometry({ min: !$floatGeometry.get().min });
+}
+function showBrowser() {
+  const surface = $surface.get();
+  if (surface === "float" && browserAvailable()) {
+    return showFloating();
+  }
+  if ((surface === "left" || surface === "right") && browserAvailable()) {
+    if (closeDock && dockSide === surface) {
+      host.revealPane(BROWSER_DOCK_PANE);
+      return true;
+    }
+    if (openDock(surface)) {
+      return true;
+    }
+    setSurface("tab");
+  }
+  if (closeWorkspace) {
+    host.revealPane(BROWSER_PANE);
+    return true;
+  }
+  if (!browserAvailable()) {
+    host.notify({ kind: "info", message: browserText().needsUpdate });
+    return false;
+  }
+  ensureTab();
+  closeWorkspace = host.openWorkspace(BROWSER_WORKSPACE, {
+    title: browserText().title,
+    minWidth: "24rem",
+    render: () => /* @__PURE__ */ jsx47(BrowserWorkspace, {}),
+    onClose: () => {
+      closeWorkspace = null;
+      if (!moving) {
+        forgetLiveTabs();
+      }
+    }
+  });
+  return true;
+}
+function openInBrowser(url, options = {}) {
+  if (!isWebUrl(url)) {
+    return false;
+  }
+  if (!showBrowser()) {
+    return false;
+  }
+  const tabs = $tabs.get();
+  const same = tabs.find((tab) => tab.kind === "web" && (tab.url === url || tab.target === url));
+  if (same) {
+    $activeTab.set(same.id);
+    return true;
+  }
+  const active = getTab($activeTab.get());
+  if (active?.kind === "web" && !active.target) {
+    navigateTab(active.id, url);
+    return true;
+  }
+  addTab(blankWebTab(url), !options.background);
+  return true;
+}
+function newBrowserTab() {
+  if (showBrowser()) {
+    addTab(blankWebTab());
+  }
+}
+function openBotInBrowser(bot, meta) {
+  if (!showBrowser()) {
+    return;
+  }
+  const key = botSelectionKey(bot);
+  const existing = $tabs.get().find((tab) => tab.kind === "bot" && tab.key === key);
+  if (existing) {
+    patchTab(existing.id, { bot, meta: meta ?? null });
+    $activeTab.set(existing.id);
+    return;
+  }
+  addTab({
+    id: newTabId("bot"),
+    kind: "bot",
+    key,
+    bot,
+    meta: meta ?? null,
+    title: browserText().botTab(displayName(bot, meta ?? null))
+  });
+  noteScreenTabOpened(bot);
+}
+function openActivityInBrowser(key, title, step = null) {
+  if (!showBrowser()) {
+    return;
+  }
+  const existing = $tabs.get().find((tab) => tab.kind === "activity" && tab.key === key);
+  if (existing) {
+    patchTab(existing.id, { step });
+    $activeTab.set(existing.id);
+    return;
+  }
+  addTab({ id: newTabId("activity"), kind: "activity", key, title, step });
+}
+function closeBrowserTab(id) {
+  const closed = removeTab(id);
+  if (closed?.kind === "bot") {
+    noteScreenTabClosed(closed.bot);
+  } else if (closed?.kind === "web") {
+    dropView(closed.id);
+  }
+  if (!$tabs.get().length) {
+    addTab(blankWebTab());
+  }
+}
+function disposeBrowser() {
+  closeWorkspace?.();
+  closeDock?.();
+  closeWorkspace = null;
+  closeDock = null;
+  dockSide = null;
+  unmountFloat();
+  $tabs.set([]);
+  $activeTab.set(null);
+}
+
+// src/screen-open.tsx
+init_i18n();
+function openBotScreen(bot, meta) {
+  if (!browserAvailable()) {
+    host.notify({ kind: "info", message: botsText().screen.openNeedsUpdate });
+    return;
+  }
+  openBotInBrowser(bot, meta ?? null);
+}
+
+// src/bot-tips-view.tsx
+import { jsx as jsx48, jsxs as jsxs45 } from "react/jsx-runtime";
+function botTips(bot, meta) {
+  return [
+    {
+      icon: "globe",
+      id: "computer",
+      run: () => openBotScreen(bot, meta)
+    },
+    {
+      icon: "history",
+      id: "schedule",
+      run: () => void host.revealPane(paneId("routines"))
+    },
+    {
+      icon: "organization",
+      id: "delegate",
+      run: () => void host.revealPane(paneId("pane"))
+    }
+  ];
+}
+function BotChatTips({ sessionId }) {
+  const t2 = useBots();
+  const roster = (0, sdk_compat_exports.useValue)($lastRoster);
+  const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
+  const dismissed2 = (0, sdk_compat_exports.useValue)($dismissedBotTips);
+  (0, sdk_compat_exports.useValue)(host.state.focusedStoredSessionId);
+  const bot = botForChat(roster, sessionId);
+  if (!bot) {
+    return null;
+  }
+  const key = botSelectionKey(bot);
+  const cleared = new Set(dismissed2[key] ?? []);
+  const tips = botTips(bot, botRosterMeta(bot, allMeta)).filter((tip) => !cleared.has(tip.id));
+  if (!tips.length) {
+    return null;
+  }
+  const copy = {
+    computer: { action: t2.tips.openComputer, text: t2.tips.computer },
+    delegate: { action: t2.tips.openBots, text: t2.tips.delegate },
+    schedule: { action: t2.tips.openRoutines, text: t2.tips.schedule }
+  };
+  return /* @__PURE__ */ jsx48("div", { className: "pointer-events-auto flex w-full max-w-lg flex-col gap-1.5 px-6 pt-2", "data-slot": "bot_chat_tips", children: tips.map((tip) => /* @__PURE__ */ jsxs45(
+    "div",
+    {
+      className: "flex items-center gap-2.5 rounded-lg border border-(--dt-composer-ring)/25 bg-accent/12 px-3 py-2 text-left",
+      "data-bot-tip": tip.id,
+      children: [
+        /* @__PURE__ */ jsx48(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.8rem] text-(--ui-text-tertiary)", name: tip.icon }),
+        /* @__PURE__ */ jsx48("p", { className: "m-0 min-w-0 flex-1 text-[0.72rem] leading-snug text-muted-foreground/90", children: copy[tip.id].text }),
+        /* @__PURE__ */ jsx48(
+          "button",
+          {
+            className: "shrink-0 cursor-pointer rounded-md px-2 py-1 text-[0.7rem] font-medium text-(--ui-accent-primary, var(--primary)) transition-colors hover:bg-accent/40",
+            onClick: tip.run,
+            type: "button",
+            children: copy[tip.id].action
+          }
+        ),
+        /* @__PURE__ */ jsx48(
+          "button",
+          {
+            "aria-label": t2.tips.dismiss,
+            className: "flex shrink-0 cursor-pointer items-center text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
+            onClick: () => dismissBotTip(key, tip.id),
+            type: "button",
+            children: /* @__PURE__ */ jsx48(sdk_compat_exports.Codicon, { name: "close" })
+          }
+        )
+      ]
+    },
+    tip.id
+  )) });
+}
+
+// src/browser/register.tsx
+init_sdk_compat();
+init_shared();
+
+// src/browser/intercept.ts
+var REDISPATCHED = /* @__PURE__ */ Symbol.for("hermes-bots-plus.browser.redispatched");
+var lastPointer = { at: 0, modified: false, inDialog: false };
+function rememberPointer(event) {
+  const target = event.target instanceof Element ? event.target : null;
+  lastPointer = {
+    at: performance.now(),
+    modified: event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button === 1,
+    inDialog: Boolean(target?.closest('[role="dialog"],[role="alertdialog"]'))
+  };
+}
+function recentPointer() {
+  return performance.now() - lastPointer.at < 1500 ? lastPointer : null;
+}
+function keepOutside(url) {
+  const pointer = recentPointer();
+  return !isWebUrl(url) || isAuthUrl(url) || Boolean(pointer?.modified) || Boolean(pointer?.inDialog);
+}
+function wrapBridge(bridge) {
+  const descriptorsOk = ["openExternal", "openPreviewInBrowser"].every((key) => {
+    const d = Object.getOwnPropertyDescriptor(bridge, key);
+    return !d || (d.writable ?? false) || Boolean(d.set);
+  });
+  if (Object.isFrozen(bridge) || !descriptorsOk) {
+    return null;
+  }
+  const originalExternal = bridge.openExternal;
+  const originalPreview = bridge.openPreviewInBrowser;
+  try {
+    if (typeof originalPreview === "function") {
+      bridge.openPreviewInBrowser = (url) => {
+        if (browserAvailable() && !keepOutside(url)) {
+          openInBrowser(url);
+          return Promise.resolve();
+        }
+        return originalPreview.call(bridge, url);
+      };
+    }
+    if (typeof originalExternal === "function") {
+      bridge.openExternal = (url) => {
+        if ($linksHere.get() && browserAvailable() && !keepOutside(url)) {
+          openInBrowser(url);
+          return Promise.resolve();
+        }
+        return originalExternal.call(bridge, url);
+      };
+    }
+  } catch {
+    return null;
+  }
+  return () => {
+    try {
+      if (originalPreview) {
+        bridge.openPreviewInBrowser = originalPreview;
+      }
+      if (originalExternal) {
+        bridge.openExternal = originalExternal;
+      }
+    } catch {
+    }
+  };
+}
+function onPreviewRowClick(event) {
+  if (event[REDISPATCHED] || event.button !== 0) {
+    return;
+  }
+  if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+    return;
+  }
+  const target = event.target instanceof Element ? event.target : null;
+  const row = target?.closest('[data-slot="composer-status-stack"] .status-artifacts > *');
+  if (!row || !target?.closest(".codicon-globe, .truncate")) {
+    return;
+  }
+  event.preventDefault();
+  event.stopPropagation();
+  const isMac = /mac/i.test(navigator.platform);
+  const replay = new MouseEvent("click", {
+    bubbles: true,
+    cancelable: true,
+    clientX: event.clientX,
+    clientY: event.clientY,
+    ctrlKey: !isMac,
+    metaKey: isMac,
+    view: window
+  });
+  replay[REDISPATCHED] = true;
+  target.dispatchEvent(replay);
+}
+function installBrowserIntercept() {
+  if (typeof window === "undefined") {
+    return () => {
+    };
+  }
+  window.addEventListener("pointerdown", rememberPointer, true);
+  window.addEventListener("auxclick", rememberPointer, true);
+  const bridge = window.hermesDesktop;
+  const restore = bridge ? wrapBridge(bridge) : null;
+  const electron = !restore;
+  if (electron) {
+    window.addEventListener("click", onPreviewRowClick, true);
+  }
+  return () => {
+    window.removeEventListener("pointerdown", rememberPointer, true);
+    window.removeEventListener("auxclick", rememberPointer, true);
+    if (electron) {
+      window.removeEventListener("click", onPreviewRowClick, true);
+    }
+    restore?.();
+  };
+}
+
+// src/browser/register.tsx
+import { jsx as jsx49 } from "react/jsx-runtime";
+var TOGGLE_FLOAT = `${ID}.browser.toggle-float`;
+function registerBrowser(ctx) {
+  const disposers = [];
+  const add = (dispose) => {
+    if (typeof dispose === "function") {
+      disposers.push(dispose);
+    }
+  };
+  add(ctx.i18n.register(BROWSER_LOCALES));
+  const text3 = browserText();
+  add(
+    ctx.register({
+      id: "browser-titlebar",
+      area: "titleBar.tools.right",
+      data: {
+        id: `${ID}.browser`,
+        label: text3.open,
+        icon: /* @__PURE__ */ jsx49(sdk_compat_exports.Codicon, { name: "globe" }),
+        actionId: TOGGLE_FLOAT,
+        tour: "hermes-browser",
+        onSelect: () => void showBrowser()
+      }
+    })
+  );
+  if (sdk_compat_exports.KEYBINDS_AREA) {
+    add(
+      ctx.register({
+        id: "browser-toggle-float",
+        area: sdk_compat_exports.KEYBINDS_AREA,
+        data: { id: TOGGLE_FLOAT, category: "view", defaults: ["mod+alt+b"], label: text3.toggleFloating, run: toggleFloatingBrowser }
+      })
+    );
+  }
+  add(
+    ctx.register({
+      id: "browser-open",
+      area: sdk_compat_exports.PALETTE_AREA,
+      data: { id: `${ID}.browser.open`, label: text3.open, keywords: ["browser", "web", "preview", "url", "tab"], run: () => void showBrowser() }
+    })
+  );
+  add(
+    ctx.register({
+      id: "browser-new-tab",
+      area: sdk_compat_exports.PALETTE_AREA,
+      data: { id: `${ID}.browser.new-tab`, label: `${text3.title}: ${text3.newTab}`, keywords: ["browser", "tab"], run: newBrowserTab }
+    })
+  );
+  add(
+    ctx.register({
+      id: "browser-float",
+      area: sdk_compat_exports.PALETTE_AREA,
+      data: {
+        id: `${ID}.browser.float`,
+        label: `${text3.title}: ${text3.popOut}`,
+        keywords: ["browser", "float", "picture in picture", "pip", "pop out"],
+        run: floatBrowser
+      }
+    })
+  );
+  for (const side of ["left", "right"]) {
+    add(
+      ctx.register({
+        id: `browser-dock-${side}`,
+        area: sdk_compat_exports.PALETTE_AREA,
+        data: {
+          id: `${ID}.browser.dock-${side}`,
+          label: `${text3.title}: ${side === "left" ? text3.dockLeft : text3.dockRight}`,
+          keywords: ["browser", "dock", "side", side],
+          run: () => dockBrowser(side)
+        }
+      })
+    );
+  }
+  if (typeof ctx.registerSettingsPage === "function") {
+    add(ctx.registerSettingsPage({ id: BROWSER_SETTINGS_PAGE, title: text3.settingsTitle, icon: "globe", order: 40, render: () => /* @__PURE__ */ jsx49(BrowserSettingsPage, {}) }));
+  }
+  add(installBrowserIntercept());
+  return () => {
+    disposeBrowser();
+    disposers.reverse().forEach((dispose) => dispose());
+  };
+}
+
+// src/plugin.tsx
+init_canonical_chat();
+
+// src/context-nudge.ts
+init_sdk_compat();
+init_canonical_chat();
+init_routing();
+init_shared();
+var NUDGE_STORAGE_KEY = "bot-context-nudge-dismissed-v1";
+var NUDGE_MIN_MESSAGES = 60;
+var NUDGE_MIN_INPUT_TOKENS = 15e4;
+var NUDGE_REGROWTH_FACTOR = 1.5;
+var $dismissedNudgeCounts = (0, sdk_compat_exports.atom)({});
+function hydrateDismissedNudges() {
+  try {
+    Promise.resolve(getPluginCtx()?.storage?.get?.(NUDGE_STORAGE_KEY, null)).then((value) => {
+      if (value && typeof value === "object" && !Array.isArray(value)) {
+        $dismissedNudgeCounts.set(
+          Object.fromEntries(
+            Object.entries(value).filter(([, count]) => typeof count === "number" && Number.isFinite(count) && count >= 0).map(([key, count]) => [key, count])
+          )
+        );
+      }
+    }).catch(() => void 0);
+  } catch {
+  }
+}
+function dismissContextNudge(botKey, messageCount) {
+  const next = { ...$dismissedNudgeCounts.get(), [botKey]: messageCount };
+  $dismissedNudgeCounts.set(next);
+  try {
+    void getPluginCtx()?.storage?.set?.(NUDGE_STORAGE_KEY, next);
+  } catch {
+  }
+}
+function contextNudgeEligible(size) {
+  if (!size) {
+    return false;
+  }
+  const tokens = typeof size.input_tokens === "number" && Number.isFinite(size.input_tokens) ? size.input_tokens : 0;
+  const messages = typeof size.message_count === "number" && Number.isFinite(size.message_count) ? size.message_count : 0;
+  return tokens >= NUDGE_MIN_INPUT_TOKENS || messages >= NUDGE_MIN_MESSAGES;
+}
+function contextNudgeSuppressed(dismissedAt, size) {
+  if (dismissedAt == null) {
+    return false;
+  }
+  const messages = size && typeof size.message_count === "number" && Number.isFinite(size.message_count) ? size.message_count : 0;
+  return messages < dismissedAt * NUDGE_REGROWTH_FACTOR;
+}
+async function canonicalChatSize(bot) {
+  const route = botConnectionRoute(bot);
+  if (!route || !bot?.name) {
+    return null;
+  }
+  try {
+    const res = await requestForBot(bot, "session.list", {
+      profile: backendTargetProfile(route, bot.name),
+      title: CANONICAL_CHAT_TITLE,
+      limit: PROFILE_SESSION_LIST_LIMIT,
+      include_hidden: true
+    });
+    const match = (res?.sessions ?? []).find((row) => isCanonicalBotChatHistory(row));
+    return match ?? null;
+  } catch {
+    return null;
+  }
+}
+
+// src/context-nudge-view.tsx
+init_sdk_compat();
+init_canonical_chat();
+import { useEffect as useEffect22, useState as useState34 } from "react";
+init_data();
+init_i18n();
+import { jsx as jsx50, jsxs as jsxs46 } from "react/jsx-runtime";
+var sizeCache = /* @__PURE__ */ new Map();
+var SIZE_TTL_MS = 6e4;
+function BotContextNudge() {
+  const t2 = useBots();
+  const roster = (0, sdk_compat_exports.useValue)($lastRoster);
+  const dismissed2 = (0, sdk_compat_exports.useValue)($dismissedNudgeCounts);
+  const storedId = String(host.state.focusedStoredSessionId?.get?.() ?? "");
+  (0, sdk_compat_exports.useValue)(host.state.focusedStoredSessionId);
+  const bot = botForChat(roster, storedId);
+  const canonical = isCanonicalChatOnScreen(bot, storedId);
+  const botKey = bot ? botSelectionKey(bot) : "";
+  const cacheKey = `${botKey}:${storedId}`;
+  const [reading, setReading] = useState34(() => {
+    const hit2 = sizeCache.get(cacheKey);
+    return { key: cacheKey, size: hit2 && Date.now() - hit2.at < SIZE_TTL_MS ? hit2.size : null };
+  });
+  const size = reading.key === cacheKey ? reading.size : null;
+  useEffect22(() => {
+    if (!bot || !canonical) {
+      return;
+    }
+    const hit2 = sizeCache.get(cacheKey);
+    if (hit2 && Date.now() - hit2.at < SIZE_TTL_MS) {
+      setReading({ key: cacheKey, size: hit2.size });
+      return;
+    }
+    let alive = true;
+    void canonicalChatSize(bot).then((next) => {
+      sizeCache.set(cacheKey, { at: Date.now(), size: next });
+      if (alive) {
+        setReading({ key: cacheKey, size: next });
+      }
+    });
+    return () => {
+      alive = false;
+    };
+  }, [bot, canonical, cacheKey]);
+  if (!bot || !canonical || !contextNudgeEligible(size)) {
+    return null;
+  }
+  const dismissedAt = dismissed2[botKey];
+  if (contextNudgeSuppressed(dismissedAt ?? null, size)) {
+    return null;
+  }
+  const messages = typeof size?.message_count === "number" && Number.isFinite(size.message_count) ? size.message_count : 0;
+  return /* @__PURE__ */ jsxs46(
+    "div",
+    {
+      className: "pointer-events-auto mx-3 mb-1.5 flex items-center gap-2.5 rounded-lg border border-(--dt-composer-ring)/25 bg-accent/12 px-3 py-2 text-left",
+      "data-slot": "bot_context_nudge",
+      children: [
+        /* @__PURE__ */ jsx50(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.8rem] text-(--ui-text-tertiary)", name: "comment-discussion" }),
+        /* @__PURE__ */ jsx50("p", { className: "m-0 min-w-0 flex-1 text-[0.72rem] leading-snug text-muted-foreground/90", children: t2.nudge.text }),
+        /* @__PURE__ */ jsx50(
+          "button",
+          {
+            className: "shrink-0 cursor-pointer rounded-md px-2 py-1 text-[0.7rem] font-medium text-(--ui-accent-primary, var(--primary)) transition-colors hover:bg-accent/40",
+            onClick: () => void newBotChat(bot),
+            type: "button",
+            children: t2.nudge.action
+          }
+        ),
+        /* @__PURE__ */ jsx50(
+          "button",
+          {
+            "aria-label": t2.nudge.dismiss,
+            className: "flex shrink-0 cursor-pointer items-center text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
+            onClick: () => dismissContextNudge(botKey, messages),
+            type: "button",
+            children: /* @__PURE__ */ jsx50(sdk_compat_exports.Codicon, { name: "close" })
+          }
+        )
+      ]
+    }
+  );
+}
+
+// src/context-panel-i18n.ts
+init_sdk_compat();
+init_shared();
+var CONTEXT_PANEL_EN = {
+  title: "Context window",
+  reading: (percent, used, max) => `${percent}% \xB7 ${used} / ${max}`,
+  meterLabel: (percent) => `Context window ${percent}% used`,
+  waiting: "No reading yet",
+  estimated: "Estimate",
+  estimatedHint: "Counted from the transcript, not reported by the model provider",
+  compacted: (count) => count === 1 ? "Summarised once" : `Summarised ${count}\xD7`,
+  compactedHint: "Older turns were folded into a summary to free up room",
+  nearlyFull: "Almost full",
+  nearlyFullHint: "Hermes will soon fold older turns into a summary",
+  steps: "Steps",
+  showSteps: "Show what happened in each turn",
+  hideSteps: "Hide the turn timeline",
+  loading: "Reading this chat\u2026",
+  failed: "Could not read the steps for this chat.",
+  retry: "Retry",
+  none: "Nothing has run in this chat yet.",
+  overview: (turns, steps) => `${turns === 1 ? "1 turn" : `${turns} turns`} \xB7 ${steps === 1 ? "1 step" : `${steps} steps`}`,
+  turn: (index) => `Turn ${index}`,
+  stepCount: (count) => count === 1 ? "1 step" : `${count} steps`,
+  answered: "Answered",
+  working: "Still working",
+  noAnswer: "No answer saved",
+  slowest: (name, took) => `Longest wait: ${name}, ${took}`,
+  tookHint: "Time since the step before it finished, thinking included"
+};
+var CONTEXT_PANEL_LOCALES = { en: { contextPanel: CONTEXT_PANEL_EN } };
+function useContextPanelText() {
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, CONTEXT_PANEL_EN, "contextPanel");
+}
+
+// src/plugin.tsx
+init_data();
+
+// src/hire-i18n.ts
+init_sdk_compat();
+init_shared();
+var HIRE_EN = {
+  title: "Hire a teammate",
+  subtitle: "Pick a starter, describe one, or hire a whole team.",
+  search: "Search teammates",
+  featured: "Featured",
+  category: {
+    research: "Research",
+    coding: "Coding",
+    writing: "Writing",
+    creative: "Creative",
+    ops: "Operations",
+    review: "Review"
+  },
+  packsNav: "Team packs",
+  yours: "Yours",
+  importBot: "Import a bot\u2026",
+  describeLabel: "Describe the teammate you want",
+  describePlaceholder: "e.g. \u201Ca skeptical code reviewer who catches edge cases\u201D",
+  describeAction: "Draft it",
+  packsHeading: "Team packs \u2014 hire several at once",
+  teammatesHeading: "Teammates",
+  noMatch: (query) => `No teammate matches \u201C${query}\u201D.`,
+  seatCount: (n) => n === 1 ? "1 seat" : `${n} seats`,
+  drafted: "Drafted from your description",
+  startsWith: "Starts with",
+  firstThings: "Things to ask first",
+  brain: "Brain",
+  brainDefault: "Your default model",
+  brainHint: "Change it any time from the bot\u2019s header.",
+  name: "Name",
+  hire: (name) => `Hire ${name}`,
+  customize: "Customize instructions, skills and tools\u2026",
+  hirePack: (name) => `Hire ${name}`,
+  packHint: "Creates the team with open seats. Fill each seat with a bot on the Team page.",
+  packCreated: (name) => `${name} is ready \u2014 fill its seats`,
+  packFailed: "Could not create the team",
+  blankTitle: "Start from scratch",
+  blankBody: "A blank bot with your default model and skills.",
+  pickOne: "Pick a teammate to see what it does.",
+  back: "Back"
+};
+var HIRE_LOCALES = { en: { hire: HIRE_EN } };
+function useHireText() {
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, HIRE_EN, "hire");
+}
+
+// src/plugin.tsx
+init_i18n();
+
+// src/instant-ack.ts
+init_sdk_compat();
+var RECEIPT_MAX_WORDS = 8;
+var WAITING_AFTER_MS = 1200;
+var FENCE = /```[\s\S]*?```/g;
+var MD_LINK = /\[([^\]]*)\]\([^)]*\)/g;
+var NOISE_TOKEN = /^(?:https?:\/\/\S+|www\.\S+|\/[\w./-]+|~\/\S+|@\S+|#\S+)$/i;
+var LEADING_MARKER = /^(?:[\s>*#–—•\])]+|[-–—]\s+|\d+[.)]\s*|\[[ xX]?\]\s*)/u;
+function stripLeadingMarkers(text3) {
+  let out = text3;
+  for (let pass = 0; pass < 6; pass += 1) {
+    const next = out.replace(LEADING_MARKER, "");
+    if (next === out) {
+      break;
+    }
+    out = next;
+  }
+  return out;
+}
+function receiptFromPrompt(text3) {
+  const cleaned = text3.replace(FENCE, " ").replace(MD_LINK, "$1").replace(/`([^`]*)`/g, "$1").replace(/\s+/g, " ").trim();
+  if (!cleaned) {
+    return null;
+  }
+  const command = /^\/([a-z0-9][\w-]*)/i.exec(cleaned);
+  if (command) {
+    return { kind: "command", text: `/${command[1].toLowerCase()}` };
+  }
+  const words = stripLeadingMarkers(cleaned).split(" ").filter((word) => word && !NOISE_TOKEN.test(word));
+  const kept = words.slice(0, RECEIPT_MAX_WORDS).join(" ").replace(/[\s,;:.!?…-]+$/u, "");
+  return kept ? { kind: "prompt", text: kept } : null;
+}
+function ackToolKind(name) {
+  const tool = name.toLowerCase();
+  if (/^(terminal|execute_code|process|shell|bash)/.test(tool)) {
+    return "run";
+  }
+  if (/^(web_search|search_web|search)$/.test(tool)) {
+    return "search";
+  }
+  if (/^(browser_|web_extract|web_fetch|fetch_url)/.test(tool)) {
+    return "browse";
+  }
+  if (/^(read_file|search_files|list_files|grep|glob)/.test(tool)) {
+    return "read";
+  }
+  if (/^(write_file|patch|edit_file|apply_patch)/.test(tool)) {
+    return "edit";
+  }
+  if (/^(delegate_task|message_agent)/.test(tool)) {
+    return "delegate";
+  }
+  return "tool";
+}
+function reduceInstantAck(current, event, at) {
+  if (event.type === "arm") {
+    return { armedAt: at, kind: event.kind, state: "receipt", storedId: event.storedId, text: event.text };
+  }
+  if (!current || event.type === "hand-off") {
+    return null;
+  }
+  if (event.type === "tool-start") {
+    return { armedAt: current.armedAt, name: event.name, state: "working", storedId: current.storedId, tool: ackToolKind(event.name) };
+  }
+  return current.state === "receipt" ? { armedAt: current.armedAt, state: "waiting", storedId: current.storedId } : current;
+}
+var $instantAcks = (0, sdk_compat_exports.atom)({});
+function noteInstantAck(runtimeId, event, at = Date.now()) {
+  const all = $instantAcks.get();
+  const next = reduceInstantAck(all[runtimeId] ?? null, event, at);
+  if (next === (all[runtimeId] ?? null)) {
+    return;
+  }
+  const copy = { ...all };
+  if (next) {
+    copy[runtimeId] = next;
+  } else {
+    delete copy[runtimeId];
+  }
+  $instantAcks.set(copy);
+}
+function armInstantAck(runtimeId, storedId, text3, busy) {
+  const receipt = receiptFromPrompt(text3);
+  if (!runtimeId || !storedId || !receipt || busy) {
+    return false;
+  }
+  noteInstantAck(runtimeId, { ...receipt, storedId, type: "arm" });
+  return true;
+}
+function payloadField(payload, key) {
+  const value = payload && typeof payload === "object" ? payload[key] : void 0;
+  return typeof value === "string" ? value : "";
+}
+function feedInstantAck(event) {
+  const runtimeId = event.session_id;
+  if (!runtimeId || !$instantAcks.get()[runtimeId]) {
+    return;
+  }
+  if (event.type === "tool.generating" || event.type === "tool.start") {
+    const name = payloadField(event.payload, "name") || payloadField(event.payload, "tool_name");
+    if (name) {
+      noteInstantAck(runtimeId, { name, type: "tool-start" });
+    }
+    return;
+  }
+  if (event.type === "message.delta") {
+    if ((payloadField(event.payload, "text") || payloadField(event.payload, "delta")).trim()) {
+      noteInstantAck(runtimeId, { type: "hand-off" });
+    }
+    return;
+  }
+  noteInstantAck(runtimeId, { type: "hand-off" });
+}
+var INSTANT_ACK_EVENTS = [
+  "approval.request",
+  "error",
+  "message.complete",
+  "message.delta",
+  "tool.complete",
+  "tool.generating",
+  "tool.start"
+];
+var IDLE_GRACE_MS = 2e3;
+function sweepInstantAcks(busyBySession, now = Date.now()) {
+  for (const [runtimeId, ack] of Object.entries($instantAcks.get())) {
+    if (!busyBySession[runtimeId] && (ack.state === "working" || now - ack.armedAt >= IDLE_GRACE_MS)) {
+      noteInstantAck(runtimeId, { type: "hand-off" }, now);
+    }
+  }
+}
+
+// src/instant-ack-line.tsx
+init_sdk_compat();
+import { useEffect as useEffect23 } from "react";
+init_data();
+init_i18n();
+import { jsx as jsx51, jsxs as jsxs47 } from "react/jsx-runtime";
+function wireInstantAck(onDispose) {
+  if (typeof host.onEvent !== "function" || !host.state.busyBySession) {
+    return false;
+  }
+  for (const type of INSTANT_ACK_EVENTS) {
+    onDispose(host.onEvent(type, feedInstantAck));
+  }
+  onDispose(host.state.busyBySession.listen((busy) => sweepInstantAcks(busy)));
+  return true;
+}
+function InstantAckLine() {
+  const runtimeId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
+  const storedId = (0, sdk_compat_exports.useValue)(host.state.focusedStoredSessionId);
+  const ack = (0, sdk_compat_exports.useValue)($instantAcks)[runtimeId ?? ""] ?? null;
+  (0, sdk_compat_exports.useValue)($lastRoster);
+  const t2 = useBots().ack;
+  const state = ack?.state;
+  const armedAt = ack?.armedAt ?? 0;
+  useEffect23(() => {
+    if (!runtimeId || state !== "receipt" && state !== "waiting") {
+      return;
+    }
+    const due = state === "receipt" ? WAITING_AFTER_MS : IDLE_GRACE_MS;
+    const timer = window.setTimeout(
+      () => {
+        if (state === "receipt") {
+          noteInstantAck(runtimeId, { type: "waiting" });
+        }
+        sweepInstantAcks(host.state.busyBySession.get());
+      },
+      Math.max(0, armedAt + due - Date.now())
+    );
+    return () => window.clearTimeout(timer);
+  }, [armedAt, runtimeId, state]);
+  if (!ack || ack.storedId !== storedId || !canonicalBotChatOnScreen(storedId)) {
+    return null;
+  }
+  const label = ack.state === "receipt" ? ack.kind === "command" ? t2.command(ack.text) : t2.prompt(ack.text) : ack.state === "working" ? ack.tool === "tool" ? t2.using(ack.name.replace(/_/g, " ")) : t2.verbs[ack.tool] : t2.waiting;
+  return /* @__PURE__ */ jsxs47(
+    "div",
+    {
+      "aria-live": "polite",
+      className: "flex min-w-0 items-center gap-1.5 px-1 text-xs text-(--conversation-scaffold-text)",
+      "data-ack-state": ack.state,
+      "data-slot": "instant-ack",
+      role: "status",
+      children: [
+        /* @__PURE__ */ jsx51(sdk_compat_exports.StatusDot, { className: "shrink-0 animate-pulse", tone: ack.state === "waiting" ? "muted" : "good" }),
+        /* @__PURE__ */ jsx51("span", { className: "min-w-0 truncate", children: label })
+      ]
+    }
+  );
+}
+
+// src/plugin.tsx
+init_labels();
+
+// src/mission-rail.tsx
+init_sdk_compat();
+import { useState as useState46 } from "react";
+
+// src/autopilot.ts
+var AUTOPILOT_ICONS = { brief: "coffee", review: "checklist", watch: "eye" };
+function autopilotPresets(a) {
+  return [
+    {
+      id: "brief",
+      label: a.brief.label,
+      preset: {
+        deliverToChat: true,
+        instruction: a.brief.instruction,
+        schedule: { freq: "weekdays", time: "8:0" },
+        title: a.brief.label
+      }
+    },
+    {
+      id: "review",
+      label: a.review.label,
+      preset: {
+        deliverToChat: true,
+        instruction: a.review.instruction,
+        schedule: { freq: "weekly", time: "16:0", weekday: "5" },
+        title: a.review.label
+      }
+    },
+    {
+      id: "watch",
+      label: a.watch.label,
+      preset: {
+        deliverToChat: false,
+        instruction: a.watch.instruction,
+        schedule: { freq: "interval", intervalN: "2", intervalUnit: "h" },
+        title: a.watch.label
+      }
+    }
+  ];
+}
+
+// src/bot-teammates.ts
+init_sdk_compat();
+init_routing();
+init_shared();
+function botTeammates(teams, profileName) {
+  const name = String(profileName || "").trim();
+  const leads = /* @__PURE__ */ new Set();
+  const reports = /* @__PURE__ */ new Set();
+  for (const view of Array.isArray(teams) ? teams : []) {
+    const members = Array.isArray(view?.team?.members) ? view.team.members : [];
+    const me = members.find((member) => member?.profile === name);
+    if (!me) {
+      continue;
+    }
+    const boss = members.find((member) => member?.slot === me.reports_to);
+    if (boss?.profile && boss.profile !== name) {
+      leads.add(boss.profile);
+    }
+    for (const member of members) {
+      if (member?.reports_to === me.slot && member.profile && member.profile !== name) {
+        reports.add(member.profile);
+      }
+    }
+  }
+  return { leads: [...leads].sort(), reports: [...reports].sort() };
+}
+var fetchBotTeams = async (bot) => {
+  const route = resolveBotConnectionRoute(bot).route;
+  const local = !route || route.mode === "local";
+  const ambientLocal = String(host.state.connectionId?.get?.() || "local").trim() === "local";
+  if (local && !ambientLocal) {
+    return [];
+  }
+  const call = (method, params) => local ? host.request(method, params) : requestForBot(bot, method, params);
+  const res = await call("bots_team.list", {});
+  const summaries = Array.isArray(res?.teams) ? res.teams : [];
+  const views = await Promise.all(
+    summaries.map((team) => call("bots_team.get", { team_id: team.id }).catch(() => null))
+  );
+  return views.filter((view) => Boolean(view?.team?.id));
+};
+function useBotTeammates(bot) {
+  const { data } = (0, sdk_compat_exports.useQuery)({
+    enabled: Boolean(bot?.name) && !bot?.ghost,
+    queryFn: async () => {
+      try {
+        return await fetchBotTeams(bot);
+      } catch {
+        return [];
+      }
+    },
+    queryKey: [ID, "bot-teams", bot?.connectionId || "local", bot?.name || ""],
+    retry: false,
+    staleTime: 3e4
+  });
+  return botTeammates(data, bot?.name || "");
+}
+
+// src/bot-card-meta.tsx
+init_i18n();
+import { jsx as jsx52, jsxs as jsxs48 } from "react/jsx-runtime";
+var REPORTS_SHOWN = 3;
+function botCardMetaItems(bot, teammates, card) {
+  const items = [];
+  const model = String(bot?.model || "").trim();
+  if (model) {
+    items.push({ key: "model", mono: true, text: model });
+  }
+  const skills = Number(bot?.skill_count || 0);
+  if (skills > 0) {
+    items.push({ key: "skills", text: card.skills(skills) });
+  }
+  for (const lead of teammates.leads) {
+    items.push({ key: `lead:${lead}`, text: card.ledBy(lead) });
+  }
+  if (teammates.reports.length > 0) {
+    const shown = teammates.reports.slice(0, REPORTS_SHOWN);
+    const extra = teammates.reports.length - shown.length;
+    items.push({ key: "reports", text: card.leads(extra > 0 ? `${shown.join(", ")} +${extra}` : shown.join(", ")) });
+  }
+  return items;
+}
+function BotCardMeta({ bot }) {
+  const b = useBots();
+  const teammates = useBotTeammates(bot);
+  const items = botCardMetaItems(bot, teammates, b.card);
+  if (items.length === 0) {
+    return null;
+  }
+  return /* @__PURE__ */ jsx52(
+    "div",
+    {
+      className: "mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[0.6875rem] text-(--ui-text-tertiary)",
+      "data-testid": "bot-card-meta",
+      children: items.map((item, index) => /* @__PURE__ */ jsxs48("span", { className: "flex min-w-0 items-center gap-1.5", children: [
+        index > 0 ? /* @__PURE__ */ jsx52("span", { className: "text-(--ui-text-quaternary)", children: "\xB7" }) : null,
+        item.key === "model" ? (
+          // The model reads as the one-click switcher, same chip as the Bot Chat header.
+          /* @__PURE__ */ jsx52(BotModelChip, { bot })
+        ) : /* @__PURE__ */ jsx52("span", { className: item.mono ? "truncate font-mono" : "truncate", children: item.text })
+      ] }, item.key))
+    }
+  );
+}
+
+// src/bot-deliverables.tsx
+init_sdk_compat();
+init_i18n();
+import { useCallback as useCallback4, useEffect as useEffect24, useRef as useRef14, useState as useState35 } from "react";
+init_routing();
+import { jsx as jsx53, jsxs as jsxs49 } from "react/jsx-runtime";
+var DELIVERABLES_LIMIT = 20;
+var KIND_GLYPH = {
+  artifact: "file-code",
+  file: "file",
+  image: "file-media",
+  link: "link"
+};
+function itemSessionId(item) {
+  return item.transcript?.sessionId || item.registry?.sessionId || null;
+}
+function ownerLiveFiles(files, owner, storedByRuntime) {
+  if (!owner?.name) {
+    return [];
+  }
+  const canonical = botCanonicalRuntimeId(owner, storedByRuntime);
+  return files.filter((file) => file.profile === owner.name || !!canonical && file.runtimeId === canonical);
+}
+var baseName = (path) => path.split("/").filter(Boolean).at(-1) || path;
+function BotDeliverablesSection({ owner }) {
+  const b = useBots();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const [view, setView] = useState35({
+    ownerKey: "",
+    items: [],
+    sessions: /* @__PURE__ */ new Map(),
+    status: "loading"
+  });
+  const seq = useRef14(0);
+  const ownerKey = `${owner?.connectionId || "local"}::${owner?.name || ""}`;
+  const ownerRef = useRef14(owner);
+  ownerRef.current = owner;
+  const load2 = useCallback4(() => {
+    const owner2 = ownerRef.current;
+    const key = `${owner2?.connectionId || "local"}::${owner2?.name || ""}`;
+    const current = ++seq.current;
+    const empty = { ownerKey: key, items: [], sessions: /* @__PURE__ */ new Map() };
+    if (typeof host.listProfileArtifacts !== "function" || !owner2?.name) {
+      setView({ ...empty, status: "unavailable" });
+      return;
+    }
+    setView((prior) => ({ ...prior.ownerKey === key ? prior : empty, status: "loading" }));
+    void Promise.resolve().then(() => host.listProfileArtifacts(botConnectionRoute(owner2), { profile: owner2.name })).then((result) => {
+      if (seq.current !== current) {
+        return;
+      }
+      setView({
+        ownerKey: key,
+        items: result.items.slice(0, DELIVERABLES_LIMIT),
+        sessions: new Map(result.sessions.map((session) => [session.id, session])),
+        status: "ready"
+      });
+    }).catch(() => {
+      if (seq.current !== current) {
+        return;
+      }
+      setView((prior) => ({ ...prior.ownerKey === key ? prior : empty, status: "error" }));
+    });
+  }, []);
+  useEffect24(() => {
+    load2();
+    const requestSequence = seq;
+    return () => {
+      requestSequence.current++;
+    };
+  }, [load2, ownerKey]);
+  const currentView = view.ownerKey === ownerKey ? view : null;
+  const items = currentView?.items ?? [];
+  const sessionsById = currentView?.sessions ?? /* @__PURE__ */ new Map();
+  const status = currentView?.status ?? "loading";
+  const refreshing = status === "loading";
+  const learned = (0, sdk_compat_exports.useValue)($learnedStoredByRuntime);
+  const allLive = (0, sdk_compat_exports.useValue)($liveFiles);
+  const live = items.length ? [] : ownerLiveFiles(allLive, owner, learned);
+  const openLive = (file) => {
+    const storedId = file.storedId || learned[file.runtimeId];
+    if (!storedId) {
+      return;
+    }
+    const route = botConnectionRoute(ownerRef.current);
+    void host.openSession(storedId, { ...route ? { route } : {}, profile: ownerRef.current.name, intent: "tab" }).catch((err) => host.notifyError(err, b.deliverables.title));
+  };
+  const open = (item) => {
+    const owner2 = ownerRef.current;
+    const sessionId = itemSessionId(item);
+    if (!sessionId) {
+      return;
+    }
+    try {
+      const route = botConnectionRoute(owner2);
+      if (typeof armTranscriptReplayJump === "function") {
+        armTranscriptReplayJump(sessionId, item.timestamp);
+      }
+      void host.openSession(sessionId, {
+        ...route ? { route } : {},
+        profile: owner2.name,
+        intent: "tab"
+      }).catch((err) => host.notifyError(err, b.deliverables.title));
+    } catch (err) {
+      host.notifyError(err, b.deliverables.title);
+    }
+  };
+  return /* @__PURE__ */ jsxs49("div", { "aria-busy": refreshing, className: "px-3 pb-3", "data-testid": "bot-deliverables", children: [
+    /* @__PURE__ */ jsxs49("div", { className: "flex items-baseline justify-between gap-2 pb-1", children: [
+      /* @__PURE__ */ jsx53("span", { className: "ui-section-label", children: b.deliverables.title }),
+      /* @__PURE__ */ jsxs49("span", { className: "flex items-center gap-1.5", children: [
+        items.length ? /* @__PURE__ */ jsx53("span", { className: "text-xs tabular-nums text-(--ui-text-tertiary)", children: items.length }) : null,
+        /* @__PURE__ */ jsx53(sdk_compat_exports.Tip, { label: b.deliverables.refresh, children: /* @__PURE__ */ jsx53(
+          sdk_compat_exports.Button,
+          {
+            "aria-label": b.deliverables.refresh,
+            disabled: refreshing || status === "unavailable",
+            onClick: load2,
+            size: "icon-xs",
+            variant: "ghost",
+            children: /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { name: "refresh", spinning: refreshing })
+          }
+        ) })
+      ] })
+    ] }),
+    status === "error" ? /* @__PURE__ */ jsxs49("div", { className: "grid gap-2 pb-2 text-xs text-(--ui-text-secondary)", role: "alert", children: [
+      /* @__PURE__ */ jsx53("p", { children: items.length ? b.deliverables.stale : b.deliverables.failed }),
+      /* @__PURE__ */ jsx53(sdk_compat_exports.Button, { className: "justify-self-start", onClick: load2, size: "xs", variant: "secondary", children: t2.common.retry })
+    ] }) : null,
+    live.length ? /* @__PURE__ */ jsx53("div", { className: "grid gap-0.5", "data-testid": "bot-deliverables-live", children: live.map((file) => /* @__PURE__ */ jsx53(sdk_compat_exports.Tip, { label: file.path, children: /* @__PURE__ */ jsxs49(
+      sdk_compat_exports.RowButton,
+      {
+        "aria-label": file.path,
+        className: (0, sdk_compat_exports.cn)(
+          "hbp-enter flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors",
+          "hover:bg-(--chrome-action-hover)"
+        ),
+        onClick: () => openLive(file),
+        children: [
+          /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { "aria-hidden": true, className: "shrink-0 text-xs text-(--ui-text-tertiary)", name: "file" }),
+          /* @__PURE__ */ jsx53("span", { className: "min-w-0 flex-1 truncate text-xs font-medium text-(--ui-text-secondary)", children: baseName(file.path) }),
+          /* @__PURE__ */ jsx53("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(file.at, t2.sidebar.row) })
+        ]
+      }
+    ) }, file.path)) }) : refreshing && items.length === 0 ? /* @__PURE__ */ jsxs49("div", { className: "flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)", role: "status", children: [
+      /* @__PURE__ */ jsx53(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.deliverables.loading, className: "text-xs" }),
+      b.deliverables.loading
+    ] }) : status === "unavailable" ? /* @__PURE__ */ jsx53("p", { className: "py-2 text-xs text-(--ui-text-tertiary)", children: b.deliverables.unavailable }) : status === "ready" && items.length === 0 ? /* @__PURE__ */ jsx53("p", { className: "py-2 text-xs leading-relaxed text-(--ui-text-tertiary)", children: b.deliverables.empty }) : /* @__PURE__ */ jsx53("div", { className: "grid gap-0.5", children: items.map((item) => {
+      const session = itemSessionId(item);
+      const sessionTitle = item.transcript?.sessionTitle || (session ? sessionsById.get(session)?.title || "" : "");
+      return /* @__PURE__ */ jsxs49(
+        sdk_compat_exports.RowButton,
+        {
+          "aria-label": item.label,
+          className: (0, sdk_compat_exports.cn)(
+            "flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left transition-colors",
+            "hover:bg-(--chrome-action-hover)"
+          ),
+          onClick: () => open(item),
+          children: [
+            /* @__PURE__ */ jsx53(
+              sdk_compat_exports.Codicon,
+              {
+                "aria-label": item.kind,
+                className: "shrink-0 text-[0.75rem] text-(--ui-text-tertiary)",
+                name: KIND_GLYPH[item.kind] || "file"
+              }
+            ),
+            /* @__PURE__ */ jsxs49("span", { className: "min-w-0 flex-1", children: [
+              /* @__PURE__ */ jsx53("span", { className: "block min-w-0 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: item.label }),
+              sessionTitle ? /* @__PURE__ */ jsx53("span", { className: "block min-w-0 truncate text-xs text-(--ui-text-tertiary)", children: sessionTitle }) : null
+            ] }),
+            /* @__PURE__ */ jsx53("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(item.timestamp, t2.sidebar.row) })
+          ]
+        },
+        item.id
+      );
+    }) })
+  ] });
+}
+
+// src/mission-rail.tsx
+init_bot_state();
+
+// src/bot-task-log.tsx
+init_sdk_compat();
+init_bot_state();
+init_data();
+init_i18n();
+init_routing();
+
+// src/run-controls.ts
+init_sdk_compat();
+init_routing();
+async function stopBotTurn(bot) {
+  const storedByRuntime = host.state.storedSessionByRuntimeId?.get?.() || {};
+  const runtimeId = botCanonicalRuntimeId(bot, storedByRuntime);
+  if (!runtimeId) {
+    return "idle";
+  }
+  try {
+    const res = await requestForBot(
+      bot,
+      "session.interrupt",
+      { session_id: runtimeId },
+      // A user gesture against a possibly-cold backend — same foreground
+      // class as the roster click's registry lookup.
+      { spawnPriority: "foreground" }
+    );
+    return res?.status === "interrupted" ? "stopped" : "idle";
+  } catch {
+    return "failed";
+  }
+}
+function retryBotDeliveries() {
+  retryRelayOutbox();
+}
+
+// src/task-log.ts
+function dayStart(ms) {
+  const d = new Date(ms);
+  d.setHours(0, 0, 0, 0);
+  return d.getTime();
+}
+function taskLogPreview(run) {
+  return (run.title || "").trim() || (run.summary || "").trim();
+}
+function taskLogLine(run) {
+  return clipWords((run.title || "").trim()) || clipWords((run.summary || "").trim());
+}
+function taskLogGroups(runs, now = Date.now()) {
+  const todayStart = dayStart(now);
+  const yesterdayStart = todayStart - 864e5;
+  const groups = /* @__PURE__ */ new Map();
+  for (const run of runs) {
+    if (!Number.isFinite(run.at) || run.at <= 0) {
+      continue;
+    }
+    const start = dayStart(run.at);
+    let group = groups.get(start);
+    if (!group) {
+      group = {
+        at: start,
+        label: start === todayStart ? "today" : start === yesterdayStart ? "yesterday" : "date",
+        runs: []
+      };
+      groups.set(start, group);
+    }
+    group.runs.push(run);
+  }
+  return [...groups.values()].sort((a, b) => b.at - a.at);
+}
+
+// src/bot-task-log.tsx
+import { jsx as jsx54, jsxs as jsxs50 } from "react/jsx-runtime";
+var RUN_KIND_GLYPHS = {
+  chat: "comment",
+  group: "organization",
+  relay: "mail-read",
+  routine: "watch"
+};
+function runStatusGlyph(status) {
+  switch (status) {
+    case "attention":
+      return "warning";
+    case "failed":
+      return "error";
+    case "running":
+      return "sync";
+    default:
+      return "check";
+  }
+}
+function runStatusClass(status) {
+  switch (status) {
+    case "attention":
+      return "hbp-fg-warn";
+    case "failed":
+      return "text-destructive";
+    case "running":
+      return "text-(--ui-accent)";
+    default:
+      return "text-(--ui-text-tertiary)";
+  }
+}
+function useBotRunsFeed(owner, jobs, onOpenRoutine) {
+  const rooms = (0, sdk_compat_exports.useValue)($groupChats);
+  const groupActivity = (0, sdk_compat_exports.useValue)($groupActivity);
+  const attentionMap = (0, sdk_compat_exports.useValue)($botAttention);
+  const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
+  const focusedOwner = focusedRosterOwner((0, sdk_compat_exports.useValue)($focusedBotOwner));
+  const turnBusy = useTurnBusy();
+  const activeConnectionId = String(host.state.connectionId?.get?.() || "local").trim();
+  const attention = attentionMap[botSelectionKey(owner)] || attentionMap[botRosterKey(owner)] || attentionMap[`${owner?.connectionId || activeConnectionId}::${owner?.name || "default"}`] || null;
+  const chatBusy = Boolean(turnBusy && focusedOwner && isActiveRosterBot(owner, focusedOwner));
+  const live = useBotLiveStatus(owner);
+  const chatWorking = live.kind === "working" || live.kind === "stalled";
+  const runs = deriveBotRuns({
+    attention,
+    bot: owner,
+    chatBusy,
+    chatWorking,
+    groupActivity,
+    jobs,
+    meta: owner ? botRosterMeta(owner, allMeta) : null,
+    rooms
+  });
+  const stoppable = (run) => run.status === "running" && (run.kind === "chat" || run.kind === "relay");
+  const retryable = (run) => run.kind === "relay" && (run.status === "attention" || run.status === "failed");
+  const stopRun = () => {
+    void stopBotTurn(owner).then((result) => {
+      if (result === "failed") {
+        host.notifyError?.(new Error("session.interrupt rejected"), botsText().roster.stopRunFailed);
+      }
+    });
+  };
+  const retryOutbox = () => {
+    retryBotDeliveries();
+  };
+  const open = (run) => {
+    if (run.kind === "group" && run.group) {
+      openGroupChat(run.group);
+    } else if (run.kind === "routine" && run.jobId) {
+      onOpenRoutine(run.jobId);
+    } else {
+      void openRosterBot(owner);
+    }
+  };
+  const replay = async (run) => {
+    const target = run.replay;
+    if (!target) {
+      return;
+    }
+    let route = null;
+    try {
+      route = botConnectionRoute(owner);
+    } catch {
+      route = null;
+    }
+    let sessionId = target.sessionId ?? null;
+    if (!sessionId && run.jobId && typeof host.listCronJobRuns === "function") {
+      try {
+        const runs2 = await host.listCronJobRuns(route, {
+          jobId: run.jobId,
+          limit: 50,
+          profile: owner.name
+        });
+        sessionId = pickCronRunSessionId(runs2, run.at);
+      } catch {
+        sessionId = null;
+      }
+    }
+    if (!sessionId) {
+      open(run);
+      return;
+    }
+    if (typeof armTranscriptReplayJump === "function") {
+      armTranscriptReplayJump(sessionId, run.at);
+    }
+    void host.openSession(sessionId, {
+      ...route ? { route } : {},
+      profile: owner.name,
+      // A run session opens beside the canonical chat, never in its place.
+      intent: "tab"
+    });
+  };
+  return { open, replay, retryable, retryOutbox, runs, stopRun, stoppable };
+}
+var timeFormat = new Intl.DateTimeFormat(void 0, { hour: "numeric", minute: "2-digit" });
+var dayFormat = new Intl.DateTimeFormat(void 0, { day: "numeric", month: "short" });
+function BotTaskLog({ jobs, onOpenRoutine, owner }) {
+  const b = useBots();
+  const { open, replay, retryable, retryOutbox, runs, stopRun, stoppable } = useBotRunsFeed(owner, jobs, onOpenRoutine);
+  const days = taskLogGroups(runs);
+  if (!days.length) {
+    return /* @__PURE__ */ jsx54("div", { className: "px-3 pb-2 text-xs text-(--ui-text-quaternary)", children: b.runs.empty });
+  }
+  return /* @__PURE__ */ jsx54("div", { className: "px-3 pb-2", children: days.map((day) => /* @__PURE__ */ jsxs50("div", { children: [
+    /* @__PURE__ */ jsx54("div", { className: "pt-2 pb-1 ui-section-label", children: day.label === "today" ? b.rail.today : day.label === "yesterday" ? b.rail.yesterday : dayFormat.format(day.at) }),
+    /* @__PURE__ */ jsx54("div", { className: "grid gap-0.5", children: day.runs.map((run) => {
+      const kindLabel = b.runs[`kind${run.kind[0].toUpperCase()}${run.kind.slice(1)}`];
+      const statusLabel2 = b.runs[run.status];
+      const preview = taskLogPreview(run) || kindLabel;
+      const line = taskLogLine(run) || kindLabel;
+      const lineClass = "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)";
+      return /* @__PURE__ */ jsxs50(
+        sdk_compat_exports.RowButton,
+        {
+          "aria-label": `${preview} \u2014 ${statusLabel2}`,
+          className: (0, sdk_compat_exports.cn)(
+            "flex w-full min-w-0 max-w-full items-center gap-2 rounded-md px-1.5 py-1 text-left transition-colors",
+            "hover:bg-(--chrome-action-hover)"
+          ),
+          onClick: () => open(run),
+          children: [
+            /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: statusLabel2, children: /* @__PURE__ */ jsx54(
+              sdk_compat_exports.Codicon,
+              {
+                "aria-label": statusLabel2,
+                className: (0, sdk_compat_exports.cn)("shrink-0 text-[0.6875rem]", runStatusClass(run.status)),
+                name: runStatusGlyph(run.status),
+                spinning: run.status === "running"
+              }
+            ) }),
+            /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: kindLabel, children: /* @__PURE__ */ jsx54(
+              sdk_compat_exports.Codicon,
+              {
+                "aria-label": kindLabel,
+                className: "shrink-0 text-[0.7rem] text-(--ui-text-quaternary)",
+                name: RUN_KIND_GLYPHS[run.kind]
+              }
+            ) }),
+            preview === line ? /* @__PURE__ */ jsx54("span", { className: lineClass, children: line }) : /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: preview, children: /* @__PURE__ */ jsx54("span", { className: lineClass, children: line }) }),
+            run.replay ? /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: b.runs.replay, children: /* @__PURE__ */ jsx54(
+              "span",
+              {
+                "aria-label": b.runs.replay,
+                className: "flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
+                onClick: (event) => {
+                  event.stopPropagation();
+                  void replay(run);
+                },
+                role: "button",
+                children: /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "history" })
+              }
+            ) }) : null,
+            stoppable(run) ? /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: b.roster.stopRun, children: /* @__PURE__ */ jsx54(
+              "span",
+              {
+                "aria-label": b.roster.stopRun,
+                className: "flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-destructive",
+                onClick: (event) => {
+                  event.stopPropagation();
+                  stopRun();
+                },
+                role: "button",
+                children: /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "debug-stop" })
+              }
+            ) }) : null,
+            retryable(run) ? /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: b.roster.retryDeliveries, children: /* @__PURE__ */ jsx54(
+              "span",
+              {
+                "aria-label": b.roster.retryDeliveries,
+                className: "flex shrink-0 cursor-pointer items-center text-[0.6875rem] text-(--ui-accent)",
+                onClick: (event) => {
+                  event.stopPropagation();
+                  retryOutbox();
+                },
+                role: "button",
+                children: /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "refresh" })
+              }
+            ) }) : null,
+            /* @__PURE__ */ jsx54("span", { className: "shrink-0 text-[0.65rem] tabular-nums text-(--ui-text-quaternary)", children: timeFormat.format(run.at) })
+          ]
+        },
+        run.id
+      );
+    }) })
+  ] }, day.at)) });
+}
+
+// src/bot-topic-project-menu.tsx
+init_sdk_compat();
+init_data();
+init_i18n();
+import { jsx as jsx55, jsxs as jsxs51 } from "react/jsx-runtime";
+var EMPTY2 = (0, sdk_compat_exports.atom)([]);
+function BotTopicProjectMenu({ bot }) {
+  const b = useBots();
+  const projects = (0, sdk_compat_exports.useValue)(host.state?.projects ?? EMPTY2) || [];
+  if (bot.remoteSource || !projects.length) {
+    return null;
+  }
+  return /* @__PURE__ */ jsxs51(sdk_compat_exports.DropdownMenu, { children: [
+    /* @__PURE__ */ jsx55(sdk_compat_exports.Tip, { label: b.bot.newTopicInProject, children: /* @__PURE__ */ jsx55(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx55(sdk_compat_exports.Button, { "aria-label": b.bot.newTopicInProject, size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "folder" }) }) }) }),
+    /* @__PURE__ */ jsx55(sdk_compat_exports.DropdownMenuContent, { align: "start", children: projects.map((project) => /* @__PURE__ */ jsxs51(sdk_compat_exports.DropdownMenuItem, { onSelect: () => newBotChat(bot, { cwd: project.cwd }), children: [
+      /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "folder" }),
+      project.label
+    ] }, project.id)) })
+  ] });
+}
+
+// src/context-panel.tsx
+init_sdk_compat();
+import { useCallback as useCallback5, useEffect as useEffect25, useRef as useRef15, useState as useState36 } from "react";
 
 // src/context-panel-model.ts
 var num = (value) => typeof value === "number" && Number.isFinite(value) ? value : 0;
@@ -25202,16 +28235,16 @@ function buildTrace(messages) {
 
 // src/context-panel.tsx
 init_routing();
-import { Fragment as Fragment10, jsx as jsx46, jsxs as jsxs44 } from "react/jsx-runtime";
+import { Fragment as Fragment12, jsx as jsx56, jsxs as jsxs52 } from "react/jsx-runtime";
 var TONE_FILL = { calm: "bg-(--ui-accent)", full: "hbp-bg-danger", warm: "hbp-bg-warn" };
 function ContextGauge({ reading, text: text3 }) {
   const tone = contextTone(reading?.percent ?? 0);
-  return /* @__PURE__ */ jsxs44("div", { "data-testid": "rail-context-gauge", "data-tone": reading ? tone : "none", children: [
-    /* @__PURE__ */ jsxs44("div", { className: "flex min-w-0 items-baseline gap-2 text-xs", children: [
-      /* @__PURE__ */ jsx46("span", { className: "truncate ui-section-label", children: text3.title }),
-      /* @__PURE__ */ jsx46("span", { className: "ml-auto shrink-0 tabular-nums text-(--ui-text-tertiary)", "data-testid": "rail-context-reading", children: reading ? text3.reading(reading.percent, shortTokens(reading.used), shortTokens(reading.max)) : text3.waiting })
+  return /* @__PURE__ */ jsxs52("div", { "data-testid": "rail-context-gauge", "data-tone": reading ? tone : "none", children: [
+    /* @__PURE__ */ jsxs52("div", { className: "flex min-w-0 items-baseline gap-2 text-xs", children: [
+      /* @__PURE__ */ jsx56("span", { className: "truncate ui-section-label", children: text3.title }),
+      /* @__PURE__ */ jsx56("span", { className: "ml-auto shrink-0 tabular-nums text-(--ui-text-tertiary)", "data-testid": "rail-context-reading", children: reading ? text3.reading(reading.percent, shortTokens(reading.used), shortTokens(reading.max)) : text3.waiting })
     ] }),
-    /* @__PURE__ */ jsx46(
+    /* @__PURE__ */ jsx56(
       "div",
       {
         "aria-label": text3.meterLabel(reading?.percent ?? 0),
@@ -25220,7 +28253,7 @@ function ContextGauge({ reading, text: text3 }) {
         "aria-valuenow": reading?.percent ?? 0,
         className: "mt-1.5 h-1.5 overflow-hidden rounded-full bg-(--ui-bg-tertiary)",
         role: "meter",
-        children: /* @__PURE__ */ jsx46(
+        children: /* @__PURE__ */ jsx56(
           "div",
           {
             className: (0, sdk_compat_exports.cn)(
@@ -25238,15 +28271,15 @@ function GaugeNotes({ reading, text: text3 }) {
   if (!reading) {
     return null;
   }
-  return /* @__PURE__ */ jsxs44(Fragment10, { children: [
-    contextTone(reading.percent) !== "calm" ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text3.nearlyFullHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter hbp-fg-warn", children: text3.nearlyFull }) }) : null,
-    reading.compressions > 0 ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text3.compactedHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter", children: text3.compacted(reading.compressions) }) }) : null,
-    reading.estimated ? /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text3.estimatedHint, children: /* @__PURE__ */ jsx46("span", { className: "hbp-enter", children: text3.estimated }) }) : null
+  return /* @__PURE__ */ jsxs52(Fragment12, { children: [
+    contextTone(reading.percent) !== "calm" ? /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: text3.nearlyFullHint, children: /* @__PURE__ */ jsx56("span", { className: "hbp-enter hbp-fg-warn", children: text3.nearlyFull }) }) : null,
+    reading.compressions > 0 ? /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: text3.compactedHint, children: /* @__PURE__ */ jsx56("span", { className: "hbp-enter", children: text3.compacted(reading.compressions) }) }) : null,
+    reading.estimated ? /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: text3.estimatedHint, children: /* @__PURE__ */ jsx56("span", { className: "hbp-enter", children: text3.estimated }) }) : null
   ] });
 }
 function TurnRow({ live, open, onToggle, text: text3, turn }) {
-  return /* @__PURE__ */ jsxs44("li", { "data-testid": "rail-trace-turn", children: [
-    /* @__PURE__ */ jsxs44(
+  return /* @__PURE__ */ jsxs52("li", { "data-testid": "rail-trace-turn", children: [
+    /* @__PURE__ */ jsxs52(
       "button",
       {
         "aria-expanded": open,
@@ -25254,7 +28287,7 @@ function TurnRow({ live, open, onToggle, text: text3, turn }) {
         onClick: onToggle,
         type: "button",
         children: [
-          /* @__PURE__ */ jsx46(
+          /* @__PURE__ */ jsx56(
             sdk_compat_exports.Codicon,
             {
               className: (0, sdk_compat_exports.cn)("shrink-0 text-(--ui-text-quaternary) transition-transform", open && "rotate-90"),
@@ -25262,19 +28295,19 @@ function TurnRow({ live, open, onToggle, text: text3, turn }) {
               size: "0.75rem"
             }
           ),
-          /* @__PURE__ */ jsx46("span", { className: "shrink-0 font-medium text-(--ui-text-secondary)", children: text3.turn(turn.index) }),
-          /* @__PURE__ */ jsx46("span", { className: "min-w-0 flex-1 truncate text-(--ui-text-tertiary)", children: turn.prompt }),
-          /* @__PURE__ */ jsx46("span", { className: "shrink-0 tabular-nums text-(--ui-text-quaternary)", children: [text3.stepCount(turn.steps.length), turn.span === void 0 ? "" : shortDuration(turn.span)].filter(Boolean).join(" \xB7 ") })
+          /* @__PURE__ */ jsx56("span", { className: "shrink-0 font-medium text-(--ui-text-secondary)", children: text3.turn(turn.index) }),
+          /* @__PURE__ */ jsx56("span", { className: "min-w-0 flex-1 truncate text-(--ui-text-tertiary)", children: turn.prompt }),
+          /* @__PURE__ */ jsx56("span", { className: "shrink-0 tabular-nums text-(--ui-text-quaternary)", children: [text3.stepCount(turn.steps.length), turn.span === void 0 ? "" : shortDuration(turn.span)].filter(Boolean).join(" \xB7 ") })
         ]
       }
     ),
-    open ? /* @__PURE__ */ jsxs44("div", { className: "hbp-enter mb-1 ml-3 border-l border-(--ui-stroke-secondary) pl-2.5", children: [
-      /* @__PURE__ */ jsxs44("ol", { className: "flex flex-col", children: [
-        turn.steps.map((step) => /* @__PURE__ */ jsxs44("li", { className: "flex min-w-0 items-center gap-1.5 py-0.5 text-xs", "data-testid": "rail-trace-step", children: [
-          /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { className: "shrink-0 text-(--ui-text-tertiary)", name: step.icon, size: "0.8rem" }),
-          /* @__PURE__ */ jsx46("span", { className: "shrink-0 text-(--ui-text-secondary)", children: step.name }),
-          /* @__PURE__ */ jsx46("span", { className: "min-w-0 flex-1 truncate font-mono text-(--ui-text-quaternary)", children: step.context }),
-          step.took === void 0 ? null : /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: text3.tookHint, children: /* @__PURE__ */ jsx46(
+    open ? /* @__PURE__ */ jsxs52("div", { className: "hbp-enter mb-1 ml-3 border-l border-(--ui-stroke-secondary) pl-2.5", children: [
+      /* @__PURE__ */ jsxs52("ol", { className: "flex flex-col", children: [
+        turn.steps.map((step) => /* @__PURE__ */ jsxs52("li", { className: "flex min-w-0 items-center gap-1.5 py-0.5 text-xs", "data-testid": "rail-trace-step", children: [
+          /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { className: "shrink-0 text-(--ui-text-tertiary)", name: step.icon, size: "0.8rem" }),
+          /* @__PURE__ */ jsx56("span", { className: "shrink-0 text-(--ui-text-secondary)", children: step.name }),
+          /* @__PURE__ */ jsx56("span", { className: "min-w-0 flex-1 truncate font-mono text-(--ui-text-quaternary)", children: step.context }),
+          step.took === void 0 ? null : /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: text3.tookHint, children: /* @__PURE__ */ jsx56(
             "span",
             {
               className: (0, sdk_compat_exports.cn)(
@@ -25285,8 +28318,8 @@ function TurnRow({ live, open, onToggle, text: text3, turn }) {
             }
           ) })
         ] }, step.id)),
-        /* @__PURE__ */ jsxs44("li", { className: "flex items-center gap-1.5 py-0.5 text-xs text-(--ui-text-tertiary)", children: [
-          live ? /* @__PURE__ */ jsx46(sdk_compat_exports.GlyphSpinner, { className: "shrink-0 text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx46(
+        /* @__PURE__ */ jsxs52("li", { className: "flex items-center gap-1.5 py-0.5 text-xs text-(--ui-text-tertiary)", children: [
+          live ? /* @__PURE__ */ jsx56(sdk_compat_exports.GlyphSpinner, { className: "shrink-0 text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx56(
             sdk_compat_exports.Codicon,
             {
               className: turn.answered ? "hbp-fg-ok" : "text-(--ui-text-quaternary)",
@@ -25294,26 +28327,26 @@ function TurnRow({ live, open, onToggle, text: text3, turn }) {
               size: "0.8rem"
             }
           ),
-          /* @__PURE__ */ jsx46("span", { children: live ? text3.working : turn.answered ? text3.answered : text3.noAnswer })
+          /* @__PURE__ */ jsx56("span", { children: live ? text3.working : turn.answered ? text3.answered : text3.noAnswer })
         ] })
       ] }),
-      turn.steps.length > 1 && turn.slowest?.took !== void 0 ? /* @__PURE__ */ jsx46("p", { className: "py-0.5 text-xs text-(--ui-text-quaternary)", children: text3.slowest(turn.slowest.name, shortDuration(turn.slowest.took)) }) : null
+      turn.steps.length > 1 && turn.slowest?.took !== void 0 ? /* @__PURE__ */ jsx56("p", { className: "py-0.5 text-xs text-(--ui-text-quaternary)", children: text3.slowest(turn.slowest.name, shortDuration(turn.slowest.took)) }) : null
     ] }) : null
   ] });
 }
 function TraceList({ busy, text: text3, turns }) {
   const newest = turns.at(-1)?.id;
-  const [folded, setFolded] = useState28({});
+  const [folded, setFolded] = useState36({});
   const shown = turns.slice(-30).reverse();
   const steps = turns.reduce((sum, turn) => sum + turn.steps.length, 0);
   if (!turns.length) {
-    return /* @__PURE__ */ jsx46("p", { className: "px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: text3.none });
+    return /* @__PURE__ */ jsx56("p", { className: "px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: text3.none });
   }
-  return /* @__PURE__ */ jsxs44("div", { "data-testid": "rail-trace-list", children: [
-    /* @__PURE__ */ jsx46("p", { className: "px-1.5 pb-1 text-xs text-(--ui-text-quaternary)", children: text3.overview(turns.length, steps) }),
-    /* @__PURE__ */ jsx46("ol", { className: "flex flex-col", children: shown.map((turn) => {
+  return /* @__PURE__ */ jsxs52("div", { "data-testid": "rail-trace-list", children: [
+    /* @__PURE__ */ jsx56("p", { className: "px-1.5 pb-1 text-xs text-(--ui-text-quaternary)", children: text3.overview(turns.length, steps) }),
+    /* @__PURE__ */ jsx56("ol", { className: "flex flex-col", children: shown.map((turn) => {
       const open = folded[turn.id] ?? turn.id === newest;
-      return /* @__PURE__ */ jsx46(
+      return /* @__PURE__ */ jsx56(
         TurnRow,
         {
           live: busy && turn.id === newest,
@@ -25329,9 +28362,9 @@ function TraceList({ busy, text: text3, turns }) {
 }
 var STEP_EVENTS = ["tool.complete", "message.complete"];
 function useTrace(bot, sessionId, enabled, busy) {
-  const [load2, setLoad] = useState28({ kind: "idle" });
-  const seq = useRef8(0);
-  const fetchTrace = useCallback4(
+  const [load2, setLoad] = useState36({ kind: "idle" });
+  const seq = useRef15(0);
+  const fetchTrace = useCallback5(
     async (quiet) => {
       const mine = ++seq.current;
       if (!quiet) {
@@ -25350,7 +28383,7 @@ function useTrace(bot, sessionId, enabled, busy) {
     },
     [bot, sessionId]
   );
-  useEffect14(() => {
+  useEffect25(() => {
     if (enabled && sessionId) {
       void fetchTrace(false);
     }
@@ -25358,14 +28391,14 @@ function useTrace(bot, sessionId, enabled, busy) {
       seq.current++;
     };
   }, [enabled, fetchTrace, sessionId]);
-  const wasBusy = useRef8(busy);
-  useEffect14(() => {
+  const wasBusy = useRef15(busy);
+  useEffect25(() => {
     if (enabled && wasBusy.current && !busy) {
       void fetchTrace(true);
     }
     wasBusy.current = busy;
   }, [busy, enabled, fetchTrace]);
-  useEffect14(() => {
+  useEffect25(() => {
     if (!enabled || !sessionId || typeof host.onEvent !== "function") {
       return;
     }
@@ -25386,9 +28419,9 @@ function useTrace(bot, sessionId, enabled, busy) {
   return { load: load2, retry: () => void fetchTrace(false) };
 }
 function useBreakdown(bot, sessionId, busy) {
-  const [breakdown, setBreakdown] = useState28(null);
-  useEffect14(() => setBreakdown(null), [sessionId]);
-  useEffect14(() => {
+  const [breakdown, setBreakdown] = useState36(null);
+  useEffect25(() => setBreakdown(null), [sessionId]);
+  useEffect25(() => {
     let live = true;
     if (!sessionId || busy) {
       return;
@@ -25406,17 +28439,17 @@ function ContextPanel({ bot }) {
   const usage = (0, sdk_compat_exports.useValue)(host.state.focusedUsage);
   const busy = (0, sdk_compat_exports.useValue)(host.state.busy) === true;
   const breakdown = useBreakdown(bot, sessionId, busy);
-  const [open, setOpen] = useState28(false);
+  const [open, setOpen] = useState36(false);
   const { load: load2, retry } = useTrace(bot, sessionId, open, busy);
   const reading = contextReading(breakdown, usage);
   if (!sessionId) {
     return null;
   }
-  return /* @__PURE__ */ jsxs44("section", { className: "px-4 pb-3", "data-testid": "rail-context", children: [
-    /* @__PURE__ */ jsx46(ContextGauge, { reading, text: text3 }),
-    /* @__PURE__ */ jsxs44("div", { className: "mt-1 flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-(--ui-text-quaternary)", children: [
-      /* @__PURE__ */ jsx46(GaugeNotes, { reading, text: text3 }),
-      /* @__PURE__ */ jsx46(sdk_compat_exports.Tip, { label: open ? text3.hideSteps : text3.showSteps, children: /* @__PURE__ */ jsxs44(
+  return /* @__PURE__ */ jsxs52("section", { className: "px-4 pb-3", "data-testid": "rail-context", children: [
+    /* @__PURE__ */ jsx56(ContextGauge, { reading, text: text3 }),
+    /* @__PURE__ */ jsxs52("div", { className: "mt-1 flex min-w-0 flex-wrap items-center gap-x-2 text-xs text-(--ui-text-quaternary)", children: [
+      /* @__PURE__ */ jsx56(GaugeNotes, { reading, text: text3 }),
+      /* @__PURE__ */ jsx56(sdk_compat_exports.Tip, { label: open ? text3.hideSteps : text3.showSteps, children: /* @__PURE__ */ jsxs52(
         sdk_compat_exports.Button,
         {
           "aria-controls": "rail-trace",
@@ -25427,9 +28460,9 @@ function ContextPanel({ bot }) {
           size: "xs",
           variant: "ghost",
           children: [
-            /* @__PURE__ */ jsx46(sdk_compat_exports.Codicon, { name: "list-tree" }),
+            /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: "list-tree" }),
             text3.steps,
-            /* @__PURE__ */ jsx46(
+            /* @__PURE__ */ jsx56(
               sdk_compat_exports.Codicon,
               {
                 className: (0, sdk_compat_exports.cn)("transition-transform", open && "rotate-180"),
@@ -25440,7 +28473,7 @@ function ContextPanel({ bot }) {
         }
       ) })
     ] }),
-    /* @__PURE__ */ jsx46(
+    /* @__PURE__ */ jsx56(
       "div",
       {
         "aria-hidden": !open,
@@ -25448,11 +28481,11 @@ function ContextPanel({ bot }) {
         "data-state": open ? "open" : "closed",
         id: "rail-trace",
         inert: !open,
-        children: /* @__PURE__ */ jsx46("div", { className: "min-h-0 overflow-hidden", children: /* @__PURE__ */ jsx46("div", { className: "mt-1 max-h-80 overflow-y-auto overscroll-contain rounded-md bg-(--ui-inline-code-background) p-1.5", children: load2.kind === "ready" ? /* @__PURE__ */ jsx46(TraceList, { busy, text: text3, turns: load2.turns }) : load2.kind === "error" ? /* @__PURE__ */ jsxs44("p", { className: "flex items-center gap-2 px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: [
+        children: /* @__PURE__ */ jsx56("div", { className: "min-h-0 overflow-hidden", children: /* @__PURE__ */ jsx56("div", { className: "mt-1 max-h-80 overflow-y-auto overscroll-contain rounded-md bg-(--ui-inline-code-background) p-1.5", children: load2.kind === "ready" ? /* @__PURE__ */ jsx56(TraceList, { busy, text: text3, turns: load2.turns }) : load2.kind === "error" ? /* @__PURE__ */ jsxs52("p", { className: "flex items-center gap-2 px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: [
           text3.failed,
-          /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { onClick: retry, size: "xs", variant: "ghost", children: text3.retry })
-        ] }) : /* @__PURE__ */ jsxs44("p", { className: "flex items-center gap-1.5 px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: [
-          /* @__PURE__ */ jsx46(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-accent)", spinner: "breathe" }),
+          /* @__PURE__ */ jsx56(sdk_compat_exports.Button, { onClick: retry, size: "xs", variant: "ghost", children: text3.retry })
+        ] }) : /* @__PURE__ */ jsxs52("p", { className: "flex items-center gap-1.5 px-1.5 py-1 text-xs text-(--ui-text-tertiary)", children: [
+          /* @__PURE__ */ jsx56(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-accent)", spinner: "breathe" }),
           text3.loading
         ] }) }) })
       }
@@ -25465,7 +28498,7 @@ init_data();
 
 // src/edit-profile-dialog.tsx
 init_sdk_compat();
-import { useState as useState32 } from "react";
+import { useState as useState40 } from "react";
 init_data();
 
 // src/edit-profile-look.ts
@@ -25501,14 +28534,14 @@ init_labels();
 init_sdk_compat();
 init_sdk_compat();
 init_data();
-import { useState as useState31 } from "react";
+import { useState as useState39 } from "react";
 init_i18n();
 
 // src/mcp-setup.tsx
 init_sdk_compat();
 init_i18n();
-import { useEffect as useEffect15, useRef as useRef9, useState as useState29 } from "react";
-import { jsx as jsx47, jsxs as jsxs45 } from "react/jsx-runtime";
+import { useEffect as useEffect26, useRef as useRef16, useState as useState37 } from "react";
+import { jsx as jsx57, jsxs as jsxs53 } from "react/jsx-runtime";
 async function mcpRpc(method, params, route) {
   try {
     const res = await (route && typeof host.requestProfile === "function" ? host.requestProfile(route, method, params) : host.request(method, params));
@@ -25544,12 +28577,12 @@ async function mcpSetupSupported(route) {
 function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
-  const [phase, setPhase] = useState29("idle");
-  const [supported, setSupported] = useState29(null);
-  const [keyValues, setKeyValues] = useState29({});
-  const [message, setMessage] = useState29("");
-  const oauthEpoch = useRef9(0);
-  const createdProfileRef = useRef9(null);
+  const [phase, setPhase] = useState37("idle");
+  const [supported, setSupported] = useState37(null);
+  const [keyValues, setKeyValues] = useState37({});
+  const [message, setMessage] = useState37("");
+  const oauthEpoch = useRef16(0);
+  const createdProfileRef = useRef16(null);
   const resolveProfile = async () => {
     const known = profile || createdProfileRef.current;
     if (known) {
@@ -25564,7 +28597,7 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
     }
     return null;
   };
-  useEffect15(() => {
+  useEffect26(() => {
     const epoch = oauthEpoch;
     let alive = true;
     mcpSetupSupported(route).then((ok) => {
@@ -25691,14 +28724,14 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
     }
   };
   if (supported === false) {
-    return /* @__PURE__ */ jsx47("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.needsSetup(requires.join(", ")) });
+    return /* @__PURE__ */ jsx57("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.needsSetup(requires.join(", ")) });
   }
   if (phase === "done") {
-    return /* @__PURE__ */ jsx47("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-success)", children: b.tools.setUpDone });
+    return /* @__PURE__ */ jsx57("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-success)", children: b.tools.setUpDone });
   }
   if (phase === "keys") {
-    return /* @__PURE__ */ jsxs45("div", { className: "mt-1 grid gap-1", children: [
-      requires.map((k) => /* @__PURE__ */ jsx47(
+    return /* @__PURE__ */ jsxs53("div", { className: "mt-1 grid gap-1", children: [
+      requires.map((k) => /* @__PURE__ */ jsx57(
         sdk_compat_exports.Input,
         {
           className: "h-6 text-[0.7rem]",
@@ -25712,25 +28745,25 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
         },
         k
       )),
-      /* @__PURE__ */ jsxs45("div", { className: "flex gap-1", children: [
-        /* @__PURE__ */ jsx47(sdk_compat_exports.Button, { onClick: () => void submitKeys(), size: "xs", variant: "secondary", children: b.tools.saveTest }),
-        /* @__PURE__ */ jsx47(sdk_compat_exports.Button, { onClick: () => setPhase("idle"), size: "xs", variant: "ghost", children: t2.common.cancel })
+      /* @__PURE__ */ jsxs53("div", { className: "flex gap-1", children: [
+        /* @__PURE__ */ jsx57(sdk_compat_exports.Button, { onClick: () => void submitKeys(), size: "xs", variant: "secondary", children: b.tools.saveTest }),
+        /* @__PURE__ */ jsx57(sdk_compat_exports.Button, { onClick: () => setPhase("idle"), size: "xs", variant: "ghost", children: t2.common.cancel })
       ] })
     ] });
   }
   if (phase === "oauth") {
-    return /* @__PURE__ */ jsx47("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: message || b.tools.authorizing });
+    return /* @__PURE__ */ jsx57("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: message || b.tools.authorizing });
   }
   if (phase === "busy") {
-    return /* @__PURE__ */ jsx47("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.working });
+    return /* @__PURE__ */ jsx57("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.working });
   }
   if (phase === "error") {
-    return /* @__PURE__ */ jsxs45("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-danger,#f87171)", children: [
+    return /* @__PURE__ */ jsxs53("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-danger,#f87171)", children: [
       (message || b.tools.setupFailed) + " ",
-      /* @__PURE__ */ jsx47(sdk_compat_exports.Button, { className: "underline", onClick: () => setPhase("idle"), size: "inline", variant: "link", children: t2.common.retry })
+      /* @__PURE__ */ jsx57(sdk_compat_exports.Button, { className: "underline", onClick: () => setPhase("idle"), size: "inline", variant: "link", children: t2.common.retry })
     ] });
   }
-  return /* @__PURE__ */ jsx47(
+  return /* @__PURE__ */ jsx57(
     sdk_compat_exports.Button,
     {
       className: "ml-1.5 text-[0.65rem] text-(--ui-accent) underline",
@@ -25749,8 +28782,8 @@ init_routing();
 init_sdk_compat();
 init_i18n();
 init_routing();
-import { useEffect as useEffect16, useRef as useRef10, useState as useState30 } from "react";
-import { jsx as jsx48, jsxs as jsxs46 } from "react/jsx-runtime";
+import { useEffect as useEffect27, useRef as useRef17, useState as useState38 } from "react";
+import { jsx as jsx58, jsxs as jsxs54 } from "react/jsx-runtime";
 var HUB_ORIGIN = "https://hermes-agent.nousresearch.com";
 var FALLBACK_HUB_ORIGIN = "https://nousresearch.github.io";
 var HUB_PICKER_URL = HUB_ORIGIN + "/docs/skills?embed=picker";
@@ -25763,16 +28796,16 @@ function HubSkillsSection({ bot, onInstalled }) {
   const b = useBots();
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const h = t2.skills.hub;
-  const [query, setQuery] = useState30("");
-  const [results, setResults] = useState30(null);
-  const [searching, setSearching] = useState30(false);
-  const [installing, setInstalling] = useState30(null);
-  const [installed, setInstalled] = useState30({});
-  const [browseHub, setBrowseHub] = useState30(false);
-  const [hubPickerUrl, setHubPickerUrl] = useState30(HUB_PICKER_URL);
-  const installRef = useRef10(null);
-  const frameRef = useRef10(null);
-  useEffect16(() => {
+  const [query, setQuery] = useState38("");
+  const [results, setResults] = useState38(null);
+  const [searching, setSearching] = useState38(false);
+  const [installing, setInstalling] = useState38(null);
+  const [installed, setInstalled] = useState38({});
+  const [browseHub, setBrowseHub] = useState38(false);
+  const [hubPickerUrl, setHubPickerUrl] = useState38(HUB_PICKER_URL);
+  const installRef = useRef17(null);
+  const frameRef = useRef17(null);
+  useEffect27(() => {
     if (!browseHub) {
       return void 0;
     }
@@ -25793,7 +28826,7 @@ function HubSkillsSection({ bot, onInstalled }) {
       mounted = false;
     };
   }, [browseHub]);
-  useEffect16(() => {
+  useEffect27(() => {
     if (!browseHub) {
       return void 0;
     }
@@ -25869,10 +28902,10 @@ function HubSkillsSection({ bot, onInstalled }) {
     }
   };
   installRef.current = install;
-  return /* @__PURE__ */ jsxs46("div", { className: "grid gap-1.5 border-t border-(--ui-stroke-secondary) pt-2", children: [
-    /* @__PURE__ */ jsxs46("div", { className: "flex items-baseline justify-between gap-2", children: [
-      /* @__PURE__ */ jsx48("div", { className: "text-[0.7rem] font-medium text-(--ui-text-secondary)", children: b.tools.skillsHub }),
-      /* @__PURE__ */ jsx48(
+  return /* @__PURE__ */ jsxs54("div", { className: "grid gap-1.5 border-t border-(--ui-stroke-secondary) pt-2", children: [
+    /* @__PURE__ */ jsxs54("div", { className: "flex items-baseline justify-between gap-2", children: [
+      /* @__PURE__ */ jsx58("div", { className: "text-[0.7rem] font-medium text-(--ui-text-secondary)", children: b.tools.skillsHub }),
+      /* @__PURE__ */ jsx58(
         sdk_compat_exports.Button,
         {
           className: "text-[0.65rem] text-(--ui-text-quaternary) hover:text-(--ui-text-secondary)",
@@ -25883,8 +28916,8 @@ function HubSkillsSection({ bot, onInstalled }) {
         }
       )
     ] }),
-    browseHub ? /* @__PURE__ */ jsxs46("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx48(
+    browseHub ? /* @__PURE__ */ jsxs54("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx58(
         "div",
         {
           className: "relative w-full max-w-full resize overflow-hidden border border-(--ui-stroke-secondary)",
@@ -25894,7 +28927,7 @@ function HubSkillsSection({ bot, onInstalled }) {
             minWidth: 320,
             borderRadius: 8
           },
-          children: /* @__PURE__ */ jsx48(
+          children: /* @__PURE__ */ jsx58(
             "iframe",
             {
               allow: "clipboard-write",
@@ -25914,10 +28947,10 @@ function HubSkillsSection({ bot, onInstalled }) {
           )
         }
       ),
-      /* @__PURE__ */ jsx48("div", { className: "px-1 text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: installing ? h.installStarted(installing) : `${h.pickerHint} ${b.tools.resizeHint}` })
+      /* @__PURE__ */ jsx58("div", { className: "px-1 text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: installing ? h.installStarted(installing) : `${h.pickerHint} ${b.tools.resizeHint}` })
     ] }) : null,
-    /* @__PURE__ */ jsxs46("div", { className: "flex gap-1.5", children: [
-      /* @__PURE__ */ jsx48(
+    /* @__PURE__ */ jsxs54("div", { className: "flex gap-1.5", children: [
+      /* @__PURE__ */ jsx58(
         sdk_compat_exports.Input,
         {
           className: "h-7 flex-1 text-xs",
@@ -25935,25 +28968,25 @@ function HubSkillsSection({ bot, onInstalled }) {
           value: query
         }
       ),
-      /* @__PURE__ */ jsx48(sdk_compat_exports.Button, { disabled: searching || !query.trim(), onClick: () => void search(), size: "sm", variant: "secondary", children: searching ? h.searching : h.search })
+      /* @__PURE__ */ jsx58(sdk_compat_exports.Button, { disabled: searching || !query.trim(), onClick: () => void search(), size: "sm", variant: "secondary", children: searching ? h.searching : h.search })
     ] }),
-    searching ? /* @__PURE__ */ jsx48("div", { className: "px-1 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.searchHint }) : null,
-    results === null ? null : results.length === 0 ? /* @__PURE__ */ jsx48("div", { className: "px-1 py-1.5 text-[0.7rem] text-(--ui-text-quaternary)", children: h.noResults }) : /* @__PURE__ */ jsx48(
+    searching ? /* @__PURE__ */ jsx58("div", { className: "px-1 text-[0.65rem] text-(--ui-text-quaternary)", children: b.tools.searchHint }) : null,
+    results === null ? null : results.length === 0 ? /* @__PURE__ */ jsx58("div", { className: "px-1 py-1.5 text-[0.7rem] text-(--ui-text-quaternary)", children: h.noResults }) : /* @__PURE__ */ jsx58(
       "div",
       {
         className: "overflow-y-auto overscroll-contain",
         style: {
           maxHeight: 150
         },
-        children: /* @__PURE__ */ jsx48("div", { className: "grid gap-1", children: results.map((r) => /* @__PURE__ */ jsxs46("div", { className: "flex items-center gap-2 text-xs", children: [
-          /* @__PURE__ */ jsxs46("div", { className: "min-w-0 flex-1", children: [
-            /* @__PURE__ */ jsx48("div", { className: "truncate font-medium", children: r.name }),
-            r.description ? /* @__PURE__ */ jsx48("div", { className: "truncate text-[0.65rem] text-(--ui-text-quaternary)", children: r.description }) : null
+        children: /* @__PURE__ */ jsx58("div", { className: "grid gap-1", children: results.map((r) => /* @__PURE__ */ jsxs54("div", { className: "flex items-center gap-2 text-xs", children: [
+          /* @__PURE__ */ jsxs54("div", { className: "min-w-0 flex-1", children: [
+            /* @__PURE__ */ jsx58("div", { className: "truncate font-medium", children: r.name }),
+            r.description ? /* @__PURE__ */ jsx58("div", { className: "truncate text-[0.65rem] text-(--ui-text-quaternary)", children: r.description }) : null
           ] }),
-          installed[r.name] ? /* @__PURE__ */ jsxs46("span", { className: "flex shrink-0 items-center gap-0.5 text-[0.65rem] text-(--ui-text-tertiary)", children: [
-            /* @__PURE__ */ jsx48(sdk_compat_exports.Codicon, { name: "check", size: "0.65rem" }),
+          installed[r.name] ? /* @__PURE__ */ jsxs54("span", { className: "flex shrink-0 items-center gap-0.5 text-[0.65rem] text-(--ui-text-tertiary)", children: [
+            /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "check", size: "0.65rem" }),
             h.installed
-          ] }) : /* @__PURE__ */ jsx48(
+          ] }) : /* @__PURE__ */ jsx58(
             sdk_compat_exports.Button,
             {
               "aria-label": b.tools.installHint(r.name),
@@ -25972,12 +29005,12 @@ function HubSkillsSection({ bot, onInstalled }) {
 }
 
 // src/profile-config.tsx
-import { jsx as jsx49, jsxs as jsxs47 } from "react/jsx-runtime";
+import { jsx as jsx59, jsxs as jsxs55 } from "react/jsx-runtime";
 var { ConnectorsTab, ToolsetConfigPanel } = sdk_compat_exports;
 var CapabilitiesView2 = typeof sdk_compat_exports === "undefined" ? void 0 : sdk_compat_exports.CapabilitiesView;
 var capabilitiesViewRoutesConnections = Boolean(CapabilitiesView2 && CapabilitiesView2.supportsFixedConnection);
 function CheckList({ items, onToggle, columns = 2 }) {
-  return /* @__PURE__ */ jsx49(
+  return /* @__PURE__ */ jsx59(
     "div",
     {
       style: {
@@ -25985,15 +29018,15 @@ function CheckList({ items, onToggle, columns = 2 }) {
         gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
         gap: "2px 12px"
       },
-      children: items.map((item) => /* @__PURE__ */ jsxs47(
+      children: items.map((item) => /* @__PURE__ */ jsxs55(
         "label",
         {
           className: "flex min-w-0 cursor-pointer items-center gap-1.5 py-0.5 text-xs text-(--ui-text-secondary)",
           title: item.description || item.name,
           children: [
-            /* @__PURE__ */ jsx49(sdk_compat_exports.Checkbox, { checked: item.enabled, onCheckedChange: (value) => onToggle(item.name, Boolean(value)) }),
-            /* @__PURE__ */ jsx49("span", { className: "truncate", children: item.name }),
-            item.tool_count ? /* @__PURE__ */ jsx49("span", { className: "shrink-0 text-[0.6rem] text-(--ui-text-quaternary)", children: `${item.tool_count}` }) : null
+            /* @__PURE__ */ jsx59(sdk_compat_exports.Checkbox, { checked: item.enabled, onCheckedChange: (value) => onToggle(item.name, Boolean(value)) }),
+            /* @__PURE__ */ jsx59("span", { className: "truncate", children: item.name }),
+            item.tool_count ? /* @__PURE__ */ jsx59("span", { className: "shrink-0 text-[0.6rem] text-(--ui-text-quaternary)", children: `${item.tool_count}` }) : null
           ]
         },
         item.name
@@ -26017,9 +29050,9 @@ function capabilityCounts(res) {
 }
 function AdvancedProfileConfig({ bot, state, setState }) {
   const b = useBots();
-  const [loaded, setLoaded] = useState31(false);
-  const [unsupported, setUnsupported] = useState31(false);
-  const [skillFilter, setSkillFilter] = useState31("");
+  const [loaded, setLoaded] = useState39(false);
+  const [unsupported, setUnsupported] = useState39(false);
+  const [skillFilter, setSkillFilter] = useState39("");
   const botRoute = resolveBotConnectionRoute(bot).route;
   const backendProfile = botRoute?.targetProfile || botRoute?.profile || bot.name;
   const backendScope = botBackendProfileScope(botRoute, bot.name);
@@ -26062,10 +29095,10 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     }).catch(() => setUnsupported(true));
   }
   if (unsupported) {
-    return /* @__PURE__ */ jsx49("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.fullConfigHint });
+    return /* @__PURE__ */ jsx59("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.fullConfigHint });
   }
   if (!state.loaded) {
-    return /* @__PURE__ */ jsx49("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx49(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) });
+    return /* @__PURE__ */ jsx59("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx59(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) });
   }
   const visibleSkills = skillFilter.trim() ? state.skills.filter((s) => s.name.toLowerCase().includes(skillFilter.trim().toLowerCase())) : state.skills;
   const toggleSkill = (name, enabled) => setState((prev) => ({
@@ -26102,8 +29135,8 @@ function AdvancedProfileConfig({ bot, state, setState }) {
   const enabledToolsets = state.toolsets.filter((t2) => t2.enabled).length;
   const mcpList = state.mcp || [];
   if (CapabilitiesView2 && (!botRoute || capabilitiesViewRoutesConnections)) {
-    return /* @__PURE__ */ jsxs47("div", { className: "grid gap-4", children: [
-      /* @__PURE__ */ jsx49(
+    return /* @__PURE__ */ jsxs55("div", { className: "grid gap-4", children: [
+      /* @__PURE__ */ jsx59(
         ModelPicker,
         {
           bot,
@@ -26120,7 +29153,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
       ),
       labeled(
         b.editor.liveCapabilities,
-        /* @__PURE__ */ jsx49(ResizableFrame, { children: /* @__PURE__ */ jsx49(
+        /* @__PURE__ */ jsx59(ResizableFrame, { children: /* @__PURE__ */ jsx59(
           CapabilitiesView2,
           {
             embedded: true,
@@ -26133,7 +29166,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
       ),
       labeled(
         b.editor.editSoul,
-        /* @__PURE__ */ jsx49(
+        /* @__PURE__ */ jsx59(
           sdk_compat_exports.Textarea,
           {
             className: "min-h-28 font-mono text-xs leading-5",
@@ -26149,8 +29182,8 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ] });
   }
   if (bot?.sourceScoped && botRoute?.mode === "remote" && !capabilitiesViewRoutesConnections) {
-    return /* @__PURE__ */ jsxs47("div", { className: "grid gap-4", children: [
-      /* @__PURE__ */ jsx49(
+    return /* @__PURE__ */ jsxs55("div", { className: "grid gap-4", children: [
+      /* @__PURE__ */ jsx59(
         ModelPicker,
         {
           bot,
@@ -26165,10 +29198,10 @@ function AdvancedProfileConfig({ bot, state, setState }) {
           }
         }
       ),
-      /* @__PURE__ */ jsx49("div", { className: "rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-text-tertiary)", children: b.editor.remoteCapabilitiesHint }),
+      /* @__PURE__ */ jsx59("div", { className: "rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-text-tertiary)", children: b.editor.remoteCapabilitiesHint }),
       labeled(
         b.editor.editSoul,
-        /* @__PURE__ */ jsx49(
+        /* @__PURE__ */ jsx59(
           sdk_compat_exports.Textarea,
           {
             className: "min-h-28 font-mono text-xs leading-5",
@@ -26183,8 +29216,8 @@ function AdvancedProfileConfig({ bot, state, setState }) {
       )
     ] });
   }
-  return /* @__PURE__ */ jsxs47("div", { className: "grid gap-4", children: [
-    /* @__PURE__ */ jsx49(
+  return /* @__PURE__ */ jsxs55("div", { className: "grid gap-4", children: [
+    /* @__PURE__ */ jsx59(
       ModelPicker,
       {
         bot,
@@ -26201,8 +29234,8 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ),
     labeled(
       b.editor.skillsEnabled(enabledSkills, state.skills.length),
-      /* @__PURE__ */ jsxs47("div", { className: "grid gap-1.5 rounded-md border border-(--ui-stroke-secondary) p-2", children: [
-        /* @__PURE__ */ jsx49(
+      /* @__PURE__ */ jsxs55("div", { className: "grid gap-1.5 rounded-md border border-(--ui-stroke-secondary) p-2", children: [
+        /* @__PURE__ */ jsx59(
           sdk_compat_exports.Input,
           {
             className: "h-7 text-xs",
@@ -26211,17 +29244,17 @@ function AdvancedProfileConfig({ bot, state, setState }) {
             value: skillFilter
           }
         ),
-        /* @__PURE__ */ jsx49(
+        /* @__PURE__ */ jsx59(
           "div",
           {
             className: "overflow-y-auto overscroll-contain",
             style: {
               maxHeight: 180
             },
-            children: /* @__PURE__ */ jsx49(CheckList, { columns: 2, items: visibleSkills, onToggle: toggleSkill })
+            children: /* @__PURE__ */ jsx59(CheckList, { columns: 2, items: visibleSkills, onToggle: toggleSkill })
           }
         ),
-        /* @__PURE__ */ jsx49(
+        /* @__PURE__ */ jsx59(
           HubSkillsSection,
           {
             bot,
@@ -26243,32 +29276,32 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ),
     labeled(
       b.editor.toolsetsEnabled(enabledToolsets, state.toolsets.length),
-      /* @__PURE__ */ jsx49("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-2", children: /* @__PURE__ */ jsx49(
+      /* @__PURE__ */ jsx59("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-2", children: /* @__PURE__ */ jsx59(
         "div",
         {
           className: "overflow-y-auto overscroll-contain",
           style: {
             maxHeight: 320
           },
-          children: /* @__PURE__ */ jsx49("div", { className: "grid gap-1.5", children: state.toolsets.map((tset) => /* @__PURE__ */ jsxs47("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-2", children: [
-            /* @__PURE__ */ jsxs47("label", { className: "flex items-center gap-2 text-xs font-medium text-(--ui-text-secondary)", children: [
-              /* @__PURE__ */ jsx49(
+          children: /* @__PURE__ */ jsx59("div", { className: "grid gap-1.5", children: state.toolsets.map((tset) => /* @__PURE__ */ jsxs55("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-2", children: [
+            /* @__PURE__ */ jsxs55("label", { className: "flex items-center gap-2 text-xs font-medium text-(--ui-text-secondary)", children: [
+              /* @__PURE__ */ jsx59(
                 sdk_compat_exports.Checkbox,
                 {
                   checked: !!tset.enabled,
                   onCheckedChange: (value) => toggleToolset(tset.name, Boolean(value))
                 }
               ),
-              /* @__PURE__ */ jsx49("span", { children: tset.name })
+              /* @__PURE__ */ jsx59("span", { children: tset.name })
             ] }),
-            ToolsetConfigPanel ? /* @__PURE__ */ jsx49("div", { className: "mt-1.5 border-t border-(--ui-stroke-secondary) pt-1.5", children: /* @__PURE__ */ jsx49(ToolsetConfigPanel, { profile: backendScope, toolset: tset.name }) }) : null
+            ToolsetConfigPanel ? /* @__PURE__ */ jsx59("div", { className: "mt-1.5 border-t border-(--ui-stroke-secondary) pt-1.5", children: /* @__PURE__ */ jsx59(ToolsetConfigPanel, { profile: backendScope, toolset: tset.name }) }) : null
           ] }, tset.name)) })
         }
       ) })
     ),
     labeled(
       b.editor.mcpServers,
-      /* @__PURE__ */ jsx49("div", { className: "overflow-hidden rounded-md border border-(--ui-stroke-secondary)", children: ConnectorsTab && typeof host.getGateway === "function" ? /* @__PURE__ */ jsx49(
+      /* @__PURE__ */ jsx59("div", { className: "overflow-hidden rounded-md border border-(--ui-stroke-secondary)", children: ConnectorsTab && typeof host.getGateway === "function" ? /* @__PURE__ */ jsx59(
         "div",
         {
           className: "overflow-y-auto overscroll-contain",
@@ -26276,19 +29309,19 @@ function AdvancedProfileConfig({ bot, state, setState }) {
             minHeight: 220,
             maxHeight: 360
           },
-          children: /* @__PURE__ */ jsx49(ConnectorsTab, { gateway: host.getGateway(), profile: backendScope })
+          children: /* @__PURE__ */ jsx59(ConnectorsTab, { gateway: host.getGateway(), profile: backendScope })
         }
-      ) : mcpList.length === 0 ? /* @__PURE__ */ jsx49("div", { className: "px-1 py-2 text-center text-xs text-(--ui-text-tertiary)", children: b.tools.noMcpServers }) : /* @__PURE__ */ jsx49(
+      ) : mcpList.length === 0 ? /* @__PURE__ */ jsx59("div", { className: "px-1 py-2 text-center text-xs text-(--ui-text-tertiary)", children: b.tools.noMcpServers }) : /* @__PURE__ */ jsx59(
         "div",
         {
           className: "overflow-y-auto overscroll-contain",
           style: {
             maxHeight: 180
           },
-          children: /* @__PURE__ */ jsx49("div", { className: "grid gap-1 p-2", children: mcpList.map((m) => {
+          children: /* @__PURE__ */ jsx59("div", { className: "grid gap-1 p-2", children: mcpList.map((m) => {
             const needsSetup = m.fromCatalog && !m.installed && ((m.requires || []).length > 0 || (m.auth || "").toLowerCase() === "oauth");
-            return /* @__PURE__ */ jsxs47("label", { className: "flex items-start gap-2 text-xs text-(--ui-text-secondary)", children: [
-              /* @__PURE__ */ jsx49(
+            return /* @__PURE__ */ jsxs55("label", { className: "flex items-start gap-2 text-xs text-(--ui-text-secondary)", children: [
+              /* @__PURE__ */ jsx59(
                 sdk_compat_exports.Checkbox,
                 {
                   checked: !!m.enabled,
@@ -26296,10 +29329,10 @@ function AdvancedProfileConfig({ bot, state, setState }) {
                   onCheckedChange: (value) => toggleMcp(m.name, Boolean(value))
                 }
               ),
-              /* @__PURE__ */ jsxs47("span", { className: "min-w-0", children: [
-                /* @__PURE__ */ jsx49("span", { children: m.name }),
-                m.fromCatalog && !needsSetup ? /* @__PURE__ */ jsx49("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: m.installed ? b.editor.catalogInstalled : b.editor.catalog }) : null,
-                needsSetup ? /* @__PURE__ */ jsx49(
+              /* @__PURE__ */ jsxs55("span", { className: "min-w-0", children: [
+                /* @__PURE__ */ jsx59("span", { children: m.name }),
+                m.fromCatalog && !needsSetup ? /* @__PURE__ */ jsx59("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: m.installed ? b.editor.catalogInstalled : b.editor.catalog }) : null,
+                needsSetup ? /* @__PURE__ */ jsx59(
                   McpSetupButton,
                   {
                     entry: m,
@@ -26308,7 +29341,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
                     route: botRoute
                   }
                 ) : null,
-                m.description ? /* @__PURE__ */ jsx49("div", { className: "truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: m.description }) : null
+                m.description ? /* @__PURE__ */ jsx59("div", { className: "truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: m.description }) : null
               ] })
             ] }, m.name);
           }) })
@@ -26317,7 +29350,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ),
     labeled(
       b.editor.editSoul,
-      /* @__PURE__ */ jsx49(
+      /* @__PURE__ */ jsx59(
         sdk_compat_exports.Textarea,
         {
           className: "min-h-28 font-mono text-xs leading-5",
@@ -26423,7 +29456,7 @@ async function applyAdvancedConfig(bot, state) {
 
 // src/edit-profile-dialog.tsx
 init_routing();
-import { jsx as jsx50, jsxs as jsxs48 } from "react/jsx-runtime";
+import { jsx as jsx60, jsxs as jsxs56 } from "react/jsx-runtime";
 function EditProfileDialog({ bot, open, onClose }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
@@ -26434,9 +29467,9 @@ function EditProfileDialog({ bot, open, onClose }) {
     color: null,
     image: null
   };
-  const [shape, setShape] = useState32(appearance.shape);
-  const [color, setColor] = useState32(appearance.color);
-  const [image, setImage] = useState32(appearance.image ?? null);
+  const [shape, setShape] = useState40(appearance.shape);
+  const [color, setColor] = useState40(appearance.color);
+  const [image, setImage] = useState40(appearance.image ?? null);
   const openingTitle = meta?.title || bot?.title || "";
   const openingRole = meta?.role || "";
   const opening = {
@@ -26446,13 +29479,13 @@ function EditProfileDialog({ bot, open, onClose }) {
     role: openingRole,
     title: openingTitle
   };
-  const [opened, setOpened] = useState32(opening);
-  const [title, setTitle] = useState32(openingTitle);
-  const [role, setRole] = useState32(openingRole);
-  const [description, setDescription] = useState32(bot?.description || "");
-  const [busy, setBusy] = useState32(false);
-  const [advanced, setAdvanced] = useState32(false);
-  const [adv, setAdv] = useState32(emptyAdvancedState());
+  const [opened, setOpened] = useState40(opening);
+  const [title, setTitle] = useState40(openingTitle);
+  const [role, setRole] = useState40(openingRole);
+  const [description, setDescription] = useState40(bot?.description || "");
+  const [busy, setBusy] = useState40(false);
+  const [advanced, setAdvanced] = useState40(false);
+  const [adv, setAdv] = useState40(emptyAdvancedState());
   const capsConnectionId = bot ? resolveBotConnectionRoute(bot).route?.connectionId ?? "" : "";
   const { data: capsData } = (0, sdk_compat_exports.useQuery)({
     queryKey: ["bots-capabilities-summary", capsConnectionId, bot?.name ?? ""],
@@ -26471,7 +29504,7 @@ function EditProfileDialog({ bot, open, onClose }) {
     }
   });
   const caps = capabilityCounts(capsData);
-  const [seedKey, setSeedKey] = useState32(null);
+  const [seedKey, setSeedKey] = useState40(null);
   const currentKey = bot ? `${botSelectionKey(bot)}:${open}` : null;
   if (currentKey !== seedKey) {
     setSeedKey(currentKey);
@@ -26549,7 +29582,7 @@ function EditProfileDialog({ bot, open, onClose }) {
     setBusy(false);
     onClose();
   };
-  return /* @__PURE__ */ jsx50(sdk_compat_exports.Dialog, { onOpenChange: (value) => !value && !busy && onClose(), open, children: /* @__PURE__ */ jsxs48(
+  return /* @__PURE__ */ jsx60(sdk_compat_exports.Dialog, { onOpenChange: (value) => !value && !busy && onClose(), open, children: /* @__PURE__ */ jsxs56(
     sdk_compat_exports.DialogContent,
     {
       className: advanced ? "max-w-3xl" : "max-w-sm",
@@ -26562,13 +29595,13 @@ function EditProfileDialog({ bot, open, onClose }) {
         maxHeight: "90vh"
       } : void 0,
       children: [
-        /* @__PURE__ */ jsxs48(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx50(sdk_compat_exports.DialogTitle, { children: b.bot.editTitle }),
-          /* @__PURE__ */ jsx50(sdk_compat_exports.DialogDescription, { children: b.editor.editDescription(displayName(bot, null), bot.name) })
+        /* @__PURE__ */ jsxs56(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx60(sdk_compat_exports.DialogTitle, { children: b.bot.editTitle }),
+          /* @__PURE__ */ jsx60(sdk_compat_exports.DialogDescription, { children: b.editor.editDescription(displayName(bot, null), bot.name) })
         ] }),
-        /* @__PURE__ */ jsxs48("div", { className: "grid gap-4", children: [
-          /* @__PURE__ */ jsx50("div", { className: "flex justify-center py-1", children: /* @__PURE__ */ jsx50(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 64 }) }),
-          /* @__PURE__ */ jsx50(
+        /* @__PURE__ */ jsxs56("div", { className: "grid gap-4", children: [
+          /* @__PURE__ */ jsx60("div", { className: "flex justify-center py-1", children: /* @__PURE__ */ jsx60(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 64 }) }),
+          /* @__PURE__ */ jsx60(
             AvatarPicker,
             {
               color,
@@ -26586,7 +29619,7 @@ function EditProfileDialog({ bot, open, onClose }) {
           ),
           labeled(
             b.editor.title,
-            /* @__PURE__ */ jsx50(
+            /* @__PURE__ */ jsx60(
               sdk_compat_exports.Input,
               {
                 onChange: (event) => setTitle(event.target.value),
@@ -26597,7 +29630,7 @@ function EditProfileDialog({ bot, open, onClose }) {
           ),
           labeled(
             b.editor.role,
-            /* @__PURE__ */ jsx50(
+            /* @__PURE__ */ jsx60(
               sdk_compat_exports.Input,
               {
                 onChange: (event) => setRole(event.target.value),
@@ -26608,7 +29641,7 @@ function EditProfileDialog({ bot, open, onClose }) {
           ),
           labeled(
             b.editor.description,
-            /* @__PURE__ */ jsx50(
+            /* @__PURE__ */ jsx60(
               sdk_compat_exports.Textarea,
               {
                 className: "min-h-16",
@@ -26618,7 +29651,7 @@ function EditProfileDialog({ bot, open, onClose }) {
               }
             )
           ),
-          /* @__PURE__ */ jsxs48(
+          /* @__PURE__ */ jsxs56(
             sdk_compat_exports.Button,
             {
               className: "flex items-center gap-1 text-xs font-medium text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)",
@@ -26626,17 +29659,17 @@ function EditProfileDialog({ bot, open, onClose }) {
               size: "inline",
               variant: "text",
               children: [
-                /* @__PURE__ */ jsx50(sdk_compat_exports.DisclosureCaret, { open: advanced }),
+                /* @__PURE__ */ jsx60(sdk_compat_exports.DisclosureCaret, { open: advanced }),
                 b.editor.capabilities,
-                /* @__PURE__ */ jsx50("span", { className: "font-normal text-(--ui-text-quaternary)", children: caps ? b.editor.capabilitiesSummary(caps.skills, caps.toolsets, caps.mcp) : b.editor.capabilitiesHint })
+                /* @__PURE__ */ jsx60("span", { className: "font-normal text-(--ui-text-quaternary)", children: caps ? b.editor.capabilitiesSummary(caps.skills, caps.toolsets, caps.mcp) : b.editor.capabilitiesHint })
               ]
             }
           ),
-          advanced ? /* @__PURE__ */ jsx50("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-3", children: /* @__PURE__ */ jsx50(AdvancedProfileConfig, { bot, setState: setAdv, state: adv }) }) : null
+          advanced ? /* @__PURE__ */ jsx60("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-3", children: /* @__PURE__ */ jsx60(AdvancedProfileConfig, { bot, setState: setAdv, state: adv }) }) : null
         ] }),
-        /* @__PURE__ */ jsxs48(sdk_compat_exports.DialogFooter, { children: [
-          /* @__PURE__ */ jsx50(sdk_compat_exports.Button, { disabled: busy, onClick: onClose, variant: "ghost", children: t2.common.cancel }),
-          /* @__PURE__ */ jsx50(sdk_compat_exports.Button, { disabled: busy, onClick: submit, children: busy ? t2.common.saving : t2.common.save })
+        /* @__PURE__ */ jsxs56(sdk_compat_exports.DialogFooter, { children: [
+          /* @__PURE__ */ jsx60(sdk_compat_exports.Button, { disabled: busy, onClick: onClose, variant: "ghost", children: t2.common.cancel }),
+          /* @__PURE__ */ jsx60(sdk_compat_exports.Button, { disabled: busy, onClick: submit, children: busy ? t2.common.saving : t2.common.save })
         ] })
       ]
     }
@@ -26774,18 +29807,18 @@ function outcomeTone(row) {
 // src/rail-approvals.tsx
 init_sdk_compat();
 init_i18n();
-import { useState as useState33 } from "react";
-import { jsx as jsx51, jsxs as jsxs49 } from "react/jsx-runtime";
-var POLL_MS = 4e3;
+import { useState as useState41 } from "react";
+import { jsx as jsx61, jsxs as jsxs57 } from "react/jsx-runtime";
+var POLL_MS2 = 4e3;
 var TONE_CLASS = { bad: "hbp-fg-danger", muted: "text-(--ui-text-quaternary)", ok: "hbp-fg-ok" };
-var TONE_ICON = { bad: "circle-slash", muted: "circle-large-outline", ok: "check" };
+var TONE_ICON2 = { bad: "circle-slash", muted: "circle-large-outline", ok: "check" };
 var request = (method, params) => host.request(method, params);
 function useJournalRows(storedSessionId) {
   return (0, sdk_compat_exports.useQuery)({
     enabled: Boolean(storedSessionId),
     queryFn: () => listJournal(request, storedSessionId),
     queryKey: ["hbp-approvals-journal", storedSessionId],
-    refetchInterval: POLL_MS,
+    refetchInterval: POLL_MS2,
     retry: false
   });
 }
@@ -26793,13 +29826,13 @@ function JournalApprovals({ rows, storedSessionId }) {
   const b = useBots();
   const a = b.activity;
   const runtimeSessionId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
-  const [answered, setAnswered] = useState33(() => /* @__PURE__ */ new Set());
+  const [answered, setAnswered] = useState41(() => /* @__PURE__ */ new Set());
   const { pending, recent } = journalView(rows, answered);
   if (!pending.length && !recent.length) {
     return null;
   }
-  return /* @__PURE__ */ jsxs49("div", { className: "grid gap-2", "data-testid": "rail-journal", children: [
-    pending.map((row) => /* @__PURE__ */ jsx51("div", { className: "hbp-enter", children: /* @__PURE__ */ jsx51(
+  return /* @__PURE__ */ jsxs57("div", { className: "grid gap-2", "data-testid": "rail-journal", children: [
+    pending.map((row) => /* @__PURE__ */ jsx61("div", { className: "hbp-enter", children: /* @__PURE__ */ jsx61(
       sdk_compat_exports.ApprovalCard,
       {
         compact: true,
@@ -26821,19 +29854,19 @@ function JournalApprovals({ rows, storedSessionId }) {
         }
       }
     ) }, row.request_id)),
-    recent.length ? /* @__PURE__ */ jsxs49("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx51("div", { className: "px-1 text-xs font-medium text-(--ui-text-tertiary)", children: a.approvalsRecent }),
-      /* @__PURE__ */ jsx51("ul", { className: "grid gap-0.5", "data-testid": "rail-journal-recent", children: recent.map((row) => {
+    recent.length ? /* @__PURE__ */ jsxs57("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx61("div", { className: "px-1 text-xs font-medium text-(--ui-text-tertiary)", children: a.approvalsRecent }),
+      /* @__PURE__ */ jsx61("ul", { className: "grid gap-0.5", "data-testid": "rail-journal-recent", children: recent.map((row) => {
         const tone = outcomeTone(row);
-        return /* @__PURE__ */ jsxs49(
+        return /* @__PURE__ */ jsxs57(
           "li",
           {
             className: "hbp-enter flex min-w-0 items-center gap-2 rounded-lg px-1.5 py-1 transition-colors duration-150 hover:bg-(--ui-control-hover-background)",
             title: row.reason || void 0,
             children: [
-              /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { className: (0, sdk_compat_exports.cn)("shrink-0", TONE_CLASS[tone]), name: TONE_ICON[tone] }),
-              /* @__PURE__ */ jsx51("span", { className: "min-w-0 flex-1 truncate font-mono text-xs text-(--ui-text-secondary)", children: row.command || row.description || row.tool_name || row.request_id }),
-              /* @__PURE__ */ jsx51("span", { className: (0, sdk_compat_exports.cn)("shrink-0 text-xs", TONE_CLASS[tone]), children: a.approvalOutcome(row.status, row.choice ?? null) })
+              /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { className: (0, sdk_compat_exports.cn)("shrink-0", TONE_CLASS[tone]), name: TONE_ICON2[tone] }),
+              /* @__PURE__ */ jsx61("span", { className: "min-w-0 flex-1 truncate font-mono text-xs text-(--ui-text-secondary)", children: row.command || row.description || row.tool_name || row.request_id }),
+              /* @__PURE__ */ jsx61("span", { className: (0, sdk_compat_exports.cn)("shrink-0 text-xs", TONE_CLASS[tone]), children: a.approvalOutcome(row.status, row.choice ?? null) })
             ]
           },
           row.request_id
@@ -26846,8 +29879,8 @@ function JournalApprovals({ rows, storedSessionId }) {
 // src/rail-tabs.tsx
 init_sdk_compat();
 init_i18n();
-import { useRef as useRef11 } from "react";
-import { jsx as jsx52, jsxs as jsxs50 } from "react/jsx-runtime";
+import { useRef as useRef18 } from "react";
+import { jsx as jsx62, jsxs as jsxs58 } from "react/jsx-runtime";
 var TAB_ICONS = {
   activity: "list-unordered",
   approvals: "shield",
@@ -26856,8 +29889,8 @@ var TAB_ICONS = {
 };
 function RailTabs({ alerts, badges, onChange, value }) {
   const b = useBots();
-  const buttons = useRef11({});
-  return /* @__PURE__ */ jsx52(
+  const buttons = useRef18({});
+  return /* @__PURE__ */ jsx62(
     "div",
     {
       "aria-label": b.rail.title,
@@ -26868,7 +29901,7 @@ function RailTabs({ alerts, badges, onChange, value }) {
         const badge = badges[id] ?? 0;
         const alert = !badge && alerts?.[id];
         const label = badge ? `${b.activity.tabs[id]} (${badge})` : b.activity.tabs[id];
-        return /* @__PURE__ */ jsxs50(
+        return /* @__PURE__ */ jsxs58(
           "button",
           {
             "aria-controls": `rail-panel-${id}`,
@@ -26899,10 +29932,10 @@ function RailTabs({ alerts, badges, onChange, value }) {
             tabIndex: active ? 0 : -1,
             type: "button",
             children: [
-              /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { "aria-hidden": true, name: TAB_ICONS[id], size: "0.875rem" }),
-              /* @__PURE__ */ jsx52("span", { className: "truncate", children: b.activity.tabs[id] }),
-              badge > 0 ? /* @__PURE__ */ jsx52("span", { className: "rounded bg-(--ui-accent)/12 px-1 text-xs tabular-nums text-(--ui-text-primary)", children: badge > 99 ? "99+" : badge }) : null,
-              alert ? /* @__PURE__ */ jsx52("span", { "aria-hidden": true, className: "size-1.5 shrink-0 rounded-full hbp-bg-warn", "data-testid": `rail-tab-alert:${id}` }) : null
+              /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { "aria-hidden": true, name: TAB_ICONS[id], size: "0.875rem" }),
+              /* @__PURE__ */ jsx62("span", { className: "truncate", children: b.activity.tabs[id] }),
+              badge > 0 ? /* @__PURE__ */ jsx62("span", { className: "rounded bg-(--ui-accent)/12 px-1 text-xs tabular-nums text-(--ui-text-primary)", children: badge > 99 ? "99+" : badge }) : null,
+              alert ? /* @__PURE__ */ jsx62("span", { "aria-hidden": true, className: "size-1.5 shrink-0 rounded-full hbp-bg-warn", "data-testid": `rail-tab-alert:${id}` }) : null
             ]
           },
           id
@@ -26919,272 +29952,16 @@ init_routing();
 init_sdk_compat();
 init_data();
 init_i18n();
-import { useEffect as useEffect18, useRef as useRef12, useState as useState34 } from "react";
-
-// src/screen-actions.ts
-init_routing();
-async function ensureScreenViewer(bot) {
-  const existing = screenStateFor($screenState.get(), bot)?.viewer ?? null;
-  if (existing) {
-    return existing;
-  }
-  const observe = await displayRequest(bot, "display.observe", {});
-  const viewer = { id: observe.viewer_id, hash: await viewerHash(observe.viewer_id) };
-  setScreenStatus(bot, observe);
-  setScreenViewer(bot, viewer);
-  return viewer;
-}
-async function acquireScreenLease(bot) {
-  const viewer = await ensureScreenViewer(bot);
-  const result = await displayRequest(bot, "display.lease.acquire", {
-    viewer_id: viewer.id
-  });
-  setScreenLease(bot, result.lease);
-  return result.lease;
-}
-async function releaseScreenLease(bot, force = false) {
-  const viewer = screenStateFor($screenState.get(), bot)?.viewer ?? null;
-  const result = await displayRequest(
-    bot,
-    "display.lease.release",
-    force ? { force: true } : { viewer_id: viewer?.id }
-  );
-  setScreenLease(bot, result.lease);
-}
-async function restartBotScreen(bot) {
-  await displayRequest(bot, "display.stop", { force: true }).catch(() => void 0);
-  const next = await displayRequest(bot, "display.start");
-  setScreenStatus(bot, next);
-  return next;
-}
-async function frameDataUrlToPngBlob(dataUrl) {
-  const image = new Image();
-  await new Promise((resolve, reject) => {
-    image.onload = () => resolve();
-    image.onerror = () => reject(new Error("Could not decode the screen frame"));
-    image.src = dataUrl;
-  });
-  const canvas = document.createElement("canvas");
-  canvas.width = image.naturalWidth;
-  canvas.height = image.naturalHeight;
-  const context = canvas.getContext("2d");
-  if (!context) {
-    throw new Error("Canvas is unavailable");
-  }
-  context.drawImage(image, 0, 0);
-  return await new Promise(
-    (resolve, reject) => canvas.toBlob((blob) => blob ? resolve(blob) : reject(new Error("Could not encode the screen frame")), "image/png")
-  );
-}
-async function copyBotScreenshot(bot) {
-  const shot = await displayRequest(bot, "display.thumbnail");
-  const dataUrl = shot?.data_url;
-  if (!dataUrl) {
-    throw new Error("No screen frame to copy");
-  }
-  const blob = await frameDataUrlToPngBlob(dataUrl);
-  await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-}
-function canOpenBotWorkdir(bot) {
-  if (!bot || bot.remoteSource === true || resolveBotConnectionRoute(bot).route?.mode === "remote") {
-    return false;
-  }
-  const bridge = window.hermesDesktop;
-  return typeof bridge?.openSessionInTerminal === "function" || typeof bridge?.revealPath === "function" || typeof bridge?.openDir === "function";
-}
-async function openBotWorkdir(bot) {
-  const bridge = window.hermesDesktop;
-  const project = await requestForBot(bot, "config.get", { key: "project" }).catch(() => null);
-  const cwd = project?.cwd?.trim() || void 0;
-  const sessionId = botCanonicalSessionId(bot);
-  if (sessionId && typeof bridge?.openSessionInTerminal === "function") {
-    const result = await bridge.openSessionInTerminal(sessionId, { cwd, profile: bot.name }).catch(() => null);
-    if (result?.ok) {
-      return true;
-    }
-  }
-  if (cwd && typeof bridge?.revealPath === "function") {
-    if (await bridge.revealPath(cwd).catch(() => false)) {
-      return true;
-    }
-  }
-  if (cwd && typeof bridge?.openDir === "function") {
-    const result = await bridge.openDir(cwd).catch(() => null);
-    return result?.ok === true;
-  }
-  return false;
-}
-
-// src/screen-portal.tsx
-init_sdk_compat();
-init_data();
-init_i18n();
-init_routing();
-import { useEffect as useEffect17, useMemo as useMemo7 } from "react";
-import { jsx as jsx53, jsxs as jsxs51 } from "react/jsx-runtime";
-function portalTone(status, lease, viewer = null, unavailable = false) {
-  if (unavailable) {
-    return "unavailable";
-  }
-  if (!status) {
-    return "unknown";
-  }
-  if (!status.supported) {
-    return "unsupported";
-  }
-  if (!status.installed) {
-    return "missing";
-  }
-  if (!status.running) {
-    return "off";
-  }
-  if (lease?.holder === "human") {
-    return leaseHeldBy(lease, viewer) ? "human" : "other";
-  }
-  return "live";
-}
-var TONE_ICON2 = {
-  live: "device-desktop",
-  human: "record-keys",
-  other: "eye",
-  off: "debug-stop",
-  missing: "cloud-download",
-  unsupported: "circle-slash",
-  unavailable: "circle-slash",
-  unknown: "device-desktop"
-};
-var TONE_DOT = {
-  live: "hbp-bg-ok",
-  human: "hbp-bg-danger",
-  other: "hbp-bg-warn",
-  off: "bg-(--ui-text-quaternary)",
-  missing: "bg-(--ui-text-quaternary)",
-  unsupported: "bg-(--ui-text-quaternary)",
-  unavailable: "bg-(--ui-text-quaternary)",
-  unknown: "bg-(--ui-text-quaternary)"
-};
-function useScreenPortalState(bot) {
-  const all = (0, sdk_compat_exports.useValue)($screenState);
-  const state = screenStateFor(all, bot);
-  const status = state?.status ?? null;
-  const profileKey = status?.profile_key;
-  useEffect17(() => {
-    if (status || state?.unavailable) {
-      return;
-    }
-    let cancelled = false;
-    const request2 = beginScreenStatusRequest(bot);
-    void displayRequest(bot, "display.status").then((next) => {
-      if (!cancelled) {
-        setScreenStatus(bot, next, request2);
-      }
-    }).catch((error) => {
-      if (!cancelled && isDisplayUnavailable(error)) {
-        setScreenUnavailable(bot);
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [bot, state?.unavailable, status]);
-  useEffect17(
-    () => host.onEvent("display.lease", (event) => {
-      const payload = event.payload;
-      if (payload?.lease && isEventForBotScreen(bot, event, profileKey)) {
-        setScreenLease(bot, payload.lease);
-      }
-    }),
-    [bot, profileKey]
-  );
-  useEffect17(
-    () => host.onEvent("display.status", (event) => {
-      const payload = event.payload;
-      if (payload?.profile_key && isEventForBotScreen(bot, event, profileKey)) {
-        setScreenStatus(bot, payload);
-      }
-    }),
-    [bot, profileKey]
-  );
-  return {
-    status,
-    lease: state?.lease ?? null,
-    tone: portalTone(status, state?.lease ?? null, state?.viewer ?? null, state?.unavailable)
-  };
-}
-function ScreenPortal({ bot }) {
-  const t2 = useBots();
-  const { status, tone } = useScreenPortalState(bot);
-  const subtitle = {
-    live: t2.screen.portalWatching,
-    human: t2.screen.portalYouControl,
-    other: t2.screen.portalOtherControls,
-    off: t2.screen.portalStopped,
-    missing: t2.screen.portalNotInstalled,
-    unsupported: t2.screen.portalUnsupported,
-    unavailable: isManagedBackend(bot) ? t2.screen.portalUnavailableManaged : t2.screen.portalUnavailable,
-    unknown: status?.display ?? ""
-  }[tone];
-  if (tone === "unsupported" || tone === "unavailable") {
-    return null;
-  }
-  return /* @__PURE__ */ jsxs51(
-    "button",
-    {
-      "aria-label": `${t2.screen.portalTitle}: ${subtitle}`,
-      className: "group flex w-full items-center gap-2 rounded-md border border-(--ui-stroke-secondary) bg-(--chrome-action-hover)/40 px-2 py-1.5 text-left transition-colors hover:bg-(--chrome-action-hover)",
-      onClick: () => openBotScreen(bot, null),
-      type: "button",
-      children: [
-        /* @__PURE__ */ jsxs51("span", { className: "relative grid size-7 shrink-0 place-items-center rounded bg-black/70 text-white/90", children: [
-          /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { name: TONE_ICON2[tone] }),
-          /* @__PURE__ */ jsx53(
-            "span",
-            {
-              className: `absolute -right-0.5 -top-0.5 size-2 rounded-full ring-2 ring-(--ui-bg-primary) ${TONE_DOT[tone]}`
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxs51("span", { className: "min-w-0 flex-1", children: [
-          /* @__PURE__ */ jsx53("span", { className: "block truncate text-xs font-medium", children: t2.screen.portalTitle }),
-          subtitle ? /* @__PURE__ */ jsx53("span", { className: "block truncate text-[0.65rem] text-(--ui-text-tertiary)", children: subtitle }) : null
-        ] }),
-        /* @__PURE__ */ jsxs51("span", { className: "flex shrink-0 items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary) opacity-0 transition-opacity group-hover:opacity-100", children: [
-          t2.screen.portalOpen,
-          " ",
-          /* @__PURE__ */ jsx53(sdk_compat_exports.Codicon, { name: "arrow-right" })
-        ] })
-      ]
-    }
-  );
-}
-function ProfileGroupScreenPortal({ route }) {
-  const roster = (0, sdk_compat_exports.useValue)($lastRoster);
-  const { connectionId, profile } = route;
-  const bot = useMemo7(
-    () => roster.find((row) => {
-      const resolved = resolveBotConnectionRoute(row);
-      return resolved.route ? resolved.route.profile === profile && resolved.route.connectionId === (connectionId ?? "local") : row.name === profile && connectionId === null;
-    }) ?? (connectionId ? {
-      name: profile,
-      sourceScoped: true,
-      connectionId,
-      connectionKind: connectionId === "local" ? "local" : "remote"
-    } : { name: profile }),
-    [connectionId, profile, roster]
-  );
-  return /* @__PURE__ */ jsx53(ScreenPortal, { bot });
-}
-
-// src/screen-panel.tsx
-import { Fragment as Fragment11, jsx as jsx54, jsxs as jsxs52 } from "react/jsx-runtime";
+import { useEffect as useEffect28, useRef as useRef19, useState as useState42 } from "react";
+import { Fragment as Fragment13, jsx as jsx63, jsxs as jsxs59 } from "react/jsx-runtime";
 var REFRESH_MS = 4e3;
 var STALE_AFTER = 3;
 function useLiveThumbnail(bot, running) {
-  const [dataUrl, setDataUrl] = useState34(null);
-  const [misses, setMisses] = useState34(0);
-  const [suppressed, setSuppressed] = useState34(false);
-  const boxRef = useRef12(null);
-  useEffect18(() => {
+  const [dataUrl, setDataUrl] = useState42(null);
+  const [misses, setMisses] = useState42(0);
+  const [suppressed, setSuppressed] = useState42(false);
+  const boxRef = useRef19(null);
+  useEffect28(() => {
     if (!running) {
       setDataUrl(null);
       setMisses(0);
@@ -27250,7 +30027,7 @@ var CHIP_CLASS = {
   unknown: "bg-muted text-muted-foreground"
 };
 function BotComputerPanel({ bot, meta }) {
-  return /* @__PURE__ */ jsx54(ComputerPanelContent, { bot, meta }, botSelectionKey(bot));
+  return /* @__PURE__ */ jsx63(ComputerPanelContent, { bot, meta }, botSelectionKey(bot));
 }
 function ComputerPanelContent({ bot, meta }) {
   const t2 = useBots();
@@ -27260,8 +30037,8 @@ function ComputerPanelContent({ bot, meta }) {
   const viewer = screenStateFor((0, sdk_compat_exports.useValue)($screenState), bot)?.viewer ?? null;
   const iHold = leaseHeldBy(lease, viewer);
   const humanOther = lease?.holder === "human" && !iHold;
-  const [height, setHeight] = useState34(frameHeight);
-  const [busy, setBusy] = useState34(null);
+  const [height, setHeight] = useState42(frameHeight);
+  const [busy, setBusy] = useState42(null);
   const chip = {
     live: t2.screen.portalWatching,
     human: t2.screen.portalYouControl,
@@ -27326,18 +30103,18 @@ function ComputerPanelContent({ bot, meta }) {
     handle.addEventListener("pointerup", onUp);
   };
   const unsupported = tone === "unsupported" || tone === "unavailable";
-  return /* @__PURE__ */ jsxs52(
+  return /* @__PURE__ */ jsxs59(
     "section",
     {
       "aria-label": t2.screen.panelTitle,
       className: "overflow-hidden rounded-lg border border-(--ui-stroke-secondary)",
       children: [
-        /* @__PURE__ */ jsxs52("div", { className: "flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2 py-1", children: [
-          /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "device-desktop", size: "0.8rem" }),
-          /* @__PURE__ */ jsx54("span", { className: "text-[0.65rem] font-medium text-(--ui-text-secondary)", children: t2.screen.panelTitle }),
-          /* @__PURE__ */ jsx54("span", { className: `shrink-0 rounded px-1.5 py-0.5 text-[0.6rem] font-medium ${CHIP_CLASS[tone]}`, children: chip }),
-          /* @__PURE__ */ jsx54("span", { className: "grow" }),
-          /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: t2.screen.openFullPane, children: /* @__PURE__ */ jsx54(
+        /* @__PURE__ */ jsxs59("div", { className: "flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2 py-1", children: [
+          /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "device-desktop", size: "0.8rem" }),
+          /* @__PURE__ */ jsx63("span", { className: "text-[0.65rem] font-medium text-(--ui-text-secondary)", children: t2.screen.panelTitle }),
+          /* @__PURE__ */ jsx63("span", { className: `shrink-0 rounded px-1.5 py-0.5 text-[0.6rem] font-medium ${CHIP_CLASS[tone]}`, children: chip }),
+          /* @__PURE__ */ jsx63("span", { className: "grow" }),
+          /* @__PURE__ */ jsx63(sdk_compat_exports.Tip, { label: t2.screen.openFullPane, children: /* @__PURE__ */ jsx63(
             sdk_compat_exports.Button,
             {
               "aria-label": t2.screen.openFullPane,
@@ -27345,10 +30122,10 @@ function ComputerPanelContent({ bot, meta }) {
               onClick: () => openBotScreen(bot, meta ?? null),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "screen-full" })
+              children: /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: "screen-full" })
             }
           ) }),
-          /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: t2.screen.copyScreenshot, children: /* @__PURE__ */ jsx54(
+          /* @__PURE__ */ jsx63(sdk_compat_exports.Tip, { label: t2.screen.copyScreenshot, children: /* @__PURE__ */ jsx63(
             sdk_compat_exports.Button,
             {
               "aria-label": t2.screen.copyScreenshot,
@@ -27356,10 +30133,10 @@ function ComputerPanelContent({ bot, meta }) {
               onClick: copyShot,
               size: "icon-xs",
               variant: "ghost",
-              children: busy === "copy" ? /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "copy" })
+              children: busy === "copy" ? /* @__PURE__ */ jsx63(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: "copy" })
             }
           ) }),
-          /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: t2.screen.restartScreen, children: /* @__PURE__ */ jsx54(
+          /* @__PURE__ */ jsx63(sdk_compat_exports.Tip, { label: t2.screen.restartScreen, children: /* @__PURE__ */ jsx63(
             sdk_compat_exports.Button,
             {
               "aria-label": t2.screen.restartScreen,
@@ -27367,10 +30144,10 @@ function ComputerPanelContent({ bot, meta }) {
               onClick: restart,
               size: "icon-xs",
               variant: "ghost",
-              children: busy === "restart" ? /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "debug-restart" })
+              children: busy === "restart" ? /* @__PURE__ */ jsx63(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: "debug-restart" })
             }
           ) }),
-          canOpenBotWorkdir(bot) ? /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: t2.screen.openWorkdir, children: /* @__PURE__ */ jsx54(
+          canOpenBotWorkdir(bot) ? /* @__PURE__ */ jsx63(sdk_compat_exports.Tip, { label: t2.screen.openWorkdir, children: /* @__PURE__ */ jsx63(
             sdk_compat_exports.Button,
             {
               "aria-label": t2.screen.openWorkdir,
@@ -27378,13 +30155,13 @@ function ComputerPanelContent({ bot, meta }) {
               onClick: openWorkdir,
               size: "icon-xs",
               variant: "ghost",
-              children: busy === "workdir" ? /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "folder-opened" })
+              children: busy === "workdir" ? /* @__PURE__ */ jsx63(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: "folder-opened" })
             }
           ) }) : null
         ] }),
-        !unsupported ? /* @__PURE__ */ jsxs52(Fragment11, { children: [
-          /* @__PURE__ */ jsxs52("div", { className: "relative bg-black", style: { height }, children: [
-            /* @__PURE__ */ jsx54(
+        !unsupported ? /* @__PURE__ */ jsxs59(Fragment13, { children: [
+          /* @__PURE__ */ jsxs59("div", { className: "relative bg-black", style: { height }, children: [
+            /* @__PURE__ */ jsx63(
               "button",
               {
                 "aria-label": `${t2.screen.portalTitle}: ${caption || chip}`,
@@ -27392,7 +30169,7 @@ function ComputerPanelContent({ bot, meta }) {
                 onClick: () => openBotScreen(bot, meta ?? null),
                 ref: boxRef,
                 type: "button",
-                children: dataUrl ? /* @__PURE__ */ jsx54(
+                children: dataUrl ? /* @__PURE__ */ jsx63(
                   "img",
                   {
                     alt: "",
@@ -27400,7 +30177,7 @@ function ComputerPanelContent({ bot, meta }) {
                     draggable: false,
                     src: dataUrl
                   }
-                ) : /* @__PURE__ */ jsx54("span", { className: "absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]", children: /* @__PURE__ */ jsx54(
+                ) : /* @__PURE__ */ jsx63("span", { className: "absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]", children: /* @__PURE__ */ jsx63(
                   sdk_compat_exports.Codicon,
                   {
                     className: "text-[2.25rem] text-white/30",
@@ -27409,9 +30186,9 @@ function ComputerPanelContent({ bot, meta }) {
                 ) })
               }
             ),
-            caption ? /* @__PURE__ */ jsx54("span", { className: "pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-black/0 px-2.5 pb-1.5 pt-4 text-[0.65rem] text-white/70", children: caption }) : null
+            caption ? /* @__PURE__ */ jsx63("span", { className: "pointer-events-none absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 to-black/0 px-2.5 pb-1.5 pt-4 text-[0.65rem] text-white/70", children: caption }) : null
           ] }),
-          /* @__PURE__ */ jsx54(
+          /* @__PURE__ */ jsx63(
             "div",
             {
               "aria-label": t2.screen.resizePanel,
@@ -27420,18 +30197,18 @@ function ComputerPanelContent({ bot, meta }) {
               role: "separator"
             }
           ),
-          /* @__PURE__ */ jsx54("div", { className: "flex items-center gap-2 border-t border-(--ui-stroke-secondary) px-2 py-1.5", children: iHold ? /* @__PURE__ */ jsxs52(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(), size: "sm", variant: "secondary", children: [
-            busy === "handback" ? /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "debug-continue" }),
+          /* @__PURE__ */ jsx63("div", { className: "flex items-center gap-2 border-t border-(--ui-stroke-secondary) px-2 py-1.5", children: iHold ? /* @__PURE__ */ jsxs59(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(), size: "sm", variant: "secondary", children: [
+            busy === "handback" ? /* @__PURE__ */ jsx63(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: "debug-continue" }),
             " ",
             t2.screen.handBack
-          ] }) : /* @__PURE__ */ jsxs52(Fragment11, { children: [
-            humanOther ? /* @__PURE__ */ jsx54(sdk_compat_exports.Tip, { label: t2.screen.handBackForceHint, children: /* @__PURE__ */ jsxs52(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(true), size: "sm", variant: "secondary", children: [
-              /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "debug-continue" }),
+          ] }) : /* @__PURE__ */ jsxs59(Fragment13, { children: [
+            humanOther ? /* @__PURE__ */ jsx63(sdk_compat_exports.Tip, { label: t2.screen.handBackForceHint, children: /* @__PURE__ */ jsxs59(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(true), size: "sm", variant: "secondary", children: [
+              /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: "debug-continue" }),
               " ",
               t2.screen.handBackForce
             ] }) }) : null,
-            /* @__PURE__ */ jsxs52(sdk_compat_exports.Button, { disabled: busy !== null || !running, onClick: takeOver, size: "sm", children: [
-              busy === "takeover" ? /* @__PURE__ */ jsx54(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx54(sdk_compat_exports.Codicon, { name: "record-keys" }),
+            /* @__PURE__ */ jsxs59(sdk_compat_exports.Button, { disabled: busy !== null || !running, onClick: takeOver, size: "sm", children: [
+              busy === "takeover" ? /* @__PURE__ */ jsx63(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { name: "record-keys" }),
               " ",
               t2.screen.takeOver
             ] })
@@ -27444,7 +30221,7 @@ function ComputerPanelContent({ bot, meta }) {
 
 // src/share-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect19, useRef as useRef13, useState as useState35 } from "react";
+import { useEffect as useEffect29, useRef as useRef20, useState as useState43 } from "react";
 init_avatar_image();
 
 // src/bot-export.ts
@@ -27781,7 +30558,7 @@ function useShareText() {
 }
 
 // src/share-dialog.tsx
-import { jsx as jsx55, jsxs as jsxs53 } from "react/jsx-runtime";
+import { jsx as jsx64, jsxs as jsxs60 } from "react/jsx-runtime";
 function ShareBotDialog({
   bot,
   meta,
@@ -27789,17 +30566,17 @@ function ShareBotDialog({
   open
 }) {
   const s = useShareText();
-  const faceRef = useRef13(null);
-  const [png, setPng] = useState35(null);
-  const [previewUrl, setPreviewUrl] = useState35("");
-  const [link, setLink] = useState35(null);
+  const faceRef = useRef20(null);
+  const [png, setPng] = useState43(null);
+  const [previewUrl, setPreviewUrl] = useState43("");
+  const [link, setLink] = useState43(null);
   const name = displayName(bot, meta);
   const role = botRole(bot, meta);
   const description = meta?.description?.trim() || "";
   const { color, image, shape } = botAppearance(bot.name, meta);
   const accent = avatarColor(color, bot.name);
   const photo = image && !isBackfilledFacePng(image) ? image : null;
-  useEffect19(() => {
+  useEffect29(() => {
     if (!open) {
       return;
     }
@@ -27875,51 +30652,51 @@ function ShareBotDialog({
       host.notifyError(error, s.failed);
     }
   };
-  return /* @__PURE__ */ jsx55(sdk_compat_exports.Dialog, { onOpenChange, open, children: /* @__PURE__ */ jsxs53(sdk_compat_exports.DialogContent, { className: "max-w-2xl", children: [
-    /* @__PURE__ */ jsxs53(sdk_compat_exports.DialogHeader, { children: [
-      /* @__PURE__ */ jsx55(sdk_compat_exports.DialogTitle, { children: s.title(name) }),
-      /* @__PURE__ */ jsx55(sdk_compat_exports.DialogDescription, { children: s.subtitle })
+  return /* @__PURE__ */ jsx64(sdk_compat_exports.Dialog, { onOpenChange, open, children: /* @__PURE__ */ jsxs60(sdk_compat_exports.DialogContent, { className: "max-w-2xl", children: [
+    /* @__PURE__ */ jsxs60(sdk_compat_exports.DialogHeader, { children: [
+      /* @__PURE__ */ jsx64(sdk_compat_exports.DialogTitle, { children: s.title(name) }),
+      /* @__PURE__ */ jsx64(sdk_compat_exports.DialogDescription, { children: s.subtitle })
     ] }),
-    /* @__PURE__ */ jsx55("div", { "aria-hidden": true, className: "pointer-events-none fixed -left-[9999px] top-0", ref: faceRef, children: !photo && /* @__PURE__ */ jsx55(BotFace, { color: accent, name: bot.name, shape, size: 200 }) }),
-    /* @__PURE__ */ jsx55(
+    /* @__PURE__ */ jsx64("div", { "aria-hidden": true, className: "pointer-events-none fixed -left-[9999px] top-0", ref: faceRef, children: !photo && /* @__PURE__ */ jsx64(BotFace, { color: accent, name: bot.name, shape, size: 200 }) }),
+    /* @__PURE__ */ jsx64(
       "div",
       {
         className: "grid aspect-[1200/630] w-full place-items-center overflow-hidden rounded-xl bg-(--ui-bg-tertiary) shadow-[0_1px_0_rgba(0,0,0,0.04),0_12px_32px_-12px_rgba(0,0,0,0.25)]",
         "data-slot": "share-card-preview",
-        children: previewUrl ? /* @__PURE__ */ jsx55("img", { alt: s.title(name), className: "size-full", src: previewUrl }) : /* @__PURE__ */ jsx55(sdk_compat_exports.GlyphSpinner, {})
+        children: previewUrl ? /* @__PURE__ */ jsx64("img", { alt: s.title(name), className: "size-full", src: previewUrl }) : /* @__PURE__ */ jsx64(sdk_compat_exports.GlyphSpinner, {})
       }
     ),
-    /* @__PURE__ */ jsxs53("div", { className: "flex flex-wrap items-center gap-1.5", children: [
-      /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { disabled: !png, onClick: () => void copyImage(), size: "sm", children: [
-        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "copy" }),
+    /* @__PURE__ */ jsxs60("div", { className: "flex flex-wrap items-center gap-1.5", children: [
+      /* @__PURE__ */ jsxs60(sdk_compat_exports.Button, { disabled: !png, onClick: () => void copyImage(), size: "sm", children: [
+        /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "copy" }),
         s.copyImage
       ] }),
-      /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { disabled: !previewUrl, onClick: saveImage, size: "sm", variant: "secondary", children: [
-        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "desktop-download" }),
+      /* @__PURE__ */ jsxs60(sdk_compat_exports.Button, { disabled: !previewUrl, onClick: saveImage, size: "sm", variant: "secondary", children: [
+        /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "desktop-download" }),
         s.saveImage
       ] }),
-      /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { onClick: () => void copyInvite(), size: "sm", variant: "secondary", children: [
-        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "mention" }),
+      /* @__PURE__ */ jsxs60(sdk_compat_exports.Button, { onClick: () => void copyInvite(), size: "sm", variant: "secondary", children: [
+        /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "mention" }),
         s.copyInvite
       ] }),
-      /* @__PURE__ */ jsxs53(sdk_compat_exports.Button, { className: "ml-auto", onClick: () => void exportBot(bot, meta), size: "sm", variant: "ghost", children: [
-        /* @__PURE__ */ jsx55(sdk_compat_exports.Codicon, { name: "package" }),
+      /* @__PURE__ */ jsxs60(sdk_compat_exports.Button, { className: "ml-auto", onClick: () => void exportBot(bot, meta), size: "sm", variant: "ghost", children: [
+        /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "package" }),
         s.exportFile
       ] })
     ] }),
-    /* @__PURE__ */ jsx55("p", { className: "-mt-1 text-[0.6875rem] text-(--ui-text-tertiary)", children: s.exportHint })
+    /* @__PURE__ */ jsx64("p", { className: "-mt-1 text-[0.6875rem] text-(--ui-text-tertiary)", children: s.exportHint })
   ] }) });
 }
 
 // src/work-board.tsx
 init_sdk_compat();
-import { useMemo as useMemo9, useState as useState37 } from "react";
+import { useMemo as useMemo9, useState as useState45 } from "react";
 
 // src/activity-detail.tsx
 init_sdk_compat();
-import { useEffect as useEffect20, useRef as useRef14, useState as useState36 } from "react";
+import { useEffect as useEffect30, useRef as useRef21, useState as useState44 } from "react";
 init_i18n();
-import { jsx as jsx56, jsxs as jsxs54 } from "react/jsx-runtime";
+import { jsx as jsx65, jsxs as jsxs61 } from "react/jsx-runtime";
 var SHELL_TOOLS2 = /* @__PURE__ */ new Set(["terminal", "process", "process_manage", "execute_code"]);
 function duration(seconds) {
   if (seconds < 10) {
@@ -27938,7 +30715,7 @@ var BADGE_TONE = {
 };
 function StepGlyph({ step }) {
   const status = step.action.status;
-  return /* @__PURE__ */ jsx56(
+  return /* @__PURE__ */ jsx65(
     "span",
     {
       "aria-hidden": true,
@@ -27946,7 +30723,7 @@ function StepGlyph({ step }) {
         "relative z-10 grid size-5 shrink-0 place-items-center rounded-full bg-(--ui-sidebar-surface-background)",
         status === "error" ? "text-destructive" : status === "running" ? "text-(--ui-accent)" : "text-(--ui-text-tertiary)"
       ),
-      children: status === "running" ? /* @__PURE__ */ jsx56(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx56(sdk_compat_exports.Codicon, { name: status === "error" ? "error" : "pass", size: "0.95rem" })
+      children: status === "running" ? /* @__PURE__ */ jsx65(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx65(sdk_compat_exports.Codicon, { name: status === "error" ? "error" : "pass", size: "0.95rem" })
     }
   );
 }
@@ -27956,8 +30733,8 @@ function Timeline({
   selectedId,
   task
 }) {
-  const listRef = useRef14(null);
-  useEffect20(() => {
+  const listRef = useRef21(null);
+  useEffect30(() => {
     if (!selectedId) {
       return;
     }
@@ -27974,7 +30751,7 @@ function Timeline({
       onSelect(next.id);
     }
   };
-  return /* @__PURE__ */ jsxs54(
+  return /* @__PURE__ */ jsxs61(
     "ol",
     {
       "aria-label": task.title || a.onItsOwn,
@@ -27982,14 +30759,14 @@ function Timeline({
       onKeyDown: move,
       ref: listRef,
       children: [
-        /* @__PURE__ */ jsxs54("li", { className: "flex items-center gap-2.5 px-3 py-1.5 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
-          /* @__PURE__ */ jsx56("span", { className: "relative z-10 grid size-5 place-items-center bg-(--ui-sidebar-surface-background)", children: /* @__PURE__ */ jsx56("span", { className: "size-1.5 rounded-full bg-(--ui-text-quaternary)" }) }),
-          /* @__PURE__ */ jsx56("span", { className: "min-w-0 flex-1", children: a.started }),
-          /* @__PURE__ */ jsx56("span", { className: "tabular-nums text-[0.6875rem] text-(--ui-text-quaternary)", children: clockTime(task.startedAt) })
+        /* @__PURE__ */ jsxs61("li", { className: "flex items-center gap-2.5 px-3 py-1.5 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
+          /* @__PURE__ */ jsx65("span", { className: "relative z-10 grid size-5 place-items-center bg-(--ui-sidebar-surface-background)", children: /* @__PURE__ */ jsx65("span", { className: "size-1.5 rounded-full bg-(--ui-text-quaternary)" }) }),
+          /* @__PURE__ */ jsx65("span", { className: "min-w-0 flex-1", children: a.started }),
+          /* @__PURE__ */ jsx65("span", { className: "tabular-nums text-[0.6875rem] text-(--ui-text-quaternary)", children: clockTime(task.startedAt) })
         ] }),
         task.steps.map((step) => {
           const selected = step.id === selectedId;
-          return /* @__PURE__ */ jsx56("li", { children: /* @__PURE__ */ jsxs54(
+          return /* @__PURE__ */ jsx65("li", { children: /* @__PURE__ */ jsxs61(
             "button",
             {
               "aria-current": selected ? "step" : void 0,
@@ -28001,14 +30778,14 @@ function Timeline({
               onClick: () => onSelect(step.id),
               type: "button",
               children: [
-                /* @__PURE__ */ jsx56(StepGlyph, { step }),
-                /* @__PURE__ */ jsx56("span", { className: "line-clamp-2 min-w-0 flex-1 [overflow-wrap:anywhere]", children: stepLabel(step, a) })
+                /* @__PURE__ */ jsx65(StepGlyph, { step }),
+                /* @__PURE__ */ jsx65("span", { className: "line-clamp-2 min-w-0 flex-1 [overflow-wrap:anywhere]", children: stepLabel(step, a) })
               ]
             }
           ) }, step.id);
         }),
-        /* @__PURE__ */ jsxs54("li", { className: "flex items-start gap-2.5 px-3 py-1.5 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
-          /* @__PURE__ */ jsx56("span", { className: "relative z-10 grid size-5 shrink-0 place-items-center bg-(--ui-sidebar-surface-background)", children: task.status === "running" ? /* @__PURE__ */ jsx56(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem] text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx56(
+        /* @__PURE__ */ jsxs61("li", { className: "flex items-start gap-2.5 px-3 py-1.5 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
+          /* @__PURE__ */ jsx65("span", { className: "relative z-10 grid size-5 shrink-0 place-items-center bg-(--ui-sidebar-surface-background)", children: task.status === "running" ? /* @__PURE__ */ jsx65(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem] text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx65(
             sdk_compat_exports.Codicon,
             {
               className: task.status === "error" ? "text-destructive" : "text-(--ui-text-tertiary)",
@@ -28016,19 +30793,19 @@ function Timeline({
               size: "0.95rem"
             }
           ) }),
-          /* @__PURE__ */ jsx56("span", { className: "min-w-0 flex-1", children: task.status === "running" ? a.working : task.status === "done" ? a.finished : a.status[task.status] })
+          /* @__PURE__ */ jsx65("span", { className: "min-w-0 flex-1", children: task.status === "running" ? a.working : task.status === "done" ? a.finished : a.status[task.status] })
         ] })
       ]
     }
   );
 }
 function CodeBlock({ copyLabel, label, text: text3 }) {
-  return /* @__PURE__ */ jsxs54("div", { className: "overflow-hidden rounded-xl border border-(--ui-stroke-tertiary) bg-(--ui-inline-code-background)", children: [
-    /* @__PURE__ */ jsxs54("div", { className: "flex items-center justify-between px-3 pt-1.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
-      /* @__PURE__ */ jsx56("span", { className: "font-mono", children: label }),
-      /* @__PURE__ */ jsx56(sdk_compat_exports.CopyButton, { label: copyLabel, text: text3 })
+  return /* @__PURE__ */ jsxs61("div", { className: "overflow-hidden rounded-xl border border-(--ui-stroke-tertiary) bg-(--ui-inline-code-background)", children: [
+    /* @__PURE__ */ jsxs61("div", { className: "flex items-center justify-between px-3 pt-1.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
+      /* @__PURE__ */ jsx65("span", { className: "font-mono", children: label }),
+      /* @__PURE__ */ jsx65(sdk_compat_exports.CopyButton, { label: copyLabel, text: text3 })
     ] }),
-    /* @__PURE__ */ jsx56("pre", { className: "max-h-72 overflow-auto px-3 pb-3 pt-1 font-mono text-[0.75rem] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] text-foreground", children: text3 })
+    /* @__PURE__ */ jsx65("pre", { className: "max-h-72 overflow-auto px-3 pb-3 pt-1 font-mono text-[0.75rem] leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] text-foreground", children: text3 })
   ] });
 }
 function StepDetail({ a, step }) {
@@ -28036,14 +30813,14 @@ function StepDetail({ a, step }) {
   const shell = SHELL_TOOLS2.has(action.tool);
   const took = action.completedAt !== null ? Math.max(0, action.completedAt - action.startedAt) : null;
   const body = shell ? action.target : [action.target, action.input].filter(Boolean).join("\n\n");
-  return /* @__PURE__ */ jsxs54("article", { className: "grid gap-4", "data-testid": "activity-step-detail", children: [
-    /* @__PURE__ */ jsxs54("header", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx56("h3", { className: "text-[1.0625rem] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]", children: stepLabel(step, a) }),
-      /* @__PURE__ */ jsxs54("div", { className: "flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.75rem] text-(--ui-text-tertiary)", children: [
-        /* @__PURE__ */ jsx56("span", { className: "rounded-md bg-(--ui-inline-code-background) px-1.5 py-px font-mono text-[0.6875rem]", children: action.tool }),
-        action.startedAt ? /* @__PURE__ */ jsx56("span", { className: "tabular-nums", children: clockTime(action.startedAt) }) : null,
-        took !== null ? /* @__PURE__ */ jsx56("span", { className: "tabular-nums", children: a.took(duration(took)) }) : null,
-        action.exitCode !== null ? /* @__PURE__ */ jsx56(
+  return /* @__PURE__ */ jsxs61("article", { className: "grid gap-4", "data-testid": "activity-step-detail", children: [
+    /* @__PURE__ */ jsxs61("header", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx65("h3", { className: "text-[1.0625rem] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]", children: stepLabel(step, a) }),
+      /* @__PURE__ */ jsxs61("div", { className: "flex flex-wrap items-center gap-x-2 gap-y-1 text-[0.75rem] text-(--ui-text-tertiary)", children: [
+        /* @__PURE__ */ jsx65("span", { className: "rounded-md bg-(--ui-inline-code-background) px-1.5 py-px font-mono text-[0.6875rem]", children: action.tool }),
+        action.startedAt ? /* @__PURE__ */ jsx65("span", { className: "tabular-nums", children: clockTime(action.startedAt) }) : null,
+        took !== null ? /* @__PURE__ */ jsx65("span", { className: "tabular-nums", children: a.took(duration(took)) }) : null,
+        action.exitCode !== null ? /* @__PURE__ */ jsx65(
           "span",
           {
             className: (0, sdk_compat_exports.cn)(
@@ -28055,40 +30832,40 @@ function StepDetail({ a, step }) {
         ) : null
       ] })
     ] }),
-    body ? /* @__PURE__ */ jsxs54("section", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx56("h4", { className: "text-[0.8125rem] font-semibold text-foreground", children: shell ? a.command : a.input }),
-      /* @__PURE__ */ jsx56(CodeBlock, { copyLabel: a.copy, label: shell ? "bash" : action.tool, text: body })
+    body ? /* @__PURE__ */ jsxs61("section", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx65("h4", { className: "text-[0.8125rem] font-semibold text-foreground", children: shell ? a.command : a.input }),
+      /* @__PURE__ */ jsx65(CodeBlock, { copyLabel: a.copy, label: shell ? "bash" : action.tool, text: body })
     ] }) : null,
-    /* @__PURE__ */ jsxs54("section", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx56("h4", { className: "text-[0.8125rem] font-semibold text-foreground", children: a.result }),
-      action.status === "running" ? /* @__PURE__ */ jsxs54("p", { className: "flex items-center gap-2 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
-        /* @__PURE__ */ jsx56(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem] text-(--ui-accent)", spinner: "breathe" }),
+    /* @__PURE__ */ jsxs61("section", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx65("h4", { className: "text-[0.8125rem] font-semibold text-foreground", children: a.result }),
+      action.status === "running" ? /* @__PURE__ */ jsxs61("p", { className: "flex items-center gap-2 text-[0.8125rem] text-(--ui-text-tertiary)", children: [
+        /* @__PURE__ */ jsx65(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem] text-(--ui-accent)", spinner: "breathe" }),
         a.waiting
-      ] }) : action.output ? /* @__PURE__ */ jsx56(CodeBlock, { copyLabel: a.copy, label: action.status === "error" ? "stderr" : "output", text: action.output }) : /* @__PURE__ */ jsx56("p", { className: "text-[0.8125rem] text-(--ui-text-tertiary)", children: a.noOutput })
+      ] }) : action.output ? /* @__PURE__ */ jsx65(CodeBlock, { copyLabel: a.copy, label: action.status === "error" ? "stderr" : "output", text: action.output }) : /* @__PURE__ */ jsx65("p", { className: "text-[0.8125rem] text-(--ui-text-tertiary)", children: a.noOutput })
     ] })
   ] });
 }
 function ActivityDetailDialog({ onClose, task }) {
   const b = useBots();
   const a = b.activity;
-  const [selectedId, setSelectedId] = useState36(null);
+  const [selectedId, setSelectedId] = useState44(null);
   const selected = selectedId && task?.steps.find((step) => step.id === selectedId) || (task ? currentStep(task) : null);
-  useEffect20(() => setSelectedId(null), [task?.id]);
-  return /* @__PURE__ */ jsx56(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open: Boolean(task), children: task ? /* @__PURE__ */ jsxs54(
+  useEffect30(() => setSelectedId(null), [task?.id]);
+  return /* @__PURE__ */ jsx65(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open: Boolean(task), children: task ? /* @__PURE__ */ jsxs61(
     sdk_compat_exports.DialogContent,
     {
       bodyClassName: "flex min-h-0 flex-1 flex-col overflow-hidden p-0",
       className: "h-[min(46rem,88vh)] max-h-[88vh] max-w-[min(64rem,94vw)]",
       "data-testid": "activity-detail",
       children: [
-        /* @__PURE__ */ jsxs54("header", { className: "grid gap-2 border-b border-(--ui-stroke-tertiary) px-6 pb-4 pt-5 pr-14", children: [
-          /* @__PURE__ */ jsx56("span", { className: (0, sdk_compat_exports.cn)("w-fit rounded-md px-2 py-0.5 text-[0.75rem] font-semibold", BADGE_TONE[task.status]), children: a.status[task.status] }),
-          /* @__PURE__ */ jsx56(sdk_compat_exports.DialogTitle, { className: "text-xl font-semibold leading-tight [overflow-wrap:anywhere]", children: task.title || a.onItsOwn }),
-          /* @__PURE__ */ jsx56(sdk_compat_exports.DialogDescription, { className: (0, sdk_compat_exports.cn)("text-[0.8125rem] text-(--ui-text-tertiary)", !task.outcome && "sr-only"), children: task.outcome || a.steps(task.steps.length) })
+        /* @__PURE__ */ jsxs61("header", { className: "grid gap-2 border-b border-(--ui-stroke-tertiary) px-6 pb-4 pt-5 pr-14", children: [
+          /* @__PURE__ */ jsx65("span", { className: (0, sdk_compat_exports.cn)("w-fit rounded-md px-2 py-0.5 text-[0.75rem] font-semibold", BADGE_TONE[task.status]), children: a.status[task.status] }),
+          /* @__PURE__ */ jsx65(sdk_compat_exports.DialogTitle, { className: "text-xl font-semibold leading-tight [overflow-wrap:anywhere]", children: task.title || a.onItsOwn }),
+          /* @__PURE__ */ jsx65(sdk_compat_exports.DialogDescription, { className: (0, sdk_compat_exports.cn)("text-[0.8125rem] text-(--ui-text-tertiary)", !task.outcome && "sr-only"), children: task.outcome || a.steps(task.steps.length) })
         ] }),
-        /* @__PURE__ */ jsxs54("div", { className: "grid min-h-0 flex-1 grid-cols-[minmax(13rem,18rem)_1fr] max-sm:grid-cols-1", children: [
-          /* @__PURE__ */ jsx56("nav", { className: "min-h-0 overflow-y-auto border-r border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background) p-2 max-sm:max-h-56 max-sm:border-b max-sm:border-r-0", children: /* @__PURE__ */ jsx56(Timeline, { a, onSelect: setSelectedId, selectedId: selected?.id ?? null, task }) }),
-          /* @__PURE__ */ jsx56("div", { className: "min-h-0 overflow-y-auto px-6 py-5", children: selected ? /* @__PURE__ */ jsx56(StepDetail, { a, step: selected }) : /* @__PURE__ */ jsx56("p", { className: "text-[0.8125rem] text-(--ui-text-tertiary)", children: a.pickStep }) })
+        /* @__PURE__ */ jsxs61("div", { className: "grid min-h-0 flex-1 grid-cols-[minmax(13rem,18rem)_1fr] max-sm:grid-cols-1", children: [
+          /* @__PURE__ */ jsx65("nav", { className: "min-h-0 overflow-y-auto border-r border-(--ui-stroke-tertiary) bg-(--ui-sidebar-surface-background) p-2 max-sm:max-h-56 max-sm:border-b max-sm:border-r-0", children: /* @__PURE__ */ jsx65(Timeline, { a, onSelect: setSelectedId, selectedId: selected?.id ?? null, task }) }),
+          /* @__PURE__ */ jsx65("div", { className: "min-h-0 overflow-y-auto px-6 py-5", children: selected ? /* @__PURE__ */ jsx65(StepDetail, { a, step: selected }) : /* @__PURE__ */ jsx65("p", { className: "text-[0.8125rem] text-(--ui-text-tertiary)", children: a.pickStep }) })
         ] })
       ]
     }
@@ -28097,7 +30874,7 @@ function ActivityDetailDialog({ onClose, task }) {
 
 // src/activity-subjects.ts
 init_sdk_compat();
-import { useEffect as useEffect21, useMemo as useMemo8 } from "react";
+import { useEffect as useEffect31, useMemo as useMemo8 } from "react";
 init_shared();
 var STORAGE_KEY3 = "activity-subjects-v1";
 var ENTRY_TTL_MS = 30 * 24 * 60 * 60 * 1e3;
@@ -28306,10 +31083,10 @@ function useActivitySubjects(tasks, messages, visible) {
     }),
     [layer.entries, requests, visible]
   );
-  useEffect21(() => {
+  useEffect31(() => {
     ensureActivitySubjects();
   }, []);
-  useEffect21(() => {
+  useEffect31(() => {
     if (!layer.ready) {
       return;
     }
@@ -28329,7 +31106,7 @@ function useActivitySubjects(tasks, messages, visible) {
 // src/work-board.tsx
 init_i18n();
 init_routing();
-import { Fragment as Fragment12, jsx as jsx57, jsxs as jsxs55 } from "react/jsx-runtime";
+import { Fragment as Fragment14, jsx as jsx66, jsxs as jsxs62 } from "react/jsx-runtime";
 var TILE_TONE = {
   done: "bg-(--ui-inline-code-background) text-(--ui-text-secondary)",
   error: "bg-destructive/10 text-destructive",
@@ -28342,13 +31119,13 @@ var TILE_ICON = {
   stopped: "debug-stop"
 };
 function StatusTile({ className, status }) {
-  return /* @__PURE__ */ jsx57(
+  return /* @__PURE__ */ jsx66(
     "span",
     {
       "aria-hidden": true,
       className: (0, sdk_compat_exports.cn)("grid size-9 shrink-0 place-items-center rounded-xl", TILE_TONE[status], className),
       "data-status": status,
-      children: status === "running" ? /* @__PURE__ */ jsx57(sdk_compat_exports.GlyphSpinner, { className: "text-[0.95rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { name: TILE_ICON[status], size: "1rem" })
+      children: status === "running" ? /* @__PURE__ */ jsx66(sdk_compat_exports.GlyphSpinner, { className: "text-[0.95rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { name: TILE_ICON[status], size: "1rem" })
     }
   );
 }
@@ -28392,10 +31169,10 @@ async function stopFocusedTurn(owner) {
   }
 }
 function BoardSection({ children, count, title }) {
-  return /* @__PURE__ */ jsxs55("section", { className: "grid min-w-0 gap-1.5", "data-testid": `work-section:${title}`, children: [
-    /* @__PURE__ */ jsxs55("h3", { className: "flex items-center gap-1.5 px-1 ui-section-label", children: [
+  return /* @__PURE__ */ jsxs62("section", { className: "grid min-w-0 gap-1.5", "data-testid": `work-section:${title}`, children: [
+    /* @__PURE__ */ jsxs62("h3", { className: "flex items-center gap-1.5 px-1 ui-section-label", children: [
       title,
-      count ? /* @__PURE__ */ jsx57("span", { className: "tabular-nums text-(--ui-text-quaternary)", children: count }) : null
+      count ? /* @__PURE__ */ jsx66("span", { className: "tabular-nums text-(--ui-text-quaternary)", children: count }) : null
     ] }),
     children
   ] });
@@ -28419,17 +31196,17 @@ function NowCard({
   const planText = planStep && plan ? plan.steps[planStep - 1] : null;
   const headline = planText || taskSubject(task, a);
   const progress = plan ? plan.doneSteps.size / plan.steps.length : null;
-  return /* @__PURE__ */ jsxs55(
+  return /* @__PURE__ */ jsxs62(
     "div",
     {
       className: "grid min-w-0 gap-2 rounded-xl border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) p-3 shadow-(--shadow-nous)",
       "data-testid": "work-now",
       children: [
-        /* @__PURE__ */ jsxs55("span", { className: "flex items-center gap-1.5 text-[0.75rem] font-medium text-(--ui-accent)", children: [
-          /* @__PURE__ */ jsx57(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem]", spinner: "breathe" }),
+        /* @__PURE__ */ jsxs62("span", { className: "flex items-center gap-1.5 text-[0.75rem] font-medium text-(--ui-accent)", children: [
+          /* @__PURE__ */ jsx66(sdk_compat_exports.GlyphSpinner, { className: "text-[0.8rem]", spinner: "breathe" }),
           planStep && plan ? w.stepOf(planStep, plan.steps.length) : a.working
         ] }),
-        /* @__PURE__ */ jsx57(
+        /* @__PURE__ */ jsx66(
           "span",
           {
             className: "text-[0.875rem] font-semibold leading-snug text-foreground [overflow-wrap:anywhere]",
@@ -28438,8 +31215,8 @@ function NowCard({
             children: headline
           }
         ),
-        /* @__PURE__ */ jsx57("span", { className: "truncate text-[0.75rem] text-(--ui-text-tertiary)", "data-testid": "work-now-live", children: live }),
-        progress !== null ? /* @__PURE__ */ jsx57(
+        /* @__PURE__ */ jsx66("span", { className: "truncate text-[0.75rem] text-(--ui-text-tertiary)", "data-testid": "work-now-live", children: live }),
+        progress !== null ? /* @__PURE__ */ jsx66(
           "span",
           {
             "aria-label": b.plan.stepsDone(plan.doneSteps.size, plan.steps.length),
@@ -28448,7 +31225,7 @@ function NowCard({
             "aria-valuenow": plan.doneSteps.size,
             className: "h-1 overflow-hidden rounded-full bg-(--ui-inline-code-background)",
             role: "progressbar",
-            children: /* @__PURE__ */ jsx57(
+            children: /* @__PURE__ */ jsx66(
               "span",
               {
                 className: "block h-full rounded-full bg-(--ui-accent) transition-[width] duration-500 motion-reduce:transition-none",
@@ -28457,18 +31234,18 @@ function NowCard({
             )
           }
         ) : null,
-        /* @__PURE__ */ jsxs55("span", { className: "flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
-          /* @__PURE__ */ jsxs55("span", { className: "truncate tabular-nums", children: [
+        /* @__PURE__ */ jsxs62("span", { className: "flex min-w-0 flex-wrap items-center justify-between gap-x-2 gap-y-1 text-[0.6875rem] text-(--ui-text-quaternary)", children: [
+          /* @__PURE__ */ jsxs62("span", { className: "truncate tabular-nums", children: [
             w.started((0, sdk_compat_exports.relativeTime)(task.startedAt * 1e3)),
             task.steps.length ? ` \xB7 ${a.steps(task.steps.length)}` : ""
           ] }),
-          /* @__PURE__ */ jsxs55("span", { className: "-mr-1.5 ml-auto flex shrink-0 items-center gap-0.5", children: [
-            onStop ? /* @__PURE__ */ jsxs55(sdk_compat_exports.Button, { onClick: onStop, size: "xs", variant: "ghost", children: [
-              /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { name: "debug-stop" }),
+          /* @__PURE__ */ jsxs62("span", { className: "-mr-1.5 ml-auto flex shrink-0 items-center gap-0.5", children: [
+            onStop ? /* @__PURE__ */ jsxs62(sdk_compat_exports.Button, { onClick: onStop, size: "xs", variant: "ghost", children: [
+              /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { name: "debug-stop" }),
               b.roster.stopRun
             ] }) : null,
-            /* @__PURE__ */ jsxs55(sdk_compat_exports.Button, { onClick: onOpen, size: "xs", variant: "ghost", children: [
-              /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { name: "eye" }),
+            /* @__PURE__ */ jsxs62(sdk_compat_exports.Button, { onClick: onOpen, size: "xs", variant: "ghost", children: [
+              /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { name: "eye" }),
               w.watch
             ] })
           ] })
@@ -28478,11 +31255,11 @@ function NowCard({
   );
 }
 function IdleNow({ name, w }) {
-  return /* @__PURE__ */ jsxs55("div", { className: "flex items-center gap-2.5 rounded-xl px-2 py-2", "data-testid": "work-idle", children: [
-    /* @__PURE__ */ jsx57("span", { "aria-hidden": true, className: "size-2 shrink-0 rounded-full bg-(--ui-text-quaternary)" }),
-    /* @__PURE__ */ jsxs55("span", { className: "grid min-w-0 gap-0.5", children: [
-      /* @__PURE__ */ jsx57("span", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: w.idleTitle }),
-      /* @__PURE__ */ jsx57("span", { className: "text-[0.75rem] leading-snug text-(--ui-text-tertiary)", children: w.idleBody(name) })
+  return /* @__PURE__ */ jsxs62("div", { className: "flex items-center gap-2.5 rounded-xl px-2 py-2", "data-testid": "work-idle", children: [
+    /* @__PURE__ */ jsx66("span", { "aria-hidden": true, className: "size-2 shrink-0 rounded-full bg-(--ui-text-quaternary)" }),
+    /* @__PURE__ */ jsxs62("span", { className: "grid min-w-0 gap-0.5", children: [
+      /* @__PURE__ */ jsx66("span", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: w.idleTitle }),
+      /* @__PURE__ */ jsx66("span", { className: "text-[0.75rem] leading-snug text-(--ui-text-tertiary)", children: w.idleBody(name) })
     ] })
   ] });
 }
@@ -28493,8 +31270,8 @@ function NextRow({
   title,
   warn
 }) {
-  const body = /* @__PURE__ */ jsxs55(Fragment12, { children: [
-    /* @__PURE__ */ jsx57(
+  const body = /* @__PURE__ */ jsxs62(Fragment14, { children: [
+    /* @__PURE__ */ jsx66(
       sdk_compat_exports.Codicon,
       {
         className: (0, sdk_compat_exports.cn)("mt-0.5 shrink-0", warn ? "hbp-fg-warn" : "text-(--ui-text-quaternary)"),
@@ -28502,9 +31279,9 @@ function NextRow({
         size: "0.85rem"
       }
     ),
-    /* @__PURE__ */ jsxs55("span", { className: "grid min-w-0 flex-1 gap-0.5", children: [
-      /* @__PURE__ */ jsx57("span", { className: "truncate text-[0.8125rem] text-foreground", children: title }),
-      /* @__PURE__ */ jsx57(
+    /* @__PURE__ */ jsxs62("span", { className: "grid min-w-0 flex-1 gap-0.5", children: [
+      /* @__PURE__ */ jsx66("span", { className: "truncate text-[0.8125rem] text-foreground", children: title }),
+      /* @__PURE__ */ jsx66(
         "span",
         {
           className: (0, sdk_compat_exports.cn)(
@@ -28516,7 +31293,7 @@ function NextRow({
       )
     ] })
   ] });
-  return /* @__PURE__ */ jsx57("li", { children: onOpen ? /* @__PURE__ */ jsx57(
+  return /* @__PURE__ */ jsx66("li", { children: onOpen ? /* @__PURE__ */ jsx66(
     "button",
     {
       className: "flex w-full min-w-0 gap-2.5 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)",
@@ -28524,7 +31301,7 @@ function NextRow({
       type: "button",
       children: body
     }
-  ) : /* @__PURE__ */ jsx57("div", { className: "flex min-w-0 gap-2.5 px-2 py-1.5", children: body }) });
+  ) : /* @__PURE__ */ jsx66("div", { className: "flex min-w-0 gap-2.5 px-2 py-1.5", children: body }) });
 }
 function routineWhen(job, w) {
   const at = job.next_run_at ? new Date(job.next_run_at).getTime() : NaN;
@@ -28537,7 +31314,7 @@ function DoneRow({ onOpen, task }) {
   const ended = task.completedAt ?? task.startedAt;
   const failed = task.status === "error" || task.status === "stopped";
   const subject = taskSubject(task, a);
-  return /* @__PURE__ */ jsx57("li", { children: /* @__PURE__ */ jsxs55(
+  return /* @__PURE__ */ jsx66("li", { children: /* @__PURE__ */ jsxs62(
     "button",
     {
       className: "group/done flex w-full min-w-0 items-start gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)",
@@ -28546,9 +31323,9 @@ function DoneRow({ onOpen, task }) {
       onClick: onOpen,
       type: "button",
       children: [
-        /* @__PURE__ */ jsx57(StatusTile, { className: "size-6 rounded-lg [&_.codicon]:text-[0.75rem]", status: task.status }),
-        /* @__PURE__ */ jsxs55("span", { className: "grid min-w-0 flex-1 gap-0.5", children: [
-          /* @__PURE__ */ jsx57(
+        /* @__PURE__ */ jsx66(StatusTile, { className: "size-6 rounded-lg [&_.codicon]:text-[0.75rem]", status: task.status }),
+        /* @__PURE__ */ jsxs62("span", { className: "grid min-w-0 flex-1 gap-0.5", children: [
+          /* @__PURE__ */ jsx66(
             "span",
             {
               className: "truncate text-[0.8125rem] font-medium leading-snug text-foreground",
@@ -28556,24 +31333,24 @@ function DoneRow({ onOpen, task }) {
               children: subject
             }
           ),
-          /* @__PURE__ */ jsxs55("span", { className: "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] tabular-nums", children: [
-            /* @__PURE__ */ jsx57("span", { className: failed ? "text-destructive" : "text-(--ui-text-quaternary)", children: [a.status[task.status], ended ? (0, sdk_compat_exports.relativeTime)(ended * 1e3) : ""].filter(Boolean).join(" \xB7 ") }),
-            receiptVerbs(task).map(([verb, count]) => /* @__PURE__ */ jsxs55(
+          /* @__PURE__ */ jsxs62("span", { className: "flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] tabular-nums", children: [
+            /* @__PURE__ */ jsx66("span", { className: failed ? "text-destructive" : "text-(--ui-text-quaternary)", children: [a.status[task.status], ended ? (0, sdk_compat_exports.relativeTime)(ended * 1e3) : ""].filter(Boolean).join(" \xB7 ") }),
+            receiptVerbs(task).map(([verb, count]) => /* @__PURE__ */ jsxs62(
               "span",
               {
                 className: "inline-flex items-center gap-1 rounded-md bg-(--ui-inline-code-background) px-1.5 py-px text-(--ui-text-tertiary)",
                 "data-testid": "receipt-verb",
                 title: a.verbs[verb],
                 children: [
-                  /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { name: VERB_ICONS[verb], size: "0.7rem" }),
-                  /* @__PURE__ */ jsx57("span", { children: `${a.verbs[verb]} ${count}` })
+                  /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { name: VERB_ICONS[verb], size: "0.7rem" }),
+                  /* @__PURE__ */ jsx66("span", { children: `${a.verbs[verb]} ${count}` })
                 ]
               },
               verb
             ))
           ] })
         ] }),
-        /* @__PURE__ */ jsx57("span", { className: "shrink-0 pt-0.5 text-[0.6875rem] text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover/done:opacity-100 group-focus-visible/done:opacity-100", children: a.work.receipt })
+        /* @__PURE__ */ jsx66("span", { className: "shrink-0 pt-0.5 text-[0.6875rem] text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover/done:opacity-100 group-focus-visible/done:opacity-100", children: a.work.receipt })
       ]
     }
   ) });
@@ -28591,8 +31368,8 @@ function WorkBoard({
   const raw = (0, sdk_compat_exports.useValue)(host.state.focusedActivity);
   const messages = (0, sdk_compat_exports.useValue)(host.state.focusedMessages);
   const plan = useMemo9(() => deriveBotPlanState(messages), [messages]);
-  const [openId, setOpenId] = useState37(null);
-  const [showAllDone, setShowAllDone] = useState37(false);
+  const [openId, setOpenId] = useState45(null);
+  const [showAllDone, setShowAllDone] = useState45(false);
   const visible = useMemo9(() => {
     const live = raw.at(-1)?.status === "running" ? [raw.at(-1)] : [];
     const settled2 = raw.filter((task) => task.status !== "running").reverse();
@@ -28611,18 +31388,18 @@ function WorkBoard({
     [jobs]
   );
   if (!tasks.length && !routines.length) {
-    return /* @__PURE__ */ jsx57("div", { className: "grid place-items-center px-6 py-10 text-center", "data-testid": "activity-empty", children: /* @__PURE__ */ jsxs55("div", { className: "grid max-w-60 gap-1.5", children: [
-      /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { className: "mx-auto text-(--ui-text-quaternary)", name: "pulse", size: "1.25rem" }),
-      /* @__PURE__ */ jsx57("div", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: a.emptyTitle }),
-      /* @__PURE__ */ jsx57("div", { className: "text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)", children: a.emptyBody(name) }),
-      onAddRoutine ? /* @__PURE__ */ jsxs55(sdk_compat_exports.Button, { className: "mt-2 justify-self-center", onClick: onAddRoutine, size: "xs", variant: "secondary", children: [
-        /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { name: "add" }),
+    return /* @__PURE__ */ jsx66("div", { className: "grid place-items-center px-6 py-10 text-center", "data-testid": "activity-empty", children: /* @__PURE__ */ jsxs62("div", { className: "grid max-w-60 gap-1.5", children: [
+      /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { className: "mx-auto text-(--ui-text-quaternary)", name: "pulse", size: "1.25rem" }),
+      /* @__PURE__ */ jsx66("div", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: a.emptyTitle }),
+      /* @__PURE__ */ jsx66("div", { className: "text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)", children: a.emptyBody(name) }),
+      onAddRoutine ? /* @__PURE__ */ jsxs62(sdk_compat_exports.Button, { className: "mt-2 justify-self-center", onClick: onAddRoutine, size: "xs", variant: "secondary", children: [
+        /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { name: "add" }),
         w.addRoutine
       ] }) : null
     ] }) });
   }
-  return /* @__PURE__ */ jsxs55("div", { className: "grid min-w-0 gap-5 px-3 pb-4 pt-1", "data-testid": "activity-feed", children: [
-    /* @__PURE__ */ jsx57(BoardSection, { title: w.now, children: running ? /* @__PURE__ */ jsx57(
+  return /* @__PURE__ */ jsxs62("div", { className: "grid min-w-0 gap-5 px-3 pb-4 pt-1", "data-testid": "activity-feed", children: [
+    /* @__PURE__ */ jsx66(BoardSection, { title: w.now, children: running ? /* @__PURE__ */ jsx66(
       NowCard,
       {
         onOpen: () => setOpenId(running.id),
@@ -28634,10 +31411,10 @@ function WorkBoard({
         plan: livePlan,
         task: running
       }
-    ) : /* @__PURE__ */ jsx57(IdleNow, { name, w }) }),
-    planNext.length || routines.length || onAddRoutine ? /* @__PURE__ */ jsxs55(BoardSection, { title: w.next, children: [
-      /* @__PURE__ */ jsxs55("ul", { className: "grid gap-0.5", children: [
-        planNext.map((step, i) => /* @__PURE__ */ jsx57(
+    ) : /* @__PURE__ */ jsx66(IdleNow, { name, w }) }),
+    planNext.length || routines.length || onAddRoutine ? /* @__PURE__ */ jsxs62(BoardSection, { title: w.next, children: [
+      /* @__PURE__ */ jsxs62("ul", { className: "grid gap-0.5", children: [
+        planNext.map((step, i) => /* @__PURE__ */ jsx66(
           NextRow,
           {
             detail: i === 0 ? w.afterThisStep : w.laterInPlan,
@@ -28646,7 +31423,7 @@ function WorkBoard({
           },
           `plan-${step.n}`
         )),
-        routines.map((job) => /* @__PURE__ */ jsx57(
+        routines.map((job) => /* @__PURE__ */ jsx66(
           NextRow,
           {
             detail: routineWhen(job, w),
@@ -28658,14 +31435,14 @@ function WorkBoard({
           job.job_id
         ))
       ] }),
-      onAddRoutine ? /* @__PURE__ */ jsxs55(sdk_compat_exports.Button, { className: "justify-self-start", onClick: onAddRoutine, size: "xs", variant: "ghost", children: [
-        /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { name: "add" }),
+      onAddRoutine ? /* @__PURE__ */ jsxs62(sdk_compat_exports.Button, { className: "justify-self-start", onClick: onAddRoutine, size: "xs", variant: "ghost", children: [
+        /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { name: "add" }),
         w.addRoutine
       ] }) : null
     ] }) : null,
-    done.length ? /* @__PURE__ */ jsxs55(BoardSection, { count: done.length, title: w.done, children: [
-      /* @__PURE__ */ jsx57("ol", { className: "grid gap-0.5", children: shownDone.map((task) => /* @__PURE__ */ jsx57(DoneRow, { onOpen: () => setOpenId(task.id), task }, task.id)) }),
-      done.length > DONE_PREVIEW ? /* @__PURE__ */ jsx57(
+    done.length ? /* @__PURE__ */ jsxs62(BoardSection, { count: done.length, title: w.done, children: [
+      /* @__PURE__ */ jsx66("ol", { className: "grid gap-0.5", children: shownDone.map((task) => /* @__PURE__ */ jsx66(DoneRow, { onOpen: () => setOpenId(task.id), task }, task.id)) }),
+      done.length > DONE_PREVIEW ? /* @__PURE__ */ jsx66(
         sdk_compat_exports.Button,
         {
           className: "justify-self-start",
@@ -28676,12 +31453,12 @@ function WorkBoard({
         }
       ) : null
     ] }) : null,
-    /* @__PURE__ */ jsx57(ActivityDetailDialog, { onClose: () => setOpenId(null), task: open })
+    /* @__PURE__ */ jsx66(ActivityDetailDialog, { onClose: () => setOpenId(null), task: open })
   ] });
 }
 
 // src/mission-rail.tsx
-import { Fragment as Fragment13, jsx as jsx58, jsxs as jsxs56 } from "react/jsx-runtime";
+import { Fragment as Fragment15, jsx as jsx67, jsxs as jsxs63 } from "react/jsx-runtime";
 function RailSection({
   action,
   children,
@@ -28689,9 +31466,9 @@ function RailSection({
   title
 }) {
   const collapsed = Boolean((0, sdk_compat_exports.useValue)($railCollapsed)[id]);
-  return /* @__PURE__ */ jsxs56("section", { className: "border-t border-(--ui-stroke-secondary)", "data-testid": `rail-section:${id}`, children: [
-    /* @__PURE__ */ jsxs56("div", { className: "flex items-center", children: [
-      /* @__PURE__ */ jsxs56(
+  return /* @__PURE__ */ jsxs63("section", { className: "border-t border-(--ui-stroke-secondary)", "data-testid": `rail-section:${id}`, children: [
+    /* @__PURE__ */ jsxs63("div", { className: "flex items-center", children: [
+      /* @__PURE__ */ jsxs63(
         "button",
         {
           "aria-expanded": !collapsed,
@@ -28700,12 +31477,12 @@ function RailSection({
           onClick: () => setRailSectionCollapsed(id, !collapsed),
           type: "button",
           children: [
-            /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { className: "text-(--ui-text-quaternary)", name: collapsed ? "chevron-right" : "chevron-down" }),
-            /* @__PURE__ */ jsx58("span", { className: "truncate ui-section-label", children: title })
+            /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { className: "text-(--ui-text-quaternary)", name: collapsed ? "chevron-right" : "chevron-down" }),
+            /* @__PURE__ */ jsx67("span", { className: "truncate ui-section-label", children: title })
           ]
         }
       ),
-      action && !collapsed ? /* @__PURE__ */ jsx58("span", { className: "shrink-0 px-1", children: action }) : null
+      action && !collapsed ? /* @__PURE__ */ jsx67("span", { className: "shrink-0 px-1", children: action }) : null
     ] }),
     collapsed ? null : children
   ] });
@@ -28731,11 +31508,11 @@ function BotHero2({
   const inFlight2 = tasks.at(-1)?.steps.some((step) => step.action.status === "running");
   const mood = now ? inFlight2 ? "work" : "think" : WORKING_KINDS2.has(live.kind) ? "work" : "idle";
   const share = useShareText();
-  const [sharing, setSharing] = useState38(false);
-  return /* @__PURE__ */ jsxs56("div", { className: "px-4 pb-4 pt-4", "data-testid": "rail-profile-card", children: [
-    /* @__PURE__ */ jsxs56("div", { className: "flex min-w-0 items-start gap-3", children: [
-      /* @__PURE__ */ jsxs56("div", { className: "relative shrink-0", children: [
-        /* @__PURE__ */ jsx58(
+  const [sharing, setSharing] = useState46(false);
+  return /* @__PURE__ */ jsxs63("div", { className: "px-4 pb-4 pt-4", "data-testid": "rail-profile-card", children: [
+    /* @__PURE__ */ jsxs63("div", { className: "flex min-w-0 items-start gap-3", children: [
+      /* @__PURE__ */ jsxs63("div", { className: "relative shrink-0", children: [
+        /* @__PURE__ */ jsx67(
           BotFace,
           {
             color: avatarColor(color, bot.name),
@@ -28746,7 +31523,7 @@ function BotHero2({
             size: 48
           }
         ),
-        /* @__PURE__ */ jsx58(sdk_compat_exports.Tip, { label: b.bot.editTitle, children: /* @__PURE__ */ jsx58(
+        /* @__PURE__ */ jsx67(sdk_compat_exports.Tip, { label: b.bot.editTitle, children: /* @__PURE__ */ jsx67(
           sdk_compat_exports.Button,
           {
             "aria-label": b.bot.editTitle,
@@ -28754,13 +31531,13 @@ function BotHero2({
             onClick: onEdit,
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "edit", size: "0.8rem" })
+            children: /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "edit", size: "0.8rem" })
           }
         ) })
       ] }),
-      /* @__PURE__ */ jsxs56("div", { className: "min-w-0 flex-1", children: [
-        /* @__PURE__ */ jsx58("h2", { className: "max-w-full truncate text-base font-semibold leading-tight text-foreground", children: name }),
-        /* @__PURE__ */ jsxs56(
+      /* @__PURE__ */ jsxs63("div", { className: "min-w-0 flex-1", children: [
+        /* @__PURE__ */ jsx67("h2", { className: "max-w-full truncate text-base font-semibold leading-tight text-foreground", children: name }),
+        /* @__PURE__ */ jsxs63(
           "p",
           {
             className: (0, sdk_compat_exports.cn)(
@@ -28770,7 +31547,7 @@ function BotHero2({
             "data-testid": "rail-live-line",
             "data-tone": tone,
             children: [
-              tone === "working" ? /* @__PURE__ */ jsx58(sdk_compat_exports.GlyphSpinner, { className: "shrink-0 text-[0.85rem] text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx58(
+              tone === "working" ? /* @__PURE__ */ jsx67(sdk_compat_exports.GlyphSpinner, { className: "shrink-0 text-[0.85rem] text-(--ui-accent)", spinner: "breathe" }) : /* @__PURE__ */ jsx67(
                 "span",
                 {
                   "aria-hidden": true,
@@ -28780,23 +31557,23 @@ function BotHero2({
                   )
                 }
               ),
-              /* @__PURE__ */ jsx58("span", { className: "min-w-0 wrap-anywhere", children: now ?? botLiveStatusLabel(live, b.roster) })
+              /* @__PURE__ */ jsx67("span", { className: "min-w-0 wrap-anywhere", children: now ?? botLiveStatusLabel(live, b.roster) })
             ]
           },
           tone
         ),
-        /* @__PURE__ */ jsx58("p", { className: "mt-1 max-w-full truncate text-xs text-(--ui-text-tertiary)", children: [subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : ""].filter(Boolean).join(" \xB7 ") })
+        /* @__PURE__ */ jsx67("p", { className: "mt-1 max-w-full truncate text-xs text-(--ui-text-tertiary)", children: [subtitle, where, name.trim().toLowerCase() !== handle.toLowerCase() ? `@${handle}` : ""].filter(Boolean).join(" \xB7 ") })
       ] })
     ] }),
-    /* @__PURE__ */ jsxs56("div", { className: "mt-4 flex flex-wrap items-center gap-1", children: [
-      /* @__PURE__ */ jsxs56(sdk_compat_exports.Button, { onClick: () => void newBotChat(bot), size: "xs", children: [
-        /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "comment-add" }),
+    /* @__PURE__ */ jsxs63("div", { className: "mt-4 flex flex-wrap items-center gap-1", children: [
+      /* @__PURE__ */ jsxs63(sdk_compat_exports.Button, { onClick: () => void newBotChat(bot), size: "xs", children: [
+        /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "comment-add" }),
         b.bot.newTopic
       ] }),
-      /* @__PURE__ */ jsx58(BotTopicProjectMenu, { bot }),
-      /* @__PURE__ */ jsx58(sdk_compat_exports.Tip, { label: b.roster.openChat, children: /* @__PURE__ */ jsx58(sdk_compat_exports.Button, { "aria-label": b.roster.openChat, onClick: () => void openRosterBot(bot), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "comment" }) }) }),
-      /* @__PURE__ */ jsx58(sdk_compat_exports.Tip, { label: share.title(name), children: /* @__PURE__ */ jsx58(sdk_compat_exports.Button, { "aria-label": share.title(name), onClick: () => setSharing(true), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "share" }) }) }),
-      /* @__PURE__ */ jsx58(ShareBotDialog, { bot, meta: meta ?? null, onOpenChange: setSharing, open: sharing })
+      /* @__PURE__ */ jsx67(BotTopicProjectMenu, { bot }),
+      /* @__PURE__ */ jsx67(sdk_compat_exports.Tip, { label: b.roster.openChat, children: /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { "aria-label": b.roster.openChat, onClick: () => void openRosterBot(bot), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "comment" }) }) }),
+      /* @__PURE__ */ jsx67(sdk_compat_exports.Tip, { label: share.title(name), children: /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { "aria-label": share.title(name), onClick: () => setSharing(true), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "share" }) }) }),
+      /* @__PURE__ */ jsx67(ShareBotDialog, { bot, meta: meta ?? null, onOpenChange: setSharing, open: sharing })
     ] })
   ] });
 }
@@ -28821,10 +31598,10 @@ function ApprovalsPanel({ bot, name }) {
   const listed = withoutJournalled(sessionId ? items.filter((item) => item.sessionId === sessionId) : [], journal);
   const live = listed.length || !gate || journal?.some((row) => row.request_id === gate.id) ? listed : [gate];
   const mine = journal?.some((row) => row.status === "pending") ? live.filter((item) => item.kind !== "approval") : live;
-  return /* @__PURE__ */ jsxs56("div", { className: "grid gap-3 px-3 pb-3 pt-1", children: [
-    journal?.length ? /* @__PURE__ */ jsx58(JournalApprovals, { rows: journal, storedSessionId }) : null,
-    mine.length ? /* @__PURE__ */ jsx58("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs56("li", { className: "hbp-enter flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2", children: [
-      /* @__PURE__ */ jsx58(
+  return /* @__PURE__ */ jsxs63("div", { className: "grid gap-3 px-3 pb-3 pt-1", children: [
+    journal?.length ? /* @__PURE__ */ jsx67(JournalApprovals, { rows: journal, storedSessionId }) : null,
+    mine.length ? /* @__PURE__ */ jsx67("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs63("li", { className: "hbp-enter flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2", children: [
+      /* @__PURE__ */ jsx67(
         sdk_compat_exports.Codicon,
         {
           className: "mt-0.5 shrink-0 hbp-fg-warn",
@@ -28832,20 +31609,20 @@ function ApprovalsPanel({ bot, name }) {
           size: "0.95rem"
         }
       ),
-      /* @__PURE__ */ jsxs56("span", { className: "grid min-w-0 gap-0.5", children: [
-        /* @__PURE__ */ jsx58("span", { className: "text-[0.8125rem] font-medium leading-snug text-foreground [overflow-wrap:anywhere]", children: item.title }),
-        item.detail ? /* @__PURE__ */ jsx58("span", { className: "line-clamp-2 text-[0.75rem] text-(--ui-text-tertiary)", children: item.detail }) : null
+      /* @__PURE__ */ jsxs63("span", { className: "grid min-w-0 gap-0.5", children: [
+        /* @__PURE__ */ jsx67("span", { className: "text-[0.8125rem] font-medium leading-snug text-foreground [overflow-wrap:anywhere]", children: item.title }),
+        item.detail ? /* @__PURE__ */ jsx67("span", { className: "line-clamp-2 text-[0.75rem] text-(--ui-text-tertiary)", children: item.detail }) : null
       ] })
-    ] }, item.id)) }) : journal?.length ? null : /* @__PURE__ */ jsxs56("div", { className: "grid gap-1 px-1 py-4 text-center", children: [
-      /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { className: "mx-auto text-(--ui-text-quaternary)", name: "shield", size: "1.2rem" }),
-      /* @__PURE__ */ jsx58("div", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: a.approvalsEmpty }),
-      /* @__PURE__ */ jsx58("div", { className: "text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)", children: a.approvalsBody })
+    ] }, item.id)) }) : journal?.length ? null : /* @__PURE__ */ jsxs63("div", { className: "grid gap-1 px-1 py-4 text-center", children: [
+      /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { className: "mx-auto text-(--ui-text-quaternary)", name: "shield", size: "1.2rem" }),
+      /* @__PURE__ */ jsx67("div", { className: "text-[0.8125rem] font-medium text-(--ui-text-secondary)", children: a.approvalsEmpty }),
+      /* @__PURE__ */ jsx67("div", { className: "text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)", children: a.approvalsBody })
     ] }),
-    typeof host.navigate === "function" ? /* @__PURE__ */ jsxs56(sdk_compat_exports.Button, { className: "justify-self-center", onClick: () => host.navigate("/inbox"), size: "xs", variant: "ghost", children: [
-      /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "inbox" }),
+    typeof host.navigate === "function" ? /* @__PURE__ */ jsxs63(sdk_compat_exports.Button, { className: "justify-self-center", onClick: () => host.navigate("/inbox"), size: "xs", variant: "ghost", children: [
+      /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "inbox" }),
       a.openInbox
     ] }) : null,
-    !bot.remoteSource && /* @__PURE__ */ jsx58(AskRulesCard, { name, profile: bot.name })
+    !bot.remoteSource && /* @__PURE__ */ jsx67(AskRulesCard, { name, profile: bot.name })
   ] });
 }
 function useLiveGate(sessionId, title) {
@@ -28863,16 +31640,16 @@ function AutopilotChips({
   if (!presets.length) {
     return null;
   }
-  return /* @__PURE__ */ jsxs56("div", { className: "mx-2.5 mb-2 mt-1 rounded-xl bg-(--ui-widget-surface-background) p-2.5", "data-slot": "autopilot", children: [
-    /* @__PURE__ */ jsx58("p", { className: "text-[0.75rem] font-medium text-foreground", children: a.heading(name) }),
-    /* @__PURE__ */ jsx58("p", { className: "mb-2 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)", children: a.hint }),
-    /* @__PURE__ */ jsxs56("div", { className: "flex flex-wrap gap-1", children: [
-      presets.map(({ id, label, preset }) => /* @__PURE__ */ jsxs56(sdk_compat_exports.Button, { onClick: () => onPick(preset), size: "xs", variant: "secondary", children: [
-        /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: AUTOPILOT_ICONS[id] }),
+  return /* @__PURE__ */ jsxs63("div", { className: "mx-2.5 mb-2 mt-1 rounded-xl bg-(--ui-widget-surface-background) p-2.5", "data-slot": "autopilot", children: [
+    /* @__PURE__ */ jsx67("p", { className: "text-[0.75rem] font-medium text-foreground", children: a.heading(name) }),
+    /* @__PURE__ */ jsx67("p", { className: "mb-2 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)", children: a.hint }),
+    /* @__PURE__ */ jsxs63("div", { className: "flex flex-wrap gap-1", children: [
+      presets.map(({ id, label, preset }) => /* @__PURE__ */ jsxs63(sdk_compat_exports.Button, { onClick: () => onPick(preset), size: "xs", variant: "secondary", children: [
+        /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: AUTOPILOT_ICONS[id] }),
         label
       ] }, id)),
-      onCustom && /* @__PURE__ */ jsxs56(sdk_compat_exports.Button, { onClick: onCustom, size: "xs", variant: "ghost", children: [
-        /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "add" }),
+      onCustom && /* @__PURE__ */ jsxs63(sdk_compat_exports.Button, { onClick: onCustom, size: "xs", variant: "ghost", children: [
+        /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "add" }),
         a.custom
       ] })
     ] })
@@ -28898,10 +31675,10 @@ function MissionRail() {
   const b = useBots();
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const c = t2.cron;
-  const [createOpen, setCreateOpen] = useState38(false);
-  const [createOwner, setCreateOwner] = useState38(null);
-  const [detailJobId, setDetailJobId] = useState38(null);
-  const [editing, setEditing] = useState38(false);
+  const [createOpen, setCreateOpen] = useState46(false);
+  const [createOwner, setCreateOwner] = useState46(null);
+  const [detailJobId, setDetailJobId] = useState46(null);
+  const [editing, setEditing] = useState46(false);
   const tab = (0, sdk_compat_exports.useValue)($railTab);
   const attention = (0, sdk_compat_exports.useValue)(host.state.attentionItems);
   const focusedSessionId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
@@ -28909,7 +31686,7 @@ function MissionRail() {
   const listedApprovals = focusedSessionId ? attention.filter((item) => item.sessionId === focusedSessionId).length : 0;
   const approvalCount = listedApprovals || (liveGate ? 1 : 0);
   const createTarget = owner ? routineCreateTarget(createOwner, bot) : null;
-  const [preset, setPreset] = useState38(null);
+  const [preset, setPreset] = useState46(null);
   const openCreate = (seed = null) => {
     if (!owner) {
       return;
@@ -28919,7 +31696,7 @@ function MissionRail() {
     setCreateOpen(true);
   };
   if (!owner) {
-    return /* @__PURE__ */ jsx58(sdk_compat_exports.PanelEmpty, { description: b.cron.needsRosterFirst, icon: "hubot", title: b.rail.title });
+    return /* @__PURE__ */ jsx67(sdk_compat_exports.PanelEmpty, { description: b.cron.needsRosterFirst, icon: "hubot", title: b.rail.title });
   }
   const view = selectRoutineJobs(data, error, $lastJobs.get(), bot);
   if (view.live) {
@@ -28930,10 +31707,10 @@ function MissionRail() {
   const staleNotice = error && !view.live && view.all.length ? b.cron.staleNotice : null;
   const filterHint = routineFilterHint(view.all, jobs);
   const ownsFocus = !!focusedOwner && isActiveRosterBot(owner, focusedOwner);
-  return /* @__PURE__ */ jsxs56("div", { className: "flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain", children: [
-    /* @__PURE__ */ jsx58(BotHero2, { bot: owner, focused: ownsFocus, meta, onEdit: () => setEditing(true) }),
-    ownsFocus ? /* @__PURE__ */ jsx58(ContextPanel, { bot: owner }) : null,
-    /* @__PURE__ */ jsx58(
+  return /* @__PURE__ */ jsxs63("div", { className: "flex h-full min-h-0 min-w-0 flex-col overflow-x-hidden overflow-y-auto overscroll-contain", children: [
+    /* @__PURE__ */ jsx67(BotHero2, { bot: owner, focused: ownsFocus, meta, onEdit: () => setEditing(true) }),
+    ownsFocus ? /* @__PURE__ */ jsx67(ContextPanel, { bot: owner }) : null,
+    /* @__PURE__ */ jsx67(
       RailTabs,
       {
         alerts: { scheduled: jobs.some(routineNeedsAttention) },
@@ -28942,7 +31719,7 @@ function MissionRail() {
         value: tab
       }
     ),
-    /* @__PURE__ */ jsxs56(
+    /* @__PURE__ */ jsxs63(
       "div",
       {
         "aria-labelledby": `rail-tab-${tab}`,
@@ -28952,7 +31729,7 @@ function MissionRail() {
         role: "tabpanel",
         tabIndex: 0,
         children: [
-          tab === "activity" ? /* @__PURE__ */ jsx58(
+          tab === "activity" ? /* @__PURE__ */ jsx67(
             WorkBoard,
             {
               jobs,
@@ -28962,21 +31739,21 @@ function MissionRail() {
               owner
             }
           ) : null,
-          tab === "approvals" ? /* @__PURE__ */ jsx58(ApprovalsPanel, { bot: owner, name: displayName(owner, meta) }) : null,
-          tab === "scheduled" ? /* @__PURE__ */ jsxs56(Fragment13, { children: [
-            /* @__PURE__ */ jsx58(RailSection, { id: "tasks", title: b.rail.tasks, children: /* @__PURE__ */ jsx58(BotTaskLog, { jobs, onOpenRoutine: setDetailJobId, owner }) }),
-            /* @__PURE__ */ jsxs56(
+          tab === "approvals" ? /* @__PURE__ */ jsx67(ApprovalsPanel, { bot: owner, name: displayName(owner, meta) }) : null,
+          tab === "scheduled" ? /* @__PURE__ */ jsxs63(Fragment15, { children: [
+            /* @__PURE__ */ jsx67(RailSection, { id: "tasks", title: b.rail.tasks, children: /* @__PURE__ */ jsx67(BotTaskLog, { jobs, onOpenRoutine: setDetailJobId, owner }) }),
+            /* @__PURE__ */ jsxs63(
               RailSection,
               {
-                action: /* @__PURE__ */ jsx58(sdk_compat_exports.Tip, { label: c.newCron, children: /* @__PURE__ */ jsx58(sdk_compat_exports.Button, { "aria-label": c.newCron, onClick: () => openCreate(), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx58(sdk_compat_exports.Codicon, { name: "add" }) }) }),
+                action: /* @__PURE__ */ jsx67(sdk_compat_exports.Tip, { label: c.newCron, children: /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { "aria-label": c.newCron, onClick: () => openCreate(), size: "icon-xs", variant: "ghost", children: /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "add" }) }) }),
                 id: "routines",
                 title: c.title,
                 children: [
-                  staleNotice ? /* @__PURE__ */ jsx58("div", { className: "mx-3 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: staleNotice }) : null,
-                  isLoading && !view.all.length ? /* @__PURE__ */ jsx58("div", { className: "flex items-center justify-center py-4", children: /* @__PURE__ */ jsx58(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !view.all.length ? /* @__PURE__ */ jsx58(
+                  staleNotice ? /* @__PURE__ */ jsx67("div", { className: "mx-3 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: staleNotice }) : null,
+                  isLoading && !view.all.length ? /* @__PURE__ */ jsx67("div", { className: "flex items-center justify-center py-4", children: /* @__PURE__ */ jsx67(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !view.all.length ? /* @__PURE__ */ jsx67(
                     sdk_compat_exports.PanelEmpty,
                     {
-                      action: /* @__PURE__ */ jsx58(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t2.common.retry }),
+                      action: /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t2.common.retry }),
                       description: b.cron.readFailure,
                       icon: "warning",
                       title: c.failedLoad
@@ -28984,7 +31761,7 @@ function MissionRail() {
                   ) : jobs.length === 0 && !filterHint ? (
                     // Nothing scheduled and nothing hidden by the filter: the autopilot
                     // card below IS the empty state, with a way to write one from scratch.
-                    /* @__PURE__ */ jsx58(
+                    /* @__PURE__ */ jsx67(
                       AutopilotChips,
                       {
                         name: displayName(owner, meta),
@@ -28996,16 +31773,16 @@ function MissionRail() {
                   ) : jobs.length === 0 ? (
                     // `filterHint` is the informative case (jobs exist on the profile but
                     // none are tagged for this bot), so it wins the description slot.
-                    /* @__PURE__ */ jsx58(
+                    /* @__PURE__ */ jsx67(
                       sdk_compat_exports.PanelEmpty,
                       {
-                        action: /* @__PURE__ */ jsx58(sdk_compat_exports.Button, { onClick: () => openCreate(), size: "sm", children: c.newCron }),
+                        action: /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { onClick: () => openCreate(), size: "sm", children: c.newCron }),
                         description: filterHint || c.emptyDescNew,
                         icon: "watch",
                         title: c.emptyTitleNew
                       }
                     )
-                  ) : /* @__PURE__ */ jsx58("div", { className: "grid gap-1.5 px-2.5 pb-2 pt-1", children: jobs.map((job) => /* @__PURE__ */ jsx58(
+                  ) : /* @__PURE__ */ jsx67("div", { className: "grid gap-1.5 px-2.5 pb-2 pt-1", children: jobs.map((job) => /* @__PURE__ */ jsx67(
                     RoutineRow,
                     {
                       job,
@@ -29014,7 +31791,7 @@ function MissionRail() {
                     },
                     job.job_id
                   )) }),
-                  !isLoading && !error && jobs.length > 0 && /* @__PURE__ */ jsx58(
+                  !isLoading && !error && jobs.length > 0 && /* @__PURE__ */ jsx67(
                     AutopilotChips,
                     {
                       name: displayName(owner, meta),
@@ -29026,9 +31803,9 @@ function MissionRail() {
               }
             )
           ] }) : null,
-          tab === "bot" ? /* @__PURE__ */ jsxs56(Fragment13, { children: [
-            /* @__PURE__ */ jsx58(BotCardMeta, { bot: owner }),
-            !owner.remoteSource && /* @__PURE__ */ jsx58(
+          tab === "bot" ? /* @__PURE__ */ jsxs63(Fragment15, { children: [
+            /* @__PURE__ */ jsx67(BotCardMeta, { bot: owner }),
+            !owner.remoteSource && /* @__PURE__ */ jsx67(
               ReachCard,
               {
                 className: "mx-3 mb-3",
@@ -29037,14 +31814,14 @@ function MissionRail() {
                 profile: owner.name
               }
             ),
-            /* @__PURE__ */ jsx58(RailSection, { id: "computer", title: b.screen.panelTitle, children: /* @__PURE__ */ jsx58("div", { className: "px-3 pb-2 pt-1", children: /* @__PURE__ */ jsx58(BotComputerPanel, { bot: owner, meta }) }) }),
-            /* @__PURE__ */ jsx58("div", { className: "border-t border-(--ui-stroke-secondary)", children: /* @__PURE__ */ jsx58(BotDeliverablesSection, { owner }) })
+            /* @__PURE__ */ jsx67(RailSection, { id: "computer", title: b.screen.panelTitle, children: /* @__PURE__ */ jsx67("div", { className: "px-3 pb-2 pt-1", children: /* @__PURE__ */ jsx67(BotComputerPanel, { bot: owner, meta }) }) }),
+            /* @__PURE__ */ jsx67("div", { className: "border-t border-(--ui-stroke-secondary)", children: /* @__PURE__ */ jsx67(BotDeliverablesSection, { owner }) })
           ] }) : null
         ]
       },
       tab
     ),
-    /* @__PURE__ */ jsx58(
+    /* @__PURE__ */ jsx67(
       RoutineDetailDialog,
       {
         job: detailJob,
@@ -29053,7 +31830,7 @@ function MissionRail() {
         owner
       }
     ),
-    /* @__PURE__ */ jsx58(
+    /* @__PURE__ */ jsx67(
       CreateRoutineDialog,
       {
         bot: createTarget,
@@ -29067,13 +31844,13 @@ function MissionRail() {
       },
       typeof createTarget === "string" ? createTarget : botRosterKey(createTarget)
     ),
-    /* @__PURE__ */ jsx58(EditProfileDialog, { bot: editing ? owner : null, onClose: () => setEditing(false), open: editing })
+    /* @__PURE__ */ jsx67(EditProfileDialog, { bot: editing ? owner : null, onClose: () => setEditing(false), open: editing })
   ] });
 }
 
 // src/roster-pane.tsx
 init_sdk_compat();
-import { useEffect as useEffect28, useRef as useRef17, useState as useState47 } from "react";
+import { useEffect as useEffect38, useRef as useRef24, useState as useState55 } from "react";
 
 // src/bot-card.tsx
 init_sdk_compat();
@@ -29375,7 +32152,7 @@ function groupRowsBySection(rows, sections, metaByName, groupRooms = {}) {
 var BOT_DRAG_MIME = "application/x-hermes-bot-key";
 
 // src/bot-menu.tsx
-import { jsx as jsx59, jsxs as jsxs57 } from "react/jsx-runtime";
+import { jsx as jsx68, jsxs as jsxs64 } from "react/jsx-runtime";
 function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, onNewSection }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
@@ -29409,16 +32186,16 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
   const notifyMode = ownerNotifyModes[notifyKey];
   const sections = (0, sdk_compat_exports.useValue)($botSections);
   const currentSectionId = botSectionId(bot, allMeta);
-  return /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenu, { children: [
-    /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children }),
-    /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuContent, { children: [
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { onSelect: () => void openRosterBot(bot), children: b.bot.openBotChat }),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { disabled: !canStop, onSelect: stopRun, children: b.roster.stopRun }),
-      deliveryInflight || attention.reason ? /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { onSelect: () => retryBotDeliveries(), children: b.roster.retryDeliveries }) : null,
-      onAssignTask ? /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { onSelect: () => onAssignTask(bot), children: b.mailbox.assignTask }) : null,
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { onSelect: () => openBotScreen(bot, meta), children: b.screen.menu }),
-      !bot.remoteSource && typeof host.navigate === "function" && /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { onSelect: () => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`), children: b.bot.continueOnPhone }),
-      /* @__PURE__ */ jsx59(
+  return /* @__PURE__ */ jsxs64(sdk_compat_exports.ContextMenu, { children: [
+    /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children }),
+    /* @__PURE__ */ jsxs64(sdk_compat_exports.ContextMenuContent, { children: [
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: () => void openRosterBot(bot), children: b.bot.openBotChat }),
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { disabled: !canStop, onSelect: stopRun, children: b.roster.stopRun }),
+      deliveryInflight || attention.reason ? /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: () => retryBotDeliveries(), children: b.roster.retryDeliveries }) : null,
+      onAssignTask ? /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: () => onAssignTask(bot), children: b.mailbox.assignTask }) : null,
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: () => openBotScreen(bot, meta), children: b.screen.menu }),
+      !bot.remoteSource && typeof host.navigate === "function" && /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: () => host.navigate(`/messaging?profile=${encodeURIComponent(bot.name)}`), children: b.bot.continueOnPhone }),
+      /* @__PURE__ */ jsx68(
         sdk_compat_exports.ContextMenuCheckboxItem,
         {
           checked: Boolean(meta?.screenAutoOpen),
@@ -29435,8 +32212,8 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: b.screen.autoOpenMenu
         }
       ),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx59(
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx68(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -29454,7 +32231,7 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: pinned ? b.bot.unpin : b.bot.pinToTop
         }
       ),
-      /* @__PURE__ */ jsx59(
+      /* @__PURE__ */ jsx68(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -29475,7 +32252,7 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: hidden ? b.bot.unhide : b.bot.hide
         }
       ),
-      typeof toggleSessionWatched === "function" ? /* @__PURE__ */ jsx59(
+      typeof toggleSessionWatched === "function" ? /* @__PURE__ */ jsx68(
         sdk_compat_exports.ContextMenuCheckboxItem,
         {
           checked: watched,
@@ -29493,10 +32270,10 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: b.bot.watch
         }
       ) : null,
-      /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuSub, { children: [
-        /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSubTrigger, { children: b.bot.notifications }),
-        /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuSubContent, { children: [
-          /* @__PURE__ */ jsx59(
+      /* @__PURE__ */ jsxs64(sdk_compat_exports.ContextMenuSub, { children: [
+        /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSubTrigger, { children: b.bot.notifications }),
+        /* @__PURE__ */ jsxs64(sdk_compat_exports.ContextMenuSubContent, { children: [
+          /* @__PURE__ */ jsx68(
             sdk_compat_exports.ContextMenuCheckboxItem,
             {
               checked: notifyMode === "muted",
@@ -29504,7 +32281,7 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
               children: b.bot.muteAll
             }
           ),
-          /* @__PURE__ */ jsx59(
+          /* @__PURE__ */ jsx68(
             sdk_compat_exports.ContextMenuCheckboxItem,
             {
               checked: notifyMode === "quiet",
@@ -29514,23 +32291,23 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           )
         ] })
       ] }),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx59(
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx68(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => void ensureBotMetadata(bot).then(() => onEdit(bot)).catch((error) => host.notifyError?.(error, b.bot.loadFailed)),
           children: b.bot.editMenu
         }
       ),
-      /* @__PURE__ */ jsx59(
+      /* @__PURE__ */ jsx68(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => void ensureBotMetadata(bot).then(() => onGroup(bot)).catch((error) => host.notifyError?.(error, b.bot.groupsLoadFailed)),
           children: groups.length ? b.bot.groupsMenu(groups.join(", ")) : b.bot.manageGroups
         }
       ),
-      /* @__PURE__ */ jsx59(BotModelMenu, { bot }),
-      /* @__PURE__ */ jsx59(
+      /* @__PURE__ */ jsx68(BotModelMenu, { bot }),
+      /* @__PURE__ */ jsx68(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -29551,9 +32328,9 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: b.bot.duplicate
         }
       ),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { onSelect: () => void exportBot(bot, meta), children: b.bot.exportBotMenu }),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx59(
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: () => void exportBot(bot, meta), children: b.bot.exportBotMenu }),
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx68(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -29564,36 +32341,36 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
           children: b.bot.newChatWith
         }
       ),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { disabled: !botRecentSession(bot), onSelect: () => void openBotRecentSession(bot), children: "Open recent session" }),
-      /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuSub, { children: [
-        /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSubTrigger, { children: b.sections.moveTo }),
-        /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuSubContent, { children: [
-          sections.map((section) => /* @__PURE__ */ jsxs57(
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { disabled: !botRecentSession(bot), onSelect: () => void openBotRecentSession(bot), children: "Open recent session" }),
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsxs64(sdk_compat_exports.ContextMenuSub, { children: [
+        /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSubTrigger, { children: b.sections.moveTo }),
+        /* @__PURE__ */ jsxs64(sdk_compat_exports.ContextMenuSubContent, { children: [
+          sections.map((section) => /* @__PURE__ */ jsxs64(
             sdk_compat_exports.ContextMenuItem,
             {
               disabled: section.id === currentSectionId,
               onSelect: () => void moveBotsToSection([bot], section.id),
               children: [
-                /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "folder" }),
+                /* @__PURE__ */ jsx68(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "folder" }),
                 section.name
               ]
             },
             section.id
           )),
-          sections.length ? /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}) : null,
-          /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuItem, { onSelect: () => onNewSection(bot), children: [
-            /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
+          sections.length ? /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSeparator, {}) : null,
+          /* @__PURE__ */ jsxs64(sdk_compat_exports.ContextMenuItem, { onSelect: () => onNewSection(bot), children: [
+            /* @__PURE__ */ jsx68(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
             b.sections.newSectionEllipsis
           ] }),
-          currentSectionId ? /* @__PURE__ */ jsxs57(sdk_compat_exports.ContextMenuItem, { onSelect: () => void moveBotsToSection([bot], null), children: [
-            /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "inbox" }),
+          currentSectionId ? /* @__PURE__ */ jsxs64(sdk_compat_exports.ContextMenuItem, { onSelect: () => void moveBotsToSection([bot], null), children: [
+            /* @__PURE__ */ jsx68(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "inbox" }),
             b.sections.removeFromSection
           ] }) : null
         ] })
       ] }),
-      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuSeparator, {}),
-      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx59(sdk_compat_exports.ContextMenuItem, { onSelect: () => onDelete(bot), variant: "destructive", children: t2.common.delete })
+      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSeparator, {}),
+      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: () => onDelete(bot), variant: "destructive", children: t2.common.delete })
     ] })
   ] });
 }
@@ -29605,19 +32382,19 @@ init_bot_state();
 init_sdk_compat();
 init_data();
 init_i18n();
-import { jsx as jsx60, jsxs as jsxs58 } from "react/jsx-runtime";
+import { jsx as jsx69, jsxs as jsxs65 } from "react/jsx-runtime";
 function CardAttention({ count, reason }) {
   const b = useBots();
   if (count <= 0) {
     return null;
   }
-  return /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: reason ? botAttentionHint(reason) : b.roster.attentionItems(count), children: /* @__PURE__ */ jsxs58(
+  return /* @__PURE__ */ jsx69(sdk_compat_exports.Tip, { label: reason ? botAttentionHint(reason) : b.roster.attentionItems(count), children: /* @__PURE__ */ jsxs65(
     "span",
     {
       "aria-label": b.roster.needsAttention,
       className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums hbp-fg-warn",
       children: [
-        /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { name: "warning" }),
+        /* @__PURE__ */ jsx69(sdk_compat_exports.Codicon, { name: "warning" }),
         count
       ]
     }
@@ -29629,7 +32406,7 @@ init_data();
 init_i18n();
 init_labels();
 init_routing();
-import { jsx as jsx61, jsxs as jsxs59 } from "react/jsx-runtime";
+import { jsx as jsx70, jsxs as jsxs66 } from "react/jsx-runtime";
 function BotCard({
   bot,
   onAssignTask,
@@ -29679,7 +32456,7 @@ function BotCard({
   const open = () => void openRosterBot(bot);
   const warm = () => warmRosterBot(bot);
   const liveTone = live.kind === "needs-input" || live.kind === "stalled" ? "amber" : liveText ? "live" : null;
-  return /* @__PURE__ */ jsx61(
+  return /* @__PURE__ */ jsx70(
     BotRowMenu,
     {
       bot,
@@ -29688,7 +32465,7 @@ function BotCard({
       onEdit,
       onGroup,
       onNewSection,
-      children: /* @__PURE__ */ jsxs59(
+      children: /* @__PURE__ */ jsxs66(
         "article",
         {
           "aria-busy": isOpening || void 0,
@@ -29702,7 +32479,7 @@ function BotCard({
           onFocus: warm,
           onPointerEnter: warm,
           children: [
-            /* @__PURE__ */ jsxs59(
+            /* @__PURE__ */ jsxs66(
               "button",
               {
                 "aria-label": `${b.roster.openChat}: ${displayName(bot, meta)}`,
@@ -29712,8 +32489,8 @@ function BotCard({
                 onFocus: warm,
                 type: "button",
                 children: [
-                  /* @__PURE__ */ jsxs59("div", { className: "flex min-w-0 items-center gap-2", children: [
-                    /* @__PURE__ */ jsx61("div", { className: (0, sdk_compat_exports.cn)("shrink-0 rounded-lg", !sourceStatus.available && "grayscale opacity-60"), children: /* @__PURE__ */ jsx61(
+                  /* @__PURE__ */ jsxs66("div", { className: "flex min-w-0 items-center gap-2", children: [
+                    /* @__PURE__ */ jsx70("div", { className: (0, sdk_compat_exports.cn)("shrink-0 rounded-lg", !sourceStatus.available && "grayscale opacity-60"), children: /* @__PURE__ */ jsx70(
                       BotFace,
                       {
                         color: accent,
@@ -29724,17 +32501,17 @@ function BotCard({
                         size: 30
                       }
                     ) }),
-                    /* @__PURE__ */ jsxs59("div", { className: "min-w-0 flex-1", children: [
-                      /* @__PURE__ */ jsxs59("div", { className: "flex min-w-0 items-center gap-1", children: [
-                        /* @__PURE__ */ jsx61(sdk_compat_exports.SessionStatusDot, { storedSessionId: canonicalSessionId }),
-                        watched ? /* @__PURE__ */ jsx61(sdk_compat_exports.Tip, { label: b.bot.watching, children: /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-accent)", name: "eye" }) }) : null,
-                        /* @__PURE__ */ jsx61("span", { className: "min-w-0 truncate text-[0.8125rem] font-medium", children: displayName(bot, meta) }),
-                        /* @__PURE__ */ jsx61(CardAttention, { count: attention.count, reason: attention.reason })
+                    /* @__PURE__ */ jsxs66("div", { className: "min-w-0 flex-1", children: [
+                      /* @__PURE__ */ jsxs66("div", { className: "flex min-w-0 items-center gap-1", children: [
+                        /* @__PURE__ */ jsx70(sdk_compat_exports.SessionStatusDot, { storedSessionId: canonicalSessionId }),
+                        watched ? /* @__PURE__ */ jsx70(sdk_compat_exports.Tip, { label: b.bot.watching, children: /* @__PURE__ */ jsx70(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-accent)", name: "eye" }) }) : null,
+                        /* @__PURE__ */ jsx70("span", { className: "min-w-0 truncate text-[0.8125rem] font-medium", children: displayName(bot, meta) }),
+                        /* @__PURE__ */ jsx70(CardAttention, { count: attention.count, reason: attention.reason })
                       ] }),
-                      role ? /* @__PURE__ */ jsx61("div", { className: "min-w-0 truncate text-xs leading-snug text-(--ui-text-tertiary)", children: role }) : null
+                      role ? /* @__PURE__ */ jsx70("div", { className: "min-w-0 truncate text-xs leading-snug text-(--ui-text-tertiary)", children: role }) : null
                     ] })
                   ] }),
-                  detailText ? /* @__PURE__ */ jsxs59(
+                  detailText ? /* @__PURE__ */ jsxs66(
                     "div",
                     {
                       className: (0, sdk_compat_exports.cn)(
@@ -29743,22 +32520,22 @@ function BotCard({
                         !liveText && fromBot && "italic"
                       ),
                       children: [
-                        liveTone === "live" && /* @__PURE__ */ jsx61("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-primary animate-pulse" }),
-                        /* @__PURE__ */ jsx61("span", { className: "truncate", children: detailText })
+                        liveTone === "live" && /* @__PURE__ */ jsx70("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-primary animate-pulse" }),
+                        /* @__PURE__ */ jsx70("span", { className: "truncate", children: detailText })
                       ]
                     }
                   ) : null,
-                  /* @__PURE__ */ jsxs59("span", { className: "flex items-center gap-1.5 text-xs font-medium text-(--ui-text-secondary)", children: [
-                    isOpening ? /* @__PURE__ */ jsx61(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "text-xs" }) : null,
+                  /* @__PURE__ */ jsxs66("span", { className: "flex items-center gap-1.5 text-xs font-medium text-(--ui-text-secondary)", children: [
+                    isOpening ? /* @__PURE__ */ jsx70(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "text-xs" }) : null,
                     b.roster.openChat,
-                    /* @__PURE__ */ jsx61(sdk_compat_exports.Codicon, { "aria-hidden": true, name: "arrow-right", size: "0.75rem" })
+                    /* @__PURE__ */ jsx70(sdk_compat_exports.Codicon, { "aria-hidden": true, name: "arrow-right", size: "0.75rem" })
                   ] })
                 ]
               }
             ),
-            /* @__PURE__ */ jsxs59("div", { className: "mt-auto flex min-w-0 flex-col gap-1", children: [
-              /* @__PURE__ */ jsx61("div", { className: "flex min-w-0", children: /* @__PURE__ */ jsx61("span", { className: "min-w-0 max-w-full", children: /* @__PURE__ */ jsx61(BotModelChip, { bot }) }) }),
-              rowAge ? /* @__PURE__ */ jsx61("div", { className: "flex min-w-0 justify-end", children: /* @__PURE__ */ jsx61("span", { className: "text-xs text-(--ui-text-tertiary)", children: rowAge === t2.sidebar.row.ageNow ? b.roster.activeNow : b.roster.cardActive(rowAge) }) }) : null
+            /* @__PURE__ */ jsxs66("div", { className: "mt-auto flex min-w-0 flex-col gap-1", children: [
+              /* @__PURE__ */ jsx70("div", { className: "flex min-w-0", children: /* @__PURE__ */ jsx70("span", { className: "min-w-0 max-w-full", children: /* @__PURE__ */ jsx70(BotModelChip, { bot }) }) }),
+              rowAge ? /* @__PURE__ */ jsx70("div", { className: "flex min-w-0 justify-end", children: /* @__PURE__ */ jsx70("span", { className: "text-xs text-(--ui-text-tertiary)", children: rowAge === t2.sidebar.row.ageNow ? b.roster.activeNow : b.roster.cardActive(rowAge) }) }) : null
             ] })
           ]
         }
@@ -29788,7 +32565,7 @@ function toggleGroupChatPinned(name) {
 init_i18n();
 init_labels();
 init_routing();
-import { jsx as jsx62, jsxs as jsxs60 } from "react/jsx-runtime";
+import { jsx as jsx71, jsxs as jsxs67 } from "react/jsx-runtime";
 function BotRow({
   bot,
   onAssignTask,
@@ -29869,7 +32646,7 @@ function BotRow({
   const open = () => void openRosterBot(bot);
   const rosterKey = botRosterKey(bot);
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot) === rosterKey;
-  const row = /* @__PURE__ */ jsxs60(
+  const row = /* @__PURE__ */ jsxs67(
     sdk_compat_exports.RowButton,
     {
       "aria-busy": isOpening || void 0,
@@ -29894,25 +32671,25 @@ function BotRow({
       onFocus: warm,
       onPointerEnter: warm,
       children: [
-        /* @__PURE__ */ jsxs60(
+        /* @__PURE__ */ jsxs67(
           "div",
           {
             className: (0, sdk_compat_exports.cn)("relative shrink-0 rounded-lg", !sourceStatus.available && "grayscale opacity-60"),
             children: [
-              /* @__PURE__ */ jsx62(BotFace, { color: accent, image: photo ? image : null, mood: botMood, name: bot.name, shape, size: 34 }),
-              /* @__PURE__ */ jsx62(sdk_compat_exports.SessionStatusDot, { className: "absolute -right-0.5 -bottom-0.5", storedSessionId: canonicalSessionId })
+              /* @__PURE__ */ jsx71(BotFace, { color: accent, image: photo ? image : null, mood: botMood, name: bot.name, shape, size: 34 }),
+              /* @__PURE__ */ jsx71(sdk_compat_exports.SessionStatusDot, { className: "absolute -right-0.5 -bottom-0.5", storedSessionId: canonicalSessionId })
             ]
           }
         ),
-        /* @__PURE__ */ jsxs60("div", { className: "min-w-0 flex-1", children: [
-          /* @__PURE__ */ jsxs60("div", { className: "flex items-baseline justify-between gap-2", children: [
-            /* @__PURE__ */ jsxs60("div", { className: "flex min-w-0 items-baseline gap-1.5", children: [
-              pinned ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
-              hidden ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: b.roster.hiddenFromRoster, children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "eye-closed" }) }) : null,
-              watched ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: b.bot.watching, children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-accent)", name: "eye" }) }) : null,
-              /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: rowTooltip, children: /* @__PURE__ */ jsx62("span", { className: "min-w-0 shrink truncate text-[0.8125rem] font-medium", children: displayName(bot, meta) }) })
+        /* @__PURE__ */ jsxs67("div", { className: "min-w-0 flex-1", children: [
+          /* @__PURE__ */ jsxs67("div", { className: "flex items-baseline justify-between gap-2", children: [
+            /* @__PURE__ */ jsxs67("div", { className: "flex min-w-0 items-baseline gap-1.5", children: [
+              pinned ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
+              hidden ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.roster.hiddenFromRoster, children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "eye-closed" }) }) : null,
+              watched ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.bot.watching, children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-accent)", name: "eye" }) }) : null,
+              /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: rowTooltip, children: /* @__PURE__ */ jsx71("span", { className: "min-w-0 shrink truncate text-[0.8125rem] font-medium", children: displayName(bot, meta) }) })
             ] }),
-            canStop ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: b.roster.stopRun, children: /* @__PURE__ */ jsx62(
+            canStop ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.roster.stopRun, children: /* @__PURE__ */ jsx71(
               "span",
               {
                 "aria-label": b.roster.stopRun,
@@ -29922,10 +32699,10 @@ function BotRow({
                   stopRun();
                 },
                 role: "button",
-                children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "debug-stop" })
+                children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "debug-stop" })
               }
             ) }) : null,
-            health.kind !== "ok" ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: healthLabel, children: /* @__PURE__ */ jsx62(
+            health.kind !== "ok" ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: healthLabel, children: /* @__PURE__ */ jsx71(
               "span",
               {
                 "aria-label": healthLabel,
@@ -29933,14 +32710,14 @@ function BotRow({
                   "flex shrink-0 items-center text-[0.6875rem]",
                   health.kind === "unreachable" ? "text-destructive" : "hbp-fg-warn"
                 ),
-                children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: health.kind === "unreachable" ? "debug-disconnect" : "warning" })
+                children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: health.kind === "unreachable" ? "debug-disconnect" : "warning" })
               }
             ) }) : null,
-            attention.count > 0 ? /* @__PURE__ */ jsx62(
+            attention.count > 0 ? /* @__PURE__ */ jsx71(
               sdk_compat_exports.Tip,
               {
                 label: attention.reason ? botAttentionHint(attention.reason) : b.roster.attentionItems(attention.count),
-                children: /* @__PURE__ */ jsxs60(
+                children: /* @__PURE__ */ jsxs67(
                   "span",
                   {
                     "aria-label": attention.reason ? `${b.roster.needsAttention}: ${botAttentionHint(attention.reason)}` : b.roster.attentionItems(attention.count),
@@ -29950,24 +32727,24 @@ function BotRow({
                       open();
                     },
                     children: [
-                      /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "warning" }),
+                      /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "warning" }),
                       attention.count
                     ]
                   }
                 )
               }
             ) : null,
-            openTasks ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: b.mailbox.openTasks(openTasks), children: /* @__PURE__ */ jsxs60("span", { className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: [
-              /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { "aria-label": b.mailbox.section, name: "inbox" }),
+            openTasks ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.mailbox.openTasks(openTasks), children: /* @__PURE__ */ jsxs67("span", { className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: [
+              /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { "aria-label": b.mailbox.section, name: "inbox" }),
               openTasks
             ] }) }) : null,
-            isOpening ? /* @__PURE__ */ jsx62(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "shrink-0 text-xs text-(--ui-text-secondary)" }) : null,
-            rowAgeTs ? /* @__PURE__ */ jsx62("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(rowAgeTs * 1e3, t2.sidebar.row) }) : null
+            isOpening ? /* @__PURE__ */ jsx71(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "shrink-0 text-xs text-(--ui-text-secondary)" }) : null,
+            rowAgeTs ? /* @__PURE__ */ jsx71("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(rowAgeTs * 1e3, t2.sidebar.row) }) : null
           ] }),
-          showDetailsRow ? /* @__PURE__ */ jsxs60("div", { className: "mt-1 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-secondary)", children: [
-            showHandle ? /* @__PURE__ */ jsx62("span", { className: "shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)", children: `@${handle}` }) : null,
-            showHandle && detailText ? /* @__PURE__ */ jsx62("span", { className: "shrink-0 text-(--ui-text-quaternary)", children: "\xB7" }) : null,
-            detailText ? /* @__PURE__ */ jsxs60(
+          showDetailsRow ? /* @__PURE__ */ jsxs67("div", { className: "mt-1 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-secondary)", children: [
+            showHandle ? /* @__PURE__ */ jsx71("span", { className: "shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)", children: `@${handle}` }) : null,
+            showHandle && detailText ? /* @__PURE__ */ jsx71("span", { className: "shrink-0 text-(--ui-text-quaternary)", children: "\xB7" }) : null,
+            detailText ? /* @__PURE__ */ jsxs67(
               "span",
               {
                 className: (0, sdk_compat_exports.cn)(
@@ -29977,8 +32754,8 @@ function BotRow({
                   !liveText && fromBot && "italic"
                 ),
                 children: [
-                  liveTone === "live" && /* @__PURE__ */ jsx62("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-primary animate-pulse" }),
-                  /* @__PURE__ */ jsx62("span", { className: "truncate", children: detailText })
+                  liveTone === "live" && /* @__PURE__ */ jsx71("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-primary animate-pulse" }),
+                  /* @__PURE__ */ jsx71("span", { className: "truncate", children: detailText })
                 ]
               }
             ) : null
@@ -29987,7 +32764,7 @@ function BotRow({
       ]
     }
   );
-  return /* @__PURE__ */ jsx62(
+  return /* @__PURE__ */ jsx71(
     BotRowMenu,
     {
       bot,
@@ -30027,7 +32804,7 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
   const availabilityLabel = b.group.availableCount(availableMembers, members.length);
   const dragKey = groupDragKey(group);
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot) === dragKey;
-  const row = /* @__PURE__ */ jsxs60(
+  const row = /* @__PURE__ */ jsxs67(
     sdk_compat_exports.RowButton,
     {
       "aria-label": `${group}, ${b.group.memberCount(members.length)}, ${availabilityLabel}`,
@@ -30049,8 +32826,8 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
         $draggingBot.set(dragKey);
       },
       children: [
-        /* @__PURE__ */ jsxs60("div", { className: "relative flex w-[34px] shrink-0 items-center justify-center", children: [
-          room.image ? /* @__PURE__ */ jsx62(
+        /* @__PURE__ */ jsxs67("div", { className: "relative flex w-[34px] shrink-0 items-center justify-center", children: [
+          room.image ? /* @__PURE__ */ jsx71(
             "img",
             {
               alt: "",
@@ -30060,44 +32837,44 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
               ),
               src: room.image
             }
-          ) : /* @__PURE__ */ jsx62(
+          ) : /* @__PURE__ */ jsx71(
             "span",
             {
               className: (0, sdk_compat_exports.cn)(
                 "flex size-8 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-tertiary)",
                 availableMembers === 0 && "opacity-60"
               ),
-              children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "organization" })
+              children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "organization" })
             }
           ),
-          members.length > 0 && availableMembers < members.length ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: availabilityLabel, children: /* @__PURE__ */ jsx62(
+          members.length > 0 && availableMembers < members.length ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: availabilityLabel, children: /* @__PURE__ */ jsx71(
             "span",
             {
               "aria-label": availabilityLabel,
               className: "absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] hbp-fg-warn ring-1 ring-(--ui-stroke-tertiary) hbp-fg-warn",
-              children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { name: "debug-disconnect" })
+              children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { name: "debug-disconnect" })
             }
           ) }) : null
         ] }),
-        /* @__PURE__ */ jsxs60("div", { className: "min-w-0 flex-1", children: [
-          /* @__PURE__ */ jsxs60("div", { className: "flex items-baseline justify-between gap-2", children: [
-            /* @__PURE__ */ jsx62("span", { className: "min-w-0 flex-1 truncate text-[0.8125rem] font-medium", title: group, children: group }),
-            room.pinned ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
-            needsYou ? /* @__PURE__ */ jsx62(sdk_compat_exports.Tip, { label: b.group.needsYourInput, children: /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { "aria-label": b.roster.needsInput, className: "shrink-0 text-(--ui-accent)", name: "question" }) }) : null,
-            unread > 0 ? /* @__PURE__ */ jsx62(sdk_compat_exports.Badge, { "aria-label": b.group.unreadCount(unread), className: "shrink-0", size: "xs", variant: "solid", children: unread > 99 ? "99+" : unread }) : null,
-            lastAt ? /* @__PURE__ */ jsx62("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(lastAt, t2.sidebar.row) }) : null
+        /* @__PURE__ */ jsxs67("div", { className: "min-w-0 flex-1", children: [
+          /* @__PURE__ */ jsxs67("div", { className: "flex items-baseline justify-between gap-2", children: [
+            /* @__PURE__ */ jsx71("span", { className: "min-w-0 flex-1 truncate text-[0.8125rem] font-medium", title: group, children: group }),
+            room.pinned ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
+            needsYou ? /* @__PURE__ */ jsx71(sdk_compat_exports.Tip, { label: b.group.needsYourInput, children: /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { "aria-label": b.roster.needsInput, className: "shrink-0 text-(--ui-accent)", name: "question" }) }) : null,
+            unread > 0 ? /* @__PURE__ */ jsx71(sdk_compat_exports.Badge, { "aria-label": b.group.unreadCount(unread), className: "shrink-0", size: "xs", variant: "solid", children: unread > 99 ? "99+" : unread }) : null,
+            lastAt ? /* @__PURE__ */ jsx71("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(lastAt, t2.sidebar.row) }) : null
           ] }),
-          /* @__PURE__ */ jsx62("div", { className: "mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)", title: previewTitle || void 0, children: preview })
+          /* @__PURE__ */ jsx71("div", { className: "mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)", title: previewTitle || void 0, children: preview })
         ] })
       ]
     }
   );
-  return /* @__PURE__ */ jsxs60(sdk_compat_exports.ContextMenu, { children: [
-    /* @__PURE__ */ jsx62(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children: row }),
-    /* @__PURE__ */ jsxs60(sdk_compat_exports.ContextMenuContent, { children: [
-      /* @__PURE__ */ jsx62(sdk_compat_exports.ContextMenuItem, { onSelect: () => onOpen(group), children: "Open Group Chat" }),
-      /* @__PURE__ */ jsx62(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx62(
+  return /* @__PURE__ */ jsxs67(sdk_compat_exports.ContextMenu, { children: [
+    /* @__PURE__ */ jsx71(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children: row }),
+    /* @__PURE__ */ jsxs67(sdk_compat_exports.ContextMenuContent, { children: [
+      /* @__PURE__ */ jsx71(sdk_compat_exports.ContextMenuItem, { onSelect: () => onOpen(group), children: "Open Group Chat" }),
+      /* @__PURE__ */ jsx71(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx71(
         sdk_compat_exports.ContextMenuItem,
         {
           onSelect: () => {
@@ -30109,34 +32886,34 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
           children: room.pinned ? "Unpin" : "Pin to top"
         }
       ),
-      /* @__PURE__ */ jsxs60(sdk_compat_exports.ContextMenuSub, { children: [
-        /* @__PURE__ */ jsx62(sdk_compat_exports.ContextMenuSubTrigger, { children: b.sections.moveTo }),
-        /* @__PURE__ */ jsxs60(sdk_compat_exports.ContextMenuSubContent, { children: [
-          sections.map((section) => /* @__PURE__ */ jsxs60(
+      /* @__PURE__ */ jsxs67(sdk_compat_exports.ContextMenuSub, { children: [
+        /* @__PURE__ */ jsx71(sdk_compat_exports.ContextMenuSubTrigger, { children: b.sections.moveTo }),
+        /* @__PURE__ */ jsxs67(sdk_compat_exports.ContextMenuSubContent, { children: [
+          sections.map((section) => /* @__PURE__ */ jsxs67(
             sdk_compat_exports.ContextMenuItem,
             {
               disabled: section.id === currentSectionId,
               onSelect: () => moveGroupChatsToSection([group], section.id),
               children: [
-                /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "folder" }),
+                /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "folder" }),
                 section.name
               ]
             },
             section.id
           )),
-          sections.length ? /* @__PURE__ */ jsx62(sdk_compat_exports.ContextMenuSeparator, {}) : null,
-          /* @__PURE__ */ jsxs60(sdk_compat_exports.ContextMenuItem, { onSelect: () => onNewSection(group), children: [
-            /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
+          sections.length ? /* @__PURE__ */ jsx71(sdk_compat_exports.ContextMenuSeparator, {}) : null,
+          /* @__PURE__ */ jsxs67(sdk_compat_exports.ContextMenuItem, { onSelect: () => onNewSection(group), children: [
+            /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
             b.sections.newSectionEllipsis
           ] }),
-          currentSectionId ? /* @__PURE__ */ jsxs60(sdk_compat_exports.ContextMenuItem, { onSelect: () => moveGroupChatsToSection([group], null), children: [
-            /* @__PURE__ */ jsx62(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "inbox" }),
+          currentSectionId ? /* @__PURE__ */ jsxs67(sdk_compat_exports.ContextMenuItem, { onSelect: () => moveGroupChatsToSection([group], null), children: [
+            /* @__PURE__ */ jsx71(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "inbox" }),
             b.sections.removeFromSection
           ] }) : null
         ] })
       ] }),
-      /* @__PURE__ */ jsx62(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx62(
+      /* @__PURE__ */ jsx71(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx71(
         sdk_compat_exports.ContextMenuItem,
         {
           className: "text-destructive focus:text-destructive",
@@ -30156,7 +32933,7 @@ init_bot_state();
 
 // src/broadcast-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect22, useState as useState39 } from "react";
+import { useEffect as useEffect32, useState as useState47 } from "react";
 
 // src/broadcast.ts
 init_sdk_compat();
@@ -30341,19 +33118,19 @@ init_data();
 init_i18n();
 init_labels();
 init_routing();
-import { jsx as jsx63, jsxs as jsxs61 } from "react/jsx-runtime";
+import { jsx as jsx72, jsxs as jsxs68 } from "react/jsx-runtime";
 function BroadcastStatusGlyph({ status }) {
   const b = useBots();
   if (status === "sending") {
-    return /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "loading", spinning: true });
+    return /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "loading", spinning: true });
   }
   if (status === "working") {
-    return /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { className: "text-(--ui-accent)", name: "sync", spinning: true });
+    return /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "text-(--ui-accent)", name: "sync", spinning: true });
   }
   if (status === "error") {
-    return /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { className: "text-destructive", name: "error" });
+    return /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { className: "text-destructive", name: "error" });
   }
-  return /* @__PURE__ */ jsx63(sdk_compat_exports.Codicon, { "aria-label": b.broadcast.title, className: "hbp-fg-ok", name: "check" });
+  return /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { "aria-label": b.broadcast.title, className: "hbp-fg-ok", name: "check" });
 }
 function BroadcastResultCard({ entry }) {
   const b = useBots();
@@ -30362,14 +33139,14 @@ function BroadcastResultCard({ entry }) {
   const { shape, color, image } = botAppearance(entry.bot.name, meta);
   const name = displayName(entry.bot, meta);
   const statusLabel2 = entry.status === "sending" ? b.broadcast.statusSending : entry.status === "working" ? b.broadcast.statusWorking : entry.status === "error" ? b.broadcast.statusFailed : null;
-  return /* @__PURE__ */ jsxs61(
+  return /* @__PURE__ */ jsxs68(
     "div",
     {
       className: "rounded-md border border-(--ui-stroke-secondary) px-2.5 py-2",
       "data-testid": `broadcast-result:${entry.key}`,
       children: [
-        /* @__PURE__ */ jsxs61("div", { className: "flex items-center gap-1.5", children: [
-          /* @__PURE__ */ jsx63(
+        /* @__PURE__ */ jsxs68("div", { className: "flex items-center gap-1.5", children: [
+          /* @__PURE__ */ jsx72(
             BotFace,
             {
               color: avatarColor(color, entry.bot.name),
@@ -30379,13 +33156,13 @@ function BroadcastResultCard({ entry }) {
               size: 16
             }
           ),
-          /* @__PURE__ */ jsx63("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: name }),
-          statusLabel2 ? /* @__PURE__ */ jsxs61("span", { className: "flex items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary)", children: [
-            /* @__PURE__ */ jsx63(BroadcastStatusGlyph, { status: entry.status }),
+          /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: name }),
+          statusLabel2 ? /* @__PURE__ */ jsxs68("span", { className: "flex items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary)", children: [
+            /* @__PURE__ */ jsx72(BroadcastStatusGlyph, { status: entry.status }),
             statusLabel2
-          ] }) : /* @__PURE__ */ jsx63(BroadcastStatusGlyph, { status: entry.status })
+          ] }) : /* @__PURE__ */ jsx72(BroadcastStatusGlyph, { status: entry.status })
         ] }),
-        entry.status === "error" ? /* @__PURE__ */ jsx63("div", { className: "mt-1 truncate text-[0.6875rem] text-destructive", children: entry.error }) : entry.status === "done" ? /* @__PURE__ */ jsx63("div", { className: "mt-1 whitespace-pre-wrap break-words text-[0.75rem] text-(--ui-text-secondary)", children: entry.reply || b.broadcast.emptyReply }) : null
+        entry.status === "error" ? /* @__PURE__ */ jsx72("div", { className: "mt-1 truncate text-[0.6875rem] text-destructive", children: entry.error }) : entry.status === "done" ? /* @__PURE__ */ jsx72("div", { className: "mt-1 whitespace-pre-wrap break-words text-[0.75rem] text-(--ui-text-secondary)", children: entry.reply || b.broadcast.emptyReply }) : null
       ]
     }
   );
@@ -30395,9 +33172,9 @@ function BroadcastDialog({ bots, onClose, open }) {
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
   const run = (0, sdk_compat_exports.useValue)($broadcastRun);
   const eligible = bots.filter((bot) => !bot?.ghost);
-  const [checked, setChecked] = useState39(/* @__PURE__ */ new Set());
-  const [prompt, setPrompt] = useState39("");
-  useEffect22(() => {
+  const [checked, setChecked] = useState47(/* @__PURE__ */ new Set());
+  const [prompt, setPrompt] = useState47("");
+  useEffect32(() => {
     if (open) {
       setChecked(new Set(eligible.map((bot) => botRosterKey(bot) || bot.name)));
       setPrompt("");
@@ -30422,7 +33199,7 @@ function BroadcastDialog({ bots, onClose, open }) {
     }
     broadcastPrompt(selected, prompt);
   };
-  return /* @__PURE__ */ jsx63(
+  return /* @__PURE__ */ jsx72(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -30431,16 +33208,16 @@ function BroadcastDialog({ bots, onClose, open }) {
         }
       },
       open,
-      children: /* @__PURE__ */ jsxs61(sdk_compat_exports.DialogContent, { className: "max-w-lg", children: [
-        /* @__PURE__ */ jsxs61(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx63(sdk_compat_exports.DialogTitle, { children: b.broadcast.title }),
-          /* @__PURE__ */ jsx63(sdk_compat_exports.DialogDescription, { children: b.broadcast.desc })
+      children: /* @__PURE__ */ jsxs68(sdk_compat_exports.DialogContent, { className: "max-w-lg", children: [
+        /* @__PURE__ */ jsxs68(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx72(sdk_compat_exports.DialogTitle, { children: b.broadcast.title }),
+          /* @__PURE__ */ jsx72(sdk_compat_exports.DialogDescription, { children: b.broadcast.desc })
         ] }),
-        /* @__PURE__ */ jsxs61("div", { className: "flex min-h-0 flex-col gap-2", children: [
-          /* @__PURE__ */ jsxs61("div", { className: "flex items-center justify-between", children: [
-            /* @__PURE__ */ jsx63("span", { className: "ui-section-label", children: b.broadcast.send(selected.length) }),
-            /* @__PURE__ */ jsxs61("div", { className: "flex items-center gap-1", children: [
-              /* @__PURE__ */ jsx63(
+        /* @__PURE__ */ jsxs68("div", { className: "flex min-h-0 flex-col gap-2", children: [
+          /* @__PURE__ */ jsxs68("div", { className: "flex items-center justify-between", children: [
+            /* @__PURE__ */ jsx72("span", { className: "ui-section-label", children: b.broadcast.send(selected.length) }),
+            /* @__PURE__ */ jsxs68("div", { className: "flex items-center gap-1", children: [
+              /* @__PURE__ */ jsx72(
                 sdk_compat_exports.Button,
                 {
                   onClick: () => setChecked(new Set(eligible.map((bot) => botRosterKey(bot) || bot.name))),
@@ -30449,19 +33226,19 @@ function BroadcastDialog({ bots, onClose, open }) {
                   children: b.broadcast.selectAll
                 }
               ),
-              /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { onClick: () => setChecked(/* @__PURE__ */ new Set()), size: "xs", variant: "ghost", children: b.broadcast.clearAll })
+              /* @__PURE__ */ jsx72(sdk_compat_exports.Button, { onClick: () => setChecked(/* @__PURE__ */ new Set()), size: "xs", variant: "ghost", children: b.broadcast.clearAll })
             ] })
           ] }),
-          /* @__PURE__ */ jsx63("ul", { className: "flex max-h-44 min-h-0 flex-col gap-0.5 overflow-y-auto", "data-testid": "broadcast-bots", children: eligible.map((bot) => {
+          /* @__PURE__ */ jsx72("ul", { className: "flex max-h-44 min-h-0 flex-col gap-0.5 overflow-y-auto", "data-testid": "broadcast-bots", children: eligible.map((bot) => {
             const key = botRosterKey(bot) || bot.name;
             const meta = botRosterMeta(bot, allMeta);
             const { shape, color, image } = botAppearance(bot.name, meta);
-            return /* @__PURE__ */ jsxs61(
+            return /* @__PURE__ */ jsxs68(
               "li",
               {
                 className: "flex items-center gap-2 rounded-md px-1.5 py-1 hover:bg-(--chrome-action-hover)",
                 children: [
-                  /* @__PURE__ */ jsx63(
+                  /* @__PURE__ */ jsx72(
                     sdk_compat_exports.Checkbox,
                     {
                       "aria-label": displayName(bot, meta),
@@ -30469,16 +33246,16 @@ function BroadcastDialog({ bots, onClose, open }) {
                       onCheckedChange: () => toggle(key)
                     }
                   ),
-                  /* @__PURE__ */ jsx63(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 18 }),
-                  /* @__PURE__ */ jsx63("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)", children: displayName(bot, meta) })
+                  /* @__PURE__ */ jsx72(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 18 }),
+                  /* @__PURE__ */ jsx72("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)", children: displayName(bot, meta) })
                 ]
               },
               key
             );
           }) }),
-          /* @__PURE__ */ jsxs61("label", { className: "flex flex-col gap-1", children: [
-            /* @__PURE__ */ jsx63("span", { className: "ui-section-label", children: b.broadcast.promptLabel }),
-            /* @__PURE__ */ jsx63(
+          /* @__PURE__ */ jsxs68("label", { className: "flex flex-col gap-1", children: [
+            /* @__PURE__ */ jsx72("span", { className: "ui-section-label", children: b.broadcast.promptLabel }),
+            /* @__PURE__ */ jsx72(
               sdk_compat_exports.Textarea,
               {
                 "aria-label": b.broadcast.promptLabel,
@@ -30489,13 +33266,13 @@ function BroadcastDialog({ bots, onClose, open }) {
               }
             )
           ] }),
-          !selected.length ? /* @__PURE__ */ jsx63("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: b.broadcast.noBotSelected }) : null,
-          run ? /* @__PURE__ */ jsxs61("div", { className: "flex min-h-0 max-h-64 flex-col gap-1.5 overflow-y-auto", "data-testid": "broadcast-results", children: [
-            /* @__PURE__ */ jsx63("div", { className: "truncate text-[0.6875rem] italic text-(--ui-text-quaternary)", children: run.prompt }),
-            run.entries.map((entry) => /* @__PURE__ */ jsx63(BroadcastResultCard, { entry }, entry.key))
+          !selected.length ? /* @__PURE__ */ jsx72("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: b.broadcast.noBotSelected }) : null,
+          run ? /* @__PURE__ */ jsxs68("div", { className: "flex min-h-0 max-h-64 flex-col gap-1.5 overflow-y-auto", "data-testid": "broadcast-results", children: [
+            /* @__PURE__ */ jsx72("div", { className: "truncate text-[0.6875rem] italic text-(--ui-text-quaternary)", children: run.prompt }),
+            run.entries.map((entry) => /* @__PURE__ */ jsx72(BroadcastResultCard, { entry }, entry.key))
           ] }) : null
         ] }),
-        /* @__PURE__ */ jsx63(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx63(sdk_compat_exports.Tip, { label: sending ? b.broadcast.statusWorking : "", children: /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { disabled: !selected.length || !prompt.trim() || sending, onClick: send, size: "sm", children: b.broadcast.send(selected.length) }) }) })
+        /* @__PURE__ */ jsx72(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx72(sdk_compat_exports.Tip, { label: sending ? b.broadcast.statusWorking : "", children: /* @__PURE__ */ jsx72(sdk_compat_exports.Button, { disabled: !selected.length || !prompt.trim() || sending, onClick: send, size: "sm", children: b.broadcast.send(selected.length) }) }) })
       ] })
     }
   );
@@ -30506,7 +33283,7 @@ init_data();
 
 // src/hire-gallery.tsx
 init_sdk_compat();
-import { useMemo as useMemo10, useState as useState40 } from "react";
+import { useMemo as useMemo10, useState as useState48 } from "react";
 
 // src/team-packs.ts
 var BUILTIN_TEAM_PACKS = [
@@ -30598,7 +33375,7 @@ var BUILTIN_TEAM_PACKS = [
 var importTeamPack = (pack) => mutateTeam("bots_team.pack.import", { pack });
 
 // src/hire-gallery.tsx
-import { jsx as jsx64, jsxs as jsxs62 } from "react/jsx-runtime";
+import { jsx as jsx73, jsxs as jsxs69 } from "react/jsx-runtime";
 var SHELF_CLASS = "flex h-7 w-full items-center justify-between rounded-md px-2 text-left text-xs text-(--ui-text-secondary) hover:bg-(--chrome-action-hover) data-[active=true]:bg-(--ui-row-active-background) data-[active=true]:font-medium data-[active=true]:text-foreground";
 var CARD_CLASS = "flex min-w-0 flex-col gap-1.5 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-card,transparent) p-3 text-left transition-colors hover:border-(--ui-stroke-primary) data-[picked=true]:border-(--ui-accent) data-[picked=true]:ring-1 data-[picked=true]:ring-(--ui-accent)";
 function starterMatches(starter, query) {
@@ -30609,7 +33386,7 @@ function presetTags(draft) {
   return (BOT_TEMPLATES[draft.preset]?.skills ?? []).slice(0, 4);
 }
 function Face({ name, blob, size }) {
-  return /* @__PURE__ */ jsx64(
+  return /* @__PURE__ */ jsx73(
     BotFace,
     {
       color: avatarColor(null, name),
@@ -30621,16 +33398,16 @@ function Face({ name, blob, size }) {
 }
 function StarterCard({ picked, onPick, starter }) {
   const tags = presetTags(starterDraft(starter));
-  return /* @__PURE__ */ jsxs62(sdk_compat_exports.RowButton, { className: CARD_CLASS, "data-picked": picked, "data-slot": "hire-card", onClick: onPick, children: [
-    /* @__PURE__ */ jsxs62("span", { className: "flex min-w-0 items-center gap-2.5", children: [
-      /* @__PURE__ */ jsx64(Face, { blob: starter.blob, name: starter.name, size: 34 }),
-      /* @__PURE__ */ jsxs62("span", { className: "min-w-0", children: [
-        /* @__PURE__ */ jsx64("span", { className: "block truncate text-[0.8125rem] font-semibold text-foreground", children: starter.name }),
-        /* @__PURE__ */ jsx64("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: starter.title })
+  return /* @__PURE__ */ jsxs69(sdk_compat_exports.RowButton, { className: CARD_CLASS, "data-picked": picked, "data-slot": "hire-card", onClick: onPick, children: [
+    /* @__PURE__ */ jsxs69("span", { className: "flex min-w-0 items-center gap-2.5", children: [
+      /* @__PURE__ */ jsx73(Face, { blob: starter.blob, name: starter.name, size: 34 }),
+      /* @__PURE__ */ jsxs69("span", { className: "min-w-0", children: [
+        /* @__PURE__ */ jsx73("span", { className: "block truncate text-[0.8125rem] font-semibold text-foreground", children: starter.name }),
+        /* @__PURE__ */ jsx73("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: starter.title })
       ] })
     ] }),
-    /* @__PURE__ */ jsx64("span", { className: "line-clamp-2 text-xs leading-snug text-(--ui-text-secondary)", children: starter.tagline }),
-    tags.length ? /* @__PURE__ */ jsx64("span", { className: "flex flex-wrap gap-1", children: tags.map((tag) => /* @__PURE__ */ jsx64(
+    /* @__PURE__ */ jsx73("span", { className: "line-clamp-2 text-xs leading-snug text-(--ui-text-secondary)", children: starter.tagline }),
+    tags.length ? /* @__PURE__ */ jsx73("span", { className: "flex flex-wrap gap-1", children: tags.map((tag) => /* @__PURE__ */ jsx73(
       "span",
       {
         className: "rounded bg-(--ui-inline-code-background) px-1.5 py-px text-[0.625rem] text-(--ui-text-tertiary)",
@@ -30641,40 +33418,40 @@ function StarterCard({ picked, onPick, starter }) {
   ] });
 }
 function PackCard({ onPick, pack, picked }) {
-  return /* @__PURE__ */ jsx64(sdk_compat_exports.RowButton, { className: CARD_CLASS, "data-picked": picked, "data-slot": "hire-pack", onClick: onPick, children: /* @__PURE__ */ jsxs62("span", { className: "flex min-w-0 items-center gap-2.5", children: [
-    /* @__PURE__ */ jsx64("span", { className: "flex shrink-0 items-center gap-0.5", children: pack.faces.map((face) => /* @__PURE__ */ jsx64(Face, { name: face, size: 22 }, face)) }),
-    /* @__PURE__ */ jsxs62("span", { className: "min-w-0", children: [
-      /* @__PURE__ */ jsx64("span", { className: "block truncate text-[0.8125rem] font-semibold text-foreground", children: pack.pack.name }),
-      /* @__PURE__ */ jsx64("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: pack.pack.seats.map((seat) => seat.role).join(" \xB7 ") })
+  return /* @__PURE__ */ jsx73(sdk_compat_exports.RowButton, { className: CARD_CLASS, "data-picked": picked, "data-slot": "hire-pack", onClick: onPick, children: /* @__PURE__ */ jsxs69("span", { className: "flex min-w-0 items-center gap-2.5", children: [
+    /* @__PURE__ */ jsx73("span", { className: "flex shrink-0 items-center gap-0.5", children: pack.faces.map((face) => /* @__PURE__ */ jsx73(Face, { name: face, size: 22 }, face)) }),
+    /* @__PURE__ */ jsxs69("span", { className: "min-w-0", children: [
+      /* @__PURE__ */ jsx73("span", { className: "block truncate text-[0.8125rem] font-semibold text-foreground", children: pack.pack.name }),
+      /* @__PURE__ */ jsx73("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: pack.pack.seats.map((seat) => seat.role).join(" \xB7 ") })
     ] })
   ] }) });
 }
 function BotDetail({ draft, onHire }) {
   const h = useHireText();
-  const [name, setName] = useState40(draft.name);
+  const [name, setName] = useState48(draft.name);
   const tags = presetTags(draft);
   const hired = { ...draft, name: name.trim() || draft.name };
-  return /* @__PURE__ */ jsxs62("div", { className: "flex min-h-0 flex-1 flex-col gap-4", "data-slot": "hire-detail", children: [
-    /* @__PURE__ */ jsxs62("div", { className: "flex items-center gap-3", children: [
-      /* @__PURE__ */ jsx64(Face, { name: hired.name, size: 44 }),
-      /* @__PURE__ */ jsxs62("div", { className: "min-w-0", children: [
-        /* @__PURE__ */ jsx64("div", { className: "truncate text-sm font-semibold text-foreground", children: hired.name }),
-        /* @__PURE__ */ jsx64("div", { className: "truncate text-xs text-(--ui-text-tertiary)", children: draft.title })
+  return /* @__PURE__ */ jsxs69("div", { className: "flex min-h-0 flex-1 flex-col gap-4", "data-slot": "hire-detail", children: [
+    /* @__PURE__ */ jsxs69("div", { className: "flex items-center gap-3", children: [
+      /* @__PURE__ */ jsx73(Face, { name: hired.name, size: 44 }),
+      /* @__PURE__ */ jsxs69("div", { className: "min-w-0", children: [
+        /* @__PURE__ */ jsx73("div", { className: "truncate text-sm font-semibold text-foreground", children: hired.name }),
+        /* @__PURE__ */ jsx73("div", { className: "truncate text-xs text-(--ui-text-tertiary)", children: draft.title })
       ] })
     ] }),
-    draft.templateId ? null : /* @__PURE__ */ jsx64("div", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: h.drafted }),
-    /* @__PURE__ */ jsxs62("label", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx64("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.name }),
-      /* @__PURE__ */ jsx64(sdk_compat_exports.Input, { "aria-label": h.name, onChange: (event) => setName(event.target.value), value: name })
+    draft.templateId ? null : /* @__PURE__ */ jsx73("div", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: h.drafted }),
+    /* @__PURE__ */ jsxs69("label", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx73("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.name }),
+      /* @__PURE__ */ jsx73(sdk_compat_exports.Input, { "aria-label": h.name, onChange: (event) => setName(event.target.value), value: name })
     ] }),
-    /* @__PURE__ */ jsxs62("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx64("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.brain }),
-      /* @__PURE__ */ jsx64("span", { className: "text-xs text-(--ui-text-secondary)", children: h.brainDefault }),
-      /* @__PURE__ */ jsx64("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: h.brainHint })
+    /* @__PURE__ */ jsxs69("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx73("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.brain }),
+      /* @__PURE__ */ jsx73("span", { className: "text-xs text-(--ui-text-secondary)", children: h.brainDefault }),
+      /* @__PURE__ */ jsx73("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: h.brainHint })
     ] }),
-    tags.length ? /* @__PURE__ */ jsxs62("div", { className: "grid gap-1.5", children: [
-      /* @__PURE__ */ jsx64("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.startsWith }),
-      /* @__PURE__ */ jsx64("span", { className: "flex flex-wrap gap-1", children: tags.map((tag) => /* @__PURE__ */ jsx64(
+    tags.length ? /* @__PURE__ */ jsxs69("div", { className: "grid gap-1.5", children: [
+      /* @__PURE__ */ jsx73("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.startsWith }),
+      /* @__PURE__ */ jsx73("span", { className: "flex flex-wrap gap-1", children: tags.map((tag) => /* @__PURE__ */ jsx73(
         "span",
         {
           className: "rounded bg-(--ui-inline-code-background) px-1.5 py-px text-[0.625rem] text-(--ui-text-tertiary)",
@@ -30683,23 +33460,23 @@ function BotDetail({ draft, onHire }) {
         tag
       )) })
     ] }) : null,
-    draft.starters.length ? /* @__PURE__ */ jsxs62("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx64("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.firstThings }),
-      /* @__PURE__ */ jsx64("ul", { className: "grid gap-0.5 text-xs text-(--ui-text-secondary)", children: draft.starters.map((line) => /* @__PURE__ */ jsxs62("li", { className: "truncate", children: [
+    draft.starters.length ? /* @__PURE__ */ jsxs69("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx73("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.firstThings }),
+      /* @__PURE__ */ jsx73("ul", { className: "grid gap-0.5 text-xs text-(--ui-text-secondary)", children: draft.starters.map((line) => /* @__PURE__ */ jsxs69("li", { className: "truncate", children: [
         "\u201C",
         line,
         "\u201D"
       ] }, line)) })
     ] }) : null,
-    /* @__PURE__ */ jsxs62("div", { className: "mt-auto grid gap-2", children: [
-      /* @__PURE__ */ jsx64(sdk_compat_exports.Button, { className: "w-full justify-center", "data-slot": "hire-button", onClick: () => onHire(hired), children: h.hire(hired.name) }),
-      /* @__PURE__ */ jsx64(sdk_compat_exports.Button, { className: "w-full justify-center", onClick: () => onHire(hired), size: "xs", variant: "ghost", children: h.customize })
+    /* @__PURE__ */ jsxs69("div", { className: "mt-auto grid gap-2", children: [
+      /* @__PURE__ */ jsx73(sdk_compat_exports.Button, { className: "w-full justify-center", "data-slot": "hire-button", onClick: () => onHire(hired), children: h.hire(hired.name) }),
+      /* @__PURE__ */ jsx73(sdk_compat_exports.Button, { className: "w-full justify-center", onClick: () => onHire(hired), size: "xs", variant: "ghost", children: h.customize })
     ] })
   ] });
 }
 function PackDetail({ onDone, pack }) {
   const h = useHireText();
-  const [busy, setBusy] = useState40(false);
+  const [busy, setBusy] = useState48(false);
   const hire = () => {
     setBusy(true);
     void importTeamPack(pack.pack).then((view) => {
@@ -30709,13 +33486,13 @@ function PackDetail({ onDone, pack }) {
       void host.navigate("/team");
     }).catch((error) => host.notifyError(error, h.packFailed)).finally(() => setBusy(false));
   };
-  return /* @__PURE__ */ jsxs62("div", { className: "flex min-h-0 flex-1 flex-col gap-4", "data-slot": "hire-detail", children: [
-    /* @__PURE__ */ jsxs62("div", { className: "grid gap-1", children: [
-      /* @__PURE__ */ jsx64("div", { className: "text-sm font-semibold text-foreground", children: pack.pack.name }),
-      /* @__PURE__ */ jsx64("div", { className: "text-xs text-(--ui-text-secondary)", children: pack.pack.mission })
+  return /* @__PURE__ */ jsxs69("div", { className: "flex min-h-0 flex-1 flex-col gap-4", "data-slot": "hire-detail", children: [
+    /* @__PURE__ */ jsxs69("div", { className: "grid gap-1", children: [
+      /* @__PURE__ */ jsx73("div", { className: "text-sm font-semibold text-foreground", children: pack.pack.name }),
+      /* @__PURE__ */ jsx73("div", { className: "text-xs text-(--ui-text-secondary)", children: pack.pack.mission })
     ] }),
-    /* @__PURE__ */ jsx64("ul", { className: "grid gap-2", children: pack.pack.seats.map((seat) => /* @__PURE__ */ jsxs62("li", { className: "flex items-start gap-2.5", children: [
-      /* @__PURE__ */ jsx64(
+    /* @__PURE__ */ jsx73("ul", { className: "grid gap-2", children: pack.pack.seats.map((seat) => /* @__PURE__ */ jsxs69("li", { className: "flex items-start gap-2.5", children: [
+      /* @__PURE__ */ jsx73(
         sdk_compat_exports.Codicon,
         {
           className: "mt-0.5 shrink-0 text-(--ui-text-quaternary)",
@@ -30723,23 +33500,23 @@ function PackDetail({ onDone, pack }) {
           size: "0.8rem"
         }
       ),
-      /* @__PURE__ */ jsxs62("span", { className: "min-w-0", children: [
-        /* @__PURE__ */ jsx64("span", { className: "block text-xs font-medium text-foreground", children: seat.role }),
-        /* @__PURE__ */ jsx64("span", { className: "block text-[0.6875rem] text-(--ui-text-tertiary)", children: seat.title })
+      /* @__PURE__ */ jsxs69("span", { className: "min-w-0", children: [
+        /* @__PURE__ */ jsx73("span", { className: "block text-xs font-medium text-foreground", children: seat.role }),
+        /* @__PURE__ */ jsx73("span", { className: "block text-[0.6875rem] text-(--ui-text-tertiary)", children: seat.title })
       ] })
     ] }, seat.slot)) }),
-    /* @__PURE__ */ jsxs62("div", { className: "mt-auto grid gap-2", children: [
-      /* @__PURE__ */ jsx64(sdk_compat_exports.Button, { className: "w-full justify-center", disabled: busy, onClick: hire, children: h.hirePack(pack.pack.name) }),
-      /* @__PURE__ */ jsx64("p", { className: "text-center text-[0.6875rem] text-(--ui-text-quaternary)", children: h.packHint })
+    /* @__PURE__ */ jsxs69("div", { className: "mt-auto grid gap-2", children: [
+      /* @__PURE__ */ jsx73(sdk_compat_exports.Button, { className: "w-full justify-center", disabled: busy, onClick: hire, children: h.hirePack(pack.pack.name) }),
+      /* @__PURE__ */ jsx73("p", { className: "text-center text-[0.6875rem] text-(--ui-text-quaternary)", children: h.packHint })
     ] })
   ] });
 }
 function HireGallery({ open, onClose, onHire }) {
   const h = useHireText();
-  const [shelf, setShelf] = useState40("featured");
-  const [query, setQuery] = useState40("");
-  const [describe, setDescribe] = useState40("");
-  const [pick2, setPick] = useState40(null);
+  const [shelf, setShelf] = useState48("featured");
+  const [query, setQuery] = useState48("");
+  const [describe, setDescribe] = useState48("");
+  const [pick2, setPick] = useState48(null);
   const starters = useMemo10(
     () => BOT_STARTERS.filter(
       (starter) => (shelf === "featured" || shelf === starter.category) && starterMatches(starter, query)
@@ -30761,19 +33538,19 @@ function HireGallery({ open, onClose, onHire }) {
   };
   const pickedStarterId = pick2?.kind === "bot" ? pick2.draft.templateId : void 0;
   const pickedPackId = pick2?.kind === "pack" ? pick2.pack.id : void 0;
-  return /* @__PURE__ */ jsx64(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open, children: /* @__PURE__ */ jsxs62(
+  return /* @__PURE__ */ jsx73(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open, children: /* @__PURE__ */ jsxs69(
     sdk_compat_exports.DialogContent,
     {
       bodyClassName: "p-0",
       className: "h-[min(40rem,calc(100vh-4rem))] max-w-[min(68rem,calc(100vw-2rem))]",
       "data-slot": "hire-gallery",
       children: [
-        /* @__PURE__ */ jsxs62("div", { className: "flex items-center gap-3 border-b border-(--ui-stroke-tertiary) px-4 py-3 pr-12", children: [
-          /* @__PURE__ */ jsxs62("div", { className: "min-w-0 flex-1", children: [
-            /* @__PURE__ */ jsx64(sdk_compat_exports.DialogTitle, { className: "text-sm", children: h.title }),
-            /* @__PURE__ */ jsx64(sdk_compat_exports.DialogDescription, { className: "text-xs", children: h.subtitle })
+        /* @__PURE__ */ jsxs69("div", { className: "flex items-center gap-3 border-b border-(--ui-stroke-tertiary) px-4 py-3 pr-12", children: [
+          /* @__PURE__ */ jsxs69("div", { className: "min-w-0 flex-1", children: [
+            /* @__PURE__ */ jsx73(sdk_compat_exports.DialogTitle, { className: "text-sm", children: h.title }),
+            /* @__PURE__ */ jsx73(sdk_compat_exports.DialogDescription, { className: "text-xs", children: h.subtitle })
           ] }),
-          /* @__PURE__ */ jsx64(
+          /* @__PURE__ */ jsx73(
             sdk_compat_exports.SearchField,
             {
               "aria-label": h.search,
@@ -30785,9 +33562,9 @@ function HireGallery({ open, onClose, onHire }) {
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs62("div", { className: "grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[11rem_minmax(0,1fr)_17rem]", children: [
-          /* @__PURE__ */ jsxs62("nav", { className: "hidden min-h-0 flex-col gap-0.5 overflow-y-auto border-r border-(--ui-stroke-tertiary) p-2 md:flex", children: [
-            /* @__PURE__ */ jsx64(
+        /* @__PURE__ */ jsxs69("div", { className: "grid min-h-0 flex-1 grid-cols-1 md:grid-cols-[11rem_minmax(0,1fr)_17rem]", children: [
+          /* @__PURE__ */ jsxs69("nav", { className: "hidden min-h-0 flex-col gap-0.5 overflow-y-auto border-r border-(--ui-stroke-tertiary) p-2 md:flex", children: [
+            /* @__PURE__ */ jsx73(
               "button",
               {
                 className: SHELF_CLASS,
@@ -30799,7 +33576,7 @@ function HireGallery({ open, onClose, onHire }) {
             ),
             STARTER_CATEGORIES.map((category) => {
               const count = BOT_STARTERS.filter((starter) => starter.category === category).length;
-              return /* @__PURE__ */ jsxs62(
+              return /* @__PURE__ */ jsxs69(
                 "button",
                 {
                   className: SHELF_CLASS,
@@ -30808,14 +33585,14 @@ function HireGallery({ open, onClose, onHire }) {
                   type: "button",
                   children: [
                     h.category[category],
-                    /* @__PURE__ */ jsx64("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: count })
+                    /* @__PURE__ */ jsx73("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: count })
                   ]
                 },
                 category
               );
             }),
-            /* @__PURE__ */ jsx64("div", { className: "px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-(--ui-text-quaternary)", children: h.packsNav }),
-            /* @__PURE__ */ jsxs62(
+            /* @__PURE__ */ jsx73("div", { className: "px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-(--ui-text-quaternary)", children: h.packsNav }),
+            /* @__PURE__ */ jsxs69(
               "button",
               {
                 className: SHELF_CLASS,
@@ -30823,16 +33600,16 @@ function HireGallery({ open, onClose, onHire }) {
                 onClick: () => setShelf("packs"),
                 type: "button",
                 children: [
-                  /* @__PURE__ */ jsxs62("span", { className: "flex items-center gap-1.5", children: [
-                    /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "organization", size: "0.75rem" }),
+                  /* @__PURE__ */ jsxs69("span", { className: "flex items-center gap-1.5", children: [
+                    /* @__PURE__ */ jsx73(sdk_compat_exports.Codicon, { name: "organization", size: "0.75rem" }),
                     h.packsNav
                   ] }),
-                  /* @__PURE__ */ jsx64("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: BUILTIN_TEAM_PACKS.length })
+                  /* @__PURE__ */ jsx73("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: BUILTIN_TEAM_PACKS.length })
                 ]
               }
             ),
-            /* @__PURE__ */ jsx64("div", { className: "px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-(--ui-text-quaternary)", children: h.yours }),
-            /* @__PURE__ */ jsx64(
+            /* @__PURE__ */ jsx73("div", { className: "px-2 pt-3 pb-1 text-[0.6875rem] font-medium text-(--ui-text-quaternary)", children: h.yours }),
+            /* @__PURE__ */ jsx73(
               "button",
               {
                 className: SHELF_CLASS,
@@ -30844,18 +33621,18 @@ function HireGallery({ open, onClose, onHire }) {
                   });
                 },
                 type: "button",
-                children: /* @__PURE__ */ jsxs62("span", { className: "flex items-center gap-1.5", children: [
-                  /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "cloud-download", size: "0.75rem" }),
+                children: /* @__PURE__ */ jsxs69("span", { className: "flex items-center gap-1.5", children: [
+                  /* @__PURE__ */ jsx73(sdk_compat_exports.Codicon, { name: "cloud-download", size: "0.75rem" }),
                   h.importBot
                 ] })
               }
             )
           ] }),
-          /* @__PURE__ */ jsxs62("div", { className: pick2 ? "hidden min-h-0 overflow-y-auto p-4 md:block" : "min-h-0 overflow-y-auto p-4", children: [
-            /* @__PURE__ */ jsxs62("div", { className: "mb-5 grid gap-1.5", children: [
-              /* @__PURE__ */ jsx64("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.describeLabel }),
-              /* @__PURE__ */ jsxs62("div", { className: "flex items-start gap-2", children: [
-                /* @__PURE__ */ jsx64(
+          /* @__PURE__ */ jsxs69("div", { className: pick2 ? "hidden min-h-0 overflow-y-auto p-4 md:block" : "min-h-0 overflow-y-auto p-4", children: [
+            /* @__PURE__ */ jsxs69("div", { className: "mb-5 grid gap-1.5", children: [
+              /* @__PURE__ */ jsx73("span", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.describeLabel }),
+              /* @__PURE__ */ jsxs69("div", { className: "flex items-start gap-2", children: [
+                /* @__PURE__ */ jsx73(
                   sdk_compat_exports.Textarea,
                   {
                     className: "min-h-9 flex-1 resize-none text-xs",
@@ -30872,15 +33649,15 @@ function HireGallery({ open, onClose, onHire }) {
                     value: describe
                   }
                 ),
-                /* @__PURE__ */ jsxs62(sdk_compat_exports.Button, { disabled: !describe.trim(), onClick: draftIt, size: "sm", variant: "secondary", children: [
-                  /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "sparkle", size: "0.75rem" }),
+                /* @__PURE__ */ jsxs69(sdk_compat_exports.Button, { disabled: !describe.trim(), onClick: draftIt, size: "sm", variant: "secondary", children: [
+                  /* @__PURE__ */ jsx73(sdk_compat_exports.Codicon, { name: "sparkle", size: "0.75rem" }),
                   h.describeAction
                 ] })
               ] })
             ] }),
-            showPacks ? /* @__PURE__ */ jsxs62("section", { className: "mb-5 grid gap-2", children: [
-              /* @__PURE__ */ jsx64("h3", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.packsHeading }),
-              /* @__PURE__ */ jsx64("div", { className: "grid grid-cols-1 gap-2 sm:grid-cols-2", children: BUILTIN_TEAM_PACKS.map((pack) => /* @__PURE__ */ jsx64(
+            showPacks ? /* @__PURE__ */ jsxs69("section", { className: "mb-5 grid gap-2", children: [
+              /* @__PURE__ */ jsx73("h3", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.packsHeading }),
+              /* @__PURE__ */ jsx73("div", { className: "grid grid-cols-1 gap-2 sm:grid-cols-2", children: BUILTIN_TEAM_PACKS.map((pack) => /* @__PURE__ */ jsx73(
                 PackCard,
                 {
                   onPick: () => setPick({ kind: "pack", pack }),
@@ -30890,10 +33667,10 @@ function HireGallery({ open, onClose, onHire }) {
                 pack.id
               )) })
             ] }) : null,
-            showStarters ? /* @__PURE__ */ jsxs62("section", { className: "grid gap-2", children: [
-              /* @__PURE__ */ jsx64("h3", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.teammatesHeading }),
-              starters.length === 0 ? /* @__PURE__ */ jsx64("p", { className: "py-6 text-center text-xs text-(--ui-text-tertiary)", children: h.noMatch(query.trim()) }) : /* @__PURE__ */ jsxs62("div", { className: "grid grid-cols-1 gap-2 sm:grid-cols-2", children: [
-                starters.map((starter) => /* @__PURE__ */ jsx64(
+            showStarters ? /* @__PURE__ */ jsxs69("section", { className: "grid gap-2", children: [
+              /* @__PURE__ */ jsx73("h3", { className: "text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: h.teammatesHeading }),
+              starters.length === 0 ? /* @__PURE__ */ jsx73("p", { className: "py-6 text-center text-xs text-(--ui-text-tertiary)", children: h.noMatch(query.trim()) }) : /* @__PURE__ */ jsxs69("div", { className: "grid grid-cols-1 gap-2 sm:grid-cols-2", children: [
+                starters.map((starter) => /* @__PURE__ */ jsx73(
                   StarterCard,
                   {
                     onPick: () => setPick({ kind: "bot", draft: starterDraft(starter) }),
@@ -30902,17 +33679,17 @@ function HireGallery({ open, onClose, onHire }) {
                   },
                   starter.id
                 )),
-                /* @__PURE__ */ jsx64(
+                /* @__PURE__ */ jsx73(
                   sdk_compat_exports.RowButton,
                   {
                     className: `${CARD_CLASS} border-dashed`,
                     "data-slot": "hire-blank",
                     onClick: () => hire(null),
-                    children: /* @__PURE__ */ jsxs62("span", { className: "flex items-center gap-2.5", children: [
-                      /* @__PURE__ */ jsx64("span", { className: "grid size-[34px] place-items-center rounded-lg border border-dashed border-(--ui-stroke-secondary) text-(--ui-text-tertiary)", children: /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "add" }) }),
-                      /* @__PURE__ */ jsxs62("span", { className: "min-w-0", children: [
-                        /* @__PURE__ */ jsx64("span", { className: "block text-[0.8125rem] font-semibold text-foreground", children: h.blankTitle }),
-                        /* @__PURE__ */ jsx64("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: h.blankBody })
+                    children: /* @__PURE__ */ jsxs69("span", { className: "flex items-center gap-2.5", children: [
+                      /* @__PURE__ */ jsx73("span", { className: "grid size-[34px] place-items-center rounded-lg border border-dashed border-(--ui-stroke-secondary) text-(--ui-text-tertiary)", children: /* @__PURE__ */ jsx73(sdk_compat_exports.Codicon, { name: "add" }) }),
+                      /* @__PURE__ */ jsxs69("span", { className: "min-w-0", children: [
+                        /* @__PURE__ */ jsx73("span", { className: "block text-[0.8125rem] font-semibold text-foreground", children: h.blankTitle }),
+                        /* @__PURE__ */ jsx73("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: h.blankBody })
                       ] })
                     ] })
                   }
@@ -30920,16 +33697,16 @@ function HireGallery({ open, onClose, onHire }) {
               ] })
             ] }) : null
           ] }),
-          /* @__PURE__ */ jsxs62(
+          /* @__PURE__ */ jsxs69(
             "aside",
             {
               className: pick2 ? "flex min-h-0 flex-col overflow-y-auto p-4 md:border-l md:border-(--ui-stroke-tertiary)" : "hidden min-h-0 flex-col overflow-y-auto border-l border-(--ui-stroke-tertiary) p-4 md:flex",
               children: [
-                pick2 ? /* @__PURE__ */ jsxs62(sdk_compat_exports.Button, { className: "mb-3 self-start md:hidden", onClick: () => setPick(null), size: "xs", variant: "ghost", children: [
-                  /* @__PURE__ */ jsx64(sdk_compat_exports.Codicon, { name: "chevron-left", size: "0.75rem" }),
+                pick2 ? /* @__PURE__ */ jsxs69(sdk_compat_exports.Button, { className: "mb-3 self-start md:hidden", onClick: () => setPick(null), size: "xs", variant: "ghost", children: [
+                  /* @__PURE__ */ jsx73(sdk_compat_exports.Codicon, { name: "chevron-left", size: "0.75rem" }),
                   h.back
                 ] }) : null,
-                pick2?.kind === "bot" ? /* @__PURE__ */ jsx64(BotDetail, { draft: pick2.draft, onHire: hire }, pick2.draft.templateId || pick2.draft.name) : pick2?.kind === "pack" ? /* @__PURE__ */ jsx64(PackDetail, { onDone: onClose, pack: pick2.pack }) : /* @__PURE__ */ jsx64("div", { className: "grid flex-1 place-items-center text-center text-xs text-(--ui-text-tertiary)", children: h.pickOne })
+                pick2?.kind === "bot" ? /* @__PURE__ */ jsx73(BotDetail, { draft: pick2.draft, onHire: hire }, pick2.draft.templateId || pick2.draft.name) : pick2?.kind === "pack" ? /* @__PURE__ */ jsx73(PackDetail, { onDone: onClose, pack: pick2.pack }) : /* @__PURE__ */ jsx73("div", { className: "grid flex-1 place-items-center text-center text-xs text-(--ui-text-tertiary)", children: h.pickOne })
               ]
             }
           )
@@ -30947,9 +33724,9 @@ init_sdk_compat();
 init_data();
 init_i18n();
 init_labels();
-import { useState as useState41 } from "react";
+import { useState as useState49 } from "react";
 init_routing();
-import { jsx as jsx65, jsxs as jsxs63 } from "react/jsx-runtime";
+import { jsx as jsx74, jsxs as jsxs70 } from "react/jsx-runtime";
 var STATUS_ICONS = {
   accepted: "check",
   declined: "circle-slash",
@@ -30981,7 +33758,7 @@ function partyLabel(party, members, you) {
 }
 function MailboxNoteCard({ note, members }) {
   const b = useBots();
-  const [busy, setBusy] = useState41(false);
+  const [busy, setBusy] = useState49(false);
   const status = note.status || "open";
   const open = status === "open";
   const setStatus = (next) => {
@@ -30991,11 +33768,11 @@ function MailboxNoteCard({ note, members }) {
     setBusy(true);
     void updateMailboxNote(note, next).catch((error) => host.notify({ kind: "error", message: b.mailbox.updateFailed(String(error instanceof Error ? error.message : error)) })).finally(() => setBusy(false));
   };
-  return /* @__PURE__ */ jsxs63("div", { className: "rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-surface-secondary) px-2.5 py-2 text-xs", children: [
-    /* @__PURE__ */ jsxs63("div", { className: "flex items-center gap-1.5", children: [
-      /* @__PURE__ */ jsx65(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "mail" }),
-      /* @__PURE__ */ jsx65("span", { className: "min-w-0 truncate font-medium text-(--ui-text-secondary)", children: note.title }),
-      /* @__PURE__ */ jsxs63(
+  return /* @__PURE__ */ jsxs70("div", { className: "rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-surface-secondary) px-2.5 py-2 text-xs", children: [
+    /* @__PURE__ */ jsxs70("div", { className: "flex items-center gap-1.5", children: [
+      /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "mail" }),
+      /* @__PURE__ */ jsx74("span", { className: "min-w-0 truncate font-medium text-(--ui-text-secondary)", children: note.title }),
+      /* @__PURE__ */ jsxs70(
         "span",
         {
           className: (0, sdk_compat_exports.cn)(
@@ -31006,23 +33783,23 @@ function MailboxNoteCard({ note, members }) {
             status === "done" && "bg-(--chrome-action-hover) text-(--ui-text-tertiary)"
           ),
           children: [
-            /* @__PURE__ */ jsx65(sdk_compat_exports.Codicon, { name: STATUS_ICONS[status] }),
+            /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: STATUS_ICONS[status] }),
             statusLabel(b, status)
           ]
         }
       )
     ] }),
-    /* @__PURE__ */ jsx65("div", { className: "mt-0.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: b.mailbox.cardRoute(partyLabel(note.sender, members, b.group.you), partyLabel(note.to, members, b.group.you)) }),
-    note.body ? /* @__PURE__ */ jsx65("div", { className: "mt-1 whitespace-pre-wrap break-words text-(--ui-text-tertiary)", children: note.body }) : null,
-    note.reply ? /* @__PURE__ */ jsxs63("div", { className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1 text-(--ui-text-tertiary)", children: [
+    /* @__PURE__ */ jsx74("div", { className: "mt-0.5 text-[0.6875rem] text-(--ui-text-quaternary)", children: b.mailbox.cardRoute(partyLabel(note.sender, members, b.group.you), partyLabel(note.to, members, b.group.you)) }),
+    note.body ? /* @__PURE__ */ jsx74("div", { className: "mt-1 whitespace-pre-wrap break-words text-(--ui-text-tertiary)", children: note.body }) : null,
+    note.reply ? /* @__PURE__ */ jsxs70("div", { className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1 text-(--ui-text-tertiary)", children: [
       b.mailbox.replyPrefix,
       ": ",
       note.reply
     ] }) : null,
-    open ? /* @__PURE__ */ jsxs63("div", { className: "mt-1.5 flex gap-1", children: [
-      /* @__PURE__ */ jsx65(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("accepted"), size: "sm", variant: "secondary", children: b.mailbox.accept }),
-      /* @__PURE__ */ jsx65(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("done"), size: "sm", variant: "secondary", children: b.mailbox.markDone }),
-      /* @__PURE__ */ jsx65(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("declined"), size: "sm", variant: "ghost", children: b.mailbox.decline })
+    open ? /* @__PURE__ */ jsxs70("div", { className: "mt-1.5 flex gap-1", children: [
+      /* @__PURE__ */ jsx74(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("accepted"), size: "sm", variant: "secondary", children: b.mailbox.accept }),
+      /* @__PURE__ */ jsx74(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("done"), size: "sm", variant: "secondary", children: b.mailbox.markDone }),
+      /* @__PURE__ */ jsx74(sdk_compat_exports.Button, { disabled: busy, onClick: () => setStatus("declined"), size: "sm", variant: "ghost", children: b.mailbox.decline })
     ] }) : null
   ] });
 }
@@ -31031,9 +33808,9 @@ function MailboxTaskDialog({ member, onClose }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const metaByName = (0, sdk_compat_exports.useValue)($botMeta);
   const label = member ? displayName(member, botRosterMeta(member, metaByName) || null) : null;
-  const [title, setTitle] = useState41("");
-  const [body, setBody] = useState41("");
-  const [sending, setSending] = useState41(false);
+  const [title, setTitle] = useState49("");
+  const [body, setBody] = useState49("");
+  const [sending, setSending] = useState49(false);
   const send = () => {
     if (!member || !title.trim() || sending) {
       return;
@@ -31044,13 +33821,13 @@ function MailboxTaskDialog({ member, onClose }) {
       onClose();
     }).catch((error) => host.notify({ kind: "error", message: b.mailbox.sendFailed(String(error instanceof Error ? error.message : error)) })).finally(() => setSending(false));
   };
-  return /* @__PURE__ */ jsx65(sdk_compat_exports.Dialog, { onOpenChange: (open) => !open && onClose(), open: Boolean(member), children: /* @__PURE__ */ jsxs63(sdk_compat_exports.DialogContent, { className: "sm:max-w-md", children: [
-    /* @__PURE__ */ jsxs63(sdk_compat_exports.DialogHeader, { children: [
-      /* @__PURE__ */ jsx65(sdk_compat_exports.DialogTitle, { children: label ? b.mailbox.assignTitle(label) : b.mailbox.assignTitleGeneric }),
-      /* @__PURE__ */ jsx65(sdk_compat_exports.DialogDescription, { children: b.mailbox.assignDescription })
+  return /* @__PURE__ */ jsx74(sdk_compat_exports.Dialog, { onOpenChange: (open) => !open && onClose(), open: Boolean(member), children: /* @__PURE__ */ jsxs70(sdk_compat_exports.DialogContent, { className: "sm:max-w-md", children: [
+    /* @__PURE__ */ jsxs70(sdk_compat_exports.DialogHeader, { children: [
+      /* @__PURE__ */ jsx74(sdk_compat_exports.DialogTitle, { children: label ? b.mailbox.assignTitle(label) : b.mailbox.assignTitleGeneric }),
+      /* @__PURE__ */ jsx74(sdk_compat_exports.DialogDescription, { children: b.mailbox.assignDescription })
     ] }),
-    /* @__PURE__ */ jsxs63("div", { className: "grid gap-2 py-1", children: [
-      /* @__PURE__ */ jsx65(
+    /* @__PURE__ */ jsxs70("div", { className: "grid gap-2 py-1", children: [
+      /* @__PURE__ */ jsx74(
         sdk_compat_exports.Input,
         {
           autoFocus: true,
@@ -31059,7 +33836,7 @@ function MailboxTaskDialog({ member, onClose }) {
           value: title
         }
       ),
-      /* @__PURE__ */ jsx65(
+      /* @__PURE__ */ jsx74(
         sdk_compat_exports.Textarea,
         {
           className: "min-h-20",
@@ -31069,9 +33846,9 @@ function MailboxTaskDialog({ member, onClose }) {
         }
       )
     ] }),
-    /* @__PURE__ */ jsxs63(sdk_compat_exports.DialogFooter, { children: [
-      /* @__PURE__ */ jsx65(sdk_compat_exports.Button, { onClick: onClose, size: "sm", variant: "ghost", children: t2.common.cancel }),
-      /* @__PURE__ */ jsx65(sdk_compat_exports.Button, { disabled: !title.trim() || sending, onClick: send, size: "sm", children: b.mailbox.send })
+    /* @__PURE__ */ jsxs70(sdk_compat_exports.DialogFooter, { children: [
+      /* @__PURE__ */ jsx74(sdk_compat_exports.Button, { onClick: onClose, size: "sm", variant: "ghost", children: t2.common.cancel }),
+      /* @__PURE__ */ jsx74(sdk_compat_exports.Button, { disabled: !title.trim() || sending, onClick: send, size: "sm", children: b.mailbox.send })
     ] })
   ] }) });
 }
@@ -31085,8 +33862,8 @@ function RosterMailboxSection({
   if (!notes.length) {
     return null;
   }
-  return /* @__PURE__ */ jsxs63("div", { className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1", children: [
-    /* @__PURE__ */ jsxs63(
+  return /* @__PURE__ */ jsxs70("div", { className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1", children: [
+    /* @__PURE__ */ jsxs70(
       "button",
       {
         "aria-expanded": !collapsed,
@@ -31094,13 +33871,13 @@ function RosterMailboxSection({
         onClick: onToggle,
         type: "button",
         children: [
-          /* @__PURE__ */ jsx65(sdk_compat_exports.Codicon, { name: collapsed ? "chevron-right" : "chevron-down" }),
-          /* @__PURE__ */ jsx65("span", { children: b.mailbox.section }),
-          /* @__PURE__ */ jsx65("span", { className: "text-(--ui-text-quaternary)", children: notes.length })
+          /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: collapsed ? "chevron-right" : "chevron-down" }),
+          /* @__PURE__ */ jsx74("span", { children: b.mailbox.section }),
+          /* @__PURE__ */ jsx74("span", { className: "text-(--ui-text-quaternary)", children: notes.length })
         ]
       }
     ),
-    !collapsed ? /* @__PURE__ */ jsx65("div", { className: "grid gap-1 px-1 pb-1", children: notes.map((note) => /* @__PURE__ */ jsx65(MailboxNoteCard, { members: roster, note }, `${note.connectionId || ""}:${note.id}`)) }) : null
+    !collapsed ? /* @__PURE__ */ jsx74("div", { className: "grid gap-1 px-1 pb-1", children: notes.map((note) => /* @__PURE__ */ jsx74(MailboxNoteCard, { members: roster, note }, `${note.connectionId || ""}:${note.id}`)) }) : null
   ] }, "mailbox-section");
 }
 
@@ -31110,7 +33887,7 @@ init_sdk_compat();
 // src/bots-explainer.tsx
 init_sdk_compat();
 init_i18n();
-import { jsx as jsx66, jsxs as jsxs64 } from "react/jsx-runtime";
+import { jsx as jsx75, jsxs as jsxs71 } from "react/jsx-runtime";
 var EXPLAINER_LINES = [
   { icon: "inbox", key: "howInbox" },
   { icon: "comment-add", key: "howTopic" },
@@ -31119,17 +33896,17 @@ var EXPLAINER_LINES = [
 ];
 function BotsHowItWorks() {
   const b = useBots();
-  return /* @__PURE__ */ jsxs64("div", { className: "mt-1.5 flex w-full max-w-64 flex-col gap-1.5 text-left", "data-testid": "bots-how-it-works", children: [
-    /* @__PURE__ */ jsx66("p", { className: "text-[0.625rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)", children: b.roster.howTitle }),
-    EXPLAINER_LINES.map((line) => /* @__PURE__ */ jsxs64("p", { className: "flex items-start gap-1.5 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)", children: [
-      /* @__PURE__ */ jsx66(sdk_compat_exports.Codicon, { className: "mt-px shrink-0 text-(--ui-text-quaternary)", name: line.icon }),
-      /* @__PURE__ */ jsx66("span", { children: b.roster[line.key] })
+  return /* @__PURE__ */ jsxs71("div", { className: "mt-1.5 flex w-full max-w-64 flex-col gap-1.5 text-left", "data-testid": "bots-how-it-works", children: [
+    /* @__PURE__ */ jsx75("p", { className: "text-[0.625rem] font-medium uppercase tracking-wider text-(--ui-text-quaternary)", children: b.roster.howTitle }),
+    EXPLAINER_LINES.map((line) => /* @__PURE__ */ jsxs71("p", { className: "flex items-start gap-1.5 text-[0.6875rem] leading-snug text-(--ui-text-tertiary)", children: [
+      /* @__PURE__ */ jsx75(sdk_compat_exports.Codicon, { className: "mt-px shrink-0 text-(--ui-text-quaternary)", name: line.icon }),
+      /* @__PURE__ */ jsx75("span", { children: b.roster[line.key] })
     ] }, line.key))
   ] });
 }
 
 // src/roster-pane-content.tsx
-import { Fragment as Fragment14, jsx as jsx67, jsxs as jsxs65 } from "react/jsx-runtime";
+import { Fragment as Fragment16, jsx as jsx76, jsxs as jsxs72 } from "react/jsx-runtime";
 function renderRosterContent({
   b,
   onNewBot,
@@ -31166,20 +33943,20 @@ function renderRosterContent({
   renderUserSections,
   renderHiddenGatewaySection
 }) {
-  return /* @__PURE__ */ jsxs65(Fragment14, { children: [
-    staleNotice ? /* @__PURE__ */ jsx67("div", { className: "mx-2.5 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: staleNotice }) : null,
-    (isLoading || initialRosterLoading) && !roster.length ? /* @__PURE__ */ jsx67("div", { className: "flex flex-1 items-center justify-center", children: /* @__PURE__ */ jsx67(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !roster.length ? /* @__PURE__ */ jsxs65("div", { className: "grid gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)", children: [
-      /* @__PURE__ */ jsx67("div", { children: gatewayUp ? b.roster.rosterUnavailable(error instanceof Error ? error.message : "gateway error") : b.roster.waitingForGateway }),
-      /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { className: "justify-self-start", onClick: () => void refetch(), size: "sm", variant: "secondary", children: b.roster.retryNow })
-    ] }) : roster.length === 0 ? /* @__PURE__ */ jsx67(
+  return /* @__PURE__ */ jsxs72(Fragment16, { children: [
+    staleNotice ? /* @__PURE__ */ jsx76("div", { className: "mx-2.5 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)", children: staleNotice }) : null,
+    (isLoading || initialRosterLoading) && !roster.length ? /* @__PURE__ */ jsx76("div", { className: "flex flex-1 items-center justify-center", children: /* @__PURE__ */ jsx76(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !roster.length ? /* @__PURE__ */ jsxs72("div", { className: "grid gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)", children: [
+      /* @__PURE__ */ jsx76("div", { children: gatewayUp ? b.roster.rosterUnavailable(error instanceof Error ? error.message : "gateway error") : b.roster.waitingForGateway }),
+      /* @__PURE__ */ jsx76(sdk_compat_exports.Button, { className: "justify-self-start", onClick: () => void refetch(), size: "sm", variant: "secondary", children: b.roster.retryNow })
+    ] }) : roster.length === 0 ? /* @__PURE__ */ jsx76(
       sdk_compat_exports.PanelEmpty,
       {
-        action: /* @__PURE__ */ jsxs65("div", { className: "flex flex-col items-center gap-2.5", children: [
-          /* @__PURE__ */ jsxs65(sdk_compat_exports.Button, { onClick: () => onNewBot(), size: "sm", children: [
-            /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { className: "mr-1 text-[0.75rem]", name: "add" }),
+        action: /* @__PURE__ */ jsxs72("div", { className: "flex flex-col items-center gap-2.5", children: [
+          /* @__PURE__ */ jsxs72(sdk_compat_exports.Button, { onClick: () => onNewBot(), size: "sm", children: [
+            /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { className: "mr-1 text-[0.75rem]", name: "add" }),
             b.bot.newTitle
           ] }),
-          /* @__PURE__ */ jsx67("div", { className: "flex flex-wrap items-center justify-center gap-1", children: QUICK_STARTERS.map((template) => /* @__PURE__ */ jsxs65(
+          /* @__PURE__ */ jsx76("div", { className: "flex flex-wrap items-center justify-center gap-1", children: QUICK_STARTERS.map((template) => /* @__PURE__ */ jsxs72(
             sdk_compat_exports.RowButton,
             {
               className: (0, sdk_compat_exports.cn)(
@@ -31188,7 +33965,7 @@ function renderRosterContent({
               ),
               onClick: () => onNewBot(template),
               children: [
-                creatingStarter === template.id ? /* @__PURE__ */ jsx67(sdk_compat_exports.GlyphSpinner, { className: "text-[0.75rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx67(
+                creatingStarter === template.id ? /* @__PURE__ */ jsx76(sdk_compat_exports.GlyphSpinner, { className: "text-[0.75rem]", spinner: "breathe" }) : /* @__PURE__ */ jsx76(
                   BotFace,
                   {
                     color: avatarColor(null, template.name),
@@ -31202,19 +33979,19 @@ function renderRosterContent({
             },
             template.id
           )) }),
-          /* @__PURE__ */ jsx67(BotsHowItWorks, {})
+          /* @__PURE__ */ jsx76(BotsHowItWorks, {})
         ] }),
         description: b.roster.emptyDesc,
         icon: "hubot",
         title: b.roster.emptyTitle
       }
-    ) : allBotsHidden && !hiddenExpanded ? /* @__PURE__ */ jsxs65("div", { className: "grid content-start gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)", children: [
-      /* @__PURE__ */ jsxs65("div", { className: "flex items-center gap-1.5 font-medium text-(--ui-text-secondary)", children: [
-        /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { className: "text-(--ui-text-quaternary)", name: "eye-closed" }),
+    ) : allBotsHidden && !hiddenExpanded ? /* @__PURE__ */ jsxs72("div", { className: "grid content-start gap-2 px-3 py-4 text-xs text-(--ui-text-tertiary)", children: [
+      /* @__PURE__ */ jsxs72("div", { className: "flex items-center gap-1.5 font-medium text-(--ui-text-secondary)", children: [
+        /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { className: "text-(--ui-text-quaternary)", name: "eye-closed" }),
         b.roster.allHidden
       ] }),
-      /* @__PURE__ */ jsx67("p", { className: "leading-relaxed", children: b.roster.allHiddenDesc }),
-      /* @__PURE__ */ jsx67(
+      /* @__PURE__ */ jsx76("p", { className: "leading-relaxed", children: b.roster.allHiddenDesc }),
+      /* @__PURE__ */ jsx76(
         sdk_compat_exports.Button,
         {
           className: "justify-self-start",
@@ -31224,18 +34001,18 @@ function renderRosterContent({
           children: b.roster.showHidden
         }
       )
-    ] }) : rosterRows.length === 0 && matchingHiddenBots.length === 0 ? /* @__PURE__ */ jsx67("div", { "aria-live": "polite", className: "flex min-h-0 flex-1 flex-col", role: "status", children: /* @__PURE__ */ jsx67(
+    ] }) : rosterRows.length === 0 && matchingHiddenBots.length === 0 ? /* @__PURE__ */ jsx76("div", { "aria-live": "polite", className: "flex min-h-0 flex-1 flex-col", role: "status", children: /* @__PURE__ */ jsx76(
       sdk_compat_exports.PanelEmpty,
       {
         description: query.trim() ? selectedGateway ? b.roster.noMatchQueryOn(query.trim(), String(selectedGateway.label)) : b.roster.noMatchQuery(query.trim()) : selectedGateway ? b.roster.noMatchFiltersOn(String(selectedGateway.label)) : b.roster.noMatchFilters,
         icon: "search"
       }
-    ) }) : /* @__PURE__ */ jsx67("div", { className: "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain", "data-slot": "bots-roster", children: /* @__PURE__ */ jsxs65("div", { className: "grid w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5 px-1.5 pb-2", children: [
+    ) }) : /* @__PURE__ */ jsx76("div", { className: "min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain", "data-slot": "bots-roster", children: /* @__PURE__ */ jsxs72("div", { className: "grid w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-0.5 px-1.5 pb-2", children: [
       showGatewaySections ? [
         sortedGroupRows.length ? renderGroupChatSection() : null,
         ...gatewaySections.sections.map(renderGatewaySection)
       ].filter(Boolean) : renderUserSections(rosterRows),
-      /* @__PURE__ */ jsx67(
+      /* @__PURE__ */ jsx76(
         RosterMailboxSection,
         {
           collapsed: mailboxCollapsed,
@@ -31244,30 +34021,30 @@ function renderRosterContent({
           roster
         }
       ),
-      showHiddenSection ? /* @__PURE__ */ jsxs65(
+      showHiddenSection ? /* @__PURE__ */ jsxs72(
         "div",
         {
           className: "mt-1 border-t border-(--ui-stroke-tertiary) pt-1",
           ref: hiddenSectionRef,
           children: [
-            hasRosterConstraint ? /* @__PURE__ */ jsxs65("div", { className: "flex w-full items-center gap-1 px-2 py-1.5 text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: [
-              /* @__PURE__ */ jsx67(sdk_compat_exports.Codicon, { name: "eye-closed" }),
-              /* @__PURE__ */ jsx67("span", { children: "Hidden" }),
-              /* @__PURE__ */ jsx67("span", { className: "text-(--ui-text-quaternary)", children: matchingHiddenBots.length })
-            ] }) : /* @__PURE__ */ jsxs65(
+            hasRosterConstraint ? /* @__PURE__ */ jsxs72("div", { className: "flex w-full items-center gap-1 px-2 py-1.5 text-[0.6875rem] font-medium text-(--ui-text-tertiary)", children: [
+              /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "eye-closed" }),
+              /* @__PURE__ */ jsx76("span", { children: "Hidden" }),
+              /* @__PURE__ */ jsx76("span", { className: "text-(--ui-text-quaternary)", children: matchingHiddenBots.length })
+            ] }) : /* @__PURE__ */ jsxs72(
               sdk_compat_exports.RowButton,
               {
                 "aria-expanded": hiddenExpanded,
                 className: "flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-[0.6875rem] font-medium text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground",
                 onClick: () => $showHiddenBots.set(!hiddenExpanded),
                 children: [
-                  /* @__PURE__ */ jsx67(sdk_compat_exports.DisclosureCaret, { open: hiddenExpanded }),
-                  /* @__PURE__ */ jsx67("span", { children: "Hidden" }),
-                  /* @__PURE__ */ jsx67("span", { className: "text-(--ui-text-quaternary)", children: hiddenBots.length })
+                  /* @__PURE__ */ jsx76(sdk_compat_exports.DisclosureCaret, { open: hiddenExpanded }),
+                  /* @__PURE__ */ jsx76("span", { children: "Hidden" }),
+                  /* @__PURE__ */ jsx76("span", { className: "text-(--ui-text-quaternary)", children: hiddenBots.length })
                 ]
               }
             ),
-            showHiddenRows ? matchingHiddenBots.length ? hiddenGatewaySections.sectioned ? hiddenGatewaySections.sections.map(renderHiddenGatewaySection) : cardMode ? /* @__PURE__ */ jsx67("div", { className: "grid min-w-0 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5 px-1.5 py-1", children: matchingHiddenBots.map((bot) => renderBotRow(bot, "hidden:")) }) : matchingHiddenBots.map((bot) => renderBotRow(bot, "hidden:")) : /* @__PURE__ */ jsx67("div", { className: "px-2 py-2 text-xs text-(--ui-text-quaternary)", children: b.roster.noHiddenMatch }) : null
+            showHiddenRows ? matchingHiddenBots.length ? hiddenGatewaySections.sectioned ? hiddenGatewaySections.sections.map(renderHiddenGatewaySection) : cardMode ? /* @__PURE__ */ jsx76("div", { className: "grid min-w-0 grid-cols-[repeat(auto-fill,minmax(9.5rem,1fr))] gap-1.5 px-1.5 py-1", children: matchingHiddenBots.map((bot) => renderBotRow(bot, "hidden:")) }) : matchingHiddenBots.map((bot) => renderBotRow(bot, "hidden:")) : /* @__PURE__ */ jsx76("div", { className: "px-2 py-2 text-xs text-(--ui-text-quaternary)", children: b.roster.noHiddenMatch }) : null
           ]
         },
         "hidden-section"
@@ -31281,14 +34058,14 @@ init_sdk_compat();
 
 // src/create-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect25, useRef as useRef15, useState as useState44 } from "react";
+import { useEffect as useEffect35, useRef as useRef22, useState as useState52 } from "react";
 init_avatar_image();
 init_bot_state();
 init_canonical_chat();
 
 // src/canonical-group-capabilities.ts
 init_sdk_compat();
-import { useEffect as useEffect23, useState as useState42 } from "react";
+import { useEffect as useEffect33, useState as useState50 } from "react";
 
 // src/canonical-groups.ts
 init_sdk_compat();
@@ -31382,8 +34159,8 @@ function useGroupCapability(active) {
   const gateway = (0, sdk_compat_exports.useValue)(host.state.gateway);
   const activationEpoch = (0, sdk_compat_exports.gatewayActivationEpoch)();
   const source = JSON.stringify([connectionId, profile, gateway, activationEpoch]);
-  const [capability, setCapability] = useState42(null);
-  useEffect23(() => {
+  const [capability, setCapability] = useState50(null);
+  useEffect33(() => {
     let cancelled = false;
     setCapability(null);
     if (!active || gateway !== "open" || !connectionId) {
@@ -31443,14 +34220,14 @@ function seatableGroupBots(roster, { connectionId, mode, seatable }) {
 
 // src/canonical-group-registry.tsx
 init_sdk_compat();
-import { useEffect as useEffect24, useState as useState43 } from "react";
+import { useEffect as useEffect34, useState as useState51 } from "react";
 
 // src/canonical-group-labels.ts
 init_sdk_compat();
 init_i18n();
 
 // src/canonical-group-registry.tsx
-import { jsx as jsx68, jsxs as jsxs66 } from "react/jsx-runtime";
+import { jsx as jsx77, jsxs as jsxs73 } from "react/jsx-runtime";
 var $canonicalGroupBindings = (0, sdk_compat_exports.atom)({});
 function registerCanonicalGroup(route, room) {
   const key = `canonical:${encodeURIComponent(route.connectionId)}:${encodeURIComponent(route.profile)}:${room.room_id}`;
@@ -31464,7 +34241,7 @@ init_i18n();
 init_labels();
 init_profile_ops();
 init_routing();
-import { jsx as jsx69, jsxs as jsxs67 } from "react/jsx-runtime";
+import { jsx as jsx78, jsxs as jsxs74 } from "react/jsx-runtime";
 var NAME_RE2 = /^[a-z0-9][a-z0-9_-]{0,63}$/;
 function singleFlight(ref, start) {
   if (ref.current) {
@@ -31509,9 +34286,9 @@ function discardDraftProfile(draft, target) {
   void Promise.resolve(discard).then(() => host.notify({ kind: "success", message: `Draft agent "${draft}" discarded` })).catch((err) => host.notifyError(err, `Could not clean up draft profile "${draft}"`));
 }
 function useCapabilitiesDraft(ready, slug, draft, materialize) {
-  const latest = useRef15(materialize);
+  const latest = useRef22(materialize);
   latest.current = materialize;
-  useEffect25(() => {
+  useEffect35(() => {
     if (!ready || draft === slug) {
       return;
     }
@@ -31523,15 +34300,15 @@ function CapabilitiesTab({ connection: connection2, draft, hint }) {
   const b = useBots();
   const note = "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)";
   if (hint) {
-    return /* @__PURE__ */ jsx69("div", { className: note, children: hint });
+    return /* @__PURE__ */ jsx78("div", { className: note, children: hint });
   }
   if (!draft) {
-    return /* @__PURE__ */ jsx69("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx69(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) });
+    return /* @__PURE__ */ jsx78("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx78(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) });
   }
   if (!CapabilitiesView2) {
-    return /* @__PURE__ */ jsx69("div", { className: note, children: b.editor.newerDesktop });
+    return /* @__PURE__ */ jsx78("div", { className: note, children: b.editor.newerDesktop });
   }
-  return /* @__PURE__ */ jsx69(ResizableFrame, { children: /* @__PURE__ */ jsx69(CapabilitiesView2, { embedded: true, fixedProfile: draft, ...connection2 ? { fixedConnection: connection2 } : {} }) });
+  return /* @__PURE__ */ jsx78(ResizableFrame, { children: /* @__PURE__ */ jsx78(CapabilitiesView2, { embedded: true, fixedProfile: draft, ...connection2 ? { fixedConnection: connection2 } : {} }) });
 }
 function slugTaken(roster, slug, target, draft) {
   return roster.some(
@@ -31539,8 +34316,8 @@ function slugTaken(roster, slug, target, draft) {
   );
 }
 function useDraftProfile(createdRef, flightRef) {
-  const draftGenRef = useRef15(0);
-  const draftTargetRef = useRef15("");
+  const draftGenRef = useRef22(0);
+  const draftTargetRef = useRef22("");
   const discardDraft = () => {
     const draft = createdRef.current;
     draftGenRef.current += 1;
@@ -31549,7 +34326,7 @@ function useDraftProfile(createdRef, flightRef) {
       discardDraftProfile(draft, draftTargetRef.current);
     }
   };
-  useEffect25(
+  useEffect35(
     () => () => {
       draftGenRef.current += 1;
     },
@@ -31560,26 +34337,26 @@ function useDraftProfile(createdRef, flightRef) {
 function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
-  const [name, setName] = useState44("");
-  const createdRef = useRef15(null);
-  const flightRef = useRef15(null);
+  const [name, setName] = useState52("");
+  const createdRef = useRef22(null);
+  const flightRef = useRef22(null);
   const { discardDraft, draftGenRef, draftTargetRef } = useDraftProfile(createdRef, flightRef);
-  const [title, setTitle] = useState44("");
-  const [description, setDescription] = useState44("");
-  const [shape, setShape] = useState44(blobatarSvg2 ? "blobatar" : "circle");
-  const [color, setColor] = useState44(null);
-  const [image, setImage] = useState44(null);
-  const [advanced, setAdvanced] = useState44(false);
-  const [cloneFrom, setCloneFrom] = useState44("default");
-  const [model, setModel] = useState44("");
-  const [provider, setProvider] = useState44("");
-  const [soul, setSoul] = useState44("");
-  const [noSkills, setNoSkills] = useState44(false);
-  const [shareAuth, setShareAuth] = useState44(true);
-  const [advTab, setAdvTab] = useState44("general");
-  const [targetConnection, setTargetConnection] = useState44("");
-  const [connections, setConnections] = useState44(null);
-  useEffect25(() => {
+  const [title, setTitle] = useState52("");
+  const [description, setDescription] = useState52("");
+  const [shape, setShape] = useState52(blobatarSvg2 ? "blobatar" : "circle");
+  const [color, setColor] = useState52(null);
+  const [image, setImage] = useState52(null);
+  const [advanced, setAdvanced] = useState52(false);
+  const [cloneFrom, setCloneFrom] = useState52("default");
+  const [model, setModel] = useState52("");
+  const [provider, setProvider] = useState52("");
+  const [soul, setSoul] = useState52("");
+  const [noSkills, setNoSkills] = useState52(false);
+  const [shareAuth, setShareAuth] = useState52(true);
+  const [advTab, setAdvTab] = useState52("general");
+  const [targetConnection, setTargetConnection] = useState52("");
+  const [connections, setConnections] = useState52(null);
+  useEffect35(() => {
     if (!open || connections !== null || typeof host.connections !== "function" || typeof host.requestProfile !== "function") {
       return;
     }
@@ -31592,17 +34369,17 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
   const targetLabel = remoteTarget ? (connections || []).find((c) => c.id === targetConnection)?.label || targetConnection : "";
   const createTarget = remoteTarget ? targetConnection : "";
   const requestForTarget = (method, params = {}) => requestOnTarget(createTarget, method, params);
-  const [createdForCaps, setCreatedForCaps] = useState44(null);
-  const [caps, setCaps] = useState44(null);
-  const [capsFailed, setCapsFailed] = useState44(false);
-  const [dirtyCaps, setDirtyCaps] = useState44({
+  const [createdForCaps, setCreatedForCaps] = useState52(null);
+  const [caps, setCaps] = useState52(null);
+  const [capsFailed, setCapsFailed] = useState52(false);
+  const [dirtyCaps, setDirtyCaps] = useState52({
     skills: false,
     toolsets: false,
     mcp: false
   });
-  const [capFilter, setCapFilter] = useState44("");
-  const [busy, setBusy] = useState44(false);
-  const [error, setError] = useState44(null);
+  const [capFilter, setCapFilter] = useState52("");
+  const [busy, setBusy] = useState52(false);
+  const [error, setError] = useState52(null);
   const { slug, title: botTitle } = botProfileIdentity(name, title);
   const descriptionText = [botTitle, description].filter(Boolean).join(" \u2014 ");
   const valid = slug.length > 0 && NAME_RE2.test(slug);
@@ -31850,7 +34627,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
       setError(err instanceof Error ? err.message : String(err));
     }
   };
-  return /* @__PURE__ */ jsx69(
+  return /* @__PURE__ */ jsx78(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -31861,7 +34638,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
         }
       },
       open,
-      children: /* @__PURE__ */ jsxs67(
+      children: /* @__PURE__ */ jsxs74(
         sdk_compat_exports.DialogContent,
         {
           className: advanced ? "max-w-3xl" : "max-w-md",
@@ -31874,12 +34651,12 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
             maxHeight: "90vh"
           } : void 0,
           children: [
-            /* @__PURE__ */ jsxs67(sdk_compat_exports.DialogHeader, { children: [
-              /* @__PURE__ */ jsx69(sdk_compat_exports.DialogTitle, { children: b.bot.newTitle }),
-              /* @__PURE__ */ jsx69(sdk_compat_exports.DialogDescription, { children: b.editor.newDescription })
+            /* @__PURE__ */ jsxs74(sdk_compat_exports.DialogHeader, { children: [
+              /* @__PURE__ */ jsx78(sdk_compat_exports.DialogTitle, { children: b.bot.newTitle }),
+              /* @__PURE__ */ jsx78(sdk_compat_exports.DialogDescription, { children: b.editor.newDescription })
             ] }),
-            /* @__PURE__ */ jsxs67("div", { className: "grid gap-3.5", children: [
-              /* @__PURE__ */ jsx69("div", { className: "flex justify-center py-1", children: /* @__PURE__ */ jsx69(
+            /* @__PURE__ */ jsxs74("div", { className: "grid gap-3.5", children: [
+              /* @__PURE__ */ jsx78("div", { className: "flex justify-center py-1", children: /* @__PURE__ */ jsx78(
                 BotFace,
                 {
                   color: avatarColor(color, slug || "agent"),
@@ -31889,7 +34666,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   size: 56
                 }
               ) }),
-              /* @__PURE__ */ jsx69(
+              /* @__PURE__ */ jsx78(
                 AvatarPicker,
                 {
                   color,
@@ -31907,12 +34684,12 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
               ),
               labeled(
                 b.editor.name,
-                /* @__PURE__ */ jsx69(sdk_compat_exports.Input, { autoFocus: true, onChange: (event) => setName(event.target.value), placeholder: "inbox-triage", value: name })
+                /* @__PURE__ */ jsx78(sdk_compat_exports.Input, { autoFocus: true, onChange: (event) => setName(event.target.value), placeholder: "inbox-triage", value: name })
               ),
-              taken ? /* @__PURE__ */ jsx69("div", { className: "text-xs text-(--ui-accent)", children: remoteTarget ? b.editor.nameTakenOn(slug, targetLabel) : b.editor.nameTaken(slug) }) : null,
+              taken ? /* @__PURE__ */ jsx78("div", { className: "text-xs text-(--ui-accent)", children: remoteTarget ? b.editor.nameTakenOn(slug, targetLabel) : b.editor.nameTaken(slug) }) : null,
               Array.isArray(connections) && connections.length > 1 ? labeled(
                 b.editor.createOn,
-                /* @__PURE__ */ jsxs67(
+                /* @__PURE__ */ jsxs74(
                   sdk_compat_exports.Select,
                   {
                     onValueChange: (value) => {
@@ -31925,20 +34702,20 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                     },
                     value: targetConnection || activeConnectionId || "local",
                     children: [
-                      /* @__PURE__ */ jsx69(sdk_compat_exports.SelectTrigger, { className: "h-8 rounded-md", children: /* @__PURE__ */ jsx69(sdk_compat_exports.SelectValue, {}) }),
-                      /* @__PURE__ */ jsx69(sdk_compat_exports.SelectContent, { children: connections.map((connection2) => /* @__PURE__ */ jsx69(sdk_compat_exports.SelectItem, { value: connection2.id, children: connection2.id === (activeConnectionId || "local") ? b.editor.currentConnection(connection2.label || connection2.id) : connection2.label || connection2.id }, connection2.id)) })
+                      /* @__PURE__ */ jsx78(sdk_compat_exports.SelectTrigger, { className: "h-8 rounded-md", children: /* @__PURE__ */ jsx78(sdk_compat_exports.SelectValue, {}) }),
+                      /* @__PURE__ */ jsx78(sdk_compat_exports.SelectContent, { children: connections.map((connection2) => /* @__PURE__ */ jsx78(sdk_compat_exports.SelectItem, { value: connection2.id, children: connection2.id === (activeConnectionId || "local") ? b.editor.currentConnection(connection2.label || connection2.id) : connection2.label || connection2.id }, connection2.id)) })
                     ]
                   }
                 )
               ) : null,
-              remoteTarget ? /* @__PURE__ */ jsx69("div", { className: "text-[0.7rem] leading-5 text-(--ui-text-tertiary)", children: b.editor.remoteHint(targetLabel) }) : null,
+              remoteTarget ? /* @__PURE__ */ jsx78("div", { className: "text-[0.7rem] leading-5 text-(--ui-text-tertiary)", children: b.editor.remoteHint(targetLabel) }) : null,
               labeled(
                 b.editor.title,
-                /* @__PURE__ */ jsx69(sdk_compat_exports.Input, { onChange: (event) => setTitle(event.target.value), placeholder: "Inbox Triage", value: title })
+                /* @__PURE__ */ jsx78(sdk_compat_exports.Input, { onChange: (event) => setTitle(event.target.value), placeholder: "Inbox Triage", value: title })
               ),
               labeled(
                 b.editor.description,
-                /* @__PURE__ */ jsx69(
+                /* @__PURE__ */ jsx78(
                   sdk_compat_exports.Textarea,
                   {
                     className: "min-h-16",
@@ -31948,7 +34725,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   }
                 )
               ),
-              /* @__PURE__ */ jsxs67(
+              /* @__PURE__ */ jsxs74(
                 sdk_compat_exports.Button,
                 {
                   className: "flex items-center gap-1 text-xs font-medium text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)",
@@ -31963,13 +34740,13 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   size: "inline",
                   variant: "text",
                   children: [
-                    /* @__PURE__ */ jsx69(sdk_compat_exports.DisclosureCaret, { open: advanced }),
+                    /* @__PURE__ */ jsx78(sdk_compat_exports.DisclosureCaret, { open: advanced }),
                     b.bot.advanced
                   ]
                 }
               ),
-              advanced ? /* @__PURE__ */ jsxs67("div", { className: "grid gap-3 rounded-md border border-(--ui-stroke-secondary) p-3", children: [
-                /* @__PURE__ */ jsx69(
+              advanced ? /* @__PURE__ */ jsxs74("div", { className: "grid gap-3 rounded-md border border-(--ui-stroke-secondary) p-3", children: [
+                /* @__PURE__ */ jsx78(
                   sdk_compat_exports.SegmentedControl,
                   {
                     onChange: (id) => {
@@ -31993,10 +34770,10 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                     value: advTab
                   }
                 ),
-                advTab === "general" ? /* @__PURE__ */ jsxs67("div", { className: "grid gap-3.5", children: [
+                advTab === "general" ? /* @__PURE__ */ jsxs74("div", { className: "grid gap-3.5", children: [
                   labeled(
                     remoteTarget ? b.editor.cloneFromOn(targetLabel) : b.editor.cloneFrom,
-                    /* @__PURE__ */ jsxs67(
+                    /* @__PURE__ */ jsxs74(
                       sdk_compat_exports.Select,
                       {
                         onValueChange: (value) => {
@@ -32006,16 +34783,16 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                         },
                         value: remoteTarget && cloneFrom !== "__none__" ? "default" : cloneFrom,
                         children: [
-                          /* @__PURE__ */ jsx69(sdk_compat_exports.SelectTrigger, { className: "h-8 rounded-md", children: /* @__PURE__ */ jsx69(sdk_compat_exports.SelectValue, {}) }),
-                          /* @__PURE__ */ jsxs67(sdk_compat_exports.SelectContent, { children: [
-                            /* @__PURE__ */ jsx69(sdk_compat_exports.SelectItem, { value: "__none__", children: b.editor.freshProfile }),
-                            (remoteTarget ? [{ name: "default" }] : roster).map((b2) => /* @__PURE__ */ jsx69(sdk_compat_exports.SelectItem, { value: b2.name, children: b2.name }, b2.name))
+                          /* @__PURE__ */ jsx78(sdk_compat_exports.SelectTrigger, { className: "h-8 rounded-md", children: /* @__PURE__ */ jsx78(sdk_compat_exports.SelectValue, {}) }),
+                          /* @__PURE__ */ jsxs74(sdk_compat_exports.SelectContent, { children: [
+                            /* @__PURE__ */ jsx78(sdk_compat_exports.SelectItem, { value: "__none__", children: b.editor.freshProfile }),
+                            (remoteTarget ? [{ name: "default" }] : roster).map((b2) => /* @__PURE__ */ jsx78(sdk_compat_exports.SelectItem, { value: b2.name, children: b2.name }, b2.name))
                           ] })
                         ]
                       }
                     )
                   ),
-                  /* @__PURE__ */ jsx69(
+                  /* @__PURE__ */ jsx78(
                     ModelPicker,
                     {
                       onChange: (patch) => {
@@ -32035,7 +34812,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   ),
                   labeled(
                     b.editor.soul,
-                    /* @__PURE__ */ jsx69(
+                    /* @__PURE__ */ jsx78(
                       sdk_compat_exports.Textarea,
                       {
                         className: "min-h-24 font-mono text-xs leading-5",
@@ -32045,24 +34822,24 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       }
                     )
                   ),
-                  /* @__PURE__ */ jsxs67("label", { className: "flex items-center gap-2 text-xs text-(--ui-text-secondary)", children: [
-                    /* @__PURE__ */ jsx69(sdk_compat_exports.Checkbox, { checked: shareAuth, onCheckedChange: (value) => setShareAuth(Boolean(value)) }),
+                  /* @__PURE__ */ jsxs74("label", { className: "flex items-center gap-2 text-xs text-(--ui-text-secondary)", children: [
+                    /* @__PURE__ */ jsx78(sdk_compat_exports.Checkbox, { checked: shareAuth, onCheckedChange: (value) => setShareAuth(Boolean(value)) }),
                     remoteTarget ? b.editor.shareKeysOn(targetLabel) : b.editor.shareKeys
                   ] }),
-                  /* @__PURE__ */ jsx69("div", { className: "pl-6 pt-0.5 text-[0.7rem] leading-5 text-(--ui-text-tertiary)", children: b.editor.shareKeysHint }),
-                  /* @__PURE__ */ jsxs67("label", { className: "flex items-center gap-2 text-xs text-(--ui-text-secondary)", children: [
-                    /* @__PURE__ */ jsx69(sdk_compat_exports.Checkbox, { checked: noSkills, onCheckedChange: (value) => setNoSkills(Boolean(value)) }),
+                  /* @__PURE__ */ jsx78("div", { className: "pl-6 pt-0.5 text-[0.7rem] leading-5 text-(--ui-text-tertiary)", children: b.editor.shareKeysHint }),
+                  /* @__PURE__ */ jsxs74("label", { className: "flex items-center gap-2 text-xs text-(--ui-text-secondary)", children: [
+                    /* @__PURE__ */ jsx78(sdk_compat_exports.Checkbox, { checked: noSkills, onCheckedChange: (value) => setNoSkills(Boolean(value)) }),
                     b.editor.createEmpty
                   ] })
-                ] }) : advTab === "capabilities" ? /* @__PURE__ */ jsx69(
+                ] }) : advTab === "capabilities" ? /* @__PURE__ */ jsx78(
                   CapabilitiesTab,
                   {
                     connection: remoteTarget ? targetConnection : void 0,
                     draft: createdForCaps === slug ? createdForCaps : null,
                     hint: !valid ? b.editor.nameFirstHint : taken ? b.editor.nameTakenHint : null
                   }
-                ) : capsFailed ? /* @__PURE__ */ jsx69("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.newerGateway }) : !caps ? /* @__PURE__ */ jsx69("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx69(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : advTab === "skills" ? noSkills ? /* @__PURE__ */ jsx69("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.emptySkillsHint }) : /* @__PURE__ */ jsxs67("div", { className: "grid gap-1.5", children: [
-                  /* @__PURE__ */ jsx69(
+                ) : capsFailed ? /* @__PURE__ */ jsx78("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.newerGateway }) : !caps ? /* @__PURE__ */ jsx78("div", { className: "flex justify-center py-4", children: /* @__PURE__ */ jsx78(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : advTab === "skills" ? noSkills ? /* @__PURE__ */ jsx78("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.editor.emptySkillsHint }) : /* @__PURE__ */ jsxs74("div", { className: "grid gap-1.5", children: [
+                  /* @__PURE__ */ jsx78(
                     sdk_compat_exports.Input,
                     {
                       className: "h-7 text-xs",
@@ -32071,14 +34848,14 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       value: capFilter
                     }
                   ),
-                  /* @__PURE__ */ jsx69(
+                  /* @__PURE__ */ jsx78(
                     "div",
                     {
                       className: "overflow-y-auto overscroll-contain",
                       style: {
                         maxHeight: 200
                       },
-                      children: /* @__PURE__ */ jsx69(
+                      children: /* @__PURE__ */ jsx78(
                         CheckList,
                         {
                           columns: 2,
@@ -32088,8 +34865,8 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       )
                     }
                   ),
-                  /* @__PURE__ */ jsx69("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.catalogHint(caps.source) }),
-                  /* @__PURE__ */ jsx69(
+                  /* @__PURE__ */ jsx78("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.catalogHint(caps.source) }),
+                  /* @__PURE__ */ jsx78(
                     HubSkillsSection,
                     {
                       onInstalled: (name2) => setCaps(
@@ -32106,15 +34883,15 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       )
                     }
                   )
-                ] }) : advTab === "toolsets" ? /* @__PURE__ */ jsxs67("div", { className: "grid gap-1.5", children: [
-                  /* @__PURE__ */ jsx69(
+                ] }) : advTab === "toolsets" ? /* @__PURE__ */ jsxs74("div", { className: "grid gap-1.5", children: [
+                  /* @__PURE__ */ jsx78(
                     "div",
                     {
                       className: "overflow-y-auto overscroll-contain",
                       style: {
                         maxHeight: 200
                       },
-                      children: /* @__PURE__ */ jsx69(
+                      children: /* @__PURE__ */ jsx78(
                         CheckList,
                         {
                           columns: 2,
@@ -32124,19 +34901,19 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                       )
                     }
                   ),
-                  /* @__PURE__ */ jsx69("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.defaultToolsHint })
-                ] }) : caps.mcp.length === 0 ? /* @__PURE__ */ jsx69("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.tools.noMcpServers }) : /* @__PURE__ */ jsxs67("div", { className: "grid gap-1.5", children: [
-                  /* @__PURE__ */ jsx69(
+                  /* @__PURE__ */ jsx78("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.defaultToolsHint })
+                ] }) : caps.mcp.length === 0 ? /* @__PURE__ */ jsx78("div", { className: "px-2 py-3 text-center text-xs text-(--ui-text-tertiary)", children: b.tools.noMcpServers }) : /* @__PURE__ */ jsxs74("div", { className: "grid gap-1.5", children: [
+                  /* @__PURE__ */ jsx78(
                     "div",
                     {
                       className: "overflow-y-auto overscroll-contain",
                       style: {
                         maxHeight: 200
                       },
-                      children: /* @__PURE__ */ jsx69("div", { className: "grid gap-1", children: caps.mcp.map((m) => {
+                      children: /* @__PURE__ */ jsx78("div", { className: "grid gap-1", children: caps.mcp.map((m) => {
                         const needsSetup = m.fromCatalog && !m.installed && ((m.requires || []).length > 0 || (m.auth || "").toLowerCase() === "oauth");
-                        return /* @__PURE__ */ jsxs67("label", { className: "flex items-start gap-2 text-xs text-(--ui-text-secondary)", children: [
-                          /* @__PURE__ */ jsx69(
+                        return /* @__PURE__ */ jsxs74("label", { className: "flex items-start gap-2 text-xs text-(--ui-text-secondary)", children: [
+                          /* @__PURE__ */ jsx78(
                             sdk_compat_exports.Checkbox,
                             {
                               checked: !!m.enabled,
@@ -32144,10 +34921,10 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                               onCheckedChange: (value) => toggleCap("mcp", m.name, Boolean(value))
                             }
                           ),
-                          /* @__PURE__ */ jsxs67("span", { className: "min-w-0", children: [
-                            /* @__PURE__ */ jsx69("span", { children: m.name }),
-                            m.fromCatalog && !needsSetup ? /* @__PURE__ */ jsx69("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: m.installed ? b.editor.catalogInstalled : b.editor.catalog }) : null,
-                            needsSetup ? /* @__PURE__ */ jsx69(
+                          /* @__PURE__ */ jsxs74("span", { className: "min-w-0", children: [
+                            /* @__PURE__ */ jsx78("span", { children: m.name }),
+                            m.fromCatalog && !needsSetup ? /* @__PURE__ */ jsx78("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)", children: m.installed ? b.editor.catalogInstalled : b.editor.catalog }) : null,
+                            needsSetup ? /* @__PURE__ */ jsx78(
                               McpSetupButton,
                               {
                                 ensureProfile: ensureAgentCreated,
@@ -32173,19 +34950,19 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                                 profile: createdRef.current
                               }
                             ) : null,
-                            m.description ? /* @__PURE__ */ jsx69("div", { className: "truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: m.description }) : null
+                            m.description ? /* @__PURE__ */ jsx78("div", { className: "truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: m.description }) : null
                           ] })
                         ] }, m.name);
                       }) })
                     }
                   ),
-                  /* @__PURE__ */ jsx69("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.mcpHint })
+                  /* @__PURE__ */ jsx78("div", { className: "text-[0.65rem] leading-4 text-(--ui-text-quaternary)", children: b.editor.mcpHint })
                 ] })
               ] }) : null,
-              error ? /* @__PURE__ */ jsx69("div", { className: "rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-accent)", children: error }) : null
+              error ? /* @__PURE__ */ jsx78("div", { className: "rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-accent)", children: error }) : null
             ] }),
-            /* @__PURE__ */ jsxs67(sdk_compat_exports.DialogFooter, { children: [
-              /* @__PURE__ */ jsx69(
+            /* @__PURE__ */ jsxs74(sdk_compat_exports.DialogFooter, { children: [
+              /* @__PURE__ */ jsx78(
                 sdk_compat_exports.Button,
                 {
                   disabled: busy,
@@ -32198,7 +34975,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                   children: t2.common.cancel
                 }
               ),
-              /* @__PURE__ */ jsx69(sdk_compat_exports.Button, { disabled: busy || !valid || taken, onClick: submit, children: busy ? b.editor.creating : b.editor.createBot })
+              /* @__PURE__ */ jsx78(sdk_compat_exports.Button, { disabled: busy || !valid || taken, onClick: submit, children: busy ? b.editor.creating : b.editor.createBot })
             ] })
           ]
         }
@@ -32209,7 +34986,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
 function GroupDialog({ bot, onClose }) {
   const b = useBots();
   const meta = (0, sdk_compat_exports.useValue)($botMeta);
-  const [name, setName] = useState44("");
+  const [name, setName] = useState52("");
   const current = botGroups(botRosterMeta(bot, meta));
   const groups = knownGroups(meta);
   const setMembership = (group, enabled) => {
@@ -32219,7 +34996,7 @@ function GroupDialog({ bot, onClose }) {
       message: enabled ? `${displayName(bot, botRosterMeta(bot, meta))} added to \u201C${group}\u201D` : `${displayName(bot, botRosterMeta(bot, meta))} removed from \u201C${group}\u201D`
     });
   };
-  return /* @__PURE__ */ jsx69(
+  return /* @__PURE__ */ jsx78(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -32228,26 +35005,26 @@ function GroupDialog({ bot, onClose }) {
         }
       },
       open: Boolean(bot),
-      children: /* @__PURE__ */ jsxs67(sdk_compat_exports.DialogContent, { className: "max-w-sm", children: [
-        /* @__PURE__ */ jsxs67(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx69(sdk_compat_exports.DialogTitle, { children: b.group.manageTitle }),
-          /* @__PURE__ */ jsx69(sdk_compat_exports.DialogDescription, { children: b.group.manageDesc })
+      children: /* @__PURE__ */ jsxs74(sdk_compat_exports.DialogContent, { className: "max-w-sm", children: [
+        /* @__PURE__ */ jsxs74(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx78(sdk_compat_exports.DialogTitle, { children: b.group.manageTitle }),
+          /* @__PURE__ */ jsx78(sdk_compat_exports.DialogDescription, { children: b.group.manageDesc })
         ] }),
-        groups.length ? /* @__PURE__ */ jsx69("div", { className: "grid gap-1.5", children: groups.map((group) => {
+        groups.length ? /* @__PURE__ */ jsx78("div", { className: "grid gap-1.5", children: groups.map((group) => {
           const enabled = current.includes(group);
-          return /* @__PURE__ */ jsxs67(
+          return /* @__PURE__ */ jsxs74(
             "label",
             {
               className: "flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-sm hover:bg-(--chrome-action-hover)",
               children: [
-                /* @__PURE__ */ jsx69(sdk_compat_exports.Checkbox, { checked: enabled, onCheckedChange: (checked) => setMembership(group, checked === true) }),
-                /* @__PURE__ */ jsx69("span", { children: group })
+                /* @__PURE__ */ jsx78(sdk_compat_exports.Checkbox, { checked: enabled, onCheckedChange: (checked) => setMembership(group, checked === true) }),
+                /* @__PURE__ */ jsx78("span", { children: group })
               ]
             },
             group
           );
         }) }) : null,
-        /* @__PURE__ */ jsxs67(
+        /* @__PURE__ */ jsxs74(
           "form",
           {
             className: "flex items-center gap-1.5",
@@ -32260,7 +35037,7 @@ function GroupDialog({ bot, onClose }) {
               }
             },
             children: [
-              /* @__PURE__ */ jsx69(
+              /* @__PURE__ */ jsx78(
                 sdk_compat_exports.Input,
                 {
                   autoFocus: true,
@@ -32269,11 +35046,11 @@ function GroupDialog({ bot, onClose }) {
                   value: name
                 }
               ),
-              /* @__PURE__ */ jsx69(sdk_compat_exports.Button, { disabled: !name.trim(), size: "sm", type: "submit", children: "Create & join" })
+              /* @__PURE__ */ jsx78(sdk_compat_exports.Button, { disabled: !name.trim(), size: "sm", type: "submit", children: "Create & join" })
             ]
           }
         ),
-        current.length ? /* @__PURE__ */ jsx69(
+        current.length ? /* @__PURE__ */ jsx78(
           sdk_compat_exports.Button,
           {
             className: "justify-self-start",
@@ -32311,11 +35088,11 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
   const b = useBots();
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
   const { capability, connectionId, mode, observedRoute, seatable, source } = useGroupCapability(open);
-  const [query, setQuery] = useState44("");
-  const [checked, setChecked] = useState44({});
-  const [name, setName] = useState44("");
-  const [image, setImage] = useState44(null);
-  useEffect25(() => {
+  const [query, setQuery] = useState52("");
+  const [checked, setChecked] = useState52({});
+  const [name, setName] = useState52("");
+  const [image, setImage] = useState52(null);
+  useEffect35(() => {
     if (open) {
       setQuery("");
       setChecked({});
@@ -32329,7 +35106,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
   const atCap = selected.length >= GROUP_CHAT_MAX_MEMBERS;
   const placeholder = selected.length ? selected.map((bot) => displayName(bot, botRosterMeta(bot, allMeta))).join(", ") : b.group.nameLabel;
   const canCreate = selected.length >= 2 && Boolean(name.trim() || selected.length) && (mode === "canonical" || mode === "legacy");
-  const creating = useRef15(false);
+  const creating = useRef22(false);
   const create = async () => {
     if (creating.current) {
       return;
@@ -32396,7 +35173,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
       creating.current = false;
     }
   };
-  return /* @__PURE__ */ jsx69(
+  return /* @__PURE__ */ jsx78(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -32405,13 +35182,13 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
         }
       },
       open,
-      children: /* @__PURE__ */ jsxs67(sdk_compat_exports.DialogContent, { className: "max-w-md", children: [
-        /* @__PURE__ */ jsxs67(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx69(sdk_compat_exports.DialogTitle, { children: b.group.newTitle }),
-          /* @__PURE__ */ jsx69(sdk_compat_exports.DialogDescription, { children: `Pick 2\u2013${GROUP_CHAT_MAX_MEMBERS} bots. Local memberships sync through each Bot profile; cross-machine members stay scoped to this room.` })
+      children: /* @__PURE__ */ jsxs74(sdk_compat_exports.DialogContent, { className: "max-w-md", children: [
+        /* @__PURE__ */ jsxs74(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx78(sdk_compat_exports.DialogTitle, { children: b.group.newTitle }),
+          /* @__PURE__ */ jsx78(sdk_compat_exports.DialogDescription, { children: `Pick 2\u2013${GROUP_CHAT_MAX_MEMBERS} bots. Local memberships sync through each Bot profile; cross-machine members stay scoped to this room.` })
         ] }),
-        mode === "unavailable" && /* @__PURE__ */ jsx69("p", { role: "status", children: b.canonical.driverUnavailable }),
-        /* @__PURE__ */ jsx69(
+        mode === "unavailable" && /* @__PURE__ */ jsx78("p", { role: "status", children: b.canonical.driverUnavailable }),
+        /* @__PURE__ */ jsx78(
           sdk_compat_exports.SearchField,
           {
             "aria-label": b.group.searchToAdd,
@@ -32422,13 +35199,13 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
             value: query
           }
         ),
-        selected.length ? /* @__PURE__ */ jsx69("div", { className: "flex flex-wrap gap-1", children: selected.map((bot) => /* @__PURE__ */ jsx69(
+        selected.length ? /* @__PURE__ */ jsx78("div", { className: "flex flex-wrap gap-1", children: selected.map((bot) => /* @__PURE__ */ jsx78(
           sdk_compat_exports.Badge,
           {
             asChild: true,
             className: "rounded-full bg-(--chrome-action-hover) pl-2 pr-1.5 text-[0.6875rem] text-(--ui-text-secondary) transition-colors hover:text-foreground",
             variant: "muted",
-            children: /* @__PURE__ */ jsx69(sdk_compat_exports.Tip, { label: b.group.removeFromSelection, children: /* @__PURE__ */ jsxs67(
+            children: /* @__PURE__ */ jsx78(sdk_compat_exports.Tip, { label: b.group.removeFromSelection, children: /* @__PURE__ */ jsxs74(
               sdk_compat_exports.RowButton,
               {
                 onClick: () => setChecked((prev) => ({
@@ -32437,20 +35214,20 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
                 })),
                 children: [
                   displayName(bot, botRosterMeta(bot, allMeta)),
-                  /* @__PURE__ */ jsx69(sdk_compat_exports.Codicon, { className: "text-[0.6rem]", name: "close" })
+                  /* @__PURE__ */ jsx78(sdk_compat_exports.Codicon, { className: "text-[0.6rem]", name: "close" })
                 ]
               }
             ) })
           },
           botRosterKey(bot)
         )) }) : null,
-        /* @__PURE__ */ jsx69("div", { className: "max-h-64 min-h-0 overflow-y-auto overscroll-contain", children: /* @__PURE__ */ jsx69("div", { className: "grid gap-0.5 pr-2", children: visible.length ? visible.map((bot) => {
+        /* @__PURE__ */ jsx78("div", { className: "max-h-64 min-h-0 overflow-y-auto overscroll-contain", children: /* @__PURE__ */ jsx78("div", { className: "grid gap-0.5 pr-2", children: visible.length ? visible.map((bot) => {
           const meta = botRosterMeta(bot, allMeta);
           const { shape, color, image: image2 } = botAppearance(bot.name, meta);
           const isChecked = Boolean(checked[botRosterKey(bot)]);
           const disabled = !isChecked && atCap;
           const currentGroups = botGroups(meta);
-          return /* @__PURE__ */ jsxs67(
+          return /* @__PURE__ */ jsxs74(
             "label",
             {
               className: (0, sdk_compat_exports.cn)(
@@ -32458,7 +35235,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
                 disabled && "cursor-not-allowed opacity-50"
               ),
               children: [
-                /* @__PURE__ */ jsx69(
+                /* @__PURE__ */ jsx78(
                   BotFace,
                   {
                     color: avatarColor(color, bot.name),
@@ -32468,14 +35245,14 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
                     size: 24
                   }
                 ),
-                /* @__PURE__ */ jsxs67("div", { className: "min-w-0 flex-1", children: [
-                  /* @__PURE__ */ jsx69("div", { className: "truncate text-xs text-foreground", children: displayName(bot, meta) }),
-                  /* @__PURE__ */ jsx69("div", { className: "truncate text-[0.625rem] text-(--ui-text-quaternary)", children: [
+                /* @__PURE__ */ jsxs74("div", { className: "min-w-0 flex-1", children: [
+                  /* @__PURE__ */ jsx78("div", { className: "truncate text-xs text-foreground", children: displayName(bot, meta) }),
+                  /* @__PURE__ */ jsx78("div", { className: "truncate text-[0.625rem] text-(--ui-text-quaternary)", children: [
                     currentGroups.length ? `@${botHandle(bot.name, bot)} \xB7 in ${currentGroups.map((group) => `\u201C${group}\u201D`).join(", ")}` : `@${botHandle(bot.name, bot)}`,
                     bot.remoteSource && bot.connectionLabel ? ` \xB7 ${bot.connectionLabel}` : ""
                   ].join("") })
                 ] }),
-                /* @__PURE__ */ jsx69(
+                /* @__PURE__ */ jsx78(
                   sdk_compat_exports.Checkbox,
                   {
                     checked: isChecked,
@@ -32490,9 +35267,9 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
             },
             botRosterKey(bot)
           );
-        }) : /* @__PURE__ */ jsx69("div", { className: "px-1.5 py-3 text-center text-xs text-(--ui-text-tertiary)", children: query.trim() ? `No bots match \u201C${query.trim()}\u201D` : "No bots yet \u2014 create one first." }) }) }),
-        /* @__PURE__ */ jsxs67("div", { className: "grid gap-2", children: [
-          /* @__PURE__ */ jsx69(
+        }) : /* @__PURE__ */ jsx78("div", { className: "px-1.5 py-3 text-center text-xs text-(--ui-text-tertiary)", children: query.trim() ? `No bots match \u201C${query.trim()}\u201D` : "No bots yet \u2014 create one first." }) }) }),
+        /* @__PURE__ */ jsxs74("div", { className: "grid gap-2", children: [
+          /* @__PURE__ */ jsx78(
             GroupImageControls,
             {
               image,
@@ -32501,14 +35278,14 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
               seedName: name.trim() || (selected.length ? placeholder : "")
             }
           ),
-          /* @__PURE__ */ jsx69(
+          /* @__PURE__ */ jsx78(
             "form",
             {
               onSubmit: (event) => {
                 event.preventDefault();
                 create();
               },
-              children: /* @__PURE__ */ jsx69(
+              children: /* @__PURE__ */ jsx78(
                 sdk_compat_exports.Input,
                 {
                   "aria-label": b.group.nameLabel,
@@ -32521,9 +35298,9 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs67(sdk_compat_exports.DialogFooter, { children: [
-          /* @__PURE__ */ jsx69(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t2.common.cancel }),
-          /* @__PURE__ */ jsx69(
+        /* @__PURE__ */ jsxs74(sdk_compat_exports.DialogFooter, { children: [
+          /* @__PURE__ */ jsx78(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t2.common.cancel }),
+          /* @__PURE__ */ jsx78(
             sdk_compat_exports.Button,
             {
               disabled: !canCreate,
@@ -32543,14 +35320,14 @@ init_profile_ops();
 // src/user-sections-ui.tsx
 init_sdk_compat();
 init_i18n();
-import { useEffect as useEffect26, useRef as useRef16, useState as useState45 } from "react";
-import { jsx as jsx70, jsxs as jsxs68 } from "react/jsx-runtime";
+import { useEffect as useEffect36, useRef as useRef23, useState as useState53 } from "react";
+import { jsx as jsx79, jsxs as jsxs75 } from "react/jsx-runtime";
 function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) {
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
-  const [value, setValue] = useState45(initialName);
-  const inputRef = useRef16(null);
-  useEffect26(() => {
+  const [value, setValue] = useState53(initialName);
+  const inputRef = useRef23(null);
+  useEffect36(() => {
     if (open) {
       setValue(initialName);
       window.setTimeout(() => inputRef.current?.select(), 0);
@@ -32566,9 +35343,9 @@ function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) 
       onSubmit(next);
     }
   };
-  return /* @__PURE__ */ jsx70(sdk_compat_exports.Dialog, { onOpenChange, open, children: /* @__PURE__ */ jsxs68(sdk_compat_exports.DialogContent, { className: "max-w-sm", children: [
-    /* @__PURE__ */ jsx70(sdk_compat_exports.DialogHeader, { children: /* @__PURE__ */ jsx70(sdk_compat_exports.DialogTitle, { children: mode === "create" ? b.sections.newTitle : b.sections.renameTitle }) }),
-    /* @__PURE__ */ jsx70(
+  return /* @__PURE__ */ jsx79(sdk_compat_exports.Dialog, { onOpenChange, open, children: /* @__PURE__ */ jsxs75(sdk_compat_exports.DialogContent, { className: "max-w-sm", children: [
+    /* @__PURE__ */ jsx79(sdk_compat_exports.DialogHeader, { children: /* @__PURE__ */ jsx79(sdk_compat_exports.DialogTitle, { children: mode === "create" ? b.sections.newTitle : b.sections.renameTitle }) }),
+    /* @__PURE__ */ jsx79(
       sdk_compat_exports.Input,
       {
         "aria-label": b.sections.nameLabel,
@@ -32586,9 +35363,9 @@ function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) 
         value
       }
     ),
-    /* @__PURE__ */ jsxs68(sdk_compat_exports.DialogFooter, { children: [
-      /* @__PURE__ */ jsx70(sdk_compat_exports.Button, { onClick: () => onOpenChange(false), type: "button", variant: "ghost", children: t2.common.cancel }),
-      /* @__PURE__ */ jsx70(sdk_compat_exports.Button, { disabled: !value.trim(), onClick: submit, type: "button", children: mode === "create" ? b.sections.create : t2.common.save })
+    /* @__PURE__ */ jsxs75(sdk_compat_exports.DialogFooter, { children: [
+      /* @__PURE__ */ jsx79(sdk_compat_exports.Button, { onClick: () => onOpenChange(false), type: "button", variant: "ghost", children: t2.common.cancel }),
+      /* @__PURE__ */ jsx79(sdk_compat_exports.Button, { disabled: !value.trim(), onClick: submit, type: "button", children: mode === "create" ? b.sections.create : t2.common.save })
     ] })
   ] }) });
 }
@@ -32607,7 +35384,7 @@ function UserSectionHeader({
   const b = useBots();
   const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   if (!id) {
-    return /* @__PURE__ */ jsx70(
+    return /* @__PURE__ */ jsx79(
       RosterSectionHeader,
       {
         collapsed,
@@ -32623,30 +35400,30 @@ function UserSectionHeader({
     { disabled: !canMoveUp, icon: "arrow-up", label: b.sections.moveUp, onSelect: () => onMove(-1) },
     { disabled: !canMoveDown, icon: "arrow-down", label: b.sections.moveDown, onSelect: () => onMove(1) }
   ];
-  const action = /* @__PURE__ */ jsxs68(sdk_compat_exports.DropdownMenu, { children: [
-    /* @__PURE__ */ jsx70(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx70(
+  const action = /* @__PURE__ */ jsxs75(sdk_compat_exports.DropdownMenu, { children: [
+    /* @__PURE__ */ jsx79(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx79(
       "button",
       {
         "aria-label": b.sections.options(name),
         className: "shrink-0 rounded-md p-0.5 text-(--ui-text-quaternary) opacity-0 transition hover:text-foreground group-hover/section:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100",
         type: "button",
-        children: /* @__PURE__ */ jsx70(sdk_compat_exports.Codicon, { name: "ellipsis" })
+        children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "ellipsis" })
       }
     ) }),
-    /* @__PURE__ */ jsxs68(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
-      items.map((item) => /* @__PURE__ */ jsxs68(sdk_compat_exports.DropdownMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: [
-        /* @__PURE__ */ jsx70(sdk_compat_exports.Codicon, { className: "mr-1.5", name: item.icon }),
+    /* @__PURE__ */ jsxs75(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
+      items.map((item) => /* @__PURE__ */ jsxs75(sdk_compat_exports.DropdownMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: [
+        /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { className: "mr-1.5", name: item.icon }),
         item.label
       ] }, item.label)),
-      /* @__PURE__ */ jsx70(sdk_compat_exports.DropdownMenuSeparator, {}),
-      /* @__PURE__ */ jsxs68(sdk_compat_exports.DropdownMenuItem, { onSelect: onDelete, variant: "destructive", children: [
-        /* @__PURE__ */ jsx70(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "trash" }),
+      /* @__PURE__ */ jsx79(sdk_compat_exports.DropdownMenuSeparator, {}),
+      /* @__PURE__ */ jsxs75(sdk_compat_exports.DropdownMenuItem, { onSelect: onDelete, variant: "destructive", children: [
+        /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "trash" }),
         t2.common.delete
       ] })
     ] })
   ] });
-  return /* @__PURE__ */ jsxs68(sdk_compat_exports.ContextMenu, { children: [
-    /* @__PURE__ */ jsx70(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx70("div", { "data-section-id": id, "data-slot": "bots-section-heading", children: /* @__PURE__ */ jsx70(
+  return /* @__PURE__ */ jsxs75(sdk_compat_exports.ContextMenu, { children: [
+    /* @__PURE__ */ jsx79(sdk_compat_exports.ContextMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx79("div", { "data-section-id": id, "data-slot": "bots-section-heading", children: /* @__PURE__ */ jsx79(
       RosterSectionHeader,
       {
         action,
@@ -32659,16 +35436,16 @@ function UserSectionHeader({
         tip: b.sections.headingTip
       }
     ) }) }),
-    /* @__PURE__ */ jsxs68(sdk_compat_exports.ContextMenuContent, { children: [
-      items.map((item) => /* @__PURE__ */ jsx70(sdk_compat_exports.ContextMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: item.label }, item.label)),
-      /* @__PURE__ */ jsx70(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx70(sdk_compat_exports.ContextMenuItem, { onSelect: onDelete, variant: "destructive", children: t2.common.delete })
+    /* @__PURE__ */ jsxs75(sdk_compat_exports.ContextMenuContent, { children: [
+      items.map((item) => /* @__PURE__ */ jsx79(sdk_compat_exports.ContextMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: item.label }, item.label)),
+      /* @__PURE__ */ jsx79(sdk_compat_exports.ContextMenuSeparator, {}),
+      /* @__PURE__ */ jsx79(sdk_compat_exports.ContextMenuItem, { onSelect: onDelete, variant: "destructive", children: t2.common.delete })
     ] })
   ] });
 }
 function useEscapeCancelsBotDrag() {
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot);
-  useEffect26(() => {
+  useEffect36(() => {
     if (!dragging) {
       return;
     }
@@ -32683,16 +35460,16 @@ function useEscapeCancelsBotDrag() {
 }
 function SectionDropZone({ children, isSource, nested, onDropBot }) {
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot);
-  const [over, setOver] = useState45(false);
+  const [over, setOver] = useState53(false);
   const armed = Boolean(dragging) && !isSource;
   const lit = armed && over;
-  useEffect26(() => {
+  useEffect36(() => {
     if (!dragging) {
       setOver(false);
     }
   }, [dragging]);
   const accepts = (event) => armed && event.dataTransfer.types.includes(BOT_DRAG_MIME);
-  return /* @__PURE__ */ jsx70(
+  return /* @__PURE__ */ jsx79(
     "div",
     {
       className: (0, sdk_compat_exports.cn)(
@@ -32742,7 +35519,7 @@ function SectionDropZone({ children, isSource, nested, onDropBot }) {
 }
 
 // src/roster-pane-dialogs.tsx
-import { Fragment as Fragment15, jsx as jsx71, jsxs as jsxs69 } from "react/jsx-runtime";
+import { Fragment as Fragment17, jsx as jsx80, jsxs as jsxs76 } from "react/jsx-runtime";
 function renderRosterDialogs({
   b,
   t: t2,
@@ -32764,8 +35541,8 @@ function renderRosterDialogs({
   activeSourceRoster,
   refetch
 }) {
-  return /* @__PURE__ */ jsxs69(Fragment15, { children: [
-    /* @__PURE__ */ jsx71(
+  return /* @__PURE__ */ jsxs76(Fragment17, { children: [
+    /* @__PURE__ */ jsx80(
       CreateAgentDialog,
       {
         onClose: () => {
@@ -32777,7 +35554,7 @@ function renderRosterDialogs({
         roster: activeSourceRoster
       }
     ),
-    /* @__PURE__ */ jsx71(
+    /* @__PURE__ */ jsx80(
       CreateGroupChatDialog,
       {
         onClose: () => setGroupCreateOpen(false),
@@ -32786,7 +35563,7 @@ function renderRosterDialogs({
         roster
       }
     ),
-    /* @__PURE__ */ jsx71(
+    /* @__PURE__ */ jsx80(
       SectionNameDialog,
       {
         initialName: sectionDialog?.mode === "rename" ? sectionDialog.name : "",
@@ -32809,7 +35586,7 @@ function renderRosterDialogs({
         open: Boolean(sectionDialog)
       }
     ),
-    /* @__PURE__ */ jsx71(
+    /* @__PURE__ */ jsx80(
       EditProfileDialog,
       {
         bot: editing,
@@ -32820,17 +35597,17 @@ function renderRosterDialogs({
         open: Boolean(editing)
       }
     ),
-    grouping ? /* @__PURE__ */ jsx71(GroupDialog, { bot: grouping, onClose: () => setGrouping(null) }) : null,
-    /* @__PURE__ */ jsx71(
+    grouping ? /* @__PURE__ */ jsx80(GroupDialog, { bot: grouping, onClose: () => setGrouping(null) }) : null,
+    /* @__PURE__ */ jsx80(
       sdk_compat_exports.ConfirmDialog,
       {
         busyLabel: "Deleting\u2026",
         confirmLabel: t2.common.delete,
-        description: deleting ? /* @__PURE__ */ jsxs69("span", { children: [
+        description: deleting ? /* @__PURE__ */ jsxs76("span", { children: [
           "This will permanently delete the bot ",
-          /* @__PURE__ */ jsx71("span", { className: "font-medium text-foreground", children: deleting.name }),
+          /* @__PURE__ */ jsx80("span", { className: "font-medium text-foreground", children: deleting.name }),
           " and its associated Hermes profile at ",
-          /* @__PURE__ */ jsx71("span", { className: "font-mono text-xs", children: deleting.path }),
+          /* @__PURE__ */ jsx80("span", { className: "font-mono text-xs", children: deleting.path }),
           ". This cannot be undone."
         ] }) : null,
         destructive: true,
@@ -32852,7 +35629,7 @@ function renderRosterDialogs({
         title: b.bot.deleteTitle
       }
     ),
-    /* @__PURE__ */ jsx71(
+    /* @__PURE__ */ jsx80(
       sdk_compat_exports.ConfirmDialog,
       {
         busyLabel: "Deleting\u2026",
@@ -32881,7 +35658,7 @@ function renderRosterDialogs({
 // src/roster-pane-groups.tsx
 init_sdk_compat();
 init_data();
-import { jsx as jsx72, jsxs as jsxs70 } from "react/jsx-runtime";
+import { jsx as jsx81, jsxs as jsxs77 } from "react/jsx-runtime";
 function RosterGroupRowView({
   b,
   groupClarify,
@@ -32911,15 +35688,15 @@ function RosterGroupRowView({
       updateGroupChat(name2, (room) => ({ ...room, rosterOrder }), { sync: false });
     });
   };
-  return /* @__PURE__ */ jsxs70("div", { className: "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center", children: [
-    /* @__PURE__ */ jsx72(
+  return /* @__PURE__ */ jsxs77("div", { className: "grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center", children: [
+    /* @__PURE__ */ jsx81(
       GroupRow,
       {
         ...rowProps,
         needsYou: Boolean(groupNeedsYou[rowProps.group]) || groupHasPendingClarify(groupClarify, rowProps.group)
       }
     ),
-    /* @__PURE__ */ jsx72("div", { className: "flex flex-col", children: [-1, 1].map((delta) => /* @__PURE__ */ jsx72(sdk_compat_exports.Tip, { label: delta === -1 ? b.sections.moveUp : b.sections.moveDown, children: /* @__PURE__ */ jsx72(
+    /* @__PURE__ */ jsx81("div", { className: "flex flex-col", children: [-1, 1].map((delta) => /* @__PURE__ */ jsx81(sdk_compat_exports.Tip, { label: delta === -1 ? b.sections.moveUp : b.sections.moveDown, children: /* @__PURE__ */ jsx81(
       sdk_compat_exports.Button,
       {
         "aria-label": `${rowProps.group}: ${delta === -1 ? b.sections.moveUp : b.sections.moveDown}`,
@@ -32927,7 +35704,7 @@ function RosterGroupRowView({
         onClick: () => moveRoom(rowProps.group, delta),
         size: "icon-xs",
         variant: "ghost",
-        children: /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: delta === -1 ? "chevron-up" : "chevron-down" })
+        children: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: delta === -1 ? "chevron-up" : "chevron-down" })
       }
     ) }, delta)) })
   ] });
@@ -32936,7 +35713,7 @@ function RosterGroupRowView({
 // src/roster-pane-sections.tsx
 init_sdk_compat();
 init_data();
-import { jsx as jsx73, jsxs as jsxs71 } from "react/jsx-runtime";
+import { jsx as jsx82, jsxs as jsxs78 } from "react/jsx-runtime";
 function rosterSectionRenderers({
   b,
   userSections,
@@ -32968,8 +35745,8 @@ function rosterSectionRenderers({
       if (!cardMode) {
         return rows.map((row) => row.kind === "group" ? renderGroupRow(row) : renderBotRow(row.bot, keyPrefix));
       }
-      return /* @__PURE__ */ jsx73("div", { className: rowsClass, children: rows.map(
-        (row) => row.kind === "group" ? /* @__PURE__ */ jsx73("div", { className: "col-span-full", children: renderGroupRow(row) }, row.name) : renderBotRow(row.bot, keyPrefix)
+      return /* @__PURE__ */ jsx82("div", { className: rowsClass, children: rows.map(
+        (row) => row.kind === "group" ? /* @__PURE__ */ jsx82("div", { className: "col-span-full", children: renderGroupRow(row) }, row.name) : renderBotRow(row.bot, keyPrefix)
       ) });
     }
     const nested = Boolean(keyPrefix);
@@ -32978,7 +35755,7 @@ function rosterSectionRenderers({
       const key = `${keyPrefix}${block.id ? `user-section:${block.id}` : UNASSIGNED_SECTION_KEY}`;
       const collapsed = rosterSectionCollapsed(key);
       const order = userSections.findIndex((section) => section.id === block.id);
-      return /* @__PURE__ */ jsxs71(
+      return /* @__PURE__ */ jsxs78(
         SectionDropZone,
         {
           isSource: Boolean(dragging) && block.rows.some(
@@ -32996,7 +35773,7 @@ function rosterSectionRenderers({
             }
           },
           children: [
-            /* @__PURE__ */ jsx73(
+            /* @__PURE__ */ jsx82(
               UserSectionHeader,
               {
                 canMoveDown: order >= 0 && order < userSections.length - 1,
@@ -33011,12 +35788,12 @@ function rosterSectionRenderers({
                 onToggle: () => toggleRosterSection(key)
               }
             ),
-            collapsed ? null : block.rows.length ? /* @__PURE__ */ jsx73("div", { className: rowsClass, children: block.rows.map(
-              (row) => row.kind === "group" ? /* @__PURE__ */ jsx73("div", { className: cardMode ? "col-span-full" : "", children: renderGroupRow(row) }, row.name) : renderBotRow(row.bot, `${key}:`)
+            collapsed ? null : block.rows.length ? /* @__PURE__ */ jsx82("div", { className: rowsClass, children: block.rows.map(
+              (row) => row.kind === "group" ? /* @__PURE__ */ jsx82("div", { className: cardMode ? "col-span-full" : "", children: renderGroupRow(row) }, row.name) : renderBotRow(row.bot, `${key}:`)
             ) }) : (
               // Empty section: a quiet dashed slot that says what it is for,
               // and doubles as a roomy drop target.
-              /* @__PURE__ */ jsx73("div", { className: "mx-1 mb-1 rounded-md border border-dashed border-(--ui-stroke-secondary) px-2 py-2 text-center text-[0.6875rem] text-(--ui-text-quaternary)", children: b.sections.emptyHint })
+              /* @__PURE__ */ jsx82("div", { className: "mx-1 mb-1 rounded-md border border-dashed border-(--ui-stroke-secondary) px-2 py-2 text-center text-[0.6875rem] text-(--ui-text-quaternary)", children: b.sections.emptyHint })
             )
           ]
         },
@@ -33027,8 +35804,8 @@ function rosterSectionRenderers({
   const renderGatewaySection = (section) => {
     const sectionId = `gateway:${section.id}`;
     const collapsed = rosterSectionCollapsed(sectionId);
-    return /* @__PURE__ */ jsxs71("div", { className: "min-w-0", children: [
-      /* @__PURE__ */ jsx73(
+    return /* @__PURE__ */ jsxs78("div", { className: "min-w-0", children: [
+      /* @__PURE__ */ jsx82(
         GatewaySectionHeading,
         {
           collapsed,
@@ -33037,14 +35814,14 @@ function rosterSectionRenderers({
           option: section.option
         }
       ),
-      collapsed ? null : /* @__PURE__ */ jsx73("div", { className: "min-w-0", children: renderUserSections(section.rows, `${section.id}:`) })
+      collapsed ? null : /* @__PURE__ */ jsx82("div", { className: "min-w-0", children: renderUserSections(section.rows, `${section.id}:`) })
     ] }, sectionId);
   };
   const renderGroupChatSection = () => {
     const sectionId = "group-chats";
     const collapsed = rosterSectionCollapsed(sectionId);
-    return /* @__PURE__ */ jsxs71("div", { className: "min-w-0", children: [
-      /* @__PURE__ */ jsx73(
+    return /* @__PURE__ */ jsxs78("div", { className: "min-w-0", children: [
+      /* @__PURE__ */ jsx82(
         RosterSectionHeader,
         {
           collapsed,
@@ -33055,16 +35832,16 @@ function rosterSectionRenderers({
           tip: `${sortedGroupRows.length} global group chat${sortedGroupRows.length === 1 ? "" : "s"}`
         }
       ),
-      collapsed ? null : /* @__PURE__ */ jsx73("div", { className: "min-w-0", children: renderUserSections(sortedGroupRows, "groups:") })
+      collapsed ? null : /* @__PURE__ */ jsx82("div", { className: "min-w-0", children: renderUserSections(sortedGroupRows, "groups:") })
     ] }, sectionId);
   };
-  const renderHiddenGatewaySection = (section) => /* @__PURE__ */ jsxs71("div", { className: "min-w-0", children: [
-    /* @__PURE__ */ jsxs71("div", { className: "flex min-w-0 items-center gap-1.5 px-2 py-1 ui-section-label", children: [
-      /* @__PURE__ */ jsx73(GatewayKindGlyph, { kind: section.option?.kind }),
-      /* @__PURE__ */ jsx73("span", { className: "min-w-0 flex-1 truncate", children: section.option?.label || section.option?.connectionId || "Current gateway" }),
-      /* @__PURE__ */ jsx73("span", { className: "shrink-0 font-normal tabular-nums", children: section.rows.length })
+  const renderHiddenGatewaySection = (section) => /* @__PURE__ */ jsxs78("div", { className: "min-w-0", children: [
+    /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 items-center gap-1.5 px-2 py-1 ui-section-label", children: [
+      /* @__PURE__ */ jsx82(GatewayKindGlyph, { kind: section.option?.kind }),
+      /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 truncate", children: section.option?.label || section.option?.connectionId || "Current gateway" }),
+      /* @__PURE__ */ jsx82("span", { className: "shrink-0 font-normal tabular-nums", children: section.rows.length })
     ] }),
-    cardMode ? /* @__PURE__ */ jsx73("div", { className: rowsClass, children: section.rows.map((row) => renderBotRow(row.bot, `hidden:${section.id}:`)) }) : section.rows.map((row) => renderBotRow(row.bot, `hidden:${section.id}:`))
+    cardMode ? /* @__PURE__ */ jsx82("div", { className: rowsClass, children: section.rows.map((row) => renderBotRow(row.bot, `hidden:${section.id}:`)) }) : section.rows.map((row) => renderBotRow(row.bot, `hidden:${section.id}:`))
   ] }, `hidden-gateway:${section.id}`);
   return { renderUserSections, renderGatewaySection, renderGroupChatSection, renderHiddenGatewaySection };
 }
@@ -33072,11 +35849,11 @@ function rosterSectionRenderers({
 // src/roster-pane-toolbar.tsx
 init_sdk_compat();
 init_data();
-import { Fragment as Fragment16, jsx as jsx74, jsxs as jsxs72 } from "react/jsx-runtime";
+import { Fragment as Fragment18, jsx as jsx83, jsxs as jsxs79 } from "react/jsx-runtime";
 function NewGroupChatItem({ label, onSelect, roster }) {
   const { connectionId, mode, seatable } = useGroupCapability(true);
-  return /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuItem, { disabled: seatableGroupBots(roster, { connectionId, mode, seatable }).length < 2, onSelect, children: [
-    /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "organization" }),
+  return /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuItem, { disabled: seatableGroupBots(roster, { connectionId, mode, seatable }).length < 2, onSelect, children: [
+    /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "organization" }),
     label
   ] });
 }
@@ -33108,11 +35885,11 @@ function renderRosterToolbar({
   viewMode,
   setViewMode
 }) {
-  return /* @__PURE__ */ jsxs72(Fragment16, { children: [
-    /* @__PURE__ */ jsxs72("div", { className: "flex items-center justify-between gap-2 px-2.5 pt-2.5 pb-1.5", children: [
-      /* @__PURE__ */ jsx74("span", { className: "ui-section-label", children: "Bots" }),
-      /* @__PURE__ */ jsxs72("div", { className: "flex items-center gap-0.5", children: [
-        /* @__PURE__ */ jsx74(sdk_compat_exports.Tip, { label: viewMode === "cards" ? b.roster.listView : b.roster.cardView, children: /* @__PURE__ */ jsx74(
+  return /* @__PURE__ */ jsxs79(Fragment18, { children: [
+    /* @__PURE__ */ jsxs79("div", { className: "flex items-center justify-between gap-2 px-2.5 pt-2.5 pb-1.5", children: [
+      /* @__PURE__ */ jsx83("span", { className: "ui-section-label", children: "Bots" }),
+      /* @__PURE__ */ jsxs79("div", { className: "flex items-center gap-0.5", children: [
+        /* @__PURE__ */ jsx83(sdk_compat_exports.Tip, { label: viewMode === "cards" ? b.roster.listView : b.roster.cardView, children: /* @__PURE__ */ jsx83(
           sdk_compat_exports.Button,
           {
             "aria-label": viewMode === "cards" ? b.roster.listView : b.roster.cardView,
@@ -33124,14 +35901,14 @@ function renderRosterToolbar({
             onClick: () => setViewMode(viewMode === "cards" ? "list" : "cards"),
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: viewMode === "cards" ? "list-flat" : "layout" })
+            children: /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: viewMode === "cards" ? "list-flat" : "layout" })
           }
         ) }),
-        /* @__PURE__ */ jsx74(
+        /* @__PURE__ */ jsx83(
           sdk_compat_exports.Tip,
           {
             label: activityToasts ? "Activity toasts on \u2014 click to silence" : "Activity toasts off \u2014 click to enable",
-            children: /* @__PURE__ */ jsx74(
+            children: /* @__PURE__ */ jsx83(
               sdk_compat_exports.Button,
               {
                 "aria-label": "Activity toasts",
@@ -33140,12 +35917,12 @@ function renderRosterToolbar({
                 onClick: () => setActivityToasts(!activityToasts),
                 size: "icon-xs",
                 variant: "ghost",
-                children: /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: activityToasts ? "bell" : "bell-slash" })
+                children: /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: activityToasts ? "bell" : "bell-slash" })
               }
             )
           }
         ),
-        window.hermesDesktop?.botroom ? /* @__PURE__ */ jsx74(sdk_compat_exports.Tip, { label: "Bot Room on desktop", children: /* @__PURE__ */ jsx74(
+        window.hermesDesktop?.botroom ? /* @__PURE__ */ jsx83(sdk_compat_exports.Tip, { label: "Bot Room on desktop", children: /* @__PURE__ */ jsx83(
           sdk_compat_exports.Button,
           {
             "aria-label": "Bot Room on desktop",
@@ -33153,63 +35930,63 @@ function renderRosterToolbar({
             onClick: () => void window.hermesDesktop?.botroom?.open(),
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "device-desktop" })
+            children: /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "device-desktop" })
           }
         ) }) : null,
-        /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenu, { children: [
-          /* @__PURE__ */ jsx74(sdk_compat_exports.Tip, { label: b.roster.newBotOrGroup, children: /* @__PURE__ */ jsx74(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx74(
+        /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenu, { children: [
+          /* @__PURE__ */ jsx83(sdk_compat_exports.Tip, { label: b.roster.newBotOrGroup, children: /* @__PURE__ */ jsx83(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx83(
             sdk_compat_exports.Button,
             {
               "aria-label": b.roster.newBotOrGroup,
               className: "rounded-md text-(--ui-text-tertiary) hover:text-foreground",
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "add" })
+              children: /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "add" })
             }
           ) }) }),
-          /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
-            /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setCreateOpen(true), children: [
-              /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "hubot" }),
+          /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
+            /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setCreateOpen(true), children: [
+              /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "hubot" }),
               b.bot.newTitle
             ] }),
-            /* @__PURE__ */ jsx74(NewGroupChatItem, { label: b.group.newTitle, onSelect: () => setGroupCreateOpen(true), roster }),
-            /* @__PURE__ */ jsx74(sdk_compat_exports.DropdownMenuSeparator, {}),
-            /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setSectionDialog({ mode: "create" }), children: [
-              /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
+            /* @__PURE__ */ jsx83(NewGroupChatItem, { label: b.group.newTitle, onSelect: () => setGroupCreateOpen(true), roster }),
+            /* @__PURE__ */ jsx83(sdk_compat_exports.DropdownMenuSeparator, {}),
+            /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setSectionDialog({ mode: "create" }), children: [
+              /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "new-folder" }),
               b.sections.newSection
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenu, { children: [
-          /* @__PURE__ */ jsx74(sdk_compat_exports.Tip, { label: b.broadcast.title, children: /* @__PURE__ */ jsx74(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx74(
+        /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenu, { children: [
+          /* @__PURE__ */ jsx83(sdk_compat_exports.Tip, { label: b.broadcast.title, children: /* @__PURE__ */ jsx83(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx83(
             sdk_compat_exports.Button,
             {
               "aria-label": b.broadcast.title,
               className: "rounded-md text-(--ui-text-tertiary) hover:text-foreground",
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "broadcast" })
+              children: /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "broadcast" })
             }
           ) }) }),
-          /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
-            /* @__PURE__ */ jsxs72(
+          /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
+            /* @__PURE__ */ jsxs79(
               sdk_compat_exports.DropdownMenuItem,
               {
                 disabled: !roster.filter((bot) => !bot?.ghost).length,
                 onSelect: () => setBroadcastOpen(true),
                 children: [
-                  /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "broadcast" }),
+                  /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "broadcast" }),
                   b.broadcast.menuItem
                 ]
               }
             ),
-            /* @__PURE__ */ jsxs72(
+            /* @__PURE__ */ jsxs79(
               sdk_compat_exports.DropdownMenuItem,
               {
                 disabled: !roster.filter((bot) => !bot?.ghost).length,
                 onSelect: () => setCalendarOpen(true),
                 children: [
-                  /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "calendar" }),
+                  /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "calendar" }),
                   b.calendar.menuItem
                 ]
               }
@@ -33218,8 +35995,8 @@ function renderRosterToolbar({
         ] })
       ] })
     ] }),
-    showRosterTools ? /* @__PURE__ */ jsxs72("div", { className: "flex min-w-0 items-center gap-1 px-2.5 pb-1.5", children: [
-      showRosterSearch ? /* @__PURE__ */ jsx74(
+    showRosterTools ? /* @__PURE__ */ jsxs79("div", { className: "flex min-w-0 items-center gap-1 px-2.5 pb-1.5", children: [
+      showRosterSearch ? /* @__PURE__ */ jsx83(
         sdk_compat_exports.SearchField,
         {
           "aria-label": b.roster.search,
@@ -33230,9 +36007,9 @@ function renderRosterToolbar({
           value: query
         },
         "roster-search"
-      ) : /* @__PURE__ */ jsx74("span", { className: "min-w-0 flex-1" }, "roster-search-spacer"),
-      showRosterFilters ? /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenu, { children: [
-        /* @__PURE__ */ jsx74(sdk_compat_exports.Tip, { label: activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filter roster", children: /* @__PURE__ */ jsx74(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx74(
+      ) : /* @__PURE__ */ jsx83("span", { className: "min-w-0 flex-1" }, "roster-search-spacer"),
+      showRosterFilters ? /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenu, { children: [
+        /* @__PURE__ */ jsx83(sdk_compat_exports.Tip, { label: activeFilterCount ? `Filters (${activeFilterCount} active)` : "Filter roster", children: /* @__PURE__ */ jsx83(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx83(
           sdk_compat_exports.Button,
           {
             "aria-label": activeFilterCount ? `Filter roster, ${activeFilterCount} active` : "Filter roster",
@@ -33242,70 +36019,70 @@ function renderRosterToolbar({
             ),
             size: "icon-xs",
             variant: "ghost",
-            children: /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "list-filter" })
+            children: /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "list-filter" })
           }
         ) }) }),
-        /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
+        /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
           [
             ["all", b.roster.botsAndGroups],
             ["bots", b.roster.botsOnly],
             ["groups", b.roster.groupsOnly]
-          ].map(([value, label]) => /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setRowKindFilter(value), children: [
-            /* @__PURE__ */ jsx74("span", { className: "min-w-0 flex-1", children: label }),
-            rowKindFilter === value ? /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "check" }) : null
+          ].map(([value, label]) => /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setRowKindFilter(value), children: [
+            /* @__PURE__ */ jsx83("span", { className: "min-w-0 flex-1", children: label }),
+            rowKindFilter === value ? /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "check" }) : null
           ] }, `kind:${value}`)),
-          /* @__PURE__ */ jsx74(sdk_compat_exports.DropdownMenuSeparator, {}),
+          /* @__PURE__ */ jsx83(sdk_compat_exports.DropdownMenuSeparator, {}),
           [
             ["all", b.roster.anyActivity],
             ["active", b.roster.activeNow],
             ["recent", b.roster.recentlyActive],
             ["older", b.roster.older]
-          ].map(([value, label]) => /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setActivityFilter(value), children: [
-            /* @__PURE__ */ jsx74("span", { className: "min-w-0 flex-1", children: label }),
-            activityFilter === value ? /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "check" }) : null
+          ].map(([value, label]) => /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setActivityFilter(value), children: [
+            /* @__PURE__ */ jsx83("span", { className: "min-w-0 flex-1", children: label }),
+            activityFilter === value ? /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "check" }) : null
           ] }, `activity:${value}`)),
-          /* @__PURE__ */ jsx74(sdk_compat_exports.DropdownMenuSeparator, {}),
+          /* @__PURE__ */ jsx83(sdk_compat_exports.DropdownMenuSeparator, {}),
           [
             ["recent", b.roster.sortRecent],
             ["attention", b.roster.sortAttention],
             ["alpha", b.roster.sortAlpha]
-          ].map(([value, label]) => /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setSortMode(value), children: [
-            /* @__PURE__ */ jsx74("span", { className: "min-w-0 flex-1", children: label }),
-            sortMode === value ? /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "check" }) : null
+          ].map(([value, label]) => /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setSortMode(value), children: [
+            /* @__PURE__ */ jsx83("span", { className: "min-w-0 flex-1", children: label }),
+            sortMode === value ? /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "check" }) : null
           ] }, `sort:${value}`)),
-          gatewayOptions.length > 1 ? /* @__PURE__ */ jsx74(sdk_compat_exports.DropdownMenuSeparator, {}) : null,
-          gatewayOptions.length > 1 ? /* @__PURE__ */ jsxs72(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setGatewayFilter("all"), children: [
-            /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "globe" }),
-            /* @__PURE__ */ jsx74("span", { className: "min-w-0 flex-1", children: "All gateways" }),
-            gatewayFilter === "all" ? /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "check" }) : null
+          gatewayOptions.length > 1 ? /* @__PURE__ */ jsx83(sdk_compat_exports.DropdownMenuSeparator, {}) : null,
+          gatewayOptions.length > 1 ? /* @__PURE__ */ jsxs79(sdk_compat_exports.DropdownMenuItem, { onSelect: () => setGatewayFilter("all"), children: [
+            /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "globe" }),
+            /* @__PURE__ */ jsx83("span", { className: "min-w-0 flex-1", children: "All gateways" }),
+            gatewayFilter === "all" ? /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "check" }) : null
           ] }) : null,
           gatewayOptions.length > 1 ? gatewayOptions.map((option) => {
             const status = botSourceStatus({
               sourceError: option.error,
               sourceReachable: option.reachable
             });
-            return /* @__PURE__ */ jsxs72(
+            return /* @__PURE__ */ jsxs79(
               sdk_compat_exports.DropdownMenuItem,
               {
                 onSelect: () => setGatewayFilter(option.connectionId),
                 children: [
-                  /* @__PURE__ */ jsx74(
+                  /* @__PURE__ */ jsx83(
                     GatewayKindGlyph,
                     {
                       className: (0, sdk_compat_exports.cn)("mr-1.5", !status.available && "hbp-fg-warn"),
                       kind: option.kind
                     }
                   ),
-                  /* @__PURE__ */ jsx74("span", { className: "min-w-0 flex-1 truncate", children: option.label || option.connectionId }),
-                  /* @__PURE__ */ jsx74("span", { className: "text-[0.625rem] tabular-nums text-(--ui-text-quaternary)", children: option.count }),
-                  gatewayFilter === option.connectionId ? /* @__PURE__ */ jsx74(sdk_compat_exports.Codicon, { name: "check" }) : null
+                  /* @__PURE__ */ jsx83("span", { className: "min-w-0 flex-1 truncate", children: option.label || option.connectionId }),
+                  /* @__PURE__ */ jsx83("span", { className: "text-[0.625rem] tabular-nums text-(--ui-text-quaternary)", children: option.count }),
+                  gatewayFilter === option.connectionId ? /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "check" }) : null
                 ]
               },
               option.connectionId
             );
           }) : [],
-          activeFilterCount ? /* @__PURE__ */ jsx74(sdk_compat_exports.DropdownMenuSeparator, {}) : null,
-          activeFilterCount ? /* @__PURE__ */ jsx74(
+          activeFilterCount ? /* @__PURE__ */ jsx83(sdk_compat_exports.DropdownMenuSeparator, {}) : null,
+          activeFilterCount ? /* @__PURE__ */ jsx83(
             sdk_compat_exports.DropdownMenuItem,
             {
               onSelect: () => {
@@ -33347,7 +36124,7 @@ function setRosterViewMode(mode) {
 
 // src/routines-calendar.tsx
 init_sdk_compat();
-import { useEffect as useEffect27, useState as useState46 } from "react";
+import { useEffect as useEffect37, useState as useState54 } from "react";
 init_data();
 
 // src/fleet-schedule.ts
@@ -33383,7 +36160,7 @@ function groupFleetRoutines(items) {
 init_i18n();
 init_labels();
 init_routing();
-import { Fragment as Fragment17, jsx as jsx75, jsxs as jsxs73 } from "react/jsx-runtime";
+import { Fragment as Fragment19, jsx as jsx84, jsxs as jsxs80 } from "react/jsx-runtime";
 function FleetJobRow({ bot, job }) {
   const b = useBots();
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
@@ -33394,11 +36171,11 @@ function FleetJobRow({ bot, job }) {
   const overdue = (0, sdk_compat_exports.nextRunOverdueMs)(job) !== null;
   const paused = job.enabled === false || job.state === "paused";
   const jobTitle = String(job.name || job.prompt || job.prompt_preview || "").trim() || b.calendar.untitledJob;
-  return /* @__PURE__ */ jsxs73("div", { className: "flex items-center gap-2 rounded-md px-1.5 py-1", children: [
-    /* @__PURE__ */ jsx75(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 16 }),
-    /* @__PURE__ */ jsx75("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)", children: jobTitle }),
-    /* @__PURE__ */ jsx75("span", { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", children: name }),
-    paused ? /* @__PURE__ */ jsx75("span", { className: "shrink-0 text-[0.65rem] text-(--ui-text-quaternary)", children: "\u2014" }) : Number.isFinite(fireAt) ? /* @__PURE__ */ jsxs73(
+  return /* @__PURE__ */ jsxs80("div", { className: "flex items-center gap-2 rounded-md px-1.5 py-1", children: [
+    /* @__PURE__ */ jsx84(BotFace, { color: avatarColor(color, bot.name), image, name: bot.name, shape, size: 16 }),
+    /* @__PURE__ */ jsx84("span", { className: "min-w-0 flex-1 truncate text-[0.75rem] text-(--ui-text-secondary)", children: jobTitle }),
+    /* @__PURE__ */ jsx84("span", { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", children: name }),
+    paused ? /* @__PURE__ */ jsx84("span", { className: "shrink-0 text-[0.65rem] text-(--ui-text-quaternary)", children: "\u2014" }) : Number.isFinite(fireAt) ? /* @__PURE__ */ jsxs80(
       "span",
       {
         className: (0, sdk_compat_exports.cn)(
@@ -33419,10 +36196,10 @@ function RoutinesCalendarDialog({
   open
 }) {
   const b = useBots();
-  const [items, setItems] = useState46([]);
-  const [partial, setPartial] = useState46(false);
-  const [loading2, setLoading] = useState46(false);
-  useEffect27(() => {
+  const [items, setItems] = useState54([]);
+  const [partial, setPartial] = useState54(false);
+  const [loading3, setLoading] = useState54(false);
+  useEffect37(() => {
     if (!open) {
       return;
     }
@@ -33456,7 +36233,7 @@ function RoutinesCalendarDialog({
   }, [open, bots]);
   const groups = groupFleetRoutines(items);
   const hasAny = groups.nextUp.length > 0 || groups.days.length > 0 || groups.dormant.length > 0;
-  return /* @__PURE__ */ jsx75(
+  return /* @__PURE__ */ jsx84(
     sdk_compat_exports.Dialog,
     {
       onOpenChange: (value) => {
@@ -33465,28 +36242,28 @@ function RoutinesCalendarDialog({
         }
       },
       open,
-      children: /* @__PURE__ */ jsxs73(sdk_compat_exports.DialogContent, { className: "max-w-lg", children: [
-        /* @__PURE__ */ jsxs73(sdk_compat_exports.DialogHeader, { children: [
-          /* @__PURE__ */ jsx75(sdk_compat_exports.DialogTitle, { children: b.calendar.title }),
-          /* @__PURE__ */ jsx75(sdk_compat_exports.DialogDescription, { children: b.calendar.desc })
+      children: /* @__PURE__ */ jsxs80(sdk_compat_exports.DialogContent, { className: "max-w-lg", children: [
+        /* @__PURE__ */ jsxs80(sdk_compat_exports.DialogHeader, { children: [
+          /* @__PURE__ */ jsx84(sdk_compat_exports.DialogTitle, { children: b.calendar.title }),
+          /* @__PURE__ */ jsx84(sdk_compat_exports.DialogDescription, { children: b.calendar.desc })
         ] }),
-        /* @__PURE__ */ jsxs73("div", { className: "flex max-h-[60vh] min-h-0 flex-col gap-2 overflow-y-auto", children: [
-          partial ? /* @__PURE__ */ jsx75("div", { className: "rounded-md border hbp-bd-warn-40 hbp-bg-warn-10 px-2.5 py-1.5 text-[0.6875rem] hbp-fg-warn", children: b.calendar.loadFailed }) : null,
-          loading2 ? /* @__PURE__ */ jsxs73("div", { className: "flex items-center gap-1.5 px-1 py-3 text-[0.75rem] text-(--ui-text-tertiary)", children: [
-            /* @__PURE__ */ jsx75(sdk_compat_exports.Codicon, { name: "loading", spinning: true }),
+        /* @__PURE__ */ jsxs80("div", { className: "flex max-h-[60vh] min-h-0 flex-col gap-2 overflow-y-auto", children: [
+          partial ? /* @__PURE__ */ jsx84("div", { className: "rounded-md border hbp-bd-warn-40 hbp-bg-warn-10 px-2.5 py-1.5 text-[0.6875rem] hbp-fg-warn", children: b.calendar.loadFailed }) : null,
+          loading3 ? /* @__PURE__ */ jsxs80("div", { className: "flex items-center gap-1.5 px-1 py-3 text-[0.75rem] text-(--ui-text-tertiary)", children: [
+            /* @__PURE__ */ jsx84(sdk_compat_exports.Codicon, { name: "loading", spinning: true }),
             b.calendar.title
-          ] }) : !hasAny ? /* @__PURE__ */ jsx75("div", { className: "px-1 py-4 text-center text-[0.75rem] text-(--ui-text-tertiary)", children: b.calendar.empty }) : /* @__PURE__ */ jsxs73(Fragment17, { children: [
-            groups.nextUp.length ? /* @__PURE__ */ jsxs73("div", { children: [
-              /* @__PURE__ */ jsx75("div", { className: "px-1 pb-0.5 ui-section-label", children: b.calendar.nextUp }),
-              groups.nextUp.map((item) => /* @__PURE__ */ jsx75(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}`))
+          ] }) : !hasAny ? /* @__PURE__ */ jsx84("div", { className: "px-1 py-4 text-center text-[0.75rem] text-(--ui-text-tertiary)", children: b.calendar.empty }) : /* @__PURE__ */ jsxs80(Fragment19, { children: [
+            groups.nextUp.length ? /* @__PURE__ */ jsxs80("div", { children: [
+              /* @__PURE__ */ jsx84("div", { className: "px-1 pb-0.5 ui-section-label", children: b.calendar.nextUp }),
+              groups.nextUp.map((item) => /* @__PURE__ */ jsx84(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}`))
             ] }) : null,
-            groups.days.map((group) => /* @__PURE__ */ jsxs73("div", { children: [
-              /* @__PURE__ */ jsx75("div", { className: "px-1 pb-0.5 pt-1 ui-section-label", children: group.label }),
-              group.items.map((item) => /* @__PURE__ */ jsx75(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}`))
+            groups.days.map((group) => /* @__PURE__ */ jsxs80("div", { children: [
+              /* @__PURE__ */ jsx84("div", { className: "px-1 pb-0.5 pt-1 ui-section-label", children: group.label }),
+              group.items.map((item) => /* @__PURE__ */ jsx84(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}`))
             ] }, group.label)),
-            groups.dormant.length ? /* @__PURE__ */ jsxs73("div", { children: [
-              /* @__PURE__ */ jsx75("div", { className: "px-1 pb-0.5 pt-1 ui-section-label", children: b.calendar.paused }),
-              groups.dormant.map((item) => /* @__PURE__ */ jsx75(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}:d`))
+            groups.dormant.length ? /* @__PURE__ */ jsxs80("div", { children: [
+              /* @__PURE__ */ jsx84("div", { className: "px-1 pb-0.5 pt-1 ui-section-label", children: b.calendar.paused }),
+              groups.dormant.map((item) => /* @__PURE__ */ jsx84(FleetJobRow, { bot: item.bot, job: item.job }, `${botRosterKey(item.bot)}:${item.job.job_id}:d`))
             ] }) : null
           ] })
         ] })
@@ -33564,7 +36341,7 @@ function deriveTriageItems(bots, signals) {
 }
 
 // src/triage-strip.tsx
-import { jsx as jsx76, jsxs as jsxs74 } from "react/jsx-runtime";
+import { jsx as jsx85, jsxs as jsxs81 } from "react/jsx-runtime";
 function triageLabel(b, item, name) {
   switch (item.kind) {
     case "unreachable":
@@ -33659,16 +36436,16 @@ function TriageStrip({
   if (!items.length) {
     return null;
   }
-  return /* @__PURE__ */ jsxs74("section", { className: "mb-1 px-2", "data-testid": "bot-triage-strip", children: [
-    /* @__PURE__ */ jsxs74("div", { className: "flex items-center justify-between px-1 pt-1 pb-1.5", children: [
-      /* @__PURE__ */ jsx76("span", { className: "ui-section-label", children: b.triage.title }),
-      /* @__PURE__ */ jsx76("span", { className: "rounded-full hbp-bg-warn-15 px-1.5 text-[0.625rem] font-semibold tabular-nums hbp-fg-warn", children: items.length })
+  return /* @__PURE__ */ jsxs81("section", { className: "mb-1 px-2", "data-testid": "bot-triage-strip", children: [
+    /* @__PURE__ */ jsxs81("div", { className: "flex items-center justify-between px-1 pt-1 pb-1.5", children: [
+      /* @__PURE__ */ jsx85("span", { className: "ui-section-label", children: b.triage.title }),
+      /* @__PURE__ */ jsx85("span", { className: "rounded-full hbp-bg-warn-15 px-1.5 text-[0.625rem] font-semibold tabular-nums hbp-fg-warn", children: items.length })
     ] }),
-    /* @__PURE__ */ jsx76("div", { className: "grid gap-0.5 rounded-lg hbp-bg-warn-6 p-1", children: items.map((item) => {
+    /* @__PURE__ */ jsx85("div", { className: "grid gap-0.5 rounded-lg hbp-bg-warn-6 p-1", children: items.map((item) => {
       const meta = botRosterMeta(item.bot, allMeta);
       const { shape, color, image } = botAppearance(item.bot.name, meta);
       const name = displayName(item.bot, meta);
-      return /* @__PURE__ */ jsxs74(
+      return /* @__PURE__ */ jsxs81(
         "button",
         {
           "aria-label": b.triage.openItem(name),
@@ -33680,7 +36457,7 @@ function TriageStrip({
           onClick: () => onOpen(item.bot),
           type: "button",
           children: [
-            /* @__PURE__ */ jsx76("span", { className: "shrink-0 rounded-md ring-1 hbp-ring-warn-50", children: /* @__PURE__ */ jsx76(
+            /* @__PURE__ */ jsx85("span", { className: "shrink-0 rounded-md ring-1 hbp-ring-warn-50", children: /* @__PURE__ */ jsx85(
               BotFace,
               {
                 color: avatarColor(color, item.bot.name),
@@ -33690,9 +36467,9 @@ function TriageStrip({
                 size: 26
               }
             ) }),
-            /* @__PURE__ */ jsxs74("span", { className: "min-w-0 flex-1", children: [
-              /* @__PURE__ */ jsxs74("span", { className: "flex min-w-0 items-center gap-1 text-xs font-medium text-foreground", children: [
-                /* @__PURE__ */ jsx76(
+            /* @__PURE__ */ jsxs81("span", { className: "min-w-0 flex-1", children: [
+              /* @__PURE__ */ jsxs81("span", { className: "flex min-w-0 items-center gap-1 text-xs font-medium text-foreground", children: [
+                /* @__PURE__ */ jsx85(
                   sdk_compat_exports.Codicon,
                   {
                     className: "shrink-0 hbp-fg-warn",
@@ -33700,11 +36477,11 @@ function TriageStrip({
                     size: "0.7rem"
                   }
                 ),
-                /* @__PURE__ */ jsx76("span", { className: "truncate", children: triageLabel(b, item, name) })
+                /* @__PURE__ */ jsx85("span", { className: "truncate", children: triageLabel(b, item, name) })
               ] }),
-              /* @__PURE__ */ jsx76("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: triageMeta(item, name) })
+              /* @__PURE__ */ jsx85("span", { className: "block truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: triageMeta(item, name) })
             ] }),
-            /* @__PURE__ */ jsx76("span", { className: "shrink-0 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary) group-hover/triage:border-(--ui-stroke-primary) group-hover/triage:text-foreground", children: TRIAGE_ACTION[item.kind](b) })
+            /* @__PURE__ */ jsx85("span", { className: "shrink-0 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) px-1.5 py-0.5 text-[0.6875rem] font-medium text-(--ui-text-secondary) group-hover/triage:border-(--ui-stroke-primary) group-hover/triage:text-foreground", children: TRIAGE_ACTION[item.kind](b) })
           ]
         },
         item.key
@@ -33714,7 +36491,7 @@ function TriageStrip({
 }
 
 // src/roster-pane.tsx
-import { jsx as jsx77, jsxs as jsxs75 } from "react/jsx-runtime";
+import { jsx as jsx86, jsxs as jsxs82 } from "react/jsx-runtime";
 function selectedRosterBot(roster, key) {
   return (Array.isArray(roster) ? roster : []).find((bot) => botRosterKey(bot) === key) || null;
 }
@@ -33790,7 +36567,7 @@ function releaseStaleOpenBotChat(focusedStoredId2) {
   }
 }
 function useReconcileRosterOwner(data, error, selectionHydrated, roster, sourceSnapshot, allMeta) {
-  useEffect28(() => {
+  useEffect38(() => {
     if (!data && !error) {
       return;
     }
@@ -33813,15 +36590,15 @@ function BotsPane() {
   const turnBusy = useTurnBusy();
   const workingOwner = focusedRosterOwner((0, sdk_compat_exports.useValue)($focusedBotOwner));
   const activeConnectionId = host.state.connectionId?.get?.() || "local";
-  const [createOpen, setCreateOpen] = useState47(false);
-  const [createDraft, setCreateDraft] = useState47(null);
+  const [createOpen, setCreateOpen] = useState55(false);
+  const [createDraft, setCreateDraft] = useState55(null);
   const openCreate = (draft) => {
     setCreateDraft(draft);
     setCreateOpen(true);
   };
-  const [quickOpen, setQuickOpen] = useState47(false);
-  const [hireOpen, setHireOpen] = useState47(false);
-  const [creatingStarter, setCreatingStarter] = useState47(null);
+  const [quickOpen, setQuickOpen] = useState55(false);
+  const [hireOpen, setHireOpen] = useState55(false);
+  const [creatingStarter, setCreatingStarter] = useState55(null);
   const quickStarter = (starter) => {
     if (creatingStarter) {
       return;
@@ -33833,25 +36610,25 @@ function BotsPane() {
       onConfigureModel: setEditing
     }).catch((err) => host.notifyError(err, b.bot.createFailed)).finally(() => setCreatingStarter(null));
   };
-  const [groupCreateOpen, setGroupCreateOpen] = useState47(false);
-  const [broadcastOpen, setBroadcastOpen] = useState47(false);
-  const [calendarOpen, setCalendarOpen] = useState47(false);
-  const [editing, setEditing] = useState47(null);
-  const [deleting, setDeleting] = useState47(null);
-  const [deletingGroup, setDeletingGroup] = useState47(null);
+  const [groupCreateOpen, setGroupCreateOpen] = useState55(false);
+  const [broadcastOpen, setBroadcastOpen] = useState55(false);
+  const [calendarOpen, setCalendarOpen] = useState55(false);
+  const [editing, setEditing] = useState55(null);
+  const [deleting, setDeleting] = useState55(null);
+  const [deletingGroup, setDeletingGroup] = useState55(null);
   const userSections = (0, sdk_compat_exports.useValue)($botSections);
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot);
   useEscapeCancelsBotDrag();
-  const [sectionDialog, setSectionDialog] = useState47(null);
-  const [grouping, setGrouping] = useState47(null);
+  const [sectionDialog, setSectionDialog] = useState55(null);
+  const [grouping, setGrouping] = useState55(null);
   const mailboxNotes = useMailbox().data || [];
-  const [assigningTask, setAssigningTask] = useState47(null);
-  const [query, setQuery] = useState47("");
-  const [rowKindFilter, setRowKindFilter] = useState47("all");
-  const [activityFilter, setActivityFilter] = useState47("all");
-  const [gatewayFilter, setGatewayFilter] = useState47("all");
+  const [assigningTask, setAssigningTask] = useState55(null);
+  const [query, setQuery] = useState55("");
+  const [rowKindFilter, setRowKindFilter] = useState55("all");
+  const [activityFilter, setActivityFilter] = useState55("all");
+  const [gatewayFilter, setGatewayFilter] = useState55("all");
   const collapsedRosterSections = (0, sdk_compat_exports.useValue)($collapsedBotSections);
-  const hiddenSectionRef = useRef17(null);
+  const hiddenSectionRef = useRef24(null);
   const activityToasts = (0, sdk_compat_exports.useValue)($activityToasts);
   const groupChatName = (0, sdk_compat_exports.useValue)($groupChatWorkspace);
   (0, sdk_compat_exports.useValue)($groupMainTabsRev);
@@ -33862,7 +36639,7 @@ function BotsPane() {
   const rosterHydrated = (0, sdk_compat_exports.useValue)($rosterHydrated);
   const selectionHydrated = (0, sdk_compat_exports.useValue)($selectedRosterHydrated);
   const selectedRosterKey = (0, sdk_compat_exports.useValue)($selectedRosterKey);
-  useEffect28(() => {
+  useEffect38(() => {
     if (gatewayUp) {
       void refetch();
     }
@@ -33881,7 +36658,7 @@ function BotsPane() {
     attentionOf,
     mode: sortMode
   });
-  useEffect28(() => {
+  useEffect38(() => {
     adoptBotSectionsFromMeta(roster, allMeta);
     backfillBotSectionNames(roster, allMeta);
   }, [roster, allMeta]);
@@ -33893,7 +36670,7 @@ function BotsPane() {
   const gatewayOptions = rosterGatewayOptions(sourceSnapshot, roster);
   const selectedGateway = gatewayOptions.find((option) => option.connectionId === gatewayFilter);
   const gatewayFilterExists = gatewayFilter === "all" || Boolean(selectedGateway);
-  useEffect28(() => {
+  useEffect38(() => {
     if (!gatewayFilterExists) {
       setGatewayFilter("all");
     }
@@ -33949,7 +36726,7 @@ function BotsPane() {
   });
   const rosterSectionCollapsed = (id) => !hasRosterConstraint && collapsedRosterSections.has(id);
   const toggleRosterSection = toggleBotSectionCollapsed;
-  useEffect28(() => {
+  useEffect38(() => {
     if (!hiddenExpanded || hasRosterConstraint) {
       return;
     }
@@ -33965,9 +36742,9 @@ function BotsPane() {
   const staleNotice = error && !live && roster.length ? "Roster refresh failed \u2014 showing the last good list." + (gatewayUp ? "" : " Waiting for the gateway to reconnect\u2026") : null;
   const groupChatMembers = groupChatName ? groupChatMemberBots(groupChatName, roster, allMeta) : [];
   if (shouldRenderGroupChatInPane(groupChatName) && groupChatMembers.length) {
-    return /* @__PURE__ */ jsx77(GroupChatWorkspace, { group: groupChatName, members: groupChatMembers });
+    return /* @__PURE__ */ jsx86(GroupChatWorkspace, { group: groupChatName, members: groupChatMembers });
   }
-  const renderBotRow = (bot, keyPrefix = "") => cardMode ? /* @__PURE__ */ jsx77(
+  const renderBotRow = (bot, keyPrefix = "") => cardMode ? /* @__PURE__ */ jsx86(
     BotCard,
     {
       bot,
@@ -33978,7 +36755,7 @@ function BotsPane() {
       onNewSection: (target) => setSectionDialog({ bot: target, mode: "create" })
     },
     `${keyPrefix}${botRosterKey(bot)}`
-  ) : /* @__PURE__ */ jsx77(
+  ) : /* @__PURE__ */ jsx86(
     BotRow,
     {
       bot,
@@ -33992,7 +36769,7 @@ function BotsPane() {
     },
     `${keyPrefix}${botRosterKey(bot)}`
   );
-  const renderGroupRow = (row) => /* @__PURE__ */ jsx77(
+  const renderGroupRow = (row) => /* @__PURE__ */ jsx86(
     RosterGroupRowView,
     {
       active: groupChatName === row.name,
@@ -34024,7 +36801,7 @@ function BotsPane() {
     renderGroupRow,
     sortedGroupRows
   });
-  return /* @__PURE__ */ jsxs75("div", { className: "flex h-full flex-col", children: [
+  return /* @__PURE__ */ jsxs82("div", { className: "flex h-full flex-col", children: [
     renderRosterToolbar({
       b,
       activityToasts,
@@ -34057,7 +36834,7 @@ function BotsPane() {
       viewMode,
       setViewMode: setRosterViewMode
     }),
-    /* @__PURE__ */ jsx77(TriageStrip, { bots: roster, onOpen: (bot) => void openRosterBot(bot) }),
+    /* @__PURE__ */ jsx86(TriageStrip, { bots: roster, onOpen: (bot) => void openRosterBot(bot) }),
     renderRosterContent({
       b,
       onNewBot: (starter) => starter ? quickStarter(starter) : setQuickOpen(true),
@@ -34094,10 +36871,10 @@ function BotsPane() {
       renderUserSections,
       renderHiddenGatewaySection
     }),
-    /* @__PURE__ */ jsx77(MailboxTaskDialog, { member: assigningTask, onClose: () => setAssigningTask(null) }),
-    /* @__PURE__ */ jsx77(BroadcastDialog, { bots: roster, onClose: () => setBroadcastOpen(false), open: broadcastOpen }),
-    /* @__PURE__ */ jsx77(RoutinesCalendarDialog, { bots: roster, onClose: () => setCalendarOpen(false), open: calendarOpen }),
-    /* @__PURE__ */ jsx77(
+    /* @__PURE__ */ jsx86(MailboxTaskDialog, { member: assigningTask, onClose: () => setAssigningTask(null) }),
+    /* @__PURE__ */ jsx86(BroadcastDialog, { bots: roster, onClose: () => setBroadcastOpen(false), open: broadcastOpen }),
+    /* @__PURE__ */ jsx86(RoutinesCalendarDialog, { bots: roster, onClose: () => setCalendarOpen(false), open: calendarOpen }),
+    /* @__PURE__ */ jsx86(
       HireGallery,
       {
         onClose: () => setHireOpen(false),
@@ -34108,7 +36885,7 @@ function BotsPane() {
         open: hireOpen
       }
     ),
-    /* @__PURE__ */ jsx77(
+    /* @__PURE__ */ jsx86(
       QuickCreateDialog,
       {
         onBrowseGallery: () => {
@@ -34341,10 +37118,180 @@ async function sweepBotProfileSessions(nowSeconds = Date.now() / 1e3) {
 // src/plugin.tsx
 init_shared();
 
-// src/tool-card-styles.ts
-var SPRING = "cubic-bezier(0.34, 1.36, 0.64, 1)";
-var STANDARD = "cubic-bezier(0.2, 0, 0, 1)";
+// src/browser/styles.ts
 var OUT_QUINT = "cubic-bezier(0.22, 1, 0.36, 1)";
+var STANDARD2 = "cubic-bezier(0.2, 0, 0, 1)";
+var SPRING2 = "cubic-bezier(0.34, 1.36, 0.64, 1)";
+var SURFACE = [
+  ".hbb-shell{display:flex;flex-direction:column;height:100%;min-height:0;background-color:var(--ui-surface-background);color:var(--ui-text-primary)}",
+  // Tab strip
+  ".hbb-tabs{display:flex;align-items:flex-end;gap:2px;padding:6px 6px 0;background-color:var(--ui-bg-chrome);box-shadow:inset 0 -1px 0 var(--ui-stroke-tertiary);overflow-x:auto;scrollbar-width:none;flex:none}",
+  ".hbb-tabs::-webkit-scrollbar{display:none}",
+  `.hbb-tab{position:relative;display:flex;align-items:center;gap:6px;height:30px;min-width:3.5rem;max-width:14rem;flex:0 1 12rem;padding:0 4px 0 10px;border-radius:var(--radius-control,0.375rem) var(--radius-control,0.375rem) 0 0;color:var(--ui-text-tertiary);font-size:12px;line-height:16px;cursor:pointer;user-select:none;transition:background-color 140ms ${STANDARD2},color 140ms ${STANDARD2}}`,
+  ".hbb-tab:hover{background-color:var(--ui-row-hover-background);color:var(--ui-text-secondary)}",
+  ".hbb-tab[data-active='true']{background-color:var(--ui-surface-background);color:var(--ui-text-primary);box-shadow:inset 1px 0 0 var(--ui-stroke-tertiary),inset -1px 0 0 var(--ui-stroke-tertiary),inset 0 1px 0 var(--ui-stroke-tertiary)}",
+  ".hbb-tab:focus-visible{outline:2px solid var(--ui-blue);outline-offset:-2px}",
+  ".hbb-tab-label{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}",
+  ".hbb-tab-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none}",
+  ".hbb-tab-x{display:inline-flex;align-items:center;justify-content:center;width:20px;height:20px;flex:none;border-radius:var(--radius-control,0.375rem);color:var(--ui-text-tertiary);opacity:0;transition:opacity 120ms ease-out,background-color 120ms ease-out}",
+  ".hbb-tab:hover .hbb-tab-x,.hbb-tab[data-active='true'] .hbb-tab-x,.hbb-tab-x:focus-visible{opacity:1}",
+  ".hbb-tab-x:hover{background-color:var(--ui-control-hover-background);color:var(--ui-text-primary)}",
+  ".hbb-tab-new{display:inline-flex;align-items:center;justify-content:center;width:28px;height:26px;margin:0 2px 2px;flex:none;border-radius:var(--radius-control,0.375rem);color:var(--ui-text-tertiary)}",
+  ".hbb-tab-new:hover{background-color:var(--ui-row-hover-background);color:var(--ui-text-primary)}",
+  // Toolbar
+  ".hbb-bar{position:relative;display:flex;align-items:center;gap:2px;padding:6px 8px;flex:none;box-shadow:inset 0 -1px 0 var(--ui-stroke-tertiary)}",
+  ".hbb-nav{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;flex:none;border-radius:var(--radius-control,0.375rem);color:var(--ui-text-secondary);transition:background-color 120ms ease-out,color 120ms ease-out}",
+  ".hbb-nav:hover:not(:disabled){background-color:var(--ui-control-hover-background);color:var(--ui-text-primary)}",
+  ".hbb-nav:disabled{color:var(--ui-text-quaternary);cursor:default}",
+  ".hbb-nav:focus-visible{outline:2px solid var(--ui-blue);outline-offset:-2px}",
+  `.hbb-addr{display:flex;align-items:center;gap:6px;flex:1;min-width:0;height:30px;margin:0 4px;padding:0 6px 0 10px;border-radius:var(--radius-pill,999px);background-color:var(--ui-bg-input);box-shadow:inset 0 0 0 1px var(--ui-stroke-tertiary);transition:box-shadow 140ms ${STANDARD2}}`,
+  ".hbb-addr:focus-within{box-shadow:inset 0 0 0 1.5px var(--ui-blue)}",
+  ".hbb-addr input{flex:1;min-width:0;height:100%;border:0;outline:0;background:transparent;color:var(--ui-text-primary);font-size:12.5px}",
+  ".hbb-addr input::placeholder{color:var(--ui-text-quaternary)}",
+  ".hbb-addr-icon{display:inline-flex;flex:none;color:var(--ui-text-tertiary)}",
+  ".hbb-addr-icon[data-tone='secure']{color:var(--ui-green)}",
+  ".hbb-addr-icon[data-tone='local']{color:var(--ui-blue)}",
+  ".hbb-chip{display:inline-flex;align-items:center;gap:4px;flex:none;height:20px;padding:0 8px;border-radius:var(--radius-pill,999px);font-size:11px;white-space:nowrap;background-color:color-mix(in srgb,var(--ui-blue) 14%,transparent);color:var(--ui-blue);cursor:default}",
+  ".hbb-chip-live{background-color:color-mix(in srgb,var(--ui-red) 12%,transparent);color:var(--ui-red)}",
+  ".hbb-progress{position:absolute;left:0;bottom:0;height:2px;width:0;background-color:var(--ui-blue);opacity:0;pointer-events:none}",
+  // Views
+  ".hbb-body{position:relative;flex:1;min-height:0;overflow:hidden}",
+  ".hbb-pane{position:absolute;inset:0}",
+  ".hbb-pane[data-hidden='true']{visibility:hidden;pointer-events:none}",
+  `.hbb-frame{position:absolute;inset:0;width:100%;height:100%;border:0;color-scheme:light;background-color:Canvas;opacity:0;transition:opacity 200ms ${STANDARD2}}`,
+  ".hbb-frame[data-ready='true']{opacity:1}",
+  ".hbb-remote{position:absolute;inset:0;display:flex;align-items:flex-start;justify-content:center;outline:0;background-color:var(--ui-bg-tertiary);overflow:hidden}",
+  ".hbb-remote:focus-visible{box-shadow:inset 0 0 0 2px var(--ui-blue)}",
+  ".hbb-remote img{display:block;max-width:100%;max-height:100%;object-fit:contain;object-position:top;user-select:none;-webkit-user-drag:none}",
+  ".hbb-remote-hint{position:absolute;right:10px;bottom:10px}",
+  // Center cards
+  ".hbb-center{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:24px;overflow:auto}",
+  ".hbb-card{display:flex;flex-direction:column;align-items:center;gap:10px;max-width:27rem;text-align:center}",
+  ".hbb-card h3{margin:0;font-size:14px;line-height:20px;font-weight:600;color:var(--ui-text-primary)}",
+  ".hbb-card p{margin:0;font-size:12.5px;line-height:18px;color:var(--ui-text-tertiary)}",
+  ".hbb-card-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:999px;background-color:var(--ui-bg-quaternary);color:var(--ui-text-secondary);margin-bottom:2px}",
+  ".hbb-card-icon[data-tone='warn']{background-color:color-mix(in srgb,var(--ui-orange) 14%,transparent);color:var(--ui-orange)}",
+  ".hbb-card-icon[data-tone='info']{background-color:color-mix(in srgb,var(--ui-blue) 14%,transparent);color:var(--ui-blue)}",
+  ".hbb-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:6px}",
+  ".hbb-suggest{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-top:4px}",
+  ".hbb-suggest button{display:inline-flex;align-items:center;gap:6px;height:26px;padding:0 10px;border-radius:var(--radius-pill,999px);font-size:12px;background-color:var(--ui-bg-quaternary);color:var(--ui-text-secondary);transition:background-color 120ms ease-out,color 120ms ease-out}",
+  ".hbb-suggest button:hover{background-color:var(--ui-control-hover-background);color:var(--ui-text-primary)}",
+  ".hbb-toggle{display:inline-flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:var(--ui-text-tertiary);cursor:pointer}",
+  ".hbb-toggle input{accent-color:var(--ui-blue)}",
+  // Bot activity
+  ".hbb-act{position:absolute;inset:0;display:flex;flex-direction:column;min-height:0}",
+  ".hbb-act-status{display:flex;align-items:center;gap:8px;padding:8px 12px;font-size:12.5px;line-height:18px;color:var(--ui-text-secondary);box-shadow:inset 0 -1px 0 var(--ui-stroke-tertiary);flex:none}",
+  ".hbb-act-status strong{color:var(--ui-text-primary);font-weight:600}",
+  ".hbb-act-status-text{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;border-radius:var(--radius-control,0.375rem)}",
+  ".hbb-act-shot{position:relative;flex:1;min-height:8rem;background-color:var(--ui-bg-tertiary);overflow:hidden}",
+  ".hbb-act-shot img{object-fit:contain!important}",
+  ".hbb-act-foot{display:flex;align-items:center;gap:6px;padding:6px 10px;flex:none;box-shadow:inset 0 1px 0 var(--ui-stroke-tertiary)}",
+  ".hbb-steps{display:flex;flex-direction:column;max-height:34%;overflow-y:auto;padding:4px;flex:none;box-shadow:inset 0 1px 0 var(--ui-stroke-tertiary)}",
+  `.hbb-step{display:flex;align-items:center;gap:8px;min-height:28px;padding:4px 8px;border-radius:var(--radius-row,0.4375rem);font-size:12px;line-height:16px;color:var(--ui-text-tertiary);text-align:left;transition:background-color 120ms ease-out,color 120ms ease-out}`,
+  ".hbb-step:hover{background-color:var(--ui-row-hover-background);color:var(--ui-text-secondary)}",
+  ".hbb-step[data-selected='true']{background-color:var(--ui-row-active-background);color:var(--ui-text-primary)}",
+  ".hbb-step[data-state='error'] .hbb-step-icon{color:var(--ui-red)}",
+  ".hbb-step[data-state='running'] .hbb-step-icon{color:var(--ui-blue)}",
+  ".hbb-step-icon{display:inline-flex;width:16px;justify-content:center;flex:none}",
+  ".hbb-step-text{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}",
+  ".hbb-step-host{flex:none;max-width:40%;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;color:var(--ui-text-quaternary)}",
+  ".hbb-step-no{flex:none;width:18px;text-align:right;color:var(--ui-text-quaternary);font-variant-numeric:tabular-nums}"
+];
+var SHADOW = "color-mix(in srgb,var(--ui-text-primary) 16%,transparent)";
+var FLOAT = [
+  ".hbb-tabs-spacer{flex:1}",
+  ".hbf-root{position:fixed;inset:0;pointer-events:none;z-index:45}",
+  `.hbf-window{position:absolute;left:0;top:0;display:flex;flex-direction:column;pointer-events:auto;overflow:hidden;transform-origin:0 0;will-change:transform;contain:layout paint;border-radius:var(--radius-xl,0.75rem);background-color:var(--ui-surface-background);color:var(--ui-text-primary);box-shadow:0 0 0 1px var(--ui-stroke-secondary),0 18px 48px -12px ${SHADOW},0 6px 16px -8px ${SHADOW};transition:opacity 200ms ${STANDARD2},visibility 0s}`,
+  ".hbf-window[data-min='true']{pointer-events:none;visibility:hidden;transition:opacity 200ms ease-out,visibility 0s linear 240ms}",
+  ".hbf-window[data-mode='left'],.hbf-window[data-mode='right']{border-radius:var(--radius-lg,0.5rem)}",
+  ".hbf-title{display:flex;align-items:center;gap:6px;height:34px;flex:none;padding:0 4px 0 10px;background-color:var(--ui-bg-chrome);box-shadow:inset 0 -1px 0 var(--ui-stroke-tertiary);cursor:grab;user-select:none;touch-action:none}",
+  ".hbf-root[data-gesture='true'] .hbf-title{cursor:grabbing}",
+  ".hbf-title-icon{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;flex:none;color:var(--ui-text-secondary)}",
+  ".hbf-title-text{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-size:12px;font-weight:500;color:var(--ui-text-secondary)}",
+  ".hbf-title-spacer{flex:1}",
+  ".hbf-live{width:7px;height:7px;flex:none;border-radius:999px;background-color:var(--ui-green);box-shadow:0 0 0 3px color-mix(in srgb,var(--ui-green) 22%,transparent)}",
+  `.hbf-tbtn{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;flex:none;border-radius:var(--radius-control,0.375rem);color:var(--ui-text-tertiary);transition:background-color 120ms ${STANDARD2},color 120ms ${STANDARD2}}`,
+  ".hbf-tbtn:hover{background-color:var(--ui-control-hover-background);color:var(--ui-text-primary)}",
+  ".hbf-tbtn[aria-pressed='true']{color:var(--ui-blue)}",
+  ".hbf-tbtn:focus-visible,.hbf-lease:focus-visible,.hbf-pill:focus-visible{outline:2px solid var(--ui-blue);outline-offset:-2px}",
+  `.hbf-lease{display:inline-flex;align-items:center;gap:5px;height:24px;flex:none;margin-right:4px;padding:0 9px;border-radius:var(--radius-pill,999px);font-size:11.5px;font-weight:500;background-color:color-mix(in srgb,var(--ui-blue) 14%,transparent);color:var(--ui-blue);transition:background-color 140ms ${STANDARD2},color 140ms ${STANDARD2}}`,
+  ".hbf-lease:hover:not(:disabled){background-color:color-mix(in srgb,var(--ui-blue) 22%,transparent)}",
+  ".hbf-lease[data-mine='true']{background-color:color-mix(in srgb,var(--ui-orange) 16%,transparent);color:var(--ui-orange)}",
+  ".hbf-lease:disabled{opacity:0.7;cursor:default}",
+  // A cloud browser: watch-only, so the take-over slot says so instead.
+  ".hbf-lease[data-cloud='true']{background-color:var(--ui-row-hover-background);color:var(--ui-text-tertiary);opacity:1;cursor:help}",
+  ".hbf-lease[data-cloud='true'][data-compact='true'] .hbf-lease-long{display:none}",
+  ".hbf-lease[data-cloud='true'][data-compact='false'] .hbf-lease-short{display:none}",
+  ".hbf-cloud-wrap{display:inline-flex}",
+  // Bot browser settings (Settings > Plugins > Browser)
+  ".hbs-page{display:flex;flex-direction:column;gap:12px;max-width:44rem}",
+  ".hbs-intro{font-size:13px;line-height:20px;color:var(--ui-text-secondary)}",
+  ".hbs-list{display:flex;flex-direction:column;border-radius:var(--radius-lg,0.5rem);box-shadow:inset 0 0 0 1px var(--ui-stroke-tertiary);overflow:hidden}",
+  ".hbs-row{display:flex;align-items:center;gap:10px;min-height:48px;padding:8px 12px;font-size:13px}",
+  ".hbs-row+.hbs-row{box-shadow:inset 0 1px 0 var(--ui-stroke-tertiary)}",
+  ".hbs-name{flex:1;min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;font-weight:500}",
+  ".hbs-chip{display:inline-flex;align-items:center;gap:4px;height:22px;padding:0 8px;border-radius:var(--radius-pill,999px);font-size:11.5px;background-color:var(--ui-row-hover-background);color:var(--ui-text-secondary)}",
+  ".hbs-chip[data-mode='local']{background-color:color-mix(in srgb,var(--ui-green) 14%,transparent);color:var(--ui-green)}",
+  ".hbs-chip[data-mode='cloud']{background-color:color-mix(in srgb,var(--ui-blue) 12%,transparent);color:var(--ui-blue)}",
+  `.hbs-act{height:28px;padding:0 10px;border-radius:var(--radius-control,0.375rem);font-size:12px;box-shadow:inset 0 0 0 1px var(--ui-stroke-secondary);color:var(--ui-text-primary);transition:background-color 140ms ${STANDARD2}}`,
+  ".hbs-act:hover:not(:disabled){background-color:var(--ui-row-hover-background)}",
+  ".hbs-act:disabled{opacity:0.5}",
+  ".hbs-act:focus-visible{outline:2px solid var(--ui-blue);outline-offset:1px}",
+  ".hbs-note{font-size:12px;color:var(--ui-text-tertiary)}",
+  // The remote page's key sink: focusable text field, invisible, never in the way.
+  ".hbb-keysink{position:absolute;left:0;top:0;width:1px;height:1px;opacity:0;pointer-events:none;resize:none;border:0;padding:0;overflow:hidden}",
+  ".hbf-content{position:relative;flex:1;min-height:0}",
+  ".hbf-root[data-gesture='true'] .hbf-content{pointer-events:none}",
+  ".hbf-shield{position:fixed;inset:0;pointer-events:auto;background:transparent}",
+  ".hbf-handle{position:absolute;pointer-events:auto;touch-action:none;z-index:2}",
+  ".hbf-handle[data-dir='n']{top:-3px;left:10px;right:10px;height:7px;cursor:ns-resize}",
+  ".hbf-handle[data-dir='s']{bottom:-3px;left:10px;right:10px;height:7px;cursor:ns-resize}",
+  ".hbf-handle[data-dir='e']{right:-3px;top:10px;bottom:10px;width:7px;cursor:ew-resize}",
+  ".hbf-handle[data-dir='w']{left:-3px;top:10px;bottom:10px;width:7px;cursor:ew-resize}",
+  ".hbf-handle[data-dir='ne']{right:-3px;top:-3px;width:14px;height:14px;cursor:nesw-resize}",
+  ".hbf-handle[data-dir='sw']{left:-3px;bottom:-3px;width:14px;height:14px;cursor:nesw-resize}",
+  ".hbf-handle[data-dir='nw']{left:-3px;top:-3px;width:14px;height:14px;cursor:nwse-resize}",
+  ".hbf-handle[data-dir='se']{right:-3px;bottom:-3px;width:14px;height:14px;cursor:nwse-resize}",
+  `.hbf-dock-hint{position:absolute;top:12px;bottom:12px;width:min(460px,40vw);border-radius:var(--radius-lg,0.5rem);background-color:color-mix(in srgb,var(--ui-blue) 10%,transparent);box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--ui-blue) 45%,transparent);animation:hbf-hint 180ms ${OUT_QUINT} both}`,
+  ".hbf-dock-hint[data-side='left']{left:12px}",
+  ".hbf-dock-hint[data-side='right']{right:12px}",
+  `.hbf-pill{position:absolute;display:inline-flex;align-items:center;gap:7px;height:32px;max-width:15rem;padding:0 12px 0 10px;pointer-events:auto;border-radius:var(--radius-pill,999px);background-color:var(--ui-bg-elevated);color:var(--ui-text-primary);font-size:12px;box-shadow:0 0 0 1px var(--ui-stroke-secondary),0 10px 28px -10px ${SHADOW};cursor:pointer;animation:hbf-pill-in 420ms ${SPRING2} both;transition:background-color 140ms ${STANDARD2}}`,
+  ".hbf-pill:hover{background-color:var(--ui-bg-tertiary)}",
+  ".hbf-pill[data-right='true']{right:16px}",
+  ".hbf-pill[data-right='false']{left:16px}",
+  ".hbf-pill[data-bottom='true']{bottom:16px}",
+  ".hbf-pill[data-bottom='false']{top:16px}",
+  ".hbf-pill-text{min-width:0;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}"
+];
+var MOTION = [
+  `.hbb-tab[data-fresh='true']{animation:hbb-tab-in 220ms ${OUT_QUINT} both}`,
+  `.hbb-enter{animation:hbb-enter 220ms ${OUT_QUINT} both}`,
+  `.hbb-progress[data-state='loading']{opacity:1;animation:hbb-progress 6s ${OUT_QUINT} forwards}`,
+  `.hbb-progress[data-state='done']{width:100%;opacity:0;transition:width 160ms ${STANDARD2},opacity 260ms ease-out 140ms}`
+];
+var KEYFRAMES = [
+  "@keyframes hbb-tab-in{from{opacity:0;transform:translateY(4px) scale(0.97)}to{opacity:1;transform:none}}",
+  "@keyframes hbb-enter{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
+  "@keyframes hbf-pill-in{from{opacity:0;transform:scale(0.6)}to{opacity:1;transform:none}}",
+  "@keyframes hbf-hint{from{opacity:0;transform:scaleX(0.92)}to{opacity:1;transform:none}}",
+  "@keyframes hbf-live{0%,100%{opacity:1}50%{opacity:0.45}}",
+  "@keyframes hbb-progress{0%{width:0}20%{width:35%}60%{width:70%}100%{width:88%}}"
+];
+var QUIET = [
+  "@media (prefers-reduced-motion: reduce){.hbf-pill,.hbf-dock-hint{animation:none}.hbf-window{transition:none}}",
+  "@media (prefers-reduced-motion: no-preference){.hbf-live{animation:hbf-live 1.6s ease-in-out infinite}}",
+  ":root[data-renderer-animations-paused] :is(.hbf-live,.hbf-pill){animation-play-state:paused}",
+  "@media (prefers-reduced-motion: reduce){.hbb-tab,.hbb-frame,.hbb-addr,.hbb-step,.hbb-nav{transition:none}.hbb-tab[data-fresh],.hbb-enter{animation:none}.hbb-progress[data-state=loading]{animation:none;width:60%}}",
+  ":root[data-renderer-animations-paused] :is(.hbb-progress,.hbb-enter,.hbb-tab){animation-play-state:paused}"
+];
+function browserStyleSheet() {
+  return `@layer utilities{${[...SURFACE, ...FLOAT, ...MOTION].join("")}}${KEYFRAMES.join("")}${QUIET.join("")}`;
+}
+
+// src/tool-card-styles.ts
+var SPRING3 = "cubic-bezier(0.34, 1.36, 0.64, 1)";
+var STANDARD3 = "cubic-bezier(0.2, 0, 0, 1)";
+var OUT_QUINT2 = "cubic-bezier(0.22, 1, 0.36, 1)";
 var UTILITIES = [
   ".hbp-tc-muted{color:var(--ui-text-tertiary)}",
   ".hbp-tc-subtle{color:var(--ui-text-quaternary)}",
@@ -34358,7 +37305,7 @@ var UTILITIES = [
   ".hbp-tc-pl12{padding-left:3rem}",
   ".hbp-tc-top{object-position:top}",
   ".hbp-tc-face{box-shadow:0 0 0 2px var(--ui-bg-elevated)}",
-  `.hbp-tc-surface{transition-property:background-color,border-color,box-shadow,padding,min-height;transition-duration:180ms;transition-timing-function:${SPRING}}`,
+  `.hbp-tc-surface{transition-property:background-color,border-color,box-shadow,padding,min-height;transition-duration:180ms;transition-timing-function:${SPRING3}}`,
   ".hbp-tc-reveal{opacity:0;transition:opacity 120ms ease-out}",
   ".hbp-tc-row:hover .hbp-tc-reveal,.hbp-tc-reveal:focus-visible{opacity:1}",
   ".hbp-lv-badge{background-color:var(--ui-bg-elevated);color:var(--ui-text-primary);box-shadow:0 0 0 1px var(--ui-bg-quaternary)}",
@@ -34366,8 +37313,8 @@ var UTILITIES = [
   ".hbp-lv-zoom{opacity:0;transition:opacity 120ms ease-out}",
   ".hbp-lv-frame:hover .hbp-lv-zoom,.hbp-lv-frame:focus-visible .hbp-lv-zoom{opacity:1}"
 ];
-var MOTION = [
-  `.hbp-tc-arrive{animation:hbp-tc-arrive 200ms ${OUT_QUINT} both}`,
+var MOTION2 = [
+  `.hbp-tc-arrive{animation:hbp-tc-arrive 200ms ${OUT_QUINT2} both}`,
   ".hbp-tc-ring{position:relative;isolation:isolate}",
   '.hbp-tc-ring::after{content:"";position:absolute;inset:-2px;border-radius:inherit;border:2px solid currentColor;opacity:0;pointer-events:none;animation:hbp-tc-ring 1.6s cubic-bezier(0.25,0.6,0.3,1) infinite;will-change:transform,opacity}',
   ".hbp-tc-shimmer{position:relative;overflow:hidden}",
@@ -34375,28 +37322,28 @@ var MOTION = [
   ".hbp-tc-typing>span{animation:hbp-tc-typing 1.2s ease-in-out infinite;will-change:transform,opacity}",
   ".hbp-tc-typing>span:nth-child(2){animation-delay:0.15s}",
   ".hbp-tc-typing>span:nth-child(3){animation-delay:0.3s}",
-  `.hbp-tc-collapse{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows 180ms ${STANDARD},opacity 180ms ${STANDARD}}`,
+  `.hbp-tc-collapse{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows 180ms ${STANDARD3},opacity 180ms ${STANDARD3}}`,
   ".hbp-tc-collapse[data-open='true']{grid-template-rows:1fr;opacity:1}",
   ".hbp-tc-collapse>*{min-height:0;overflow:hidden}",
-  `.hbp-lv-layer{opacity:0;transition:opacity 180ms ${STANDARD}}`,
+  `.hbp-lv-layer{opacity:0;transition:opacity 180ms ${STANDARD3}}`,
   ".hbp-lv-layer[data-ready='true']{opacity:1}",
   ".hbp-lv-dot{animation:hbp-lv-pulse 1.6s ease-in-out infinite}",
-  `::view-transition-group(hbp-shot-morph){animation-duration:260ms;animation-timing-function:${OUT_QUINT}}`,
+  `::view-transition-group(hbp-shot-morph){animation-duration:260ms;animation-timing-function:${OUT_QUINT2}}`,
   "::view-transition-old(hbp-shot-morph),::view-transition-new(hbp-shot-morph){height:100%;object-fit:contain}"
 ];
-var KEYFRAMES = [
+var KEYFRAMES2 = [
   "@keyframes hbp-tc-arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
   "@keyframes hbp-tc-ring{0%{opacity:0.55;transform:scale(1)}100%{opacity:0;transform:scale(1.18)}}",
   "@keyframes hbp-tc-shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}",
   "@keyframes hbp-lv-pulse{0%,100%{opacity:1}50%{opacity:0.35}}",
   "@keyframes hbp-tc-typing{0%,60%,100%{opacity:0.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}"
 ];
-var QUIET = [
+var QUIET2 = [
   "@media (prefers-reduced-motion: reduce){.hbp-tc-ring::after,.hbp-tc-shimmer::after,.hbp-tc-typing>span,.hbp-tc-arrive{animation:none!important}.hbp-tc-ring::after{opacity:0.55}.hbp-tc-shimmer::after{display:none}.hbp-tc-collapse,.hbp-tc-surface,.hbp-lv-layer{transition:none}.hbp-lv-dot{animation:none}}",
   ":root[data-renderer-animations-paused] :is(.hbp-tc-ring,.hbp-tc-shimmer)::after,:root[data-renderer-animations-paused] :is(.hbp-tc-typing>span,.hbp-lv-dot){animation-play-state:paused}"
 ];
 function toolCardStyleSheet() {
-  return `@layer utilities{${[...UTILITIES, ...MOTION].join("")}}${KEYFRAMES.join("")}${QUIET.join("")}`;
+  return `@layer utilities{${[...UTILITIES, ...MOTION2].join("")}}${KEYFRAMES2.join("")}${QUIET2.join("")}`;
 }
 
 // src/tones.ts
@@ -34445,15 +37392,15 @@ function mountPluginStyles(utilities = "") {
     el.id = STYLE_ID;
     document.head.appendChild(el);
   }
-  el.textContent = toneStyleSheet() + toolCardStyleSheet() + utilities;
+  el.textContent = toneStyleSheet() + toolCardStyleSheet() + browserStyleSheet() + utilities;
   return () => el?.remove();
 }
 
 // src/reaction-pills.tsx
 init_sdk_compat();
-import { useLayoutEffect, useRef as useRef18 } from "react";
+import { useLayoutEffect as useLayoutEffect2, useRef as useRef25 } from "react";
 init_data();
-import { jsx as jsx78 } from "react/jsx-runtime";
+import { jsx as jsx87 } from "react/jsx-runtime";
 var BOT_CHAT_MARK = "data-hbp-bot-chat";
 var VIEWPORT = '[data-slot="aui_thread-viewport"]';
 function chatPaneOf(el) {
@@ -34469,8 +37416,8 @@ function BotChatMark() {
   const storedId = (0, sdk_compat_exports.useValue)(view.$storedId) ?? null;
   (0, sdk_compat_exports.useValue)($lastRoster);
   const on = canonicalBotChatOnScreen(storedId);
-  const anchor = useRef18(null);
-  useLayoutEffect(() => {
+  const anchor = useRef25(null);
+  useLayoutEffect2(() => {
     if (!on) {
       return;
     }
@@ -34487,7 +37434,7 @@ function BotChatMark() {
       pane?.removeAttribute(BOT_CHAT_MARK);
     };
   }, [on, storedId]);
-  return on ? /* @__PURE__ */ jsx78("span", { "aria-hidden": true, hidden: true, ref: anchor }) : null;
+  return on ? /* @__PURE__ */ jsx87("span", { "aria-hidden": true, hidden: true, ref: anchor }) : null;
 }
 var SCOPE = `[${BOT_CHAT_MARK}]`;
 var SLOT = `[data-slot='aui_msg-reactions']`;
@@ -34561,7 +37508,7 @@ function installReactionsDefault(win = typeof window === "undefined" ? void 0 : 
 // src/side-pages.tsx
 init_sdk_compat();
 init_sdk_compat();
-import { useEffect as useEffect29, useMemo as useMemo12, useRef as useRef19, useState as useState48 } from "react";
+import { useEffect as useEffect39, useMemo as useMemo12, useRef as useRef26, useState as useState56 } from "react";
 init_data();
 init_routing();
 
@@ -34727,7 +37674,7 @@ function historyToMessages(rows) {
 }
 
 // src/side-pages.tsx
-import { jsx as jsx79, jsxs as jsxs76 } from "react/jsx-runtime";
+import { jsx as jsx88, jsxs as jsxs83 } from "react/jsx-runtime";
 var SIDE_PAGE_DIRECTIVE = "botpage";
 var $sidePanel = (0, sdk_compat_exports.atom)({ activeId: null, open: false, sessionKey: null });
 function openSidePage(sessionKey, activeId) {
@@ -34741,12 +37688,12 @@ var $historyPages = (0, sdk_compat_exports.atom)({});
 var REFRESH_EVENTS = ["tool.complete", "message.complete"];
 function useHistoryPages(enabled, storedId, runtimeId) {
   const busy = (0, sdk_compat_exports.useValue)(host.state.busy) === true;
-  const rowRef = useRef19(canonicalBotRowOnScreen(storedId));
+  const rowRef = useRef26(canonicalBotRowOnScreen(storedId));
   rowRef.current = canonicalBotRowOnScreen(storedId) ?? rowRef.current;
   const hasRow = rowRef.current !== null;
   const sessionId = runtimeId || storedId;
-  const [tick, setTick] = useState48(0);
-  useEffect29(() => {
+  const [tick, setTick] = useState56(0);
+  useEffect39(() => {
     const row = rowRef.current;
     if (!enabled || !row || !storedId || !sessionId) {
       return;
@@ -34761,7 +37708,7 @@ function useHistoryPages(enabled, storedId, runtimeId) {
       live = false;
     };
   }, [busy, enabled, hasRow, sessionId, storedId, tick]);
-  useEffect29(() => {
+  useEffect39(() => {
     if (!enabled || !sessionId || typeof host.onEvent !== "function") {
       return;
     }
@@ -34804,8 +37751,8 @@ function SidePagesChip() {
   }
   const mine = panel.sessionKey === storedId;
   const open = panel.open && mine;
-  return /* @__PURE__ */ jsxs76("div", { className: "hbp-sp-chip-row", children: [
-    /* @__PURE__ */ jsxs76(
+  return /* @__PURE__ */ jsxs83("div", { className: "hbp-sp-chip-row", children: [
+    /* @__PURE__ */ jsxs83(
       "button",
       {
         "aria-expanded": open,
@@ -34815,12 +37762,12 @@ function SidePagesChip() {
         title: copy.chipHint,
         type: "button",
         children: [
-          /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "layout-sidebar-right", size: "0.8rem" }),
-          /* @__PURE__ */ jsx79("span", { children: copy.chip(pages.length) })
+          /* @__PURE__ */ jsx88(sdk_compat_exports.Codicon, { name: "layout-sidebar-right", size: "0.8rem" }),
+          /* @__PURE__ */ jsx88("span", { children: copy.chip(pages.length) })
         ]
       }
     ),
-    layer && rootPortal(/* @__PURE__ */ jsx79(SidePagesPanel, { activeId: mine ? panel.activeId : null, open, pages }), layer)
+    layer && rootPortal(/* @__PURE__ */ jsx88(SidePagesPanel, { activeId: mine ? panel.activeId : null, open, pages }), layer)
   ] });
 }
 function SidePageCard({ attrs, streaming }) {
@@ -34833,19 +37780,19 @@ function SidePageCard({ attrs, streaming }) {
   if (!page) {
     return null;
   }
-  return /* @__PURE__ */ jsxs76("button", { className: "hbp-sp-card", onClick: () => openSidePage(storedId, page.id), type: "button", children: [
-    /* @__PURE__ */ jsx79("span", { className: "hbp-sp-card-icon", children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: KIND_ICON[page.kind], size: "1rem" }) }),
-    /* @__PURE__ */ jsxs76("span", { className: "hbp-sp-card-text", children: [
-      /* @__PURE__ */ jsx79("span", { className: "hbp-sp-card-title", children: page.title }),
-      /* @__PURE__ */ jsxs76("span", { className: "hbp-sp-card-meta", children: [
+  return /* @__PURE__ */ jsxs83("button", { className: "hbp-sp-card", onClick: () => openSidePage(storedId, page.id), type: "button", children: [
+    /* @__PURE__ */ jsx88("span", { className: "hbp-sp-card-icon", children: /* @__PURE__ */ jsx88(sdk_compat_exports.Codicon, { name: KIND_ICON[page.kind], size: "1rem" }) }),
+    /* @__PURE__ */ jsxs83("span", { className: "hbp-sp-card-text", children: [
+      /* @__PURE__ */ jsx88("span", { className: "hbp-sp-card-title", children: page.title }),
+      /* @__PURE__ */ jsxs83("span", { className: "hbp-sp-card-meta", children: [
         copy.kind[page.kind],
         " \xB7 ",
         pageFileName(page)
       ] })
     ] }),
-    /* @__PURE__ */ jsxs76("span", { className: "hbp-sp-card-open", children: [
+    /* @__PURE__ */ jsxs83("span", { className: "hbp-sp-card-open", children: [
       copy.open,
-      /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "arrow-right", size: "0.75rem" })
+      /* @__PURE__ */ jsx88(sdk_compat_exports.Codicon, { name: "arrow-right", size: "0.75rem" })
     ] })
   ] });
 }
@@ -34862,18 +37809,18 @@ function downloadPage(page) {
 function PageView({ page }) {
   if (page.kind === "markdown") {
     const Markdown = sdk_compat_exports.MessageTextContent;
-    return /* @__PURE__ */ jsx79("div", { className: "hbp-sp-doc", children: Markdown ? /* @__PURE__ */ jsx79(Markdown, { media: false, text: page.content }) : /* @__PURE__ */ jsx79("pre", { children: page.content }) });
+    return /* @__PURE__ */ jsx88("div", { className: "hbp-sp-doc", children: Markdown ? /* @__PURE__ */ jsx88(Markdown, { media: false, text: page.content }) : /* @__PURE__ */ jsx88("pre", { children: page.content }) });
   }
   const Frame = sdk_compat_exports.SandboxedFrame;
-  return Frame ? /* @__PURE__ */ jsx79(Frame, { className: "hbp-sp-frame", src: pageFrameSrc(page), title: page.title }, page.id + page.content.length) : /* @__PURE__ */ jsx79("pre", { className: "hbp-sp-doc", children: page.content });
+  return Frame ? /* @__PURE__ */ jsx88(Frame, { className: "hbp-sp-frame", src: pageFrameSrc(page), title: page.title }, page.id + page.content.length) : /* @__PURE__ */ jsx88("pre", { className: "hbp-sp-doc", children: page.content });
 }
 var PORTAL_TYPE = /* @__PURE__ */ Symbol.for("react.portal");
-function rootPortal(children, container) {
-  return { $$typeof: PORTAL_TYPE, children, containerInfo: container, implementation: null, key: null };
+function rootPortal(children, container2) {
+  return { $$typeof: PORTAL_TYPE, children, containerInfo: container2, implementation: null, key: null };
 }
 function usePortalLayer(enabled) {
-  const [layer, setLayer] = useState48(null);
-  useEffect29(() => {
+  const [layer, setLayer] = useState56(null);
+  useEffect39(() => {
     if (!enabled || typeof document === "undefined") {
       return;
     }
@@ -34890,9 +37837,9 @@ function usePortalLayer(enabled) {
 }
 function SidePagesPanel({ activeId, open, pages }) {
   const copy = useSidePagesText();
-  const [copied, setCopied] = useState48(false);
+  const [copied, setCopied] = useState56(false);
   const active = pages.find((page) => page.id === activeId) ?? pages[pages.length - 1] ?? null;
-  useEffect29(() => {
+  useEffect39(() => {
     if (!open) {
       return;
     }
@@ -34900,7 +37847,7 @@ function SidePagesPanel({ activeId, open, pages }) {
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
-  useEffect29(() => setCopied(false), [active?.id]);
+  useEffect39(() => setCopied(false), [active?.id]);
   const copyPage = async () => {
     if (!active) {
       return;
@@ -34913,7 +37860,7 @@ function SidePagesPanel({ activeId, open, pages }) {
       setCopied(false);
     }
   };
-  return /* @__PURE__ */ jsxs76(
+  return /* @__PURE__ */ jsxs83(
     "aside",
     {
       "aria-hidden": !open,
@@ -34921,11 +37868,11 @@ function SidePagesPanel({ activeId, open, pages }) {
       className: "hbp-sp-panel",
       "data-open": open || void 0,
       children: [
-        /* @__PURE__ */ jsxs76("header", { className: "hbp-sp-head", children: [
-          /* @__PURE__ */ jsx79("span", { className: "hbp-sp-head-title", children: active?.title ?? copy.listLabel }),
-          active && /* @__PURE__ */ jsx79("span", { className: "hbp-sp-badge", children: copy.kind[active.kind] }),
-          /* @__PURE__ */ jsx79("span", { className: "hbp-sp-spacer" }),
-          /* @__PURE__ */ jsxs76(
+        /* @__PURE__ */ jsxs83("header", { className: "hbp-sp-head", children: [
+          /* @__PURE__ */ jsx88("span", { className: "hbp-sp-head-title", children: active?.title ?? copy.listLabel }),
+          active && /* @__PURE__ */ jsx88("span", { className: "hbp-sp-badge", children: copy.kind[active.kind] }),
+          /* @__PURE__ */ jsx88("span", { className: "hbp-sp-spacer" }),
+          /* @__PURE__ */ jsxs83(
             "button",
             {
               className: "hbp-sp-act",
@@ -34934,12 +37881,12 @@ function SidePagesPanel({ activeId, open, pages }) {
               title: copy.copy,
               type: "button",
               children: [
-                /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: copied ? "check" : "copy", size: "0.85rem" }),
-                /* @__PURE__ */ jsx79("span", { children: copied ? copy.copied : copy.copy })
+                /* @__PURE__ */ jsx88(sdk_compat_exports.Codicon, { name: copied ? "check" : "copy", size: "0.85rem" }),
+                /* @__PURE__ */ jsx88("span", { children: copied ? copy.copied : copy.copy })
               ]
             }
           ),
-          /* @__PURE__ */ jsxs76(
+          /* @__PURE__ */ jsxs83(
             "button",
             {
               className: "hbp-sp-act",
@@ -34948,12 +37895,12 @@ function SidePagesPanel({ activeId, open, pages }) {
               title: copy.download,
               type: "button",
               children: [
-                /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "desktop-download", size: "0.85rem" }),
-                /* @__PURE__ */ jsx79("span", { children: copy.download })
+                /* @__PURE__ */ jsx88(sdk_compat_exports.Codicon, { name: "desktop-download", size: "0.85rem" }),
+                /* @__PURE__ */ jsx88("span", { children: copy.download })
               ]
             }
           ),
-          /* @__PURE__ */ jsx79(
+          /* @__PURE__ */ jsx88(
             "button",
             {
               "aria-label": copy.close,
@@ -34961,12 +37908,12 @@ function SidePagesPanel({ activeId, open, pages }) {
               onClick: closeSidePages,
               title: copy.close,
               type: "button",
-              children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "close", size: "0.85rem" })
+              children: /* @__PURE__ */ jsx88(sdk_compat_exports.Codicon, { name: "close", size: "0.85rem" })
             }
           )
         ] }),
-        /* @__PURE__ */ jsxs76("div", { className: "hbp-sp-body", children: [
-          /* @__PURE__ */ jsx79("nav", { "aria-label": copy.listLabel, className: "hbp-sp-list", children: pages.map((page) => /* @__PURE__ */ jsxs76(
+        /* @__PURE__ */ jsxs83("div", { className: "hbp-sp-body", children: [
+          /* @__PURE__ */ jsx88("nav", { "aria-label": copy.listLabel, className: "hbp-sp-list", children: pages.map((page) => /* @__PURE__ */ jsxs83(
             "button",
             {
               "aria-current": page.id === active?.id || void 0,
@@ -34975,16 +37922,16 @@ function SidePagesPanel({ activeId, open, pages }) {
               title: page.path,
               type: "button",
               children: [
-                /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: KIND_ICON[page.kind], size: "0.85rem" }),
-                /* @__PURE__ */ jsxs76("span", { className: "hbp-sp-item-text", children: [
-                  /* @__PURE__ */ jsx79("span", { className: "hbp-sp-item-title", children: page.title }),
-                  /* @__PURE__ */ jsx79("span", { className: "hbp-sp-item-meta", children: copy.kind[page.kind] })
+                /* @__PURE__ */ jsx88(sdk_compat_exports.Codicon, { name: KIND_ICON[page.kind], size: "0.85rem" }),
+                /* @__PURE__ */ jsxs83("span", { className: "hbp-sp-item-text", children: [
+                  /* @__PURE__ */ jsx88("span", { className: "hbp-sp-item-title", children: page.title }),
+                  /* @__PURE__ */ jsx88("span", { className: "hbp-sp-item-meta", children: copy.kind[page.kind] })
                 ] })
               ]
             },
             page.id
           )) }),
-          /* @__PURE__ */ jsx79("section", { className: "hbp-sp-view", children: active && open ? /* @__PURE__ */ jsx79(PageView, { page: active }) : null })
+          /* @__PURE__ */ jsx88("section", { className: "hbp-sp-view", children: active && open ? /* @__PURE__ */ jsx88(PageView, { page: active }) : null })
         ] })
       ]
     }
@@ -35065,591 +38012,25 @@ function mountSidePagesStyles() {
 init_sdk_compat();
 import {
   memo,
-  useContext as useContext3,
-  useEffect as useEffect34,
+  useContext as useContext4,
+  useEffect as useEffect40,
   useMemo as useMemo13,
-  useRef as useRef22,
-  useState as useState53
+  useRef as useRef27,
+  useState as useState57
 } from "react";
-
-// src/tool-card-live.tsx
-init_sdk_compat();
-import { useContext as useContext2, useEffect as useEffect33, useRef as useRef21, useState as useState52 } from "react";
-
-// src/browser-backend.ts
-init_data();
-init_routing();
-import { useEffect as useEffect30, useState as useState49 } from "react";
-var TRUTHY = /* @__PURE__ */ new Set(["1", "true", "yes", "on"]);
-function truthy(value) {
-  return typeof value === "string" ? TRUTHY.has(value.trim().toLowerCase()) : Boolean(value);
-}
-function record(value) {
-  return value && typeof value === "object" && !Array.isArray(value) ? value : null;
-}
-function browserBackendFrom(config, cdpUrl) {
-  const root = record(config);
-  if (!root) {
-    return "unknown";
-  }
-  const browser = record(root.browser) ?? {};
-  if (String(cdpUrl ?? "").trim() || String(browser.cdp_url ?? "").trim()) {
-    return "elsewhere";
-  }
-  if (!("cloud_provider" in browser)) {
-    return "unknown";
-  }
-  const provider = String(browser.cloud_provider ?? "").trim().toLowerCase();
-  if (provider && provider !== "local") {
-    return "elsewhere";
-  }
-  if (String(browser.engine ?? "").trim().toLowerCase() === "lightpanda") {
-    return "elsewhere";
-  }
-  return truthy(browser.headed) ? "desktop" : "elsewhere";
-}
-var FRESH_MS = 3e4;
-var verdicts = /* @__PURE__ */ new Map();
-async function readBackend(bot) {
-  try {
-    const [config, status] = await Promise.all([
-      requestForBot(bot, "config.get", { key: "full" }),
-      requestForBot(bot, "browser.manage", { action: "status" })
-    ]);
-    return browserBackendFrom(config?.config, status?.url);
-  } catch {
-    return "unknown";
-  }
-}
-function browserBackendFor(bot, now = Date.now()) {
-  const key = botRosterKey(bot);
-  const entry = verdicts.get(key);
-  if (entry?.pending) {
-    return entry.pending;
-  }
-  if (entry && now - entry.at < FRESH_MS) {
-    return Promise.resolve(entry.value);
-  }
-  const pending = readBackend(bot).then((value) => {
-    verdicts.set(key, { at: Date.now(), value });
-    return value;
-  });
-  verdicts.set(key, { at: entry?.at ?? 0, value: entry?.value ?? "unknown", pending });
-  return pending;
-}
-function useBrowserBackend(bot) {
-  const key = bot ? botRosterKey(bot) : "";
-  const [verdict, setVerdict] = useState49({ key: "", value: "unknown" });
-  useEffect30(() => {
-    if (!bot) {
-      return;
-    }
-    let alive = true;
-    void browserBackendFor(bot).then((value) => {
-      if (alive) {
-        setVerdict({ key, value });
-      }
-    });
-    return () => {
-      alive = false;
-    };
-  }, [key]);
-  return verdict.key === key ? verdict.value : "unknown";
-}
-
-// src/card-bot.ts
-init_sdk_compat();
-import { useContext, useEffect as useEffect31, useState as useState50 } from "react";
-init_data();
-
-// src/tool-card-session.ts
-import { createContext } from "react";
-var PreviewSessionContext = createContext({
-  runtimeId: null,
-  storedId: null
-});
-
-// src/card-bot.ts
-var RETRY_MS = 1e4;
-var priming = null;
-var primedAt = 0;
-function primeOnce(now = Date.now()) {
-  if (priming) {
-    return priming;
-  }
-  if (now - primedAt < RETRY_MS) {
-    return Promise.resolve();
-  }
-  primedAt = now;
-  priming = primeRoster().finally(() => {
-    priming = null;
-  });
-  return priming;
-}
-function cachedRows() {
-  const rows = cachedUnionRoster()?.profiles;
-  return Array.isArray(rows) ? rows.filter((row) => row && !row.ghost) : [];
-}
-function useCardBot() {
-  const session = useContext(PreviewSessionContext);
-  const live = (0, sdk_compat_exports.useValue)($lastRoster);
-  const [cached, setCached] = useState50(() => live.length ? [] : cachedRows());
-  const inChat = Boolean(session.storedId || session.runtimeId);
-  const roster = live.length ? live : cached;
-  const bot = inChat ? botForChat(roster, session.storedId ?? "") : null;
-  const missing = inChat && !bot;
-  useEffect31(() => {
-    if (!missing) {
-      return;
-    }
-    let alive = true;
-    void primeOnce().then(() => {
-      if (alive) {
-        setCached(cachedRows());
-      }
-    });
-    return () => {
-      alive = false;
-    };
-  }, [missing]);
-  return bot;
-}
-
-// src/tool-card-live.tsx
-init_data();
-init_routing();
-
-// src/tool-card-screen.tsx
-init_sdk_compat();
-import { useEffect as useEffect32, useRef as useRef20, useState as useState51 } from "react";
-import { jsx as jsx80 } from "react/jsx-runtime";
-var CLOSE_CONTROL_TAKEN2 = 4e3;
-var MAX_REDIALS = 2;
-var MORPH_NAME = "hbp-screen-morph";
-var TARGET_WAIT_MS = 450;
-function reducedMotion() {
-  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-function findScreenTarget(frame) {
-  return new Promise((resolve) => {
-    const started = performance.now();
-    const look = () => {
-      const target = [...document.querySelectorAll("[data-remote-screen]")].find(
-        (node) => !frame.contains(node)
-      );
-      if (target || performance.now() - started > TARGET_WAIT_MS) {
-        resolve(target ?? null);
-        return;
-      }
-      window.setTimeout(look, 16);
-    };
-    look();
-  });
-}
-async function expandToScreen(frame, bot, meta) {
-  const doc = document;
-  if (!doc.startViewTransition || reducedMotion()) {
-    openBotScreen(bot, meta);
-    return;
-  }
-  let target = null;
-  frame.style.setProperty("view-transition-name", MORPH_NAME);
-  const transition = doc.startViewTransition(async () => {
-    frame.style.removeProperty("view-transition-name");
-    openBotScreen(bot, meta);
-    target = await findScreenTarget(frame);
-    target?.style.setProperty("view-transition-name", MORPH_NAME);
-  });
-  await transition.finished.catch(() => void 0);
-  frame.style.removeProperty("view-transition-name");
-  target?.style.removeProperty("view-transition-name");
-}
-function CardScreenStream({
-  bot,
-  botKey,
-  onLive
-}) {
-  const canvasHost = useRef20(null);
-  const report = useRef20(onLive);
-  const botRef = useRef20(bot);
-  const [painted, setPainted] = useState51(false);
-  report.current = onLive;
-  botRef.current = bot;
-  useEffect32(() => {
-    const bot2 = botRef.current;
-    let disposed = false;
-    let redials = 0;
-    let release = () => void 0;
-    let socket = null;
-    let client = null;
-    const teardown = () => {
-      try {
-        client?.disconnect();
-      } catch {
-      }
-      client = null;
-      socket?.close();
-      socket = null;
-    };
-    const fail2 = () => {
-      if (!disposed) {
-        setPainted(false);
-        report.current(false);
-      }
-    };
-    const dial = async () => {
-      try {
-        const Rfb = await loadRfb();
-        const observe = await displayRequest(bot2, "display.observe");
-        setScreenStatus(bot2, observe);
-        const url = await resolveScreenWsUrl(bot2, observe.ticket);
-        if (disposed || !canvasHost.current) {
-          return;
-        }
-        let closeCode = 0;
-        const ws = new WebSocket(url);
-        ws.binaryType = "arraybuffer";
-        ws.addEventListener("close", (event) => {
-          closeCode = event.code;
-        });
-        socket = ws;
-        const rfb = new Rfb(canvasHost.current, ws, { shared: true });
-        rfb.viewOnly = true;
-        rfb.scaleViewport = true;
-        rfb.resizeSession = false;
-        rfb.focusOnClick = false;
-        rfb.background = "transparent";
-        rfb.qualityLevel = 5;
-        rfb.addEventListener("connect", () => {
-          if (!disposed) {
-            setPainted(true);
-            report.current(true);
-          }
-        });
-        rfb.addEventListener("disconnect", (event) => {
-          if (disposed || client !== rfb) {
-            return;
-          }
-          client = null;
-          const evicted = closeCode === CLOSE_CONTROL_TAKEN2 || (event.detail?.reason ?? "").includes("control-taken");
-          if (evicted && redials < MAX_REDIALS) {
-            redials += 1;
-            void dial();
-            return;
-          }
-          fail2();
-        });
-        client = rfb;
-      } catch {
-        fail2();
-      }
-    };
-    void (async () => {
-      release = await retainBotScreen(bot2);
-      if (disposed) {
-        release();
-        return;
-      }
-      await dial();
-    })();
-    return () => {
-      disposed = true;
-      teardown();
-      release();
-    };
-  }, [botKey]);
-  return /* @__PURE__ */ jsx80("span", { className: "hbp-lv-layer absolute inset-0 block hbp-tc-sunken", "data-ready": painted, "data-live-screen": "", children: /* @__PURE__ */ jsx80("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 block", ref: canvasHost }) });
-}
-function ScreenExpandButton({
-  bot,
-  label,
-  meta
-}) {
-  const ref = useRef20(null);
-  return /* @__PURE__ */ jsx80(
-    "button",
-    {
-      "aria-label": label,
-      className: "hbp-lv-frame absolute inset-0 block cursor-zoom-in",
-      onClick: (event) => {
-        event.stopPropagation();
-        const frame = ref.current?.parentElement;
-        if (frame) {
-          void expandToScreen(frame, bot, meta);
-        }
-      },
-      onKeyDown: (event) => event.stopPropagation(),
-      ref,
-      type: "button",
-      children: /* @__PURE__ */ jsx80("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
-    }
-  );
-}
-
-// src/tool-card-live.tsx
-import { Fragment as Fragment18, jsx as jsx81, jsxs as jsxs77 } from "react/jsx-runtime";
-var MORPH_NAME2 = "hbp-shot-morph";
-var FADE_MS = 180;
-var TARGET_WAIT_MS2 = 450;
-function ShotLayer({
-  onReady,
-  ready,
-  src
-}) {
-  const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 9);
-  if (!image.src || image.failed) {
-    return null;
-  }
-  return /* @__PURE__ */ jsx81(
-    "img",
-    {
-      alt: "",
-      "aria-hidden": true,
-      className: "hbp-lv-layer absolute inset-0 h-full w-full object-contain",
-      "data-ready": ready,
-      "data-shot-src": src,
-      onError: image.onError,
-      onLoad: (event) => {
-        image.onLoad(event.currentTarget);
-        onReady(src);
-      },
-      src: image.src
-    }
-  );
-}
-function CrossfadeShot({ src }) {
-  const nextId = useRef21(1);
-  const [layers, setLayers] = useState52(() => [{ id: 0, src }]);
-  const [readySrc, setReadySrc] = useState52("");
-  useEffect33(() => {
-    setLayers((current) => {
-      if (current[current.length - 1]?.src === src) {
-        return current;
-      }
-      const layer = { id: nextId.current++, src };
-      return [...current.slice(-1), layer];
-    });
-  }, [src]);
-  useEffect33(() => {
-    if (readySrc !== src || layers.length < 2) {
-      return;
-    }
-    const timer = window.setTimeout(() => setLayers((current) => current.slice(-1)), FADE_MS + 40);
-    return () => window.clearTimeout(timer);
-  }, [layers.length, readySrc, src]);
-  return /* @__PURE__ */ jsx81("span", { className: "relative block h-full w-full", children: layers.map((layer, index) => /* @__PURE__ */ jsx81(
-    ShotLayer,
-    {
-      onReady: setReadySrc,
-      ready: index === 0 || readySrc === layer.src,
-      src: layer.src
-    },
-    layer.id
-  )) });
-}
-function prefersReducedMotion() {
-  return typeof window.matchMedia === "function" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-}
-async function imageDataUrl(img) {
-  if (img.src.startsWith("data:")) {
-    return img.src;
-  }
-  const blob = await (await fetch(img.src)).blob();
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result));
-    reader.onerror = () => reject(reader.error ?? new Error("read failed"));
-    reader.readAsDataURL(blob);
-  });
-}
-function waitForElement(find, timeoutMs) {
-  return new Promise((resolve) => {
-    const started = performance.now();
-    const tick = () => {
-      const found = find();
-      if (found || performance.now() - started > timeoutMs) {
-        resolve(found);
-        return;
-      }
-      window.setTimeout(tick, 16);
-    };
-    tick();
-  });
-}
-function shotKey(src) {
-  let hash = 2166136261;
-  for (let index = 0; index < src.length; index += 1) {
-    hash ^= src.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(36);
-}
-async function expandShot(frame, shotSrc, label, session) {
-  const img = [...frame.querySelectorAll("img[data-shot-src]")].reverse().find((candidate) => candidate.dataset.shotSrc === shotSrc && candidate.complete);
-  if (!img) {
-    return;
-  }
-  const dataUrl = await imageDataUrl(img).catch(() => "");
-  const mimeType = dataUrl && dataUrl.slice(5, dataUrl.indexOf(";")) || "image/png";
-  const inline = shotSrc.startsWith("data:");
-  const key = inline ? `screenshot-${shotKey(shotSrc)}.${mimeType.split("/")[1] || "png"}` : shotSrc;
-  const open = () => (0, sdk_compat_exports.openPreview)(
-    {
-      ...dataUrl ? { dataUrl } : {},
-      kind: "file",
-      label,
-      mimeType,
-      path: key,
-      previewKind: "image",
-      source: key,
-      ...inline ? { transient: true } : {},
-      url: key
-    },
-    session.storedId ?? void 0,
-    session.runtimeId
-  );
-  const doc = document;
-  if (!doc.startViewTransition || prefersReducedMotion()) {
-    open();
-    return;
-  }
-  let target = null;
-  frame.style.setProperty("view-transition-name", MORPH_NAME2);
-  const transition = doc.startViewTransition(async () => {
-    frame.style.removeProperty("view-transition-name");
-    open();
-    target = await waitForElement(
-      () => [...document.querySelectorAll("img")].find(
-        (candidate) => candidate.alt === label && !frame.contains(candidate)
-      ) ?? null,
-      TARGET_WAIT_MS2
-    );
-    target?.style.setProperty("view-transition-name", MORPH_NAME2);
-  });
-  await transition.finished.catch(() => void 0);
-  frame.style.removeProperty("view-transition-name");
-  target?.style.removeProperty("view-transition-name");
-}
-function latestShot(cards) {
-  for (let index = cards.length - 1; index >= 0; index -= 1) {
-    const thumb = cards[index]?.thumb;
-    if (thumb?.kind === "screenshot") {
-      return { index, src: thumb.src };
-    }
-  }
-  return null;
-}
-function latestPage(cards) {
-  for (let index = cards.length - 1; index >= 0; index -= 1) {
-    const url = cards[index]?.thumb?.url;
-    if (url && /^https?:\/\//i.test(url)) {
-      return url;
-    }
-  }
-  return "";
-}
-function safeHost(url) {
-  try {
-    return new URL(url).hostname;
-  } catch {
-    return "";
-  }
-}
-function ExpandableShot({
-  className,
-  host: host2,
-  src,
-  step
-}) {
-  const text3 = useLiveViewText();
-  const session = useContext2(PreviewSessionContext);
-  const frameRef = useRef21(null);
-  return /* @__PURE__ */ jsxs77(
-    "button",
-    {
-      "aria-label": text3.expand,
-      className: (0, sdk_compat_exports.cn)("hbp-lv-frame relative block h-full w-full cursor-zoom-in", className),
-      "data-live-shot": "",
-      onClick: (event) => {
-        event.stopPropagation();
-        if (frameRef.current) {
-          void expandShot(frameRef.current, src, text3.shotLabel(host2, step), session);
-        }
-      },
-      onKeyDown: (event) => event.stopPropagation(),
-      ref: frameRef,
-      type: "button",
-      children: [
-        /* @__PURE__ */ jsx81(CrossfadeShot, { src }),
-        /* @__PURE__ */ jsx81("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
-      ]
-    }
-  );
-}
-function ScreenLayer({ bot }) {
-  const text3 = useLiveViewText();
-  const { tone } = useScreenPortalState(bot);
-  const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
-  const [painted, setPainted] = useState52(false);
-  const [ended, setEnded] = useState52(false);
-  const streamable = tone === "live" || tone === "human" || tone === "other";
-  if (!streamable || ended) {
-    return null;
-  }
-  return /* @__PURE__ */ jsxs77(Fragment18, { children: [
-    /* @__PURE__ */ jsx81(
-      CardScreenStream,
-      {
-        bot,
-        botKey: botRosterKey(bot),
-        onLive: (live) => {
-          setPainted(live);
-          if (!live) {
-            setEnded(true);
-          }
-        }
-      }
-    ),
-    painted ? /* @__PURE__ */ jsx81(ScreenExpandButton, { bot, label: text3.expandScreen, meta: botRosterMeta(bot, allMeta) }) : null
-  ] });
-}
-function LiveFrame({ group, open }) {
-  const text3 = useLiveViewText();
-  const shot = latestShot(group.cards);
-  const pageUrl = latestPage(group.cards);
-  const host2 = safeHost(shot ? group.cards[shot.index]?.thumb?.url ?? pageUrl : pageUrl);
-  const running = group.state === "running";
-  const bot = useCardBot();
-  const onDesktop = useBrowserBackend(running ? bot : null) === "desktop";
-  const realProfile = group.cards.some((card) => card.realProfile);
-  return /* @__PURE__ */ jsx81("div", { className: "hbp-tc-collapse", "data-live-frame": "", "data-open": open, inert: !open, children: /* @__PURE__ */ jsx81("div", { children: /* @__PURE__ */ jsx81("div", { className: "hbp-tc-pl12 pt-1.5", children: /* @__PURE__ */ jsxs77("div", { className: "relative aspect-video w-full max-w-sm overflow-hidden rounded-card border border-line hbp-tc-sunken", children: [
-    shot ? /* @__PURE__ */ jsx81(ExpandableShot, { host: host2, src: shot.src, step: shot.index + 1 }) : /* @__PURE__ */ jsxs77("div", { className: "hbp-tc-shimmer flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
-      pageUrl && isPublicHost(host2) ? /* @__PURE__ */ jsx81("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx81(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 20 }),
-      pageUrl ? /* @__PURE__ */ jsx81("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : null,
-      /* @__PURE__ */ jsx81("span", { children: text3.waiting })
-    ] }),
-    bot && running && open && onDesktop && !realProfile ? /* @__PURE__ */ jsx81(ScreenLayer, { bot }) : null,
-    running ? /* @__PURE__ */ jsxs77("span", { className: "pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 text-ui-2xs hbp-lv-badge", children: [
-      /* @__PURE__ */ jsx81("span", { "aria-hidden": true, className: "hbp-lv-dot size-1.5 rounded-full" }),
-      text3.live
-    ] }) : null
-  ] }) }) }) });
-}
-
-// src/tool-card.tsx
-import { Fragment as Fragment19, jsx as jsx82, jsxs as jsxs78 } from "react/jsx-runtime";
+import { Fragment as Fragment20, jsx as jsx89, jsxs as jsxs84 } from "react/jsx-runtime";
 function SiteFavicon({ host: host2, url }) {
   if (!isPublicHost(host2)) {
     return null;
   }
-  return /* @__PURE__ */ jsx82("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx82(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx82("span", { className: "block size-full" }), url }) });
+  return /* @__PURE__ */ jsx89("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx89(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx89("span", { className: "block size-full" }), url }) });
 }
 function ScreenshotThumb({ src }) {
   const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 10);
   if (image.failed) {
     return null;
   }
-  return /* @__PURE__ */ jsx82("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx82(
+  return /* @__PURE__ */ jsx89("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx89(
     "img",
     {
       alt: "",
@@ -35676,16 +38057,19 @@ function OpenPageButton({
   url
 }) {
   const label = useToolCardsText().viewer.openPage;
-  const session = useContext3(PreviewSessionContext);
+  const session = useContext4(PreviewSessionContext);
   const open = (event) => {
     event.stopPropagation();
+    if (openInBrowser(url)) {
+      return;
+    }
     (0, sdk_compat_exports.openPreview)(
       { kind: "url", label: (0, sdk_compat_exports.hostPathLabel)(url), source: url, url },
       session.storedId ?? void 0,
       session.runtimeId
     );
   };
-  return /* @__PURE__ */ jsx82(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs78(
+  return /* @__PURE__ */ jsx89(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs84(
     sdk_compat_exports.Button,
     {
       "aria-label": label,
@@ -35697,7 +38081,7 @@ function OpenPageButton({
       type: "button",
       variant: "ghost",
       children: [
-        /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "link-external" }),
+        /* @__PURE__ */ jsx89(sdk_compat_exports.Codicon, { name: "link-external" }),
         iconOnly ? null : label
       ]
     }
@@ -35707,29 +38091,29 @@ function CardBlock({ card, showStatus }) {
   const copy = useToolCardsText();
   const pageUrl = card.family === "browser" ? "" : stepPageUrl([card]);
   const shot = card.family !== "browser" && card.thumb?.kind === "screenshot" ? card.thumb.src : "";
-  return /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
-    showStatus ? /* @__PURE__ */ jsx82("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
-    pageUrl || shot ? /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 items-center gap-2", "data-card-page": "", children: [
-      shot ? /* @__PURE__ */ jsx82(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx82("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx82(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
-      pageUrl ? /* @__PURE__ */ jsxs78(Fragment19, { children: [
-        /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
-        /* @__PURE__ */ jsx82(OpenPageButton, { url: pageUrl })
+  return /* @__PURE__ */ jsxs84("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
+    showStatus ? /* @__PURE__ */ jsx89("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
+    pageUrl || shot ? /* @__PURE__ */ jsxs84("div", { className: "flex min-w-0 items-center gap-2", "data-card-page": "", children: [
+      shot ? /* @__PURE__ */ jsx89(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx89("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx89(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx89(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx89(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
+      pageUrl ? /* @__PURE__ */ jsxs84(Fragment20, { children: [
+        /* @__PURE__ */ jsx89("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
+        /* @__PURE__ */ jsx89(OpenPageButton, { url: pageUrl })
       ] }) : null
     ] }) : null,
-    card.args.length > 0 ? /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 flex-col gap-1", children: [
-      /* @__PURE__ */ jsx82("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
-      card.args.map((detail) => /* @__PURE__ */ jsxs78("div", { className: "flex min-w-0 gap-2", children: [
-        /* @__PURE__ */ jsx82("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
-        /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
+    card.args.length > 0 ? /* @__PURE__ */ jsxs84("div", { className: "flex min-w-0 flex-col gap-1", children: [
+      /* @__PURE__ */ jsx89("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
+      card.args.map((detail) => /* @__PURE__ */ jsxs84("div", { className: "flex min-w-0 gap-2", children: [
+        /* @__PURE__ */ jsx89("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
+        /* @__PURE__ */ jsx89("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
       ] }, detail.label))
     ] }) : null,
-    /* @__PURE__ */ jsx82("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
-    card.output ? /* @__PURE__ */ jsx82("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx82("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
-    card.reason ? /* @__PURE__ */ jsx82("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
-    card.durationLabel ? /* @__PURE__ */ jsxs78("div", { className: "text-ui-2xs hbp-tc-subtle", children: [
+    /* @__PURE__ */ jsx89("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
+    card.output ? /* @__PURE__ */ jsx89("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx89("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
+    card.reason ? /* @__PURE__ */ jsx89("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
+    card.durationLabel ? /* @__PURE__ */ jsxs84("div", { className: "text-ui-2xs hbp-tc-subtle", children: [
       copy.details.duration,
       " ",
-      /* @__PURE__ */ jsx82("span", { className: "tabular-nums", children: card.durationLabel })
+      /* @__PURE__ */ jsx89("span", { className: "tabular-nums", children: card.durationLabel })
     ] }) : null
   ] });
 }
@@ -35758,7 +38142,7 @@ function BrowserSteps({ group }) {
   const copy = useToolCardsText().viewer;
   const { cards, name } = group;
   const total = cards.length;
-  const [manual, setManual] = useState53(null);
+  const [manual, setManual] = useState57(null);
   const live = group.state !== "done";
   const settledDefault = latestScreenshotIndex(cards) ?? total - 1;
   const selected = Math.min(manual ?? (live ? total - 1 : settledDefault), total - 1);
@@ -35769,7 +38153,7 @@ function BrowserSteps({ group }) {
   const move = (delta) => {
     setManual(Math.min(total - 1, Math.max(0, selected + delta)));
   };
-  return /* @__PURE__ */ jsxs78(
+  return /* @__PURE__ */ jsxs84(
     "section",
     {
       "aria-label": copy.title(name),
@@ -35781,14 +38165,14 @@ function BrowserSteps({ group }) {
         }
       },
       children: [
-        /* @__PURE__ */ jsx82("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
-        /* @__PURE__ */ jsx82("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx82(ExpandableShot, { host: host2 || pageHost(pageUrl), src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs78("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
-          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx82("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx82(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
-          pageUrl ? /* @__PURE__ */ jsx82("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx82("span", { className: "truncate", children: host2 }) : null,
-          /* @__PURE__ */ jsx82("span", { children: copy.noScreenshot })
+        /* @__PURE__ */ jsx89("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
+        /* @__PURE__ */ jsx89("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx89(ExpandableShot, { host: host2 || pageHost(pageUrl), src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs84("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx89("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx89(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx89(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
+          pageUrl ? /* @__PURE__ */ jsx89("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx89("span", { className: "truncate", children: host2 }) : null,
+          /* @__PURE__ */ jsx89("span", { children: copy.noScreenshot })
         ] }) }),
-        /* @__PURE__ */ jsxs78("div", { className: "mt-1 flex items-center gap-1", children: [
-          /* @__PURE__ */ jsx82(
+        /* @__PURE__ */ jsxs84("div", { className: "mt-1 flex items-center gap-1", children: [
+          /* @__PURE__ */ jsx89(
             sdk_compat_exports.Button,
             {
               "aria-label": copy.previous,
@@ -35796,11 +38180,11 @@ function BrowserSteps({ group }) {
               onClick: () => move(-1),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "chevron-left" })
+              children: /* @__PURE__ */ jsx89(sdk_compat_exports.Codicon, { name: "chevron-left" })
             }
           ),
-          /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
-          /* @__PURE__ */ jsx82(
+          /* @__PURE__ */ jsx89("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
+          /* @__PURE__ */ jsx89(
             sdk_compat_exports.Button,
             {
               "aria-label": copy.next,
@@ -35808,14 +38192,15 @@ function BrowserSteps({ group }) {
               onClick: () => move(1),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "chevron-right" })
+              children: /* @__PURE__ */ jsx89(sdk_compat_exports.Codicon, { name: "chevron-right" })
             }
           ),
-          pageUrl ? /* @__PURE__ */ jsx82(OpenPageButton, { url: pageUrl }) : null
+          /* @__PURE__ */ jsx89(ShowMeButton, { group, step: selected }),
+          pageUrl ? /* @__PURE__ */ jsx89(OpenPageButton, { url: pageUrl }) : null
         ] }),
-        /* @__PURE__ */ jsx82("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
+        /* @__PURE__ */ jsx89("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
           const rowHost = stepHost(card);
-          return /* @__PURE__ */ jsx82("li", { children: /* @__PURE__ */ jsxs78(
+          return /* @__PURE__ */ jsx89("li", { children: /* @__PURE__ */ jsxs84(
             "button",
             {
               "aria-current": index === selected ? "true" : void 0,
@@ -35826,14 +38211,14 @@ function BrowserSteps({ group }) {
               onClick: () => setManual(index),
               type: "button",
               children: [
-                /* @__PURE__ */ jsx82("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
-                /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
-                rowHost ? /* @__PURE__ */ jsx82("span", { className: "shrink-0 truncate", children: rowHost }) : null
+                /* @__PURE__ */ jsx89("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
+                /* @__PURE__ */ jsx89("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
+                rowHost ? /* @__PURE__ */ jsx89("span", { className: "shrink-0 truncate", children: rowHost }) : null
               ]
             }
           ) }, card.id);
         }) }),
-        /* @__PURE__ */ jsx82("div", { className: "mt-2", children: /* @__PURE__ */ jsx82(CardBlock, { card: step, showStatus: false }) })
+        /* @__PURE__ */ jsx89("div", { className: "mt-2", children: /* @__PURE__ */ jsx89(CardBlock, { card: step, showStatus: false }) })
       ]
     }
   );
@@ -35844,13 +38229,13 @@ function ToolCardDetails({
   open
 }) {
   const multi = group.cards.length > 1;
-  return /* @__PURE__ */ jsx82("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx82("div", { children: /* @__PURE__ */ jsx82("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx82(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx82(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
+  return /* @__PURE__ */ jsx89("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx89("div", { children: /* @__PURE__ */ jsx89("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx89(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx89(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
 }
 function TypingDots() {
-  return /* @__PURE__ */ jsxs78("span", { "aria-hidden": "true", className: "hbp-tc-typing inline-flex shrink-0 items-center gap-0.5", "data-typing": "", children: [
-    /* @__PURE__ */ jsx82("span", { className: "size-1 rounded-full bg-current" }),
-    /* @__PURE__ */ jsx82("span", { className: "size-1 rounded-full bg-current" }),
-    /* @__PURE__ */ jsx82("span", { className: "size-1 rounded-full bg-current" })
+  return /* @__PURE__ */ jsxs84("span", { "aria-hidden": "true", className: "hbp-tc-typing inline-flex shrink-0 items-center gap-0.5", "data-typing": "", children: [
+    /* @__PURE__ */ jsx89("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx89("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx89("span", { className: "size-1 rounded-full bg-current" })
   ] });
 }
 function isLiveState(state) {
@@ -35875,24 +38260,24 @@ function toggleOnClick(toggle) {
 function LiveStatus({ copy, group }) {
   const status = group.cards[group.cards.length - 1].status;
   if (group.state === "running") {
-    return /* @__PURE__ */ jsxs78(Fragment19, { children: [
-      /* @__PURE__ */ jsx82("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
-      /* @__PURE__ */ jsx82(TypingDots, {})
+    return /* @__PURE__ */ jsxs84(Fragment20, { children: [
+      /* @__PURE__ */ jsx89("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
+      /* @__PURE__ */ jsx89(TypingDots, {})
     ] });
   }
   if (group.state === "approval") {
-    return /* @__PURE__ */ jsx82("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
+    return /* @__PURE__ */ jsx89("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
   }
-  return /* @__PURE__ */ jsx82("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
+  return /* @__PURE__ */ jsx89("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
 }
 function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
   const last = group.cards[group.cards.length - 1];
   const site = group.thumb?.kind === "site" ? group.thumb : null;
   const shot = group.thumb?.kind === "screenshot" ? group.thumb.src : null;
   const pageUrl = stepPageUrl(group.cards);
-  return /* @__PURE__ */ jsxs78(Fragment19, { children: [
-    /* @__PURE__ */ jsxs78("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-3 hbp-tc-rc", children: [
-      /* @__PURE__ */ jsxs78(
+  return /* @__PURE__ */ jsxs84(Fragment20, { children: [
+    /* @__PURE__ */ jsxs84("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-3 hbp-tc-rc", children: [
+      /* @__PURE__ */ jsxs84(
         "span",
         {
           className: (0, sdk_compat_exports.cn)(
@@ -35902,27 +38287,27 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
             group.state === "approval" && "hbp-bg-warn-10 text-warning"
           ),
           children: [
-            /* @__PURE__ */ jsx82(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
-            actor ? /* @__PURE__ */ jsx82("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
+            /* @__PURE__ */ jsx89(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
+            actor ? /* @__PURE__ */ jsx89("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
           ]
         }
       ),
-      /* @__PURE__ */ jsxs78("span", { className: "flex min-w-0 flex-1 flex-col", children: [
-        /* @__PURE__ */ jsxs78("span", { className: "truncate text-ui-sm font-semibold text-fg", children: [
+      /* @__PURE__ */ jsxs84("span", { className: "flex min-w-0 flex-1 flex-col", children: [
+        /* @__PURE__ */ jsxs84("span", { className: "truncate text-ui-sm font-semibold text-fg", children: [
           group.name,
-          group.cards.length > 1 ? /* @__PURE__ */ jsxs78("span", { className: "font-normal hbp-tc-subtle tabular-nums", children: [
+          group.cards.length > 1 ? /* @__PURE__ */ jsxs84("span", { className: "font-normal hbp-tc-subtle tabular-nums", children: [
             " \xB7 ",
             group.cards.length
           ] }) : null
         ] }),
-        /* @__PURE__ */ jsxs78("span", { className: "flex min-w-0 items-center gap-1.5 truncate text-ui-xs", children: [
-          site ? /* @__PURE__ */ jsx82(SiteFavicon, { host: site.host, url: site.url }) : null,
-          /* @__PURE__ */ jsx82(LiveStatus, { copy, group })
+        /* @__PURE__ */ jsxs84("span", { className: "flex min-w-0 items-center gap-1.5 truncate text-ui-xs", children: [
+          site ? /* @__PURE__ */ jsx89(SiteFavicon, { host: site.host, url: site.url }) : null,
+          /* @__PURE__ */ jsx89(LiveStatus, { copy, group })
         ] }),
-        group.state === "error" && last.reason ? /* @__PURE__ */ jsx82("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
+        group.state === "error" && last.reason ? /* @__PURE__ */ jsx89("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
       ] })
     ] }),
-    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx82(
+    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx89(
       sdk_compat_exports.Button,
       {
         onClick: (event) => {
@@ -35934,8 +38319,8 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
         children: copy.reviewApproval
       }
     ) : null,
-    shot && group.family !== "browser" ? /* @__PURE__ */ jsx82(ScreenshotThumb, { src: shot }) : null,
-    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx82(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
+    shot && group.family !== "browser" ? /* @__PURE__ */ jsx89(ScreenshotThumb, { src: shot }) : null,
+    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx89(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
   ] });
 }
 function QuietCardBody({ copy, group, toggle }) {
@@ -35943,15 +38328,15 @@ function QuietCardBody({ copy, group, toggle }) {
   const header = group.cards.length > 1 ? copy.usedTimes(group.name, group.cards.length) : last.status;
   const site = group.thumb?.kind === "site" ? group.thumb : null;
   const pageUrl = stepPageUrl(group.cards);
-  return /* @__PURE__ */ jsxs78(Fragment19, { children: [
-    /* @__PURE__ */ jsxs78("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-2 hbp-tc-rr", children: [
-      /* @__PURE__ */ jsx82(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
-      /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
-      /* @__PURE__ */ jsx82("span", { className: "min-w-0 flex-1 truncate", children: header }),
-      site ? /* @__PURE__ */ jsx82(SiteFavicon, { host: site.host, url: site.url }) : null,
-      last.durationLabel ? /* @__PURE__ */ jsx82("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
+  return /* @__PURE__ */ jsxs84(Fragment20, { children: [
+    /* @__PURE__ */ jsxs84("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-2 hbp-tc-rr", children: [
+      /* @__PURE__ */ jsx89(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
+      /* @__PURE__ */ jsx89(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
+      /* @__PURE__ */ jsx89("span", { className: "min-w-0 flex-1 truncate", children: header }),
+      site ? /* @__PURE__ */ jsx89(SiteFavicon, { host: site.host, url: site.url }) : null,
+      last.durationLabel ? /* @__PURE__ */ jsx89("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
     ] }),
-    pageUrl ? /* @__PURE__ */ jsx82(
+    pageUrl ? /* @__PURE__ */ jsx89(
       OpenPageButton,
       {
         className: "hbp-tc-reveal",
@@ -35977,13 +38362,14 @@ function ToolCard({
   onReviewApproval
 }) {
   const copy = useToolCardsText();
-  const [open, setOpen] = useState53(false);
-  const [everOpened, setEverOpened] = useState53(false);
-  const [mountedLive] = useState53(() => isLiveState(group.state));
+  const [open, setOpen] = useState57(false);
+  const [everOpened, setEverOpened] = useState57(false);
+  const [mountedLive] = useState57(() => isLiveState(group.state));
   const live = isLiveState(group.state);
   const frameOpen = group.family === "browser" && live && !open;
-  const [frameMounted, setFrameMounted] = useState53(frameOpen);
-  useEffect34(() => {
+  const [frameMounted, setFrameMounted] = useState57(frameOpen);
+  useBrowserActivity(group);
+  useEffect40(() => {
     if (frameOpen) {
       setFrameMounted(true);
       return;
@@ -36006,8 +38392,8 @@ function ToolCard({
     role: "button",
     tabIndex: 0
   };
-  return /* @__PURE__ */ jsxs78("div", { "data-tool-card": group.state, "data-tool-card-key": group.key, role: "listitem", children: [
-    /* @__PURE__ */ jsx82(
+  return /* @__PURE__ */ jsxs84("div", { "data-tool-card": group.state, "data-tool-card-key": group.key, role: "listitem", children: [
+    /* @__PURE__ */ jsx89(
       "div",
       {
         className: (0, sdk_compat_exports.cn)(
@@ -36016,11 +38402,11 @@ function ToolCard({
           live ? "flex min-h-14 items-center gap-3 rounded-card border border-line bg-surface-raised px-3 py-2.5 text-left" : "hbp-tc-row flex min-h-7 items-center gap-2 hbp-tc-rr border border-transparent px-1.5 text-left text-ui-xs hbp-tc-muted hbp-tc-hover"
         ),
         onClick: toggleOnClick(toggle),
-        children: live ? /* @__PURE__ */ jsx82(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx82(QuietCardBody, { copy, group, toggle: toggleProps })
+        children: live ? /* @__PURE__ */ jsx89(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx89(QuietCardBody, { copy, group, toggle: toggleProps })
       }
     ),
-    frameMounted ? /* @__PURE__ */ jsx82(LiveFrame, { group, open: frameOpen }) : null,
-    everOpened ? /* @__PURE__ */ jsx82(ToolCardDetails, { group, live, open }) : null
+    frameMounted ? /* @__PURE__ */ jsx89(LiveFrame, { group, open: frameOpen }) : null,
+    everOpened ? /* @__PURE__ */ jsx89(ToolCardDetails, { group, live, open }) : null
   ] });
 }
 function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
@@ -36028,14 +38414,14 @@ function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
   if (groups.length === 0) {
     return null;
   }
-  return /* @__PURE__ */ jsx82(
+  return /* @__PURE__ */ jsx89(
     "div",
     {
       "aria-label": copy.activityLabel,
       className: (0, sdk_compat_exports.cn)("flex min-w-0 max-w-full flex-col gap-1.5", className),
       "data-slot": "tool-activity-stack",
       role: "list",
-      children: groups.map((group) => /* @__PURE__ */ jsx82(ToolCard, { actor, group, onReviewApproval }, group.key))
+      children: groups.map((group) => /* @__PURE__ */ jsx89(ToolCard, { actor, group, onReviewApproval }, group.key))
     }
   );
 }
@@ -36058,19 +38444,19 @@ function ToolRunCards({
   storedSessionId
 }) {
   const freshGroups = useMemo13(() => toolCardsFromParts(parts, { approvalCallId }), [parts, approvalCallId]);
-  const cacheRef = useRef22({ groups: [], signature: "" });
+  const cacheRef = useRef27({ groups: [], signature: "" });
   const signature = useMemo13(() => groupsSignature(freshGroups), [freshGroups]);
   if (cacheRef.current.signature !== signature || cacheRef.current.groups.length !== freshGroups.length) {
     cacheRef.current = { groups: freshGroups, signature };
   }
   const session = useMemo13(() => ({ runtimeId: sessionId, storedId: storedSessionId }), [sessionId, storedSessionId]);
-  return /* @__PURE__ */ jsx82(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx82(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
+  return /* @__PURE__ */ jsx89(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx89(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
 }
 
 // src/plugin.tsx
-import { Fragment as Fragment20, jsx as jsx83 } from "react/jsx-runtime";
+import { Fragment as Fragment21, jsx as jsx90 } from "react/jsx-runtime";
 function RailTabTitle() {
-  return /* @__PURE__ */ jsx83(Fragment20, { children: useBots().rail.title });
+  return /* @__PURE__ */ jsx90(Fragment21, { children: useBots().rail.title });
 }
 var plugin_default = {
   id: "hermes-bots-plus",
@@ -36098,6 +38484,7 @@ var plugin_default = {
     startFaceClock();
     startBotRelay();
     const stopScreenAutoRaise = startScreenAutoRaise();
+    const disposeBrowserFeature = registerBrowser(ctx);
     if (typeof ctx.onDispose === "function") {
       ctx.onDispose(unmountStyles);
       ctx.onDispose(unmountReactionPills);
@@ -36116,6 +38503,7 @@ var plugin_default = {
       ctx.onDispose(stopFaceClock);
       ctx.onDispose(stopBotRelay);
       ctx.onDispose(stopScreenAutoRaise);
+      ctx.onDispose(disposeBrowserFeature);
     }
     ctx.register({
       id: "mention-completions",
@@ -36310,17 +38698,17 @@ var plugin_default = {
     ctx.register({
       id: "screen-portal",
       area: sdk_compat_exports.SIDEBAR_PROFILE_GROUP_HEADER_AREA,
-      data: { render: (route) => /* @__PURE__ */ jsx83(ProfileGroupScreenPortal, { route }) }
+      data: { render: (route) => /* @__PURE__ */ jsx90(ProfileGroupScreenPortal, { route }) }
     });
     ctx.register({
       id: "agents-section",
       area: SIDEBAR_LIST_TOP_AREA,
-      data: { render: () => /* @__PURE__ */ jsx83(AgentsSection, {}), searchable: true }
+      data: { render: () => /* @__PURE__ */ jsx90(AgentsSection, {}), searchable: true }
     });
     ctx.register({
       id: "bot-header-identity",
       area: CHAT_HEADER_AREAS.title,
-      data: { render: (props) => /* @__PURE__ */ jsx83(BotHeaderIdentity, { ...props }) }
+      data: { render: (props) => /* @__PURE__ */ jsx90(BotHeaderIdentity, { ...props }) }
     });
     ctx.register({
       id: "pane",
@@ -36355,7 +38743,7 @@ var plugin_default = {
         width: "260px",
         collapsible: true,
         hideOnly: true,
-        tabTitle: () => /* @__PURE__ */ jsx83(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
+        tabTitle: () => /* @__PURE__ */ jsx90(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
         tabTitleText: () => (0, sdk_compat_exports.translateNow)("common.bots"),
         dock: {
           pane: "sessions",
@@ -36363,7 +38751,7 @@ var plugin_default = {
           enforce: true
         }
       },
-      render: () => /* @__PURE__ */ jsx83(BotsPane, {})
+      render: () => /* @__PURE__ */ jsx90(BotsPane, {})
     });
     const registerRoutinesPane = (restoreDismissed) => {
       const dispose = ctx.register({
@@ -36375,7 +38763,7 @@ var plugin_default = {
         // not `useI18n`: a pane title is read at registration, outside React.
         title: botsText().rail.title,
         data: {
-          tabTitle: () => /* @__PURE__ */ jsx83(RailTabTitle, {}),
+          tabTitle: () => /* @__PURE__ */ jsx90(RailTabTitle, {}),
           tabTitleText: () => botsText().rail.title,
           placement: "main",
           // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
@@ -36390,7 +38778,7 @@ var plugin_default = {
           defaultCollapsed: true,
           width: "320px"
         },
-        render: () => /* @__PURE__ */ jsx83(MissionRail, {})
+        render: () => /* @__PURE__ */ jsx90(MissionRail, {})
       });
       if (restoreDismissed && typeof host.undismissPane === "function") {
         host.undismissPane(paneId2("routines"));
@@ -36501,47 +38889,47 @@ var plugin_default = {
       id: "bot-tool-cards",
       area: sdk_compat_exports.TOOL_RUN_RENDERER_AREA,
       data: {
-        render: (props) => /* @__PURE__ */ jsx83(ToolRunCards, { ...props })
+        render: (props) => /* @__PURE__ */ jsx90(ToolRunCards, { ...props })
       }
     });
     ctx.register({
       id: "chat-empty",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx83(BotChatEmpty, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx90(BotChatEmpty, { sessionId })
       }
     });
     ctx.register({
       id: "chat-empty-tips",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx83(BotChatTips, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx90(BotChatTips, { sessionId })
       }
     });
     ctx.register({
       id: "bot-chat-mark",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx83(BotChatMark, {})
+      render: () => /* @__PURE__ */ jsx90(BotChatMark, {})
     });
     ctx.register({
       id: "side-pages-chip",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx83(SidePagesChip, {})
+      render: () => /* @__PURE__ */ jsx90(SidePagesChip, {})
     });
     ctx.register({
       id: "bot-inbound-cards",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx83(BotInboundCards, {})
+      render: () => /* @__PURE__ */ jsx90(BotInboundCards, {})
     });
     ctx.register({
       id: "bot-context-nudge",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx83(BotContextNudge, {})
+      render: () => /* @__PURE__ */ jsx90(BotContextNudge, {})
     });
     ctx.register({
       id: "bot-delegate-hint",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx83(BotDelegateHint, {})
+      render: () => /* @__PURE__ */ jsx90(BotDelegateHint, {})
     });
     ctx.register({
       id: "new-agent",
@@ -36580,7 +38968,7 @@ var plugin_default = {
             label: displayName(bot, botRosterMeta(bot, meta)),
             keywords: ["bot", "agent", "chat", bot.name, botHandle(bot.name, bot)].filter(Boolean),
             detail: () => bot.remoteSource ? "remote" : "local",
-            icon: (props) => /* @__PURE__ */ jsx83(sdk_compat_exports.Codicon, { name: "robot", ...props }),
+            icon: (props) => /* @__PURE__ */ jsx90(sdk_compat_exports.Codicon, { name: "robot", ...props }),
             run: () => void openRosterBot(bot)
           }));
         }
@@ -36604,7 +38992,7 @@ var plugin_default = {
       area: sdk_compat_exports.TRANSCRIPT_DIRECTIVE_AREA,
       data: {
         name: BOT_PLAN_DIRECTIVE,
-        render: (props) => /* @__PURE__ */ jsx83(BotPlanCard, { ...props })
+        render: (props) => /* @__PURE__ */ jsx90(BotPlanCard, { ...props })
       }
     });
     ctx.register({
@@ -36612,13 +39000,13 @@ var plugin_default = {
       area: sdk_compat_exports.TRANSCRIPT_DIRECTIVE_AREA,
       data: {
         name: SIDE_PAGE_DIRECTIVE,
-        render: (props) => /* @__PURE__ */ jsx83(SidePageCard, { ...props })
+        render: (props) => /* @__PURE__ */ jsx90(SidePageCard, { ...props })
       }
     });
     ctx.register({
       id: "bot-plan-checklist",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx83(BotPlanChecklist, {})
+      render: () => /* @__PURE__ */ jsx90(BotPlanChecklist, {})
     });
     ctx.register({
       id: "mention-middleware",
@@ -36713,7 +39101,7 @@ var plugin_default = {
       ctx.register({
         id: "instant-ack",
         area: sdk_compat_exports.COMPOSER_AREAS.top,
-        render: () => /* @__PURE__ */ jsx83(InstantAckLine, {})
+        render: () => /* @__PURE__ */ jsx90(InstantAckLine, {})
       });
     }
     for (const contribution of [
@@ -36721,7 +39109,7 @@ var plugin_default = {
         id: "team-page",
         area: sdk_compat_exports.ROUTES_AREA,
         data: { path: "/team" },
-        render: () => /* @__PURE__ */ jsx83(TeamPage, {})
+        render: () => /* @__PURE__ */ jsx90(TeamPage, {})
       },
       {
         id: "team-nav",

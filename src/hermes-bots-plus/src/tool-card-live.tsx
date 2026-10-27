@@ -13,6 +13,7 @@ import { cn, Codicon, Favicon, hostPathLabel, openPreview, useMediaImage, useVal
 import { type JSX, useContext, useEffect, useRef, useState } from 'react'
 
 import { useBrowserBackend } from './browser-backend'
+import { ShowMeButton } from './browser/activity-tab'
 import { useCardBot } from './card-bot'
 import { $botMeta, botRosterKey } from './data'
 import { useLiveViewText } from './live-view-i18n'
@@ -389,6 +390,9 @@ export function LiveFrame({ group, open }: { group: ToolCardGroup; open: boolean
                 {text.live}
               </span>
             ) : null}
+            <span className="absolute top-1.5 right-1.5">
+              <ShowMeButton group={group} />
+            </span>
           </div>
         </div>
       </div>

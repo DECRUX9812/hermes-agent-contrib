@@ -73,6 +73,63 @@ export function loadNovnc() {
   return loading
 }`
 
+// react-dom for the floating browser's own root (the host has no app-level
+// render slot). Built against the HOST's React (`globalThis.__HERMES_REACT__`,
+// installed by the runtime plugin loader) so there is one React; shipped as a
+// minified asset beside plugin.js and read only when the window first floats.
+const REACT_DOM_ASSET = 'vendor/react-dom-client.mjs'
+const coreRequire = createRequire(resolve(homedir(), 'Code/hermes-overlay-core/apps/desktop/package.json'))
+const reactDomClient = coreRequire.resolve('react-dom/client')
+const reactDomVersion = JSON.parse(readFileSync(resolve(dirname(reactDomClient), 'package.json'), 'utf8')).version
+const reactDom = await esbuild.build({
+  bundle: true,
+  define: { 'process.env.NODE_ENV': '"production"' },
+  entryPoints: [reactDomClient],
+  format: 'esm',
+  legalComments: 'inline',
+  logLevel: 'warning',
+  minify: true,
+  plugins: [{
+    name: 'host-react',
+    setup(build) {
+      build.onResolve({ filter: /^react$/ }, () => ({ namespace: 'host-react', path: 'react' }))
+      build.onLoad({ filter: /.*/, namespace: 'host-react' }, () => ({
+        contents: 'module.exports = globalThis.__HERMES_REACT__',
+        loader: 'js'
+      }))
+    }
+  }],
+  target: 'es2022',
+  write: false
+})
+const reactDomSource = `/* react-dom ${reactDomVersion}, MIT, https://react.dev */\n${reactDom.outputFiles[0].text}\nexport const version = ${JSON.stringify(reactDomVersion)};\n`
+writeFileSync(resolve(dirname(outfile), REACT_DOM_ASSET), reactDomSource)
+const reactDomLoader = `const FOLDER = 'hermes-bots-plus'
+const ASSET = ${JSON.stringify(REACT_DOM_ASSET)}
+let loading = null
+async function readAsset() {
+  const desktop = globalThis.hermesDesktop
+  const root = await desktop?.desktopPluginsRoot?.()
+  if (!root) throw new Error('desktop plugins root unavailable')
+  const path = String(root).replace(/[\\/]+$/, '') + '/' + FOLDER + '/' + ASSET
+  if (desktop.readPluginSource) return (await desktop.readPluginSource(path)).text
+  const read = await desktop.readFileText?.(path)
+  if (!read || typeof read.text !== 'string' || read.truncated) throw new Error('react-dom asset unreadable')
+  return read.text
+}
+export function loadReactDom() {
+  if (!loading) {
+    loading = (async () => {
+      const React = globalThis.__HERMES_REACT__
+      if (!React || React.version !== ${JSON.stringify(reactDomVersion)}) throw new Error('host React ' + (React && React.version) + ' does not match react-dom ${reactDomVersion}')
+      const url = URL.createObjectURL(new Blob([await readAsset()], { type: 'text/javascript' }))
+      try { return await import(url) } finally { URL.revokeObjectURL(url) }
+    })()
+    loading.catch(() => { loading = null })
+  }
+  return loading
+}`
+
 const hostImports = {
   name: 'host-imports',
   setup(build) {
@@ -91,6 +148,8 @@ const hostImports = {
     // await, so it cannot sit inline in this bundle).
     build.onResolve({ filter: /^@novnc\/novnc$/ }, () => ({ namespace: 'novnc', path: 'rfb' }))
     build.onLoad({ filter: /.*/, namespace: 'novnc' }, () => ({ contents: novncLoader, loader: 'js' }))
+    build.onResolve({ filter: /\/react-dom-loader(\.ts)?$/ }, () => ({ namespace: 'react-dom-loader', path: 'client' }))
+    build.onLoad({ filter: /.*/, namespace: 'react-dom-loader' }, () => ({ contents: reactDomLoader, loader: 'js' }))
   }
 }
 
@@ -121,4 +180,4 @@ if (leaked.length) {
   process.exit(1)
 }
 
-console.log(`built ${outfile} (${(bundle.length / 1024).toFixed(0)} KiB; ${NOVNC_ASSET} ${(novncSource.length / 1024).toFixed(0)} KiB; ${utilities.missing.length} plugin-only utilities, host css ${hostCss ? 'found' : 'MISSING'})`)
+console.log(`built ${outfile} (${(bundle.length / 1024).toFixed(0)} KiB; ${NOVNC_ASSET} ${(novncSource.length / 1024).toFixed(0)} KiB; ${REACT_DOM_ASSET} ${(reactDomSource.length / 1024).toFixed(0)} KiB; ${utilities.missing.length} plugin-only utilities, host css ${hostCss ? 'found' : 'MISSING'})`)

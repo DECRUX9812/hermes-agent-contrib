@@ -1,49 +1,25 @@
 /**
- * Open a bot's Screen as a main-window workspace tab (host.openWorkspace),
- * one tab per bot; a second open refocuses the existing tab.
+ * Open a bot's Screen. Screens live in the Hermes Browser now (one tab per
+ * bot beside the user's pages, in the workspace tab or the floating window);
+ * a second open refocuses the existing tab.
  */
 
 import { host } from '@hermes/plugin-sdk'
 
-import { botSelectionKey } from './data'
+import { BROWSER_PANE, browserAvailable, openBotInBrowser } from './browser/open'
 import { botsText } from './i18n'
-import { displayName } from './labels'
-import { noteScreenTabClosed, noteScreenTabOpened } from './screen-autoraise'
-import { BotScreenPane } from './screen-pane'
-import { ID } from './shared'
 import type { BotMeta, RosterRow } from './types'
 
-const openTabs = new Map<string, () => void>()
-
-export function screenPaneId(bot: RosterRow): string {
-  return `plugin-workspace:${ID}:screen:${botSelectionKey(bot)}`
+export function screenPaneId(_bot: RosterRow): string {
+  return BROWSER_PANE
 }
 
 export function openBotScreen(bot: RosterRow, meta?: BotMeta | null): void {
-  if (typeof host.openWorkspace !== 'function') {
+  if (!browserAvailable()) {
     host.notify({ kind: 'info', message: botsText().screen.openNeedsUpdate })
 
     return
   }
 
-  const key = botSelectionKey(bot)
-
-  if (openTabs.has(key)) {
-    host.revealPane(screenPaneId(bot))
-
-    return
-  }
-
-  const close = host.openWorkspace(`${ID}:screen:${key}`, {
-    title: `${displayName(bot, meta ?? null)} · ${botsText().screen.title}`,
-    minWidth: '28rem',
-    render: () => <BotScreenPane bot={bot} />,
-    onClose: () => {
-      openTabs.delete(key)
-      noteScreenTabClosed(bot)
-    }
-  })
-
-  openTabs.set(key, close)
-  noteScreenTabOpened(bot)
+  openBotInBrowser(bot, meta ?? null)
 }

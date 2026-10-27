@@ -1,3 +1,4 @@
+import { browserStyleSheet } from './browser/styles'
 import { toolCardStyleSheet } from './tool-card-styles'
 
 /** Status tones for Bot Mode, painted from the host theme's status tokens.
@@ -78,7 +79,7 @@ export function mountPluginStyles(utilities = ''): () => void {
     document.head.appendChild(el)
   }
 
-  el.textContent = toneStyleSheet() + toolCardStyleSheet() + utilities
+  el.textContent = toneStyleSheet() + toolCardStyleSheet() + browserStyleSheet() + utilities
 
   return () => el?.remove()
 }

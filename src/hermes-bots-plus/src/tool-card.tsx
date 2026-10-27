@@ -24,6 +24,8 @@ import {
   useState
 } from 'react'
 
+import { ShowMeButton, useBrowserActivity } from './browser/activity-tab'
+import { openInBrowser } from './browser/open'
 import { ExpandableShot, LiveFrame } from './tool-card-live'
 import { isPublicHost, type ToolCardGroup, toolCardsFromParts, type ToolCardView } from './tool-card-model'
 import { PreviewSessionContext } from './tool-card-session'
@@ -84,7 +86,8 @@ export function stepPageUrl(cards: readonly ToolCardView[], index = cards.length
   return ''
 }
 
-/** Opens a step's page in the side preview. `iconOnly` is the compact form
+/** Opens a step's page in the Hermes Browser (the side preview on an older
+ *  Hermes without workspaces). `iconOnly` is the compact form
  *  for a card row, where it must not toggle the row it sits in. */
 export function OpenPageButton({
   className,
@@ -100,6 +103,11 @@ export function OpenPageButton({
 
   const open = (event: MouseEvent) => {
     event.stopPropagation()
+
+    if (openInBrowser(url)) {
+      return
+    }
+
     openPreview(
       { kind: 'url', label: hostPathLabel(url), source: url, url },
       session.storedId ?? undefined,
@@ -291,6 +299,7 @@ export function BrowserSteps({ group }: { group: ToolCardGroup }) {
         >
           <Codicon name="chevron-right" />
         </Button>
+        <ShowMeButton group={group} step={selected} />
         {pageUrl ? <OpenPageButton url={pageUrl} /> : null}
       </div>
       <ol className="mt-1 flex flex-col gap-0.5">
@@ -531,6 +540,8 @@ export function ToolCard({
   const live = isLiveState(group.state)
   const frameOpen = group.family === 'browser' && live && !open
   const [frameMounted, setFrameMounted] = useState(frameOpen)
+  // Browser groups feed the Browser's "Show me" tab.
+  useBrowserActivity(group)
 
   // Keep the frame mounted while it folds shut, then drop its images.
   useEffect(() => {

@@ -60,6 +60,8 @@ export interface ToolCardView {
   /** The call asked for the user's own signed-in browser (`local: true`),
    *  which never draws on the bot's desktop. */
   realProfile?: boolean
+  /** The raw tool name (`browser_click`), so a viewer can pick a verb icon. */
+  tool?: string
 }
 
 /** Consecutive calls of one tool, shown as one card. */
@@ -584,6 +586,7 @@ export function toolCardView(part: ToolPart, options: { approvalPending?: boolea
     family,
     icon: toolCardIcon(part.toolName, family),
     name: toolCardName(part.toolName, family),
+    tool: part.toolName,
     status: toolCardStatus(part, view, family, pageUrl),
     state,
     args: toolCardArgs(part.args),

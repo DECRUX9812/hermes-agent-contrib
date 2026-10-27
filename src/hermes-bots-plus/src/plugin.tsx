@@ -67,6 +67,7 @@ import {
 } from './bot-state'
 import { hydrateDismissedBotTips } from './bot-tips'
 import { BotChatTips } from './bot-tips-view'
+import { registerBrowser } from './browser/register'
 import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
 import { BotChatEmpty } from './chat-empty'
 import { hydrateDismissedNudges } from './context-nudge'
@@ -211,6 +212,8 @@ export default {
     startBotRelay()
     // Opt-in per bot: raise a bot's Screen tab on its first live screen tool call.
     const stopScreenAutoRaise = startScreenAutoRaise()
+    // The Hermes Browser: workspace tab / floating window, link routing, shortcuts.
+    const disposeBrowserFeature = registerBrowser(ctx)
 
     // Disabling the plugin (or a hot reload) must actually stop the clock —
     // before this, the rAF loop + 1Hz document scan ran until app restart.
@@ -232,6 +235,7 @@ export default {
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)
+      ctx.onDispose(disposeBrowserFeature)
     }
 
     // @-mention autocomplete: typing "@rese…" in ANY composer offers the
