@@ -9622,7 +9622,7 @@ init_data();
 // src/group-chat-view.tsx
 init_sdk_compat();
 init_sdk_compat();
-import { useEffect as useEffect5, useMemo as useMemo4, useRef as useRef4, useState as useState17 } from "react";
+import { useEffect as useEffect6, useMemo as useMemo4, useRef as useRef4, useState as useState17 } from "react";
 init_avatar_image();
 init_data();
 
@@ -15176,6 +15176,7 @@ var TEAM_EN = {
   loadFailed: "Could not load your team",
   loadFailedBody: "Check the connection and try again. Your team and its work have not been removed.",
   retry: "Retry",
+  stillLoading: "Still loading your team\u2026",
   seats: (n) => n === 1 ? "1 teammate" : `${n} teammates`,
   openSeats: (n) => n === 1 ? "1 open seat" : `${n} open seats`,
   needsYou: (n) => n === 1 ? "1 thing needs you" : `${n} things need you`,
@@ -15526,7 +15527,7 @@ function Field2({ children, label }) {
 
 // src/team-page.tsx
 init_sdk_compat();
-import { useState as useState13 } from "react";
+import { useEffect as useEffect4, useState as useState13 } from "react";
 import { Fragment as Fragment7, jsx as jsx21, jsxs as jsxs20 } from "react/jsx-runtime";
 var fail = (err) => host.notifyError(err, "Team");
 function CreateTeamDialog({ onClose, open, t }) {
@@ -15743,11 +15744,31 @@ function AdvancedPanel({ t, team }) {
     )
   ] });
 }
+function TeamLoader({ onRetry, t }) {
+  const [slow, setSlow] = useState13(false);
+  const [round, setRound] = useState13(0);
+  useEffect4(() => {
+    const timer = window.setTimeout(() => setSlow(true), 8e3);
+    return () => window.clearTimeout(timer);
+  }, [round]);
+  return /* @__PURE__ */ jsx21("div", { "aria-label": t.stillLoading, className: "grid h-full place-items-center", role: "status", children: slow ? /* @__PURE__ */ jsxs20("div", { className: "grid justify-items-center gap-3 text-sm text-muted-foreground", children: [
+    t.stillLoading,
+    /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => {
+      setSlow(false);
+      setRound((r) => r + 1);
+      onRetry();
+    }, size: "sm", variant: "outline", children: t.retry })
+  ] }) : /* @__PURE__ */ jsxs20("div", { "aria-hidden": "true", className: "grid w-full max-w-md gap-3 p-6", children: [
+    /* @__PURE__ */ jsx21(sdk_compat_exports.Skeleton, { className: "h-4 w-2/5" }),
+    /* @__PURE__ */ jsx21(sdk_compat_exports.Skeleton, { className: "h-3 w-full" }),
+    /* @__PURE__ */ jsx21(sdk_compat_exports.Skeleton, { className: "h-3 w-4/5" })
+  ] }) });
+}
 function TeamDetail({ id, t }) {
   const advanced = (0, sdk_compat_exports.useValue)(host.state.showsAdvancedChrome);
   const { data: view, isPending, error, refetch } = useTeam(id);
   if (isPending) {
-    return /* @__PURE__ */ jsx21(sdk_compat_exports.Loader, {});
+    return /* @__PURE__ */ jsx21(TeamLoader, { onRetry: () => void refetch(), t });
   }
   if (error || !view) {
     return /* @__PURE__ */ jsx21(sdk_compat_exports.ErrorState, { className: "place-items-center p-6", description: t.loadFailedBody, title: t.loadFailed, children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t.retry }) });
@@ -15814,21 +15835,18 @@ function TeamPage() {
           ] }, x.id))
         }
       ),
-      /* @__PURE__ */ jsxs20(
-        sdk_compat_exports.Button,
-        {
-          disabled: isMissingRpcMethod(error),
-          onClick: () => setCreating(true),
-          size: "sm",
-          variant: teams?.length ? "outline" : "default",
-          children: [
-            /* @__PURE__ */ jsx21(sdk_compat_exports.Codicon, { name: "add", size: "0.75rem" }),
-            t.newTeam
-          ]
-        }
-      )
+      isMissingRpcMethod(error) ? (
+        // A disabled button swallows hover, so the Tip sits on a span that says why.
+        /* @__PURE__ */ jsx21(sdk_compat_exports.Tip, { label: t.unavailableTitle, children: /* @__PURE__ */ jsx21("span", { className: "inline-flex", tabIndex: 0, children: /* @__PURE__ */ jsxs20(sdk_compat_exports.Button, { disabled: true, size: "sm", variant: teams?.length ? "outline" : "default", children: [
+          /* @__PURE__ */ jsx21(sdk_compat_exports.Codicon, { name: "add", size: "0.75rem" }),
+          t.newTeam
+        ] }) }) })
+      ) : /* @__PURE__ */ jsxs20(sdk_compat_exports.Button, { onClick: () => setCreating(true), size: "sm", variant: teams?.length ? "outline" : "default", children: [
+        /* @__PURE__ */ jsx21(sdk_compat_exports.Codicon, { name: "add", size: "0.75rem" }),
+        t.newTeam
+      ] })
     ] }),
-    /* @__PURE__ */ jsx21("div", { className: (0, sdk_compat_exports.cn)("min-h-0 flex-1 overflow-y-auto"), children: isPending ? /* @__PURE__ */ jsx21(sdk_compat_exports.Loader, {}) : isMissingRpcMethod(error) ? /* @__PURE__ */ jsx21(sdk_compat_exports.EmptyState, { description: t.unavailableBody, title: t.unavailableTitle }) : error ? /* @__PURE__ */ jsx21(sdk_compat_exports.ErrorState, { className: "place-items-center p-6", description: t.loadFailedBody, title: t.loadFailed, children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t.retry }) }) : current ? /* @__PURE__ */ jsx21(TeamDetail, { id: current, t }, current) : /* @__PURE__ */ jsx21(sdk_compat_exports.EmptyState, { description: t.emptyBody, title: t.emptyTitle }) }),
+    /* @__PURE__ */ jsx21("div", { className: (0, sdk_compat_exports.cn)("min-h-0 flex-1 overflow-y-auto"), children: isPending ? /* @__PURE__ */ jsx21(TeamLoader, { onRetry: () => void refetch(), t }) : isMissingRpcMethod(error) ? /* @__PURE__ */ jsx21(sdk_compat_exports.EmptyState, { description: t.unavailableBody, title: t.unavailableTitle }) : error ? /* @__PURE__ */ jsx21(sdk_compat_exports.ErrorState, { className: "place-items-center p-6", description: t.loadFailedBody, title: t.loadFailed, children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t.retry }) }) : current ? /* @__PURE__ */ jsx21(TeamDetail, { id: current, t }, current) : /* @__PURE__ */ jsx21(sdk_compat_exports.EmptyState, { description: t.emptyBody, title: t.emptyTitle }) }),
     /* @__PURE__ */ jsx21(CreateTeamDialog, { onClose: () => setCreating(false), open: creating, t })
   ] });
 }
@@ -16305,7 +16323,7 @@ function GroupThreadRail({
 
 // src/group-room-unseen.ts
 init_sdk_compat();
-import { useEffect as useEffect4, useRef as useRef3, useState as useState16 } from "react";
+import { useEffect as useEffect5, useRef as useRef3, useState as useState16 } from "react";
 
 // src/group-unread.ts
 init_sdk_compat();
@@ -16511,7 +16529,7 @@ function useRoomUnread({
     bottomSentinel.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   };
   const wasVisibleRef = useRef3(visible);
-  useEffect4(() => {
+  useEffect5(() => {
     if (visible && !wasVisibleRef.current) {
       stickToBottom.current = true;
       setLeftAtLength(null);
@@ -16531,7 +16549,7 @@ function useRoomUnread({
       markRead(focusThread);
     }
   };
-  useEffect4(() => {
+  useEffect5(() => {
     if (stickToBottom.current) {
       bottomSentinel.current?.scrollIntoView({ block: "end" });
       markRead(focusThread);
@@ -16724,7 +16742,7 @@ function GroupChatSettingsDialog({
   const autoName = autoTarget ? displayName(autoTarget, botRosterMeta(autoTarget, allMeta)) : autoLead?.lead;
   const autoRole = (autoLead?.leadTitle || (autoTarget ? botRosterMeta(autoTarget, allMeta)?.title || autoTarget.title || "" : "")).trim();
   const autoSuffix = autoName ? ` (${autoRole ? `${autoRole} \xB7 ` : ""}${autoName})` : "";
-  useEffect5(() => {
+  useEffect6(() => {
     if (open) {
       setName(group);
       setImage(current);
@@ -18603,11 +18621,11 @@ init_sdk_compat();
 init_data();
 init_labels();
 init_profile_ops();
-import { useEffect as useEffect6 } from "react";
+import { useEffect as useEffect7 } from "react";
 init_routing();
 var $lastSources = (0, sdk_compat_exports.atom)([]);
 function usePublishRosterSnapshot({ data, live, roster, allMeta, activeSourceRoster }) {
-  useEffect6(() => {
+  useEffect7(() => {
     if (!live) {
       return;
     }
@@ -19550,7 +19568,7 @@ function BotChatEmpty({ sessionId }) {
 init_sdk_compat();
 init_bot_state();
 init_data();
-import { useEffect as useEffect7, useState as useState20 } from "react";
+import { useEffect as useEffect8, useState as useState20 } from "react";
 init_i18n();
 init_labels();
 init_routing();
@@ -19796,7 +19814,7 @@ function RoutineRunHistory({ job, owner }) {
   const b = useBots();
   const { t } = (0, sdk_compat_exports.useI18n)();
   const [runs, setRuns] = useState20(null);
-  useEffect7(() => {
+  useEffect8(() => {
     let cancelled = false;
     let route = null;
     try {
@@ -20298,7 +20316,7 @@ function CreateRoutineDialog({ bot, open, onClose, preset = null }) {
   const owner = typeof bot === "string" ? { name: bot } : bot;
   const profile = owner.name;
   const schedule = composeSchedule(sched);
-  useEffect7(() => {
+  useEffect8(() => {
     if (open && preset) {
       setName(preset.title);
       setInstruction(preset.instruction);
@@ -21970,7 +21988,7 @@ function startScreenAutoRaise() {
 // src/screen-pane.tsx
 init_sdk_compat();
 init_i18n();
-import { useCallback as useCallback2, useEffect as useEffect9, useRef as useRef6, useState as useState25 } from "react";
+import { useCallback as useCallback2, useEffect as useEffect10, useRef as useRef6, useState as useState25 } from "react";
 
 // src/screen-connection.ts
 init_sdk_compat();
@@ -22060,7 +22078,7 @@ async function resolveScreenWsUrl(bot, ticket) {
 // src/screen-install.tsx
 init_sdk_compat();
 init_i18n();
-import { useCallback, useEffect as useEffect8, useRef as useRef5, useState as useState24 } from "react";
+import { useCallback, useEffect as useEffect9, useRef as useRef5, useState as useState24 } from "react";
 import { jsx as jsx36, jsxs as jsxs35 } from "react/jsx-runtime";
 var LOG_KEEP = 200;
 function ScreenNotInstalled(props) {
@@ -22082,17 +22100,17 @@ function ScreenInstallCard({ bot, status, onInstalled }) {
     retention.current?.();
     retention.current = null;
   }, []);
-  useEffect8(
+  useEffect9(
     () => () => {
       unmounted.current = true;
       releaseRetention();
     },
     [releaseRetention]
   );
-  useEffect8(() => {
+  useEffect9(() => {
     logEnd.current?.scrollIntoView({ block: "end" });
   }, [log]);
-  useEffect8(() => {
+  useEffect9(() => {
     const offLog = host.onEvent("display.install.log", (event) => {
       const payload = event.payload;
       if (isEventForBotScreen(bot, event, status.profile_key) && typeof payload?.line === "string") {
@@ -22257,7 +22275,7 @@ function BotScreenPane({ bot }) {
       setError(err instanceof Error ? err.message : String(err));
     }
   }, [bot]);
-  useEffect9(() => {
+  useEffect10(() => {
     void refresh();
     const offLease = host.onEvent("display.lease", (event) => {
       const payload = event.payload;
@@ -22393,13 +22411,13 @@ function BotScreenPane({ bot }) {
     },
     [bot, detach, refresh, t.screen.controlTaken, t.screen.streamLost]
   );
-  useEffect9(() => () => detach(true), [detach]);
-  useEffect9(() => {
+  useEffect10(() => () => detach(true), [detach]);
+  useEffect10(() => {
     if (status?.running && conn === "idle") {
       void attach(true);
     }
   }, [attach, conn, status?.running]);
-  useEffect9(() => {
+  useEffect10(() => {
     if (rfb.current) {
       rfb.current.viewOnly = !iHold;
       if (iHold) {
@@ -22760,7 +22778,7 @@ async function canonicalChatSize(bot) {
 // src/context-nudge-view.tsx
 init_sdk_compat();
 init_canonical_chat();
-import { useEffect as useEffect10, useState as useState26 } from "react";
+import { useEffect as useEffect11, useState as useState26 } from "react";
 init_data();
 init_i18n();
 import { jsx as jsx40, jsxs as jsxs38 } from "react/jsx-runtime";
@@ -22781,7 +22799,7 @@ function BotContextNudge() {
     return { key: cacheKey, size: hit2 && Date.now() - hit2.at < SIZE_TTL_MS ? hit2.size : null };
   });
   const size = reading.key === cacheKey ? reading.size : null;
-  useEffect10(() => {
+  useEffect11(() => {
     if (!bot || !canonical) {
       return;
     }
@@ -23030,7 +23048,7 @@ function sweepInstantAcks(busyBySession, now = Date.now()) {
 
 // src/instant-ack-line.tsx
 init_sdk_compat();
-import { useEffect as useEffect11 } from "react";
+import { useEffect as useEffect12 } from "react";
 init_data();
 init_i18n();
 import { jsx as jsx41, jsxs as jsxs39 } from "react/jsx-runtime";
@@ -23052,7 +23070,7 @@ function InstantAckLine() {
   const t = useBots().ack;
   const state = ack?.state;
   const armedAt = ack?.armedAt ?? 0;
-  useEffect11(() => {
+  useEffect12(() => {
     if (!runtimeId || state !== "receipt" && state !== "waiting") {
       return;
     }
@@ -23241,7 +23259,7 @@ function BotCardMeta({ bot }) {
 init_sdk_compat();
 init_i18n();
 init_routing();
-import { useCallback as useCallback3, useEffect as useEffect12, useRef as useRef7, useState as useState27 } from "react";
+import { useCallback as useCallback3, useEffect as useEffect13, useRef as useRef7, useState as useState27 } from "react";
 import { jsx as jsx43, jsxs as jsxs41 } from "react/jsx-runtime";
 var DELIVERABLES_LIMIT = 20;
 var KIND_GLYPH = {
@@ -23293,7 +23311,7 @@ function BotDeliverablesSection({ owner }) {
       setView((prior) => ({ ...prior.ownerKey === key ? prior : empty, status: "error" }));
     });
   }, []);
-  useEffect12(() => {
+  useEffect13(() => {
     load2();
     const requestSequence = seq;
     return () => {
@@ -23732,7 +23750,7 @@ init_i18n();
 // src/mcp-setup.tsx
 init_sdk_compat();
 init_i18n();
-import { useEffect as useEffect13, useRef as useRef8, useState as useState28 } from "react";
+import { useEffect as useEffect14, useRef as useRef8, useState as useState28 } from "react";
 import { jsx as jsx46, jsxs as jsxs44 } from "react/jsx-runtime";
 async function mcpRpc(method, params, route) {
   try {
@@ -23789,7 +23807,7 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
     }
     return null;
   };
-  useEffect13(() => {
+  useEffect14(() => {
     const epoch = oauthEpoch;
     let alive = true;
     mcpSetupSupported(route).then((ok) => {
@@ -23974,7 +23992,7 @@ init_routing();
 init_sdk_compat();
 init_i18n();
 init_routing();
-import { useEffect as useEffect14, useRef as useRef9, useState as useState29 } from "react";
+import { useEffect as useEffect15, useRef as useRef9, useState as useState29 } from "react";
 import { jsx as jsx47, jsxs as jsxs45 } from "react/jsx-runtime";
 var HUB_ORIGIN = "https://hermes-agent.nousresearch.com";
 var FALLBACK_HUB_ORIGIN = "https://nousresearch.github.io";
@@ -23997,7 +24015,7 @@ function HubSkillsSection({ bot, onInstalled }) {
   const [hubPickerUrl, setHubPickerUrl] = useState29(HUB_PICKER_URL);
   const installRef = useRef9(null);
   const frameRef = useRef9(null);
-  useEffect14(() => {
+  useEffect15(() => {
     if (!browseHub) {
       return void 0;
     }
@@ -24018,7 +24036,7 @@ function HubSkillsSection({ bot, onInstalled }) {
       mounted = false;
     };
   }, [browseHub]);
-  useEffect14(() => {
+  useEffect15(() => {
     if (!browseHub) {
       return void 0;
     }
@@ -25011,7 +25029,7 @@ init_routing();
 init_sdk_compat();
 init_data();
 init_i18n();
-import { useEffect as useEffect16, useRef as useRef11, useState as useState32 } from "react";
+import { useEffect as useEffect17, useRef as useRef11, useState as useState32 } from "react";
 
 // src/screen-actions.ts
 init_routing();
@@ -25112,7 +25130,7 @@ init_sdk_compat();
 init_data();
 init_i18n();
 init_routing();
-import { useEffect as useEffect15, useMemo as useMemo6 } from "react";
+import { useEffect as useEffect16, useMemo as useMemo6 } from "react";
 import { jsx as jsx51, jsxs as jsxs49 } from "react/jsx-runtime";
 function portalTone(status, lease, viewer = null, unavailable = false) {
   if (unavailable) {
@@ -25160,7 +25178,7 @@ function useScreenPortalState(bot) {
   const state = screenStateFor(all, bot);
   const status = state?.status ?? null;
   const profileKey = status?.profile_key;
-  useEffect15(() => {
+  useEffect16(() => {
     if (status || state?.unavailable) {
       return;
     }
@@ -25179,7 +25197,7 @@ function useScreenPortalState(bot) {
       cancelled = true;
     };
   }, [bot, state?.unavailable, status]);
-  useEffect15(
+  useEffect16(
     () => host.onEvent("display.lease", (event) => {
       const payload = event.payload;
       if (payload?.lease && isEventForBotScreen(bot, event, profileKey)) {
@@ -25188,7 +25206,7 @@ function useScreenPortalState(bot) {
     }),
     [bot, profileKey]
   );
-  useEffect15(
+  useEffect16(
     () => host.onEvent("display.status", (event) => {
       const payload = event.payload;
       if (payload?.profile_key && isEventForBotScreen(bot, event, profileKey)) {
@@ -25276,7 +25294,7 @@ function useLiveThumbnail(bot, running) {
   const [misses, setMisses] = useState32(0);
   const [suppressed, setSuppressed] = useState32(false);
   const boxRef = useRef11(null);
-  useEffect16(() => {
+  useEffect17(() => {
     if (!running) {
       setDataUrl(null);
       setMisses(0);
@@ -25536,7 +25554,7 @@ function ComputerPanelContent({ bot, meta }) {
 
 // src/share-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect17, useRef as useRef12, useState as useState33 } from "react";
+import { useEffect as useEffect18, useRef as useRef12, useState as useState33 } from "react";
 init_avatar_image();
 
 // src/bot-export.ts
@@ -25891,7 +25909,7 @@ function ShareBotDialog({
   const { color, image, shape } = botAppearance(bot.name, meta);
   const accent = avatarColor(color, bot.name);
   const photo = image && !isBackfilledFacePng(image) ? image : null;
-  useEffect17(() => {
+  useEffect18(() => {
     if (!open) {
       return;
     }
@@ -26009,7 +26027,7 @@ import { useMemo as useMemo8, useState as useState35 } from "react";
 
 // src/activity-detail.tsx
 init_sdk_compat();
-import { useEffect as useEffect18, useRef as useRef13, useState as useState34 } from "react";
+import { useEffect as useEffect19, useRef as useRef13, useState as useState34 } from "react";
 init_i18n();
 import { jsx as jsx54, jsxs as jsxs52 } from "react/jsx-runtime";
 var SHELL_TOOLS2 = /* @__PURE__ */ new Set(["terminal", "process", "process_manage", "execute_code"]);
@@ -26049,7 +26067,7 @@ function Timeline({
   task
 }) {
   const listRef = useRef13(null);
-  useEffect18(() => {
+  useEffect19(() => {
     if (!selectedId) {
       return;
     }
@@ -26165,7 +26183,7 @@ function ActivityDetailDialog({ onClose, task }) {
   const a = b.activity;
   const [selectedId, setSelectedId] = useState34(null);
   const selected = selectedId && task?.steps.find((step) => step.id === selectedId) || (task ? currentStep(task) : null);
-  useEffect18(() => setSelectedId(null), [task?.id]);
+  useEffect19(() => setSelectedId(null), [task?.id]);
   return /* @__PURE__ */ jsx54(sdk_compat_exports.Dialog, { onOpenChange: (next) => !next && onClose(), open: Boolean(task), children: task ? /* @__PURE__ */ jsxs52(
     sdk_compat_exports.DialogContent,
     {
@@ -26189,7 +26207,7 @@ function ActivityDetailDialog({ onClose, task }) {
 
 // src/activity-subjects.ts
 init_sdk_compat();
-import { useEffect as useEffect19, useMemo as useMemo7 } from "react";
+import { useEffect as useEffect20, useMemo as useMemo7 } from "react";
 init_shared();
 var STORAGE_KEY3 = "activity-subjects-v1";
 var ENTRY_TTL_MS = 30 * 24 * 60 * 60 * 1e3;
@@ -26398,10 +26416,10 @@ function useActivitySubjects(tasks, messages, visible) {
     }),
     [layer.entries, requests, visible]
   );
-  useEffect19(() => {
+  useEffect20(() => {
     ensureActivitySubjects();
   }, []);
-  useEffect19(() => {
+  useEffect20(() => {
     if (!layer.ready) {
       return;
     }
@@ -27149,7 +27167,7 @@ function MissionRail() {
 
 // src/roster-pane.tsx
 init_sdk_compat();
-import { useEffect as useEffect26, useRef as useRef16, useState as useState45 } from "react";
+import { useEffect as useEffect27, useRef as useRef16, useState as useState45 } from "react";
 
 // src/bot-card.tsx
 init_sdk_compat();
@@ -28232,7 +28250,7 @@ init_bot_state();
 
 // src/broadcast-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect20, useState as useState37 } from "react";
+import { useEffect as useEffect21, useState as useState37 } from "react";
 
 // src/broadcast.ts
 init_sdk_compat();
@@ -28473,7 +28491,7 @@ function BroadcastDialog({ bots, onClose, open }) {
   const eligible = bots.filter((bot) => !bot?.ghost);
   const [checked, setChecked] = useState37(/* @__PURE__ */ new Set());
   const [prompt, setPrompt] = useState37("");
-  useEffect20(() => {
+  useEffect21(() => {
     if (open) {
       setChecked(new Set(eligible.map((bot) => botRosterKey(bot) || bot.name)));
       setPrompt("");
@@ -29357,14 +29375,14 @@ init_sdk_compat();
 
 // src/create-dialog.tsx
 init_sdk_compat();
-import { useEffect as useEffect23, useRef as useRef14, useState as useState42 } from "react";
+import { useEffect as useEffect24, useRef as useRef14, useState as useState42 } from "react";
 init_avatar_image();
 init_bot_state();
 init_canonical_chat();
 
 // src/canonical-group-capabilities.ts
 init_sdk_compat();
-import { useEffect as useEffect21, useState as useState40 } from "react";
+import { useEffect as useEffect22, useState as useState40 } from "react";
 
 // src/canonical-groups.ts
 init_sdk_compat();
@@ -29459,7 +29477,7 @@ function useGroupCapability(active) {
   const activationEpoch = (0, sdk_compat_exports.gatewayActivationEpoch)();
   const source = JSON.stringify([connectionId, profile, gateway, activationEpoch]);
   const [capability, setCapability] = useState40(null);
-  useEffect21(() => {
+  useEffect22(() => {
     let cancelled = false;
     setCapability(null);
     if (!active || gateway !== "open" || !connectionId) {
@@ -29519,7 +29537,7 @@ function seatableGroupBots(roster, { connectionId, mode, seatable }) {
 
 // src/canonical-group-registry.tsx
 init_sdk_compat();
-import { useEffect as useEffect22, useState as useState41 } from "react";
+import { useEffect as useEffect23, useState as useState41 } from "react";
 
 // src/canonical-group-labels.ts
 init_sdk_compat();
@@ -29587,7 +29605,7 @@ function discardDraftProfile(draft, target) {
 function useCapabilitiesDraft(ready, slug, draft, materialize) {
   const latest = useRef14(materialize);
   latest.current = materialize;
-  useEffect23(() => {
+  useEffect24(() => {
     if (!ready || draft === slug) {
       return;
     }
@@ -29625,7 +29643,7 @@ function useDraftProfile(createdRef, flightRef) {
       discardDraftProfile(draft, draftTargetRef.current);
     }
   };
-  useEffect23(
+  useEffect24(
     () => () => {
       draftGenRef.current += 1;
     },
@@ -29655,7 +29673,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
   const [advTab, setAdvTab] = useState42("general");
   const [targetConnection, setTargetConnection] = useState42("");
   const [connections, setConnections] = useState42(null);
-  useEffect23(() => {
+  useEffect24(() => {
     if (!open || connections !== null || typeof host.connections !== "function" || typeof host.requestProfile !== "function") {
       return;
     }
@@ -30391,7 +30409,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
   const [checked, setChecked] = useState42({});
   const [name, setName] = useState42("");
   const [image, setImage] = useState42(null);
-  useEffect23(() => {
+  useEffect24(() => {
     if (open) {
       setQuery("");
       setChecked({});
@@ -30619,14 +30637,14 @@ init_profile_ops();
 // src/user-sections-ui.tsx
 init_sdk_compat();
 init_i18n();
-import { useEffect as useEffect24, useRef as useRef15, useState as useState43 } from "react";
+import { useEffect as useEffect25, useRef as useRef15, useState as useState43 } from "react";
 import { jsx as jsx68, jsxs as jsxs66 } from "react/jsx-runtime";
 function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) {
   const { t } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const [value, setValue] = useState43(initialName);
   const inputRef = useRef15(null);
-  useEffect24(() => {
+  useEffect25(() => {
     if (open) {
       setValue(initialName);
       window.setTimeout(() => inputRef.current?.select(), 0);
@@ -30744,7 +30762,7 @@ function UserSectionHeader({
 }
 function useEscapeCancelsBotDrag() {
   const dragging = (0, sdk_compat_exports.useValue)($draggingBot);
-  useEffect24(() => {
+  useEffect25(() => {
     if (!dragging) {
       return;
     }
@@ -30762,7 +30780,7 @@ function SectionDropZone({ children, isSource, nested, onDropBot }) {
   const [over, setOver] = useState43(false);
   const armed = Boolean(dragging) && !isSource;
   const lit = armed && over;
-  useEffect24(() => {
+  useEffect25(() => {
     if (!dragging) {
       setOver(false);
     }
@@ -31423,7 +31441,7 @@ function setRosterViewMode(mode) {
 
 // src/routines-calendar.tsx
 init_sdk_compat();
-import { useEffect as useEffect25, useState as useState44 } from "react";
+import { useEffect as useEffect26, useState as useState44 } from "react";
 init_data();
 
 // src/fleet-schedule.ts
@@ -31498,7 +31516,7 @@ function RoutinesCalendarDialog({
   const [items, setItems] = useState44([]);
   const [partial, setPartial] = useState44(false);
   const [loading, setLoading] = useState44(false);
-  useEffect25(() => {
+  useEffect26(() => {
     if (!open) {
       return;
     }
@@ -31866,7 +31884,7 @@ function releaseStaleOpenBotChat(focusedStoredId2) {
   }
 }
 function useReconcileRosterOwner(data, error, selectionHydrated, roster, sourceSnapshot, allMeta) {
-  useEffect26(() => {
+  useEffect27(() => {
     if (!data && !error) {
       return;
     }
@@ -31938,7 +31956,7 @@ function BotsPane() {
   const rosterHydrated = (0, sdk_compat_exports.useValue)($rosterHydrated);
   const selectionHydrated = (0, sdk_compat_exports.useValue)($selectedRosterHydrated);
   const selectedRosterKey = (0, sdk_compat_exports.useValue)($selectedRosterKey);
-  useEffect26(() => {
+  useEffect27(() => {
     if (gatewayUp) {
       void refetch();
     }
@@ -31957,7 +31975,7 @@ function BotsPane() {
     attentionOf,
     mode: sortMode
   });
-  useEffect26(() => {
+  useEffect27(() => {
     adoptBotSectionsFromMeta(roster, allMeta);
     backfillBotSectionNames(roster, allMeta);
   }, [roster, allMeta]);
@@ -31969,7 +31987,7 @@ function BotsPane() {
   const gatewayOptions = rosterGatewayOptions(sourceSnapshot, roster);
   const selectedGateway = gatewayOptions.find((option) => option.connectionId === gatewayFilter);
   const gatewayFilterExists = gatewayFilter === "all" || Boolean(selectedGateway);
-  useEffect26(() => {
+  useEffect27(() => {
     if (!gatewayFilterExists) {
       setGatewayFilter("all");
     }
@@ -32025,7 +32043,7 @@ function BotsPane() {
   });
   const rosterSectionCollapsed = (id) => !hasRosterConstraint && collapsedRosterSections.has(id);
   const toggleRosterSection = toggleBotSectionCollapsed;
-  useEffect26(() => {
+  useEffect27(() => {
     if (!hiddenExpanded || hasRosterConstraint) {
       return;
     }

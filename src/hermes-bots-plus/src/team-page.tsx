@@ -22,14 +22,15 @@ import {
   host,
   Input,
   isMissingRpcMethod,
-  Loader,
   queryClient,
+  Skeleton,
   Switch,
   Textarea,
+  Tip,
   useQuery,
   useValue
 } from '@hermes/plugin-sdk'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 
 import {
   $selectedTeamId,
@@ -325,12 +326,44 @@ function AdvancedPanel({ t, team }: { t: TeamText; team: Team }) {
   )
 }
 
+/** Skeleton while a team read is in flight; after 8s it admits the wait and
+ *  offers a Retry of that read (same contract as the core page loader). */
+function TeamLoader({ onRetry, t }: { onRetry: () => void; t: TeamText }) {
+  const [slow, setSlow] = useState(false)
+  const [round, setRound] = useState(0)
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setSlow(true), 8_000)
+
+    return () => window.clearTimeout(timer)
+  }, [round])
+
+  return (
+    <div aria-label={t.stillLoading} className="grid h-full place-items-center" role="status">
+      {slow ? (
+        <div className="grid justify-items-center gap-3 text-sm text-muted-foreground">
+          {t.stillLoading}
+          <Button onClick={() => { setSlow(false); setRound(r => r + 1); onRetry() }} size="sm" variant="outline">
+            {t.retry}
+          </Button>
+        </div>
+      ) : (
+        <div aria-hidden="true" className="grid w-full max-w-md gap-3 p-6">
+          <Skeleton className="h-4 w-2/5" />
+          <Skeleton className="h-3 w-full" />
+          <Skeleton className="h-3 w-4/5" />
+        </div>
+      )}
+    </div>
+  )
+}
+
 function TeamDetail({ id, t }: { id: string; t: TeamText }) {
   const advanced = useValue(host.state.showsAdvancedChrome)
   const { data: view, isPending, error, refetch } = useTeam(id)
 
   if (isPending) {
-    return <Loader />
+    return <TeamLoader onRetry={() => void refetch()} t={t} />
   }
 
   if (error || !view) {
@@ -420,19 +453,26 @@ export function TeamPage() {
             ))}
           </select>
         )}
-        <Button
-          disabled={isMissingRpcMethod(error)}
-          onClick={() => setCreating(true)}
-          size="sm"
-          variant={teams?.length ? 'outline' : 'default'}
-        >
-          <Codicon name="add" size="0.75rem" />
-          {t.newTeam}
-        </Button>
+        {isMissingRpcMethod(error) ? (
+          // A disabled button swallows hover, so the Tip sits on a span that says why.
+          <Tip label={t.unavailableTitle}>
+            <span className="inline-flex" tabIndex={0}>
+              <Button disabled size="sm" variant={teams?.length ? 'outline' : 'default'}>
+                <Codicon name="add" size="0.75rem" />
+                {t.newTeam}
+              </Button>
+            </span>
+          </Tip>
+        ) : (
+          <Button onClick={() => setCreating(true)} size="sm" variant={teams?.length ? 'outline' : 'default'}>
+            <Codicon name="add" size="0.75rem" />
+            {t.newTeam}
+          </Button>
+        )}
       </div>
       <div className={cn('min-h-0 flex-1 overflow-y-auto')}>
         {isPending ? (
-          <Loader />
+          <TeamLoader onRetry={() => void refetch()} t={t} />
         ) : isMissingRpcMethod(error) ? (
           <EmptyState description={t.unavailableBody} title={t.unavailableTitle} />
         ) : error ? (

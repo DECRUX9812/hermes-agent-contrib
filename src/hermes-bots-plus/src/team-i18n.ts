@@ -28,6 +28,7 @@ export const TEAM_EN = {
   loadFailed: 'Could not load your team',
   loadFailedBody: 'Check the connection and try again. Your team and its work have not been removed.',
   retry: 'Retry',
+  stillLoading: 'Still loading your team…',
   seats: (n: number) => (n === 1 ? '1 teammate' : `${n} teammates`),
   openSeats: (n: number) => (n === 1 ? '1 open seat' : `${n} open seats`),
   needsYou: (n: number) => (n === 1 ? '1 thing needs you' : `${n} things need you`),
