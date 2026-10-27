@@ -1,7 +1,7 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
-import type { GithubStatus, TunnelStatus } from '@/hermes'
+import type { GithubStatus, TunnelStatus } from '@/api/setup-connect'
 
 import { ConnectStep, SetupStepper, setupView } from './connect-step'
 
@@ -15,7 +15,7 @@ const api = vi.hoisted(() => ({
   stopTunnel: vi.fn()
 }))
 
-vi.mock('@/hermes', () => ({
+vi.mock('@/api/setup-connect', () => ({
   cancelGithubLogin: api.cancelGithubLogin,
   getGithubStatus: api.getGithubStatus,
   getTunnelStatus: api.getTunnelStatus,
