@@ -353,7 +353,7 @@ export async function openRosterBot(bot: RosterRow): Promise<boolean> {
     if (generation === getBotOpenGeneration()) {
       $openBotChat.set(null)
       restorePreviousGroup()
-      notifyBotOpenFailure(error, bot, 'open', displayName(bot, meta))
+      notifyBotOpenFailure(error, bot, 'open', displayName(bot, meta), () => void openRosterBot(bot))
     }
 
     settlePendingBotOpen(generation)

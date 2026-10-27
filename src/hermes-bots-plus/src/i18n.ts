@@ -346,6 +346,7 @@ type BotsMessages = {
     openChatFailedTitle: (botName: string) => string
     openChatFailedMessage: string
     openGateways: string
+    openRetry: string
     /** Stands under the bot's name in a chat it has not spoken in yet. */
     chatEmpty: string
     /** First line of a brand-new bot's forever-chat — see `kickoffText`. */
@@ -1232,8 +1233,9 @@ const en: BotsMessages = {
     openUnreachableTitle: 'Hermes couldn’t reach the computer this bot runs on',
     openUnreachableMessage: 'Check it is online and try again.',
     openChatFailedTitle: botName => `Could not open ${botName}’s chat`,
-    openChatFailedMessage: 'Try again.',
+    openChatFailedMessage: 'Something went wrong while opening it.',
     openGateways: 'Open Gateways',
+    openRetry: 'Try again',
     chatEmpty: 'Say something to get started.',
     kickoff: 'Hey, tell me about yourself!',
     notifications: 'Notifications',
@@ -2119,6 +2121,7 @@ const ja: BotsMessages = {
     openChatFailedTitle: botName => `${botName} のチャットを開けませんでした`,
     openChatFailedMessage: 'もう一度お試しください。',
     openGateways: 'ゲートウェイを開く',
+    openRetry: '再試行',
     chatEmpty: '何か書いて始めましょう。',
     kickoff: 'こんにちは、自己紹介をしてください！',
     notifications: '通知',
@@ -2991,6 +2994,7 @@ const zh: BotsMessages = {
     openChatFailedTitle: botName => `无法打开 ${botName} 的聊天`,
     openChatFailedMessage: '请重试。',
     openGateways: '打开网关',
+    openRetry: '重试',
     chatEmpty: '说点什么开始吧。',
     kickoff: '你好，介绍一下你自己吧！',
     notifications: '通知',
@@ -3854,6 +3858,7 @@ const zhHant: BotsMessages = {
     openChatFailedTitle: botName => `無法開啟 ${botName} 的聊天`,
     openChatFailedMessage: '請再試一次。',
     openGateways: '開啟閘道',
+    openRetry: '重試',
     chatEmpty: '說點什麼開始吧。',
     kickoff: '你好，介紹一下你自己吧！',
     notifications: '通知',

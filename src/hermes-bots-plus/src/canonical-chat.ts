@@ -206,7 +206,9 @@ export function isCanonicalBotChatHistory(history: CanonicalChatRow) {
 function botModeGatewayNeedsUpdate(error: unknown) {
   const message = String((error as RpcErrorLike)?.message || error || '')
 
-  return /(?:method not found|no handler for|unknown method|unsupported rpc)/i.test(message)
+  // A strict-contract refusal of a newer param ("Extra inputs are not permitted … out of
+  // sync") is the same version skew as an unknown method: say so, not "try again".
+  return /(?:method not found|no handler for|unknown method|unsupported rpc|out of sync|extra inputs are not permitted)/i.test(message)
 }
 
 /** The one deep link to the Gateways settings tab (the route
@@ -228,8 +230,15 @@ export type BotOpenStep = 'open' | 'reach'
 
 /** Toast a failed bot open. Titles and bodies come from the plugin bundle and
  *  say what happened + what to do; the raw RPC/connection error only ever
- *  rides in `detail`. Every toast offers the Gateways settings tab. */
-export function notifyBotOpenFailure(error: unknown, bot: RosterRow, step: BotOpenStep, botName?: string) {
+ *  rides in `detail`. Gateway problems (needs update / unreachable) offer the
+ *  Gateways settings tab; a plain open failure offers a retry of the same open. */
+export function notifyBotOpenFailure(
+  error: unknown,
+  bot: RosterRow,
+  step: BotOpenStep,
+  botName?: string,
+  retry?: () => void
+) {
   const b = botsText().bot
   const action = { label: b.openGateways, onClick: () => host.navigate(GATEWAY_SETTINGS_PATH) }
   const detail = errorDetail(error)
@@ -264,7 +273,7 @@ export function notifyBotOpenFailure(error: unknown, bot: RosterRow, step: BotOp
     title: b.openChatFailedTitle(botName || bot.name),
     message: b.openChatFailedMessage,
     ...(detail ? { detail } : {}),
-    action
+    action: retry ? { label: b.openRetry, onClick: retry } : action
   })
 }
 

@@ -188,6 +188,7 @@ export type BotsMessages = {
     openChatFailedTitle: (botName: string) => string
     openChatFailedMessage: string
     openGateways: string
+    openRetry: string
     /** Stands under the bot's name in a chat it has not spoken in yet. */
     chatEmpty: string
     /** First line of a brand-new bot's forever-chat — see `kickoffText`. */
