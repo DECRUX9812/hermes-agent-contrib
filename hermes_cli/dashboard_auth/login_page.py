@@ -24,6 +24,14 @@ _LOGIN_HTML_TEMPLATE = """\
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in — Hermes Agent</title>
+<script>
+  try {{
+    var theme = localStorage.getItem('hermes-boot-color-scheme') || localStorage.getItem('theme');
+    if (theme === 'dark' || theme === 'light') {{
+      document.documentElement.setAttribute('data-theme', theme);
+    }}
+  }} catch (e) {{}}
+</script>
 <style>
   /* Brand fonts shipped by @nous-research/ui — same files the SPA loads. */
   @font-face {{
@@ -56,12 +64,56 @@ _LOGIN_HTML_TEMPLATE = """\
   }}
 
   :root {{
-    --background-base: #170d02;
-    --background: #170d02;
-    --midground: #ffac02;
-    --foreground: #ffffff;
-    --hairline: color-mix(in srgb, #ffac02 18%, transparent);
-    --hairline-strong: color-mix(in srgb, #ffac02 35%, transparent);
+    --bg-page: #fbfaf8;
+    --card-bg: #ffffff;
+    --card-border: #e7e5e0;
+    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+    --text-primary: #18181b;
+    --text-secondary: #71717a;
+    --primary: #4f46e5;
+    --primary-hover: #4338ca;
+    --primary-text: #ffffff;
+    --input-bg: #ffffff;
+    --input-border: #e4e4e7;
+    --input-focus: #4f46e5;
+    --hairline: #e4e4e7;
+    --hairline-strong: #d4d4d8;
+  }}
+
+  @media (prefers-color-scheme: dark) {{
+    :root:not([data-theme="light"]) {{
+      --bg-page: #141416;
+      --card-bg: #1c1c1f;
+      --card-border: #2c2c30;
+      --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+      --text-primary: #f4f4f5;
+      --text-secondary: #a1a1aa;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --primary-text: #ffffff;
+      --input-bg: #18181b;
+      --input-border: #3f3f46;
+      --input-focus: #6366f1;
+      --hairline: #27272a;
+      --hairline-strong: #3f3f46;
+    }}
+  }}
+
+  :root[data-theme="dark"] {{
+    --bg-page: #141416;
+    --card-bg: #1c1c1f;
+    --card-border: #2c2c30;
+    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
+    --text-primary: #f4f4f5;
+    --text-secondary: #a1a1aa;
+    --primary: #6366f1;
+    --primary-hover: #4f46e5;
+    --primary-text: #ffffff;
+    --input-bg: #18181b;
+    --input-border: #3f3f46;
+    --input-focus: #6366f1;
+    --hairline: #27272a;
+    --hairline-strong: #3f3f46;
   }}
 
   *, *::before, *::after {{ box-sizing: border-box; }}
@@ -70,32 +122,15 @@ _LOGIN_HTML_TEMPLATE = """\
     margin: 0;
     padding: 0;
     min-height: 100%;
-    background: var(--background-base);
-    color: var(--foreground);
-    font-family: 'Collapse', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    font-size: 16px;
+    background-color: var(--bg-page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }}
 
-  /* Subtle dot-grid backdrop — DS idiom (see `.dither` in globals.css). */
-  body {{
-    background-image:
-      radial-gradient(
-        ellipse at top,
-        color-mix(in srgb, var(--midground) 6%, transparent) 0%,
-        transparent 55%
-      ),
-      repeating-conic-gradient(
-        color-mix(in srgb, var(--midground) 4%, transparent) 0% 25%,
-        transparent 0% 50%
-      );
-    background-size: auto, 3px 3px;
-    background-attachment: fixed;
-  }}
-
-  /* Layout: vertically center on tall screens, top-anchor on short. */
   body {{
     display: grid;
     place-items: center;
@@ -104,9 +139,9 @@ _LOGIN_HTML_TEMPLATE = """\
 
   main {{
     width: 100%;
-    max-width: 26rem;
+    max-width: 23rem;
     position: relative;
-    animation: slide-up 0.6s ease-out both;
+    animation: slide-up 0.4s ease-out both;
   }}
 
   @keyframes slide-up {{
@@ -118,55 +153,46 @@ _LOGIN_HTML_TEMPLATE = """\
     main {{ animation: none; }}
   }}
 
-  /* Brand wordmark above the card — same uppercase + wide-tracking
-     idiom DS Buttons use. */
   .brand {{
     text-align: center;
-    margin-bottom: 1.75rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
+    margin-bottom: 1.5rem;
     font-weight: 600;
-    font-size: 1.05rem;
-    letter-spacing: 0.32em;
-    text-transform: uppercase;
-    color: var(--midground);
+    font-size: 1.15rem;
+    letter-spacing: -0.01em;
+    color: var(--text-primary);
   }}
   .brand .dot {{
     display: inline-block;
     width: 6px;
     height: 6px;
-    background: var(--midground);
-    margin: 0 0.55em 0.18em;
+    background: var(--primary);
+    margin: 0 0.4em 0.15em;
     vertical-align: middle;
-    border-radius: 1px;
+    border-radius: 50%;
   }}
 
   .card {{
     position: relative;
     padding: 2.25rem 2rem 2rem;
-    background: color-mix(in srgb, #ffffff 2%, var(--background-base));
-    border: 1px solid var(--hairline);
-    /* Hairline highlight + bevel shadow — matches DS Button SHADOW_DEFAULT
-       (`inset -1px -1px 0 #00000080, inset 1px 1px 0 #ffffff80`) at panel scale. */
-    box-shadow:
-      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 5%, transparent),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.4),
-      0 24px 60px -20px rgba(0, 0, 0, 0.6);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    box-shadow: var(--card-shadow);
   }}
 
   h1 {{
-    margin: 0 0 0.4rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
+    margin: 0 0 0.35rem;
     font-weight: 600;
-    font-size: 1.85rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
-    color: var(--foreground);
+    font-size: 1.35rem;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
   }}
 
   .subtitle {{
-    margin: 0 0 1.75rem;
-    color: color-mix(in srgb, var(--foreground) 65%, transparent);
-    font-size: 0.95rem;
+    margin: 0 0 1.5rem;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    line-height: 1.45;
   }}
 
   .provider-list {{
@@ -174,129 +200,114 @@ _LOGIN_HTML_TEMPLATE = """\
     gap: 0.75rem;
   }}
 
-  /* Provider button — mirrors DS Button (default variant):
-     amber surface, dark text, uppercase + wide tracking, inset bevel. */
   .provider-btn {{
     display: block;
     width: 100%;
     box-sizing: border-box;
-    padding: 0.95rem 1rem;
+    padding: 0.65rem 1rem;
     text-align: center;
-    background: var(--midground);
-    color: var(--background-base);
-    font-family: 'Collapse', sans-serif;
-    font-weight: 700;
-    font-size: 0.78rem;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
+    background: var(--primary);
+    color: var(--primary-text);
+    font-weight: 500;
+    font-size: 0.875rem;
+    letter-spacing: normal;
+    text-transform: none;
     text-decoration: none;
     border: 0;
-    border-radius: 0;  /* DS Button is squared — no rounded corners. */
+    border-radius: 8px;
     cursor: pointer;
-    box-shadow:
-      inset 1px 1px 0 0 rgba(255, 255, 255, 0.5),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.5);
-    transition: filter 0.12s ease-out;
+    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    transition: background-color 0.15s ease-out, transform 0.05s ease-out;
   }}
   .provider-btn:hover {{
-    filter: brightness(1.08);
+    background: var(--primary-hover);
   }}
   .provider-btn:active {{
-    /* DS Button uses `active:invert` on the default surface. */
-    filter: invert(1);
+    transform: scale(0.99);
   }}
   .provider-btn:focus-visible {{
-    outline: 2px solid var(--midground);
-    outline-offset: 3px;
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
   }}
 
-  /* Password provider form — same visual language as the OAuth buttons:
-     squared inputs, hairline borders, amber focus ring. */
   .provider-form {{
     display: grid;
-    gap: 0.75rem;
+    gap: 0.85rem;
     text-align: left;
   }}
   .form-title {{
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
     font-weight: 600;
-    font-size: 0.72rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--foreground) 70%, transparent);
+    font-size: 0.875rem;
+    color: var(--text-primary);
+    margin-bottom: 0.2rem;
   }}
   .field {{
     display: grid;
-    gap: 0.3rem;
+    gap: 0.35rem;
   }}
   .field-label {{
-    font-size: 0.72rem;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    color: color-mix(in srgb, var(--foreground) 55%, transparent);
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--text-secondary);
   }}
   .field-input {{
     width: 100%;
     box-sizing: border-box;
-    padding: 0.7rem 0.8rem;
-    background: color-mix(in srgb, #000000 25%, var(--background-base));
-    color: var(--foreground);
-    border: 1px solid var(--hairline-strong);
-    border-radius: 0;
-    font-family: 'Collapse', sans-serif;
-    font-size: 0.95rem;
+    padding: 0.55rem 0.75rem;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    font-size: 0.875rem;
+    transition: border-color 0.15s, box-shadow 0.15s;
   }}
   .field-input:focus-visible {{
     outline: none;
-    border-color: var(--midground);
-    box-shadow: 0 0 0 1px var(--midground);
+    border-color: var(--input-focus);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--input-focus) 20%, transparent);
   }}
   .form-error {{
-    color: #ff6b6b;
-    font-size: 0.82rem;
-    letter-spacing: 0.02em;
+    color: #ef4444;
+    font-size: 0.825rem;
   }}
   .provider-form .provider-btn {{
-    margin-top: 0.25rem;
+    margin-top: 0.5rem;
   }}
 
   footer {{
-    margin-top: 1.75rem;
+    margin-top: 1.5rem;
     text-align: center;
-    color: color-mix(in srgb, var(--foreground) 45%, transparent);
+    color: var(--text-secondary);
     font-size: 0.75rem;
-    letter-spacing: 0.1em;
-    text-transform: uppercase;
-    line-height: 1.7;
+    line-height: 1.5;
   }}
   footer .sep {{
     display: inline-block;
-    width: 1.5rem;
+    width: 1rem;
     height: 1px;
     background: var(--hairline-strong);
     vertical-align: middle;
-    margin: 0 0.6em 0.2em;
+    margin: 0 0.5em 0.2em;
   }}
 
-  /* Selection — DS uses midground bg + background text. */
   ::selection {{
-    background: var(--midground);
-    color: var(--background-base);
+    background: var(--primary);
+    color: var(--primary-text);
   }}
 </style>
 </head>
 <body>
 <main>
-  <div class="brand">Nous<span class="dot"></span>Research</div>
+  <div class="brand">Hermes<span class="dot"></span>Desktop</div>
   <div class="card">
     <h1>Sign in</h1>
-    <p class="subtitle">Choose a sign-in method to continue to the Hermes Agent dashboard.</p>
+    <p class="subtitle">Enter your credentials to continue to Hermes Desktop.</p>
     <div class="provider-list">
 {provider_buttons}
     </div>
   </div>
   <footer>
-    <span class="sep"></span>Public bind &middot; Auth required<span class="sep"></span>
+    <span class="sep"></span>Authenticated session required<span class="sep"></span>
   </footer>
 </main>
 {password_script}
@@ -327,18 +338,30 @@ _EMPTY_HTML = """\
     src: url('/fonts/RulesCompressed-Medium.woff2') format('woff2');
   }
   :root {
-    --background-base: #170d02;
-    --midground: #ffac02;
-    --foreground: #ffffff;
-    --hairline: color-mix(in srgb, #ffac02 18%, transparent);
+    --bg-page: #fbfaf8;
+    --card-bg: #ffffff;
+    --card-border: #e7e5e0;
+    --text-primary: #18181b;
+    --text-secondary: #71717a;
+    --primary: #4f46e5;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg-page: #141416;
+      --card-bg: #1c1c1f;
+      --card-border: #2c2c30;
+      --text-primary: #f4f4f5;
+      --text-secondary: #a1a1aa;
+      --primary: #6366f1;
+    }
   }
   *, *::before, *::after { box-sizing: border-box; }
   html, body {
     margin: 0; padding: 0; min-height: 100%;
-    background: var(--background-base);
-    color: var(--foreground);
-    font-family: 'Collapse', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
-    font-size: 16px; line-height: 1.5;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 15px; line-height: 1.5;
     -webkit-font-smoothing: antialiased;
   }
   body {
@@ -346,31 +369,28 @@ _EMPTY_HTML = """\
     padding: clamp(1.5rem, 6vh, 6rem) 1.25rem;
   }
   main {
-    width: 100%; max-width: 32rem;
+    width: 100%; max-width: 28rem;
     padding: 2.25rem 2rem;
-    background: color-mix(in srgb, #ffffff 2%, var(--background-base));
-    border: 1px solid var(--hairline);
-    box-shadow:
-      inset 1px 1px 0 0 color-mix(in srgb, #ffffff 5%, transparent),
-      inset -1px -1px 0 0 rgba(0, 0, 0, 0.4),
-      0 24px 60px -20px rgba(0, 0, 0, 0.6);
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    border-radius: 12px;
+    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
   }
   h1 {
-    margin: 0 0 1rem;
-    font-family: 'Rules Compressed', 'Collapse', sans-serif;
-    font-weight: 600; font-size: 1.5rem;
-    letter-spacing: 0.05em; text-transform: uppercase;
-    color: var(--midground);
+    margin: 0 0 0.75rem;
+    font-weight: 600; font-size: 1.35rem;
+    letter-spacing: -0.02em;
+    color: var(--text-primary);
   }
-  p { margin: 0 0 1rem; }
+  p { margin: 0 0 1rem; color: var(--text-secondary); }
   code {
-    background: var(--midground);
-    color: var(--background-base);
-    padding: 0.1em 0.35em;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9em;
+    background: color-mix(in srgb, var(--primary) 10%, transparent);
+    color: var(--primary);
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-size: 0.875em;
   }
-  a { color: var(--midground); }
+  a { color: var(--primary); }
 </style>
 </head>
 <body>
