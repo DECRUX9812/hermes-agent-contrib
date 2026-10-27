@@ -4676,7 +4676,7 @@ export const deOverrides = {
     openInExternal: 'In externem Programm öffnen',
     popIn: 'Eindocken',
     popOut: 'Abdocken',
-    linkHint: '⌘/Strg-Klick für das Vorschau-Fenster',
+    linkHint: '⌘/Strg-Klick öffnet im Browser',
     sourceLineTitle: 'Zum Auswählen klicken · zum Erweitern Umschalt-Klick · zum Composer ziehen',
     source: 'QUELLE',
     renderedPreview: 'VORSCHAU',
