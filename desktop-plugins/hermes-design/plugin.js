@@ -1,13 +1,15 @@
-// hermes-design: the design-system layer as a plugin. Core styles.css stays stock.
+// hermes-design: the design-system layer as a plugin. Core styles.css and themes/context.tsx stay stock.
 //   • Design tokens: the ui type ladder, radius roles, easings, durations, the semantic colour names (fg, surface,
 //     line, success, warning, danger…) and the utility classes built on them, for core and plugin cards alike.
+//   • Paint-time contrast guard: ink 7:1, accents 4.8:1 and solid secondary/tertiary/quaternary text roles on every
+//     skin, plus the <html> background kept in step with the live theme.
 //   • Composer fill and dock fade (the conversation no longer ghosts through the composer).
 //   • Warm Paper skin, contributed through the SDK themes slot (THEMES_AREA): palette, terminal and its customCSS.
 //   • Design-system overrides for every skin: arbitrary sizes and radii snap to the type ladder and radius roles,
 //     sentence-case labels, the narrow-drawer scrim, the ink wordmark, the featured row, mobile overlay sheets,
 //     overlay nav and framed-editor focus (audit M5-M13, m3, m5). One <style>, removed on disable.
 // Plain ESM, no JSX; imports only from @hermes/plugin-sdk. Clean-room: written for Hermes.
-import { requestTheme, THEMES_AREA } from '@hermes/plugin-sdk'
+import { hexToOklch, oklchToHex, requestTheme, THEMES_AREA } from '@hermes/plugin-sdk'
 
 const SYSTEM_SANS =
   '"Inter", "Segoe WPC", "Segoe UI", -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif, ' +
@@ -425,6 +427,102 @@ const COMPOSER = `
 [data-slot='composer-fade'].opacity-30 { opacity: 0.6; }
 `
 
+// ── Paint-time contrast guard ────────────────────────────────────────────────
+// Core paints the skin's raw seeds onto <html>. Right after each paint (a microtask, so before the frame) this
+// lifts ink to 7:1 and the accents to 4.8:1 against the background, hue kept, and sets the secondary, tertiary and
+// quaternary text roles as solid colours (5.5 / 4.6 / 3.2:1) instead of washes of ink.
+const rgbOf = hex => {
+  const m = /^#([0-9a-f]{3}|[0-9a-f]{6})$/i.exec(String(hex).trim())
+  if (!m) return null
+  const h = m[1].length === 3 ? [...m[1]].map(c => c + c).join('') : m[1]
+  return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16))
+}
+const lum = rgb => {
+  const [r, g, b] = rgb.map(v => {
+    const c = v / 255
+    return c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4
+  })
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b
+}
+const ratio = (a, b) => {
+  const x = rgbOf(a)
+  const y = rgbOf(b)
+  if (!x || !y) return null
+  const [hi, lo] = [lum(x), lum(y)].sort((p, q) => q - p)
+  return (hi + 0.05) / (lo + 0.05)
+}
+const toHex = rgb => '#' + rgb.map(v => Math.round(Math.min(255, Math.max(0, v))).toString(16).padStart(2, '0')).join('')
+const blend = (a, b, t) => {
+  const x = rgbOf(a)
+  const y = rgbOf(b)
+  return x && y ? toHex(x.map((v, i) => v + (y[i] - v) * t)) : a
+}
+// Walk OKLCH lightness away from the background in 0.02 steps until the ratio clears; hue and chroma kept.
+const lift = (hex, bg, min) => {
+  const r = ratio(hex, bg)
+  if (r === null || r >= min) return hex
+  const lch = hexToOklch(hex)
+  const bgRgb = rgbOf(bg)
+  if (!lch || !bgRgb) return hex
+  const dir = lum(bgRgb) < 0.5 ? 1 : -1
+  let best = hex
+  for (let step = 1; step <= 40; step += 1) {
+    const l = lch.l + dir * step * 0.02
+    if (l <= 0 || l >= 1) break
+    best = oklchToHex({ ...lch, l })
+    if ((ratio(best, bg) ?? 0) >= min) return best
+  }
+  return best
+}
+
+const TRANSPARENT_WINDOWS = new Set(['hud', 'overlay', 'quick', 'wake'])
+const TEXT_ROLES = [
+  ['--ui-text-secondary', 0.8, 5.5],
+  ['--ui-text-tertiary', 0.68, 4.6],
+  ['--ui-text-quaternary', 0.5, 3.2]
+]
+
+function guardTheme() {
+  const root = document.documentElement
+  const st = root.style
+  const transparent = TRANSPARENT_WINDOWS.has(new URLSearchParams(window.location.search).get('win') ?? '')
+  let lastBg = null
+  const set = (name, value) => {
+    if (value && st.getPropertyValue(name).trim() !== value) st.setProperty(name, value)
+  }
+  const apply = () => {
+    const bg = st.getPropertyValue('--theme-background-seed').trim()
+    if (!rgbOf(bg)) return
+    const ink = lift(st.getPropertyValue('--theme-foreground').trim(), bg, 7)
+    set('--theme-foreground', ink)
+    set('--theme-primary', lift(st.getPropertyValue('--theme-primary').trim(), bg, 4.8))
+    set('--theme-warm', lift(st.getPropertyValue('--theme-warm').trim(), bg, 4.8))
+    set('--theme-midground', lift(st.getPropertyValue('--theme-midground').trim(), bg, 4.8))
+    if (rgbOf(ink)) for (const [name, t, min] of TEXT_ROLES) set(name, lift(blend(bg, ink, t), bg, min))
+    // The pre-paint script pins <html>'s background for the first frame; keep it on the live theme so a switch
+    // never leaves the old colour behind overscroll edges. Transparent windows never get one.
+    if (!transparent) {
+      let chrome = null
+      try {
+        chrome = window.localStorage.getItem('hermes-boot-background')
+      } catch {
+        // Storage unavailable: leave the pre-paint colour.
+      }
+      if (chrome && chrome !== lastBg) {
+        lastBg = chrome
+        st.backgroundColor = chrome
+      }
+    }
+  }
+  const observer = new MutationObserver(apply)
+  observer.observe(root, { attributes: true, attributeFilter: ['style'] })
+  apply()
+  return () => {
+    observer.disconnect()
+    for (const [name] of TEXT_ROLES) st.removeProperty(name)
+  }
+}
+
 const ADOPTED_KEY = 'hermes-design-default-v1'
 const STYLE_ID = 'hermes-design-overrides'
 
@@ -433,7 +531,7 @@ export default {
   name: 'Design system',
   defaultEnabled: true,
   description:
-    'Warm Paper skin, the design tokens and utility classes, and the design-system overrides.',
+    'Warm Paper skin, the design tokens and utility classes, the contrast guard, and the design-system overrides.',
   register(ctx) {
     ctx.register({ id: 'paper', area: THEMES_AREA, data: paperTheme })
     // Warm Paper is the calm default: adopt it once for anyone who never picked a skin.
@@ -455,6 +553,10 @@ export default {
       document.head.appendChild(el)
     }
     el.textContent = TOKENS + COMPOSER + OVERRIDES
-    ctx.onDispose(() => el.remove())
+    const unguard = guardTheme()
+    ctx.onDispose(() => {
+      unguard()
+      el.remove()
+    })
   },
 }
