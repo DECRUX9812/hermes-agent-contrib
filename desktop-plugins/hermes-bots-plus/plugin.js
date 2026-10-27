@@ -34446,6 +34446,77 @@ function mountPluginStyles(utilities = "") {
   return () => el?.remove();
 }
 
+// src/reaction-pills.tsx
+init_sdk_compat();
+import { useLayoutEffect, useRef as useRef18 } from "react";
+init_data();
+import { jsx as jsx78 } from "react/jsx-runtime";
+var BOT_CHAT_MARK = "data-hbp-bot-chat";
+var VIEWPORT = '[data-slot="aui_thread-viewport"]';
+function chatPaneOf(el) {
+  for (let node = el?.parentElement ?? null; node && node !== document.body; node = node.parentElement) {
+    if (node.querySelector(VIEWPORT)) {
+      return node;
+    }
+  }
+  return null;
+}
+function BotChatMark() {
+  const view = useSessionView();
+  const storedId = (0, sdk_compat_exports.useValue)(view.$storedId) ?? null;
+  (0, sdk_compat_exports.useValue)($lastRoster);
+  const on = canonicalBotChatOnScreen(storedId);
+  const anchor = useRef18(null);
+  useLayoutEffect(() => {
+    if (!on) {
+      return;
+    }
+    let pane = null;
+    const mark = () => {
+      pane = chatPaneOf(anchor.current);
+      pane?.setAttribute(BOT_CHAT_MARK, "");
+      return Boolean(pane);
+    };
+    const watcher = mark() ? null : new MutationObserver(() => mark() && watcher?.disconnect());
+    watcher?.observe(document.body, { childList: true, subtree: true });
+    return () => {
+      watcher?.disconnect();
+      pane?.removeAttribute(BOT_CHAT_MARK);
+    };
+  }, [on, storedId]);
+  return on ? /* @__PURE__ */ jsx78("span", { "aria-hidden": true, hidden: true, ref: anchor }) : null;
+}
+var SCOPE = `[${BOT_CHAT_MARK}]`;
+var SLOT = `[data-slot='aui_msg-reactions']`;
+function reactionPillStyleSheet() {
+  return [
+    `${SCOPE} button${SLOT}[data-reacted]{padding:0;border-radius:var(--radius-xl);}`,
+    `${SCOPE} ${SLOT}[data-reacted]>span,${SCOPE} span${SLOT}{gap:0.25rem;}`,
+    `${SCOPE} ${SLOT} .reaction-pop{display:inline-flex;align-items:center;justify-content:center;`,
+    `min-width:1.75rem;height:1.375rem;padding:0 0.4375rem;border-radius:999px;`,
+    `background:var(--ui-bg-quaternary);box-shadow:inset 0 0 0 1px var(--ui-stroke-tertiary);`,
+    `transition:background-color var(--dur-fast,120ms) var(--ease-standard,ease),box-shadow var(--dur-fast,120ms) var(--ease-standard,ease);}`,
+    `${SCOPE} button${SLOT}[data-reacted]:hover .reaction-pop,${SCOPE} button${SLOT} .reaction-pop:hover{`,
+    `background:var(--ui-control-hover-background);box-shadow:inset 0 0 0 1px var(--ui-stroke-secondary);}`,
+    `${SCOPE} button${SLOT}[data-state='open'] .reaction-pop{box-shadow:inset 0 0 0 1px var(--ui-accent);}`
+  ].join("");
+}
+var STYLE_ID2 = "hermes-bots-plus-reaction-pills";
+function mountReactionPillStyles() {
+  if (typeof document === "undefined") {
+    return () => {
+    };
+  }
+  let el = document.getElementById(STYLE_ID2);
+  if (!el) {
+    el = document.createElement("style");
+    el.id = STYLE_ID2;
+    document.head.appendChild(el);
+  }
+  el.textContent = reactionPillStyleSheet();
+  return () => el?.remove();
+}
+
 // src/tool-card.tsx
 init_sdk_compat();
 import {
@@ -34453,13 +34524,13 @@ import {
   useContext as useContext3,
   useEffect as useEffect33,
   useMemo as useMemo12,
-  useRef as useRef20,
+  useRef as useRef21,
   useState as useState52
 } from "react";
 
 // src/tool-card-live.tsx
 init_sdk_compat();
-import { useContext as useContext2, useEffect as useEffect32, useRef as useRef19, useState as useState51 } from "react";
+import { useContext as useContext2, useEffect as useEffect32, useRef as useRef20, useState as useState51 } from "react";
 
 // src/browser-backend.ts
 init_data();
@@ -34606,8 +34677,8 @@ init_routing();
 
 // src/tool-card-screen.tsx
 init_sdk_compat();
-import { useEffect as useEffect31, useRef as useRef18, useState as useState50 } from "react";
-import { jsx as jsx78 } from "react/jsx-runtime";
+import { useEffect as useEffect31, useRef as useRef19, useState as useState50 } from "react";
+import { jsx as jsx79 } from "react/jsx-runtime";
 var CLOSE_CONTROL_TAKEN2 = 4e3;
 var MAX_REDIALS = 2;
 var MORPH_NAME = "hbp-screen-morph";
@@ -34654,9 +34725,9 @@ function CardScreenStream({
   botKey,
   onLive
 }) {
-  const canvasHost = useRef18(null);
-  const report = useRef18(onLive);
-  const botRef = useRef18(bot);
+  const canvasHost = useRef19(null);
+  const report = useRef19(onLive);
+  const botRef = useRef19(bot);
   const [painted, setPainted] = useState50(false);
   report.current = onLive;
   botRef.current = bot;
@@ -34743,15 +34814,15 @@ function CardScreenStream({
       release();
     };
   }, [botKey]);
-  return /* @__PURE__ */ jsx78("span", { className: "hbp-lv-layer absolute inset-0 block hbp-tc-sunken", "data-ready": painted, "data-live-screen": "", children: /* @__PURE__ */ jsx78("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 block", ref: canvasHost }) });
+  return /* @__PURE__ */ jsx79("span", { className: "hbp-lv-layer absolute inset-0 block hbp-tc-sunken", "data-ready": painted, "data-live-screen": "", children: /* @__PURE__ */ jsx79("span", { "aria-hidden": true, className: "pointer-events-none absolute inset-0 block", ref: canvasHost }) });
 }
 function ScreenExpandButton({
   bot,
   label,
   meta
 }) {
-  const ref = useRef18(null);
-  return /* @__PURE__ */ jsx78(
+  const ref = useRef19(null);
+  return /* @__PURE__ */ jsx79(
     "button",
     {
       "aria-label": label,
@@ -34766,13 +34837,13 @@ function ScreenExpandButton({
       onKeyDown: (event) => event.stopPropagation(),
       ref,
       type: "button",
-      children: /* @__PURE__ */ jsx78("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx78(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
+      children: /* @__PURE__ */ jsx79("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
     }
   );
 }
 
 // src/tool-card-live.tsx
-import { Fragment as Fragment18, jsx as jsx79, jsxs as jsxs76 } from "react/jsx-runtime";
+import { Fragment as Fragment18, jsx as jsx80, jsxs as jsxs76 } from "react/jsx-runtime";
 var MORPH_NAME2 = "hbp-shot-morph";
 var FADE_MS = 180;
 var TARGET_WAIT_MS2 = 450;
@@ -34785,7 +34856,7 @@ function ShotLayer({
   if (!image.src || image.failed) {
     return null;
   }
-  return /* @__PURE__ */ jsx79(
+  return /* @__PURE__ */ jsx80(
     "img",
     {
       alt: "",
@@ -34803,7 +34874,7 @@ function ShotLayer({
   );
 }
 function CrossfadeShot({ src }) {
-  const nextId = useRef19(1);
+  const nextId = useRef20(1);
   const [layers, setLayers] = useState51(() => [{ id: 0, src }]);
   const [readySrc, setReadySrc] = useState51("");
   useEffect32(() => {
@@ -34822,7 +34893,7 @@ function CrossfadeShot({ src }) {
     const timer = window.setTimeout(() => setLayers((current) => current.slice(-1)), FADE_MS + 40);
     return () => window.clearTimeout(timer);
   }, [layers.length, readySrc, src]);
-  return /* @__PURE__ */ jsx79("span", { className: "relative block h-full w-full", children: layers.map((layer, index) => /* @__PURE__ */ jsx79(
+  return /* @__PURE__ */ jsx80("span", { className: "relative block h-full w-full", children: layers.map((layer, index) => /* @__PURE__ */ jsx80(
     ShotLayer,
     {
       onReady: setReadySrc,
@@ -34948,7 +35019,7 @@ function ExpandableShot({
 }) {
   const text2 = useLiveViewText();
   const session = useContext2(PreviewSessionContext);
-  const frameRef = useRef19(null);
+  const frameRef = useRef20(null);
   return /* @__PURE__ */ jsxs76(
     "button",
     {
@@ -34965,8 +35036,8 @@ function ExpandableShot({
       ref: frameRef,
       type: "button",
       children: [
-        /* @__PURE__ */ jsx79(CrossfadeShot, { src }),
-        /* @__PURE__ */ jsx79("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
+        /* @__PURE__ */ jsx80(CrossfadeShot, { src }),
+        /* @__PURE__ */ jsx80("span", { className: "hbp-lv-zoom absolute right-1.5 bottom-1.5 grid size-6 place-items-center hbp-tc-rc hbp-lv-badge", children: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "screen-full", size: 12 }) })
       ]
     }
   );
@@ -34982,7 +35053,7 @@ function ScreenLayer({ bot }) {
     return null;
   }
   return /* @__PURE__ */ jsxs76(Fragment18, { children: [
-    /* @__PURE__ */ jsx79(
+    /* @__PURE__ */ jsx80(
       CardScreenStream,
       {
         bot,
@@ -34995,7 +35066,7 @@ function ScreenLayer({ bot }) {
         }
       }
     ),
-    painted ? /* @__PURE__ */ jsx79(ScreenExpandButton, { bot, label: text2.expandScreen, meta: botRosterMeta(bot, allMeta) }) : null
+    painted ? /* @__PURE__ */ jsx80(ScreenExpandButton, { bot, label: text2.expandScreen, meta: botRosterMeta(bot, allMeta) }) : null
   ] });
 }
 function LiveFrame({ group, open }) {
@@ -35007,34 +35078,34 @@ function LiveFrame({ group, open }) {
   const bot = useCardBot();
   const onDesktop = useBrowserBackend(running ? bot : null) === "desktop";
   const realProfile = group.cards.some((card) => card.realProfile);
-  return /* @__PURE__ */ jsx79("div", { className: "hbp-tc-collapse", "data-live-frame": "", "data-open": open, inert: !open, children: /* @__PURE__ */ jsx79("div", { children: /* @__PURE__ */ jsx79("div", { className: "hbp-tc-pl12 pt-1.5", children: /* @__PURE__ */ jsxs76("div", { className: "relative aspect-video w-full max-w-sm overflow-hidden rounded-card border border-line hbp-tc-sunken", children: [
-    shot ? /* @__PURE__ */ jsx79(ExpandableShot, { host: host2, src: shot.src, step: shot.index + 1 }) : /* @__PURE__ */ jsxs76("div", { className: "hbp-tc-shimmer flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
-      pageUrl && isPublicHost(host2) ? /* @__PURE__ */ jsx79("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx79(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : /* @__PURE__ */ jsx79(sdk_compat_exports.Codicon, { name: "globe", size: 20 }),
-      pageUrl ? /* @__PURE__ */ jsx79("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : null,
-      /* @__PURE__ */ jsx79("span", { children: text2.waiting })
+  return /* @__PURE__ */ jsx80("div", { className: "hbp-tc-collapse", "data-live-frame": "", "data-open": open, inert: !open, children: /* @__PURE__ */ jsx80("div", { children: /* @__PURE__ */ jsx80("div", { className: "hbp-tc-pl12 pt-1.5", children: /* @__PURE__ */ jsxs76("div", { className: "relative aspect-video w-full max-w-sm overflow-hidden rounded-card border border-line hbp-tc-sunken", children: [
+    shot ? /* @__PURE__ */ jsx80(ExpandableShot, { host: host2, src: shot.src, step: shot.index + 1 }) : /* @__PURE__ */ jsxs76("div", { className: "hbp-tc-shimmer flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+      pageUrl && isPublicHost(host2) ? /* @__PURE__ */ jsx80("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx80(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "globe", size: 20 }),
+      pageUrl ? /* @__PURE__ */ jsx80("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : null,
+      /* @__PURE__ */ jsx80("span", { children: text2.waiting })
     ] }),
-    bot && running && open && onDesktop && !realProfile ? /* @__PURE__ */ jsx79(ScreenLayer, { bot }) : null,
+    bot && running && open && onDesktop && !realProfile ? /* @__PURE__ */ jsx80(ScreenLayer, { bot }) : null,
     running ? /* @__PURE__ */ jsxs76("span", { className: "pointer-events-none absolute top-1.5 left-1.5 inline-flex items-center gap-1 rounded-full px-1.5 text-ui-2xs hbp-lv-badge", children: [
-      /* @__PURE__ */ jsx79("span", { "aria-hidden": true, className: "hbp-lv-dot size-1.5 rounded-full" }),
+      /* @__PURE__ */ jsx80("span", { "aria-hidden": true, className: "hbp-lv-dot size-1.5 rounded-full" }),
       text2.live
     ] }) : null
   ] }) }) }) });
 }
 
 // src/tool-card.tsx
-import { Fragment as Fragment19, jsx as jsx80, jsxs as jsxs77 } from "react/jsx-runtime";
+import { Fragment as Fragment19, jsx as jsx81, jsxs as jsxs77 } from "react/jsx-runtime";
 function SiteFavicon({ host: host2, url }) {
   if (!isPublicHost(host2)) {
     return null;
   }
-  return /* @__PURE__ */ jsx80("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx80(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx80("span", { className: "block size-full" }), url }) });
+  return /* @__PURE__ */ jsx81("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx81(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx81("span", { className: "block size-full" }), url }) });
 }
 function ScreenshotThumb({ src }) {
   const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 10);
   if (image.failed) {
     return null;
   }
-  return /* @__PURE__ */ jsx80("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx80(
+  return /* @__PURE__ */ jsx81("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx81(
     "img",
     {
       alt: "",
@@ -35070,7 +35141,7 @@ function OpenPageButton({
       session.runtimeId
     );
   };
-  return /* @__PURE__ */ jsx80(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs77(
+  return /* @__PURE__ */ jsx81(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs77(
     sdk_compat_exports.Button,
     {
       "aria-label": label,
@@ -35082,7 +35153,7 @@ function OpenPageButton({
       type: "button",
       variant: "ghost",
       children: [
-        /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "link-external" }),
+        /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "link-external" }),
         iconOnly ? null : label
       ]
     }
@@ -35093,28 +35164,28 @@ function CardBlock({ card, showStatus }) {
   const pageUrl = card.family === "browser" ? "" : stepPageUrl([card]);
   const shot = card.family !== "browser" && card.thumb?.kind === "screenshot" ? card.thumb.src : "";
   return /* @__PURE__ */ jsxs77("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
-    showStatus ? /* @__PURE__ */ jsx80("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
+    showStatus ? /* @__PURE__ */ jsx81("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
     pageUrl || shot ? /* @__PURE__ */ jsxs77("div", { className: "flex min-w-0 items-center gap-2", "data-card-page": "", children: [
-      shot ? /* @__PURE__ */ jsx80(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx80("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx80(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
+      shot ? /* @__PURE__ */ jsx81(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx81("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx81(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
       pageUrl ? /* @__PURE__ */ jsxs77(Fragment19, { children: [
-        /* @__PURE__ */ jsx80("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
-        /* @__PURE__ */ jsx80(OpenPageButton, { url: pageUrl })
+        /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
+        /* @__PURE__ */ jsx81(OpenPageButton, { url: pageUrl })
       ] }) : null
     ] }) : null,
     card.args.length > 0 ? /* @__PURE__ */ jsxs77("div", { className: "flex min-w-0 flex-col gap-1", children: [
-      /* @__PURE__ */ jsx80("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
+      /* @__PURE__ */ jsx81("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
       card.args.map((detail) => /* @__PURE__ */ jsxs77("div", { className: "flex min-w-0 gap-2", children: [
-        /* @__PURE__ */ jsx80("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
-        /* @__PURE__ */ jsx80("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
+        /* @__PURE__ */ jsx81("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
+        /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
       ] }, detail.label))
     ] }) : null,
-    /* @__PURE__ */ jsx80("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
-    card.output ? /* @__PURE__ */ jsx80("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx80("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
-    card.reason ? /* @__PURE__ */ jsx80("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
+    /* @__PURE__ */ jsx81("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
+    card.output ? /* @__PURE__ */ jsx81("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx81("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
+    card.reason ? /* @__PURE__ */ jsx81("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
     card.durationLabel ? /* @__PURE__ */ jsxs77("div", { className: "text-ui-2xs hbp-tc-subtle", children: [
       copy.details.duration,
       " ",
-      /* @__PURE__ */ jsx80("span", { className: "tabular-nums", children: card.durationLabel })
+      /* @__PURE__ */ jsx81("span", { className: "tabular-nums", children: card.durationLabel })
     ] }) : null
   ] });
 }
@@ -35166,14 +35237,14 @@ function BrowserSteps({ group }) {
         }
       },
       children: [
-        /* @__PURE__ */ jsx80("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
-        /* @__PURE__ */ jsx80("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx80(ExpandableShot, { host: host2 || pageHost(pageUrl), src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs77("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
-          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx80("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx80(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
-          pageUrl ? /* @__PURE__ */ jsx80("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx80("span", { className: "truncate", children: host2 }) : null,
-          /* @__PURE__ */ jsx80("span", { children: copy.noScreenshot })
+        /* @__PURE__ */ jsx81("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
+        /* @__PURE__ */ jsx81("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx81(ExpandableShot, { host: host2 || pageHost(pageUrl), src: shot, step: selected + 1 }) : /* @__PURE__ */ jsxs77("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx81("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx81(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
+          pageUrl ? /* @__PURE__ */ jsx81("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx81("span", { className: "truncate", children: host2 }) : null,
+          /* @__PURE__ */ jsx81("span", { children: copy.noScreenshot })
         ] }) }),
         /* @__PURE__ */ jsxs77("div", { className: "mt-1 flex items-center gap-1", children: [
-          /* @__PURE__ */ jsx80(
+          /* @__PURE__ */ jsx81(
             sdk_compat_exports.Button,
             {
               "aria-label": copy.previous,
@@ -35181,11 +35252,11 @@ function BrowserSteps({ group }) {
               onClick: () => move(-1),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "chevron-left" })
+              children: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "chevron-left" })
             }
           ),
-          /* @__PURE__ */ jsx80("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
-          /* @__PURE__ */ jsx80(
+          /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
+          /* @__PURE__ */ jsx81(
             sdk_compat_exports.Button,
             {
               "aria-label": copy.next,
@@ -35193,14 +35264,14 @@ function BrowserSteps({ group }) {
               onClick: () => move(1),
               size: "icon-xs",
               variant: "ghost",
-              children: /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { name: "chevron-right" })
+              children: /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "chevron-right" })
             }
           ),
-          pageUrl ? /* @__PURE__ */ jsx80(OpenPageButton, { url: pageUrl }) : null
+          pageUrl ? /* @__PURE__ */ jsx81(OpenPageButton, { url: pageUrl }) : null
         ] }),
-        /* @__PURE__ */ jsx80("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
+        /* @__PURE__ */ jsx81("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
           const rowHost = stepHost(card);
-          return /* @__PURE__ */ jsx80("li", { children: /* @__PURE__ */ jsxs77(
+          return /* @__PURE__ */ jsx81("li", { children: /* @__PURE__ */ jsxs77(
             "button",
             {
               "aria-current": index === selected ? "true" : void 0,
@@ -35211,14 +35282,14 @@ function BrowserSteps({ group }) {
               onClick: () => setManual(index),
               type: "button",
               children: [
-                /* @__PURE__ */ jsx80("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
-                /* @__PURE__ */ jsx80("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
-                rowHost ? /* @__PURE__ */ jsx80("span", { className: "shrink-0 truncate", children: rowHost }) : null
+                /* @__PURE__ */ jsx81("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
+                /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
+                rowHost ? /* @__PURE__ */ jsx81("span", { className: "shrink-0 truncate", children: rowHost }) : null
               ]
             }
           ) }, card.id);
         }) }),
-        /* @__PURE__ */ jsx80("div", { className: "mt-2", children: /* @__PURE__ */ jsx80(CardBlock, { card: step, showStatus: false }) })
+        /* @__PURE__ */ jsx81("div", { className: "mt-2", children: /* @__PURE__ */ jsx81(CardBlock, { card: step, showStatus: false }) })
       ]
     }
   );
@@ -35229,13 +35300,13 @@ function ToolCardDetails({
   open
 }) {
   const multi = group.cards.length > 1;
-  return /* @__PURE__ */ jsx80("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx80("div", { children: /* @__PURE__ */ jsx80("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx80(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx80(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
+  return /* @__PURE__ */ jsx81("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx81("div", { children: /* @__PURE__ */ jsx81("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx81(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx81(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
 }
 function TypingDots() {
   return /* @__PURE__ */ jsxs77("span", { "aria-hidden": "true", className: "hbp-tc-typing inline-flex shrink-0 items-center gap-0.5", "data-typing": "", children: [
-    /* @__PURE__ */ jsx80("span", { className: "size-1 rounded-full bg-current" }),
-    /* @__PURE__ */ jsx80("span", { className: "size-1 rounded-full bg-current" }),
-    /* @__PURE__ */ jsx80("span", { className: "size-1 rounded-full bg-current" })
+    /* @__PURE__ */ jsx81("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx81("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx81("span", { className: "size-1 rounded-full bg-current" })
   ] });
 }
 function isLiveState(state) {
@@ -35261,14 +35332,14 @@ function LiveStatus({ copy, group }) {
   const status = group.cards[group.cards.length - 1].status;
   if (group.state === "running") {
     return /* @__PURE__ */ jsxs77(Fragment19, { children: [
-      /* @__PURE__ */ jsx80("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
-      /* @__PURE__ */ jsx80(TypingDots, {})
+      /* @__PURE__ */ jsx81("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
+      /* @__PURE__ */ jsx81(TypingDots, {})
     ] });
   }
   if (group.state === "approval") {
-    return /* @__PURE__ */ jsx80("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
+    return /* @__PURE__ */ jsx81("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
   }
-  return /* @__PURE__ */ jsx80("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
+  return /* @__PURE__ */ jsx81("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
 }
 function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
   const last = group.cards[group.cards.length - 1];
@@ -35287,8 +35358,8 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
             group.state === "approval" && "hbp-bg-warn-10 text-warning"
           ),
           children: [
-            /* @__PURE__ */ jsx80(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
-            actor ? /* @__PURE__ */ jsx80("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
+            /* @__PURE__ */ jsx81(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
+            actor ? /* @__PURE__ */ jsx81("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
           ]
         }
       ),
@@ -35301,13 +35372,13 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
           ] }) : null
         ] }),
         /* @__PURE__ */ jsxs77("span", { className: "flex min-w-0 items-center gap-1.5 truncate text-ui-xs", children: [
-          site ? /* @__PURE__ */ jsx80(SiteFavicon, { host: site.host, url: site.url }) : null,
-          /* @__PURE__ */ jsx80(LiveStatus, { copy, group })
+          site ? /* @__PURE__ */ jsx81(SiteFavicon, { host: site.host, url: site.url }) : null,
+          /* @__PURE__ */ jsx81(LiveStatus, { copy, group })
         ] }),
-        group.state === "error" && last.reason ? /* @__PURE__ */ jsx80("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
+        group.state === "error" && last.reason ? /* @__PURE__ */ jsx81("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
       ] })
     ] }),
-    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx80(
+    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx81(
       sdk_compat_exports.Button,
       {
         onClick: (event) => {
@@ -35319,8 +35390,8 @@ function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
         children: copy.reviewApproval
       }
     ) : null,
-    shot && group.family !== "browser" ? /* @__PURE__ */ jsx80(ScreenshotThumb, { src: shot }) : null,
-    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx80(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
+    shot && group.family !== "browser" ? /* @__PURE__ */ jsx81(ScreenshotThumb, { src: shot }) : null,
+    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx81(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
   ] });
 }
 function QuietCardBody({ copy, group, toggle }) {
@@ -35330,13 +35401,13 @@ function QuietCardBody({ copy, group, toggle }) {
   const pageUrl = stepPageUrl(group.cards);
   return /* @__PURE__ */ jsxs77(Fragment19, { children: [
     /* @__PURE__ */ jsxs77("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-2 hbp-tc-rr", children: [
-      /* @__PURE__ */ jsx80(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
-      /* @__PURE__ */ jsx80(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
-      /* @__PURE__ */ jsx80("span", { className: "min-w-0 flex-1 truncate", children: header }),
-      site ? /* @__PURE__ */ jsx80(SiteFavicon, { host: site.host, url: site.url }) : null,
-      last.durationLabel ? /* @__PURE__ */ jsx80("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
+      /* @__PURE__ */ jsx81(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
+      /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
+      /* @__PURE__ */ jsx81("span", { className: "min-w-0 flex-1 truncate", children: header }),
+      site ? /* @__PURE__ */ jsx81(SiteFavicon, { host: site.host, url: site.url }) : null,
+      last.durationLabel ? /* @__PURE__ */ jsx81("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
     ] }),
-    pageUrl ? /* @__PURE__ */ jsx80(
+    pageUrl ? /* @__PURE__ */ jsx81(
       OpenPageButton,
       {
         className: "hbp-tc-reveal",
@@ -35392,7 +35463,7 @@ function ToolCard({
     tabIndex: 0
   };
   return /* @__PURE__ */ jsxs77("div", { "data-tool-card": group.state, "data-tool-card-key": group.key, role: "listitem", children: [
-    /* @__PURE__ */ jsx80(
+    /* @__PURE__ */ jsx81(
       "div",
       {
         className: (0, sdk_compat_exports.cn)(
@@ -35401,11 +35472,11 @@ function ToolCard({
           live ? "flex min-h-14 items-center gap-3 rounded-card border border-line bg-surface-raised px-3 py-2.5 text-left" : "hbp-tc-row flex min-h-7 items-center gap-2 hbp-tc-rr border border-transparent px-1.5 text-left text-ui-xs hbp-tc-muted hbp-tc-hover"
         ),
         onClick: toggleOnClick(toggle),
-        children: live ? /* @__PURE__ */ jsx80(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx80(QuietCardBody, { copy, group, toggle: toggleProps })
+        children: live ? /* @__PURE__ */ jsx81(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx81(QuietCardBody, { copy, group, toggle: toggleProps })
       }
     ),
-    frameMounted ? /* @__PURE__ */ jsx80(LiveFrame, { group, open: frameOpen }) : null,
-    everOpened ? /* @__PURE__ */ jsx80(ToolCardDetails, { group, live, open }) : null
+    frameMounted ? /* @__PURE__ */ jsx81(LiveFrame, { group, open: frameOpen }) : null,
+    everOpened ? /* @__PURE__ */ jsx81(ToolCardDetails, { group, live, open }) : null
   ] });
 }
 function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
@@ -35413,14 +35484,14 @@ function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
   if (groups.length === 0) {
     return null;
   }
-  return /* @__PURE__ */ jsx80(
+  return /* @__PURE__ */ jsx81(
     "div",
     {
       "aria-label": copy.activityLabel,
       className: (0, sdk_compat_exports.cn)("flex min-w-0 max-w-full flex-col gap-1.5", className),
       "data-slot": "tool-activity-stack",
       role: "list",
-      children: groups.map((group) => /* @__PURE__ */ jsx80(ToolCard, { actor, group, onReviewApproval }, group.key))
+      children: groups.map((group) => /* @__PURE__ */ jsx81(ToolCard, { actor, group, onReviewApproval }, group.key))
     }
   );
 }
@@ -35443,19 +35514,19 @@ function ToolRunCards({
   storedSessionId
 }) {
   const freshGroups = useMemo12(() => toolCardsFromParts(parts, { approvalCallId }), [parts, approvalCallId]);
-  const cacheRef = useRef20({ groups: [], signature: "" });
+  const cacheRef = useRef21({ groups: [], signature: "" });
   const signature = useMemo12(() => groupsSignature(freshGroups), [freshGroups]);
   if (cacheRef.current.signature !== signature || cacheRef.current.groups.length !== freshGroups.length) {
     cacheRef.current = { groups: freshGroups, signature };
   }
   const session = useMemo12(() => ({ runtimeId: sessionId, storedId: storedSessionId }), [sessionId, storedSessionId]);
-  return /* @__PURE__ */ jsx80(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx80(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
+  return /* @__PURE__ */ jsx81(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx81(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
 }
 
 // src/plugin.tsx
-import { Fragment as Fragment20, jsx as jsx81 } from "react/jsx-runtime";
+import { Fragment as Fragment20, jsx as jsx82 } from "react/jsx-runtime";
 function RailTabTitle() {
-  return /* @__PURE__ */ jsx81(Fragment20, { children: useBots().rail.title });
+  return /* @__PURE__ */ jsx82(Fragment20, { children: useBots().rail.title });
 }
 var plugin_default = {
   id: "hermes-bots-plus",
@@ -35465,6 +35536,7 @@ var plugin_default = {
   register(ctx) {
     setPluginCtx(ctx);
     const unmountStyles = mountPluginStyles(css_default);
+    const unmountReactionPills = mountReactionPillStyles();
     loadBotSections();
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES);
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES);
@@ -35481,6 +35553,7 @@ var plugin_default = {
     const stopScreenAutoRaise = startScreenAutoRaise();
     if (typeof ctx.onDispose === "function") {
       ctx.onDispose(unmountStyles);
+      ctx.onDispose(unmountReactionPills);
       ctx.onDispose(disposeLocales);
       ctx.onDispose(disposeTeamLocales);
       ctx.onDispose(disposeLiveViewLocales);
@@ -35687,17 +35760,17 @@ var plugin_default = {
     ctx.register({
       id: "screen-portal",
       area: sdk_compat_exports.SIDEBAR_PROFILE_GROUP_HEADER_AREA,
-      data: { render: (route) => /* @__PURE__ */ jsx81(ProfileGroupScreenPortal, { route }) }
+      data: { render: (route) => /* @__PURE__ */ jsx82(ProfileGroupScreenPortal, { route }) }
     });
     ctx.register({
       id: "agents-section",
       area: SIDEBAR_LIST_TOP_AREA,
-      data: { render: () => /* @__PURE__ */ jsx81(AgentsSection, {}), searchable: true }
+      data: { render: () => /* @__PURE__ */ jsx82(AgentsSection, {}), searchable: true }
     });
     ctx.register({
       id: "bot-header-identity",
       area: CHAT_HEADER_AREAS.title,
-      data: { render: (props) => /* @__PURE__ */ jsx81(BotHeaderIdentity, { ...props }) }
+      data: { render: (props) => /* @__PURE__ */ jsx82(BotHeaderIdentity, { ...props }) }
     });
     ctx.register({
       id: "pane",
@@ -35732,7 +35805,7 @@ var plugin_default = {
         width: "260px",
         collapsible: true,
         hideOnly: true,
-        tabTitle: () => /* @__PURE__ */ jsx81(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
+        tabTitle: () => /* @__PURE__ */ jsx82(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
         tabTitleText: () => (0, sdk_compat_exports.translateNow)("common.bots"),
         dock: {
           pane: "sessions",
@@ -35740,7 +35813,7 @@ var plugin_default = {
           enforce: true
         }
       },
-      render: () => /* @__PURE__ */ jsx81(BotsPane, {})
+      render: () => /* @__PURE__ */ jsx82(BotsPane, {})
     });
     const registerRoutinesPane = (restoreDismissed) => {
       const dispose = ctx.register({
@@ -35752,7 +35825,7 @@ var plugin_default = {
         // not `useI18n`: a pane title is read at registration, outside React.
         title: botsText().rail.title,
         data: {
-          tabTitle: () => /* @__PURE__ */ jsx81(RailTabTitle, {}),
+          tabTitle: () => /* @__PURE__ */ jsx82(RailTabTitle, {}),
           tabTitleText: () => botsText().rail.title,
           placement: "main",
           // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
@@ -35767,7 +35840,7 @@ var plugin_default = {
           defaultCollapsed: true,
           width: "320px"
         },
-        render: () => /* @__PURE__ */ jsx81(MissionRail, {})
+        render: () => /* @__PURE__ */ jsx82(MissionRail, {})
       });
       if (restoreDismissed && typeof host.undismissPane === "function") {
         host.undismissPane(paneId2("routines"));
@@ -35878,37 +35951,42 @@ var plugin_default = {
       id: "bot-tool-cards",
       area: sdk_compat_exports.TOOL_RUN_RENDERER_AREA,
       data: {
-        render: (props) => /* @__PURE__ */ jsx81(ToolRunCards, { ...props })
+        render: (props) => /* @__PURE__ */ jsx82(ToolRunCards, { ...props })
       }
     });
     ctx.register({
       id: "chat-empty",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx81(BotChatEmpty, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx82(BotChatEmpty, { sessionId })
       }
     });
     ctx.register({
       id: "chat-empty-tips",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx81(BotChatTips, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx82(BotChatTips, { sessionId })
       }
+    });
+    ctx.register({
+      id: "bot-chat-mark",
+      area: sdk_compat_exports.COMPOSER_AREAS.top,
+      render: () => /* @__PURE__ */ jsx82(BotChatMark, {})
     });
     ctx.register({
       id: "bot-inbound-cards",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx81(BotInboundCards, {})
+      render: () => /* @__PURE__ */ jsx82(BotInboundCards, {})
     });
     ctx.register({
       id: "bot-context-nudge",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx81(BotContextNudge, {})
+      render: () => /* @__PURE__ */ jsx82(BotContextNudge, {})
     });
     ctx.register({
       id: "bot-delegate-hint",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx81(BotDelegateHint, {})
+      render: () => /* @__PURE__ */ jsx82(BotDelegateHint, {})
     });
     ctx.register({
       id: "new-agent",
@@ -35947,7 +36025,7 @@ var plugin_default = {
             label: displayName(bot, botRosterMeta(bot, meta)),
             keywords: ["bot", "agent", "chat", bot.name, botHandle(bot.name, bot)].filter(Boolean),
             detail: () => bot.remoteSource ? "remote" : "local",
-            icon: (props) => /* @__PURE__ */ jsx81(sdk_compat_exports.Codicon, { name: "robot", ...props }),
+            icon: (props) => /* @__PURE__ */ jsx82(sdk_compat_exports.Codicon, { name: "robot", ...props }),
             run: () => void openRosterBot(bot)
           }));
         }
@@ -35971,13 +36049,13 @@ var plugin_default = {
       area: sdk_compat_exports.TRANSCRIPT_DIRECTIVE_AREA,
       data: {
         name: BOT_PLAN_DIRECTIVE,
-        render: (props) => /* @__PURE__ */ jsx81(BotPlanCard, { ...props })
+        render: (props) => /* @__PURE__ */ jsx82(BotPlanCard, { ...props })
       }
     });
     ctx.register({
       id: "bot-plan-checklist",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx81(BotPlanChecklist, {})
+      render: () => /* @__PURE__ */ jsx82(BotPlanChecklist, {})
     });
     ctx.register({
       id: "mention-middleware",
@@ -36072,7 +36150,7 @@ var plugin_default = {
       ctx.register({
         id: "instant-ack",
         area: sdk_compat_exports.COMPOSER_AREAS.top,
-        render: () => /* @__PURE__ */ jsx81(InstantAckLine, {})
+        render: () => /* @__PURE__ */ jsx82(InstantAckLine, {})
       });
     }
     for (const contribution of [
@@ -36080,7 +36158,7 @@ var plugin_default = {
         id: "team-page",
         area: sdk_compat_exports.ROUTES_AREA,
         data: { path: "/team" },
-        render: () => /* @__PURE__ */ jsx81(TeamPage, {})
+        render: () => /* @__PURE__ */ jsx82(TeamPage, {})
       },
       {
         id: "team-nav",

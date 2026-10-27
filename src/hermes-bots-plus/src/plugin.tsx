@@ -138,6 +138,7 @@ import { bumpBotOpenGeneration, getBotOpenGeneration, ID, paneId, setPluginCtx }
 import { TEAM_LOCALES } from './team-i18n'
 import { TeamPage } from './team-page'
 import { mountPluginStyles } from './tones'
+import { BotChatMark, mountReactionPillStyles } from './reaction-pills'
 import { ToolRunCards } from './tool-card'
 import type { GroupChat, RosterRow } from './types'
 import { loadBotSections } from './user-sections'
@@ -181,6 +182,8 @@ export default {
     setPluginCtx(ctx)
     // Theme-token status tones + plugin-only utilities (see tones.ts).
     const unmountStyles = mountPluginStyles(pluginUtilities)
+    // b1: landed reactions read as pills inside a canonical Bot Chat.
+    const unmountReactionPills = mountReactionPillStyles()
     // The user's own roster sections. Read once at register; every mutation
     // writes through.
     loadBotSections()
@@ -205,6 +208,7 @@ export default {
     // before this, the rAF loop + 1Hz document scan ran until app restart.
     if (typeof ctx.onDispose === 'function') {
       ctx.onDispose(unmountStyles)
+      ctx.onDispose(unmountReactionPills)
       ctx.onDispose(disposeLocales)
       ctx.onDispose(disposeTeamLocales)
       ctx.onDispose(disposeLiveViewLocales)
@@ -901,6 +905,14 @@ export default {
     // routine completions) as compact cards inside its canonical chat. The
     // contribution answers for itself: null when the focused chat is not a
     // canonical Bot Chat.
+    // b1 — marks a canonical Bot Chat's pane so its reaction pills (and
+    // other Bot Chat-only chrome) can scope to it. Renders nothing visible.
+    ctx.register({
+      id: 'bot-chat-mark',
+      area: COMPOSER_AREAS.top,
+      render: () => <BotChatMark />
+    })
+
     ctx.register({
       id: 'bot-inbound-cards',
       area: COMPOSER_AREAS.top,
