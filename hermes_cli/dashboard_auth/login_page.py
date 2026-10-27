@@ -16,6 +16,75 @@ from urllib.parse import quote, urlencode
 
 from hermes_cli.dashboard_auth import list_session_providers
 
+_PAPER_HEAD = """\
+<style>
+  /* Shared design tokens. Same names and values as the app: the colours are
+     Warm Paper (apps/desktop/src/themes/paper.ts, the default skin) and the
+     radius/motion roles come from apps/desktop/src/design/tokens.css.
+     light-dark() follows the OS; the password page's script also applies
+     the scheme chosen in the app. Drift is caught by
+     tests/hermes_cli/test_login_page_tokens.py. */
+  :root {
+    color-scheme: light dark;
+    --dt-background: light-dark(#f6f3ee, #17161a);
+    --dt-foreground: light-dark(#26231e, #ece9e2);
+    --dt-card: light-dark(#fbfaf7, #1c1b20);
+    --dt-muted-foreground: light-dark(#6b665c, #a7a399);
+    --dt-primary: light-dark(#4a5bd0, #8d9bff);
+    --dt-primary-foreground: light-dark(#ffffff, #17161a);
+    --dt-accent: light-dark(#e9ecfb, #2a2d4d);
+    --dt-accent-foreground: light-dark(#2c3560, #dfe3ff);
+    --dt-border: light-dark(#e7e2d9, #2c2b32);
+    --dt-input: light-dark(#d6cfc2, #3a3943);
+    --dt-ring: light-dark(#5b6ee1, #8d9bff);
+    --dt-destructive: light-dark(#bd4139, #e0776f);
+    --dt-shadow-color: light-dark(rgb(38 35 30 / 16%), transparent);
+    --dt-shadow: 0 12px 32px -16px var(--dt-shadow-color);
+    --radius-control: 0.375rem;
+    --radius-card: 0.625rem;
+    --dur-fast: 120ms;
+    --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+    --ds-focus-ring: 0 0 0 2px var(--dt-card), 0 0 0 4px color-mix(in srgb, var(--dt-ring) 55%, transparent);
+    --dt-font-sans: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+  }
+  :root[data-theme="light"] { color-scheme: light; }
+  :root[data-theme="dark"] { color-scheme: dark; }
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body {
+    margin: 0;
+    padding: 0;
+    min-height: 100%;
+    background: var(--dt-background);
+    color: var(--dt-foreground);
+    font-family: var(--dt-font-sans);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    font-size: 0.875rem;
+    display: grid;
+    place-items: center;
+    padding: clamp(1.5rem, 6vh, 6rem) 1rem;
+  }
+  .card {
+    padding: 2rem 1.5rem 1.5rem;
+    background: var(--dt-card);
+    border: 1px solid var(--dt-border);
+    border-radius: var(--radius-card);
+    box-shadow: var(--dt-shadow);
+  }
+  h1 {
+    margin: 0 0 0.25rem;
+    font-weight: 600;
+    font-size: 1.25rem;
+    line-height: 1.75rem;
+    letter-spacing: -0.01em;
+  }
+  a { color: var(--dt-primary); }
+  ::selection { background: var(--dt-accent); color: var(--dt-accent-foreground); }
+</style>
+"""
+
 # Single curly braces are ``str.format`` placeholders; CSS curlies are doubled.
 _LOGIN_HTML_TEMPLATE = """\
 <!doctype html>
@@ -24,14 +93,7 @@ _LOGIN_HTML_TEMPLATE = """\
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign in — Hermes Agent</title>
-<script>
-  try {{
-    var theme = localStorage.getItem('hermes-boot-color-scheme') || localStorage.getItem('theme');
-    if (theme === 'dark' || theme === 'light') {{
-      document.documentElement.setAttribute('data-theme', theme);
-    }}
-  }} catch (e) {{}}
-</script>
+@@PAPER_HEAD@@
 <style>
   /* Brand fonts shipped by @nous-research/ui — same files the SPA loads. */
   @font-face {{
@@ -63,85 +125,11 @@ _LOGIN_HTML_TEMPLATE = """\
     src: url('/fonts/RulesCompressed-Medium.woff2') format('woff2');
   }}
 
-  :root {{
-    --bg-page: #fbfaf8;
-    --card-bg: #ffffff;
-    --card-border: #e7e5e0;
-    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-    --text-primary: #18181b;
-    --text-secondary: #71717a;
-    --primary: #4f46e5;
-    --primary-hover: #4338ca;
-    --primary-text: #ffffff;
-    --input-bg: #ffffff;
-    --input-border: #e4e4e7;
-    --input-focus: #4f46e5;
-    --hairline: #e4e4e7;
-    --hairline-strong: #d4d4d8;
-  }}
-
-  @media (prefers-color-scheme: dark) {{
-    :root:not([data-theme="light"]) {{
-      --bg-page: #141416;
-      --card-bg: #1c1c1f;
-      --card-border: #2c2c30;
-      --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
-      --text-primary: #f4f4f5;
-      --text-secondary: #a1a1aa;
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --primary-text: #ffffff;
-      --input-bg: #18181b;
-      --input-border: #3f3f46;
-      --input-focus: #6366f1;
-      --hairline: #27272a;
-      --hairline-strong: #3f3f46;
-    }}
-  }}
-
-  :root[data-theme="dark"] {{
-    --bg-page: #141416;
-    --card-bg: #1c1c1f;
-    --card-border: #2c2c30;
-    --card-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.3);
-    --text-primary: #f4f4f5;
-    --text-secondary: #a1a1aa;
-    --primary: #6366f1;
-    --primary-hover: #4f46e5;
-    --primary-text: #ffffff;
-    --input-bg: #18181b;
-    --input-border: #3f3f46;
-    --input-focus: #6366f1;
-    --hairline: #27272a;
-    --hairline-strong: #3f3f46;
-  }}
-
-  *, *::before, *::after {{ box-sizing: border-box; }}
-
-  html, body {{
-    margin: 0;
-    padding: 0;
-    min-height: 100%;
-    background-color: var(--bg-page);
-    color: var(--text-primary);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 15px;
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-  }}
-
-  body {{
-    display: grid;
-    place-items: center;
-    padding: clamp(1.5rem, 6vh, 6rem) 1.25rem;
-  }}
-
   main {{
     width: 100%;
-    max-width: 23rem;
+    max-width: 22.5rem;
     position: relative;
-    animation: slide-up 0.4s ease-out both;
+    animation: slide-up 180ms var(--ease-standard) both;
   }}
 
   @keyframes slide-up {{
@@ -155,44 +143,25 @@ _LOGIN_HTML_TEMPLATE = """\
 
   .brand {{
     text-align: center;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
     font-weight: 600;
-    font-size: 1.15rem;
-    letter-spacing: -0.01em;
-    color: var(--text-primary);
+    font-size: 1rem;
   }}
   .brand .dot {{
     display: inline-block;
     width: 6px;
     height: 6px;
-    background: var(--primary);
+    background: var(--dt-primary);
     margin: 0 0.4em 0.15em;
     vertical-align: middle;
     border-radius: 50%;
   }}
 
-  .card {{
-    position: relative;
-    padding: 2.25rem 2rem 2rem;
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    box-shadow: var(--card-shadow);
-  }}
-
-  h1 {{
-    margin: 0 0 0.35rem;
-    font-weight: 600;
-    font-size: 1.35rem;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
-  }}
-
   .subtitle {{
     margin: 0 0 1.5rem;
-    color: var(--text-secondary);
-    font-size: 0.875rem;
-    line-height: 1.45;
+    color: var(--dt-muted-foreground);
+    font-size: 0.8125rem;
+    line-height: 1.25rem;
   }}
 
   .provider-list {{
@@ -201,33 +170,35 @@ _LOGIN_HTML_TEMPLATE = """\
   }}
 
   .provider-btn {{
-    display: block;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     width: 100%;
-    box-sizing: border-box;
-    padding: 0.65rem 1rem;
-    text-align: center;
-    background: var(--primary);
-    color: var(--primary-text);
+    height: 2.25rem;
+    padding: 0 1rem;
+    background: var(--dt-primary);
+    color: var(--dt-primary-foreground);
+    font: inherit;
     font-weight: 500;
-    font-size: 0.875rem;
-    letter-spacing: normal;
-    text-transform: none;
     text-decoration: none;
     border: 0;
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     cursor: pointer;
-    box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    transition: background-color 0.15s ease-out, transform 0.05s ease-out;
+    transition: background-color var(--dur-fast) var(--ease-standard), transform var(--dur-fast) var(--ease-standard);
   }}
   .provider-btn:hover {{
-    background: var(--primary-hover);
+    background: color-mix(in srgb, var(--dt-primary) 88%, var(--dt-foreground));
   }}
   .provider-btn:active {{
-    transform: scale(0.99);
+    transform: scale(0.98);
   }}
-  .provider-btn:focus-visible {{
-    outline: 2px solid var(--primary);
-    outline-offset: 2px;
+  .provider-btn:disabled {{
+    opacity: 0.6;
+    cursor: default;
+  }}
+  .provider-btn:focus-visible, .field-input:focus-visible {{
+    outline: none;
+    box-shadow: var(--ds-focus-ring);
   }}
 
   .provider-form {{
@@ -236,63 +207,45 @@ _LOGIN_HTML_TEMPLATE = """\
     text-align: left;
   }}
   .form-title {{
-    font-weight: 600;
-    font-size: 0.875rem;
-    color: var(--text-primary);
-    margin-bottom: 0.2rem;
+    font-weight: 500;
+    margin-bottom: 0.125rem;
   }}
   .field {{
     display: grid;
     gap: 0.35rem;
   }}
   .field-label {{
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 500;
-    color: var(--text-secondary);
+    color: var(--dt-muted-foreground);
   }}
   .field-input {{
     width: 100%;
-    box-sizing: border-box;
-    padding: 0.55rem 0.75rem;
-    background: var(--input-bg);
-    color: var(--text-primary);
-    border: 1px solid var(--input-border);
-    border-radius: 8px;
-    font-size: 0.875rem;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    height: 2.25rem;
+    padding: 0 0.75rem;
+    background: var(--dt-background);
+    color: var(--dt-foreground);
+    border: 1px solid var(--dt-input);
+    border-radius: var(--radius-control);
+    font: inherit;
+    transition: border-color var(--dur-fast) var(--ease-standard);
   }}
   .field-input:focus-visible {{
-    outline: none;
-    border-color: var(--input-focus);
-    box-shadow: 0 0 0 2px color-mix(in srgb, var(--input-focus) 20%, transparent);
+    border-color: var(--dt-ring);
   }}
   .form-error {{
-    color: #ef4444;
-    font-size: 0.825rem;
+    color: var(--dt-destructive);
+    font-size: 0.8125rem;
   }}
   .provider-form .provider-btn {{
     margin-top: 0.5rem;
   }}
 
   footer {{
-    margin-top: 1.5rem;
+    margin-top: 1.25rem;
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--dt-muted-foreground);
     font-size: 0.75rem;
-    line-height: 1.5;
-  }}
-  footer .sep {{
-    display: inline-block;
-    width: 1rem;
-    height: 1px;
-    background: var(--hairline-strong);
-    vertical-align: middle;
-    margin: 0 0.5em 0.2em;
-  }}
-
-  ::selection {{
-    background: var(--primary);
-    color: var(--primary-text);
   }}
 </style>
 </head>
@@ -307,13 +260,16 @@ _LOGIN_HTML_TEMPLATE = """\
     </div>
   </div>
   <footer>
-    <span class="sep"></span>Authenticated session required<span class="sep"></span>
+    Signed-in session required
   </footer>
 </main>
 {password_script}
 </body>
 </html>
 """
+
+_LOGIN_HTML_TEMPLATE = _LOGIN_HTML_TEMPLATE.replace(
+    "@@PAPER_HEAD@@", _PAPER_HEAD.replace("{", "{{").replace("}", "}}"))
 
 _EMPTY_HTML = """\
 <!doctype html>
@@ -322,6 +278,7 @@ _EMPTY_HTML = """\
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Sign-in unavailable — Hermes Agent</title>
+@@PAPER_HEAD@@
 <style>
   @font-face {
     font-family: 'Collapse';
@@ -337,64 +294,20 @@ _EMPTY_HTML = """\
     font-display: swap;
     src: url('/fonts/RulesCompressed-Medium.woff2') format('woff2');
   }
-  :root {
-    --bg-page: #fbfaf8;
-    --card-bg: #ffffff;
-    --card-border: #e7e5e0;
-    --text-primary: #18181b;
-    --text-secondary: #71717a;
-    --primary: #4f46e5;
-  }
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --bg-page: #141416;
-      --card-bg: #1c1c1f;
-      --card-border: #2c2c30;
-      --text-primary: #f4f4f5;
-      --text-secondary: #a1a1aa;
-      --primary: #6366f1;
-    }
-  }
-  *, *::before, *::after { box-sizing: border-box; }
-  html, body {
-    margin: 0; padding: 0; min-height: 100%;
-    background: var(--bg-page);
-    color: var(--text-primary);
-    font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    font-size: 15px; line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
-  }
-  body {
-    display: grid; place-items: center;
-    padding: clamp(1.5rem, 6vh, 6rem) 1.25rem;
-  }
-  main {
-    width: 100%; max-width: 28rem;
-    padding: 2.25rem 2rem;
-    background: var(--card-bg);
-    border: 1px solid var(--card-border);
-    border-radius: 12px;
-    box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
-  }
-  h1 {
-    margin: 0 0 0.75rem;
-    font-weight: 600; font-size: 1.35rem;
-    letter-spacing: -0.02em;
-    color: var(--text-primary);
-  }
-  p { margin: 0 0 1rem; color: var(--text-secondary); }
+  main { width: 100%; max-width: 28rem; }
+  p { margin: 0 0 1rem; color: var(--dt-muted-foreground); }
+  p:last-child { margin-bottom: 0; }
   code {
-    background: color-mix(in srgb, var(--primary) 10%, transparent);
-    color: var(--primary);
-    padding: 0.15em 0.4em;
-    border-radius: 4px;
+    background: var(--dt-accent);
+    color: var(--dt-accent-foreground);
+    padding: 0.125em 0.375em;
+    border-radius: var(--radius-control);
     font-size: 0.875em;
   }
-  a { color: var(--primary); }
 </style>
 </head>
 <body>
-<main>
+<main class="card">
 <h1>Sign-in unavailable</h1>
 <p>This dashboard is bound to a non-loopback host but no authentication
 providers are available.</p>
@@ -406,7 +319,7 @@ an SSH tunnel or Tailscale.</p>
 </main>
 </body>
 </html>
-"""
+""".replace("@@PAPER_HEAD@@", _PAPER_HEAD)
 
 
 # Emitted ONLY when a ``supports_password`` provider is listed, so OAuth-only
@@ -421,6 +334,10 @@ an SSH tunnel or Tailscale.</p>
 _PASSWORD_FORM_SCRIPT = """\
 <script>
 (function () {
+  try {
+    var scheme = localStorage.getItem('hermes-boot-color-scheme') || localStorage.getItem('theme');
+    if (scheme === 'dark' || scheme === 'light') document.documentElement.setAttribute('data-theme', scheme);
+  } catch (e) {}
   var mainEl = document.querySelector('main');
   var prefix = (mainEl && mainEl.getAttribute('data-prefix')) || '';
   function handle(form) {
