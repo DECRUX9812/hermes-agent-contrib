@@ -49,9 +49,11 @@ const PAPER_LIGHT = {
   accentForeground: '#2c3560',
   border: '#e7e2d9',
   input: '#d6cfc2',
-  ring: '#5b6ee1',
-  midground: '#5b6ee1',
-  composerRing: '#5b6ee1',
+  // One indigo (consistency M5): focus rings, the composer ring and midground
+  // (spinners, --ui-accent) are the primary itself, not a lighter near-twin.
+  ring: '#4a5bd0',
+  midground: '#4a5bd0',
+  composerRing: '#4a5bd0',
   destructive: '#bd4139',
   destructiveForeground: '#ffffff',
   sidebarBackground: '#fbfaf7',
