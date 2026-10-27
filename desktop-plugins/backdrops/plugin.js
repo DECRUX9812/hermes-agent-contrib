@@ -6,7 +6,7 @@
 // plugin stays a picker, not a second backdrop engine.
 //
 // Installs off: enable in Capabilities → Plugins, then look under
-// Settings → Appearance → "Backdrop gallery".
+// Settings → Plugins → Backdrops (also at the end of Settings → Appearance).
 import { APPEARANCE_AREAS, atom, cn, haptic, host, icons, Popover, PopoverContent, PopoverTrigger, STATUSBAR_AREAS, useValue } from '@hermes/plugin-sdk'
 import { useRef } from 'react'
 import { jsx, jsxs } from 'react/jsx-runtime'
@@ -577,7 +577,7 @@ function QuickPick({ ctx }) {
   })
 }
 
-function BackdropsCard({ ctx }) {
+function BackdropsCard({ ctx, page = false }) {
   const drops = useValue($drops)
   const origin = useValue($origin)
 
@@ -591,7 +591,7 @@ function BackdropsCard({ ctx }) {
           : 'Refreshing…'
 
   return jsxs('section', {
-    className: 'mt-8',
+    className: page ? '' : 'mt-8',
     'aria-label': 'Backdrop gallery',
     children: [
       jsxs('div', {
@@ -602,7 +602,9 @@ function BackdropsCard({ ctx }) {
               jsx('h3', { className: 'text-sm font-medium', children: 'Backdrop gallery' }),
               jsx('p', {
                 className: 'mt-0.5 text-xs text-(--ui-text-tertiary)',
-                children: 'Fresh drops and your own photo — strength and scenes live in Chat Background above.'
+                children: page
+                  ? 'Fresh drops and your own photo. Strength and scenes are in Settings › Appearance › Chat background.'
+                  : 'Fresh drops and your own photo. Strength and scenes are in Chat background above.'
               })
             ]
           }),
@@ -745,6 +747,11 @@ export default {
       area: APPEARANCE_AREAS.extra,
       render: () => jsx(BackdropsCard, { ctx })
     })
+
+    // Settings › Plugins › Backdrops (audit m10): the same gallery, findable where every plugin's settings live.
+    if (typeof ctx.registerSettingsPage === 'function') {
+      ctx.registerSettingsPage({ id: 'settings', title: 'Backdrops', icon: 'file-media', render: () => jsx(BackdropsCard, { ctx, page: true }) })
+    }
 
     ctx.register({
       id: 'picker',

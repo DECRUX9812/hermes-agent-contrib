@@ -44,7 +44,8 @@
  * column keeps lining up — never one side alone.
  */
 
-import { PALETTE_AREA } from '@hermes/plugin-sdk'
+import { ListRow, PALETTE_AREA, SegmentedControl, atom, useValue } from '@hermes/plugin-sdk'
+import { jsx, jsxs } from 'react/jsx-runtime'
 
 const PLUGIN_ID = 'room-theme'
 const STYLE_ID = 'hermes-room-theme-style'
@@ -63,6 +64,7 @@ const DENSITIES = ['comfortable', 'compact', 'roomy']
 const METAS = ['raised', 'stock']
 
 const VOICE_LABEL = { accent: 'accent', 'per-bot': 'per-bot', soft: 'soft' }
+const opts = (list) => list.map((id) => ({ id, label: id[0].toUpperCase() + id.slice(1) }))
 
 const PLUGIN_CSS = /* css */ `
 /* ---- meta contrast -------------------------------------------------- */
@@ -95,6 +97,36 @@ let pluginCtx = null
 let voice = 'per-bot'
 let density = 'comfortable'
 let meta = 'raised'
+// Mirrors the three choices for the Settings page; the palette rows and the page both write through set().
+const $choice = atom({ voice, density, meta })
+
+function set(key, value) {
+  if (key === 'voice') voice = value
+  if (key === 'density') density = value
+  if (key === 'meta') meta = value
+  writeSetting(pluginCtx, key, value)
+  applyClasses()
+  $choice.set({ voice, density, meta })
+}
+
+// Settings › Plugins › Room theme (audit m10): the same three choices as the palette rows, discoverable.
+function RoomThemeSettings() {
+  const c = useValue($choice)
+  const row = (key, title, description, list) =>
+    jsx(ListRow, {
+      title,
+      description,
+      action: jsx(SegmentedControl, { options: opts(list), value: c[key], onChange: (v) => set(key, v), sizing: 'content' }),
+    })
+  return jsxs('div', {
+    className: 'flex flex-col',
+    children: [
+      row('density', 'Message density', 'Spacing between messages in group rooms.', DENSITIES),
+      row('meta', 'Timestamp contrast', 'Raised makes room timestamps and meta text easier to read.', METAS),
+      row('voice', 'Speaker colour', "Per-bot keeps each bot's colour; soft calms it; accent uses one colour for everyone.", VOICES),
+    ],
+  })
+}
 
 function readSetting(ctx, key, allowed, fallback) {
   try {
@@ -170,7 +202,7 @@ function stateRow(ctx, spec) {
 
 export default {
   id: PLUGIN_ID,
-  name: 'Room Theme',
+  name: 'Room theme',
   defaultEnabled: true,
   description:
     'Group-room appearance: message density, meta contrast and speaker voice. Group chats only; Bot Mode and Sessions untouched.',
@@ -183,17 +215,17 @@ export default {
 
     injectStyle()
     applyClasses()
+    $choice.set({ voice, density, meta })
+    if (typeof ctx.registerSettingsPage === 'function') {
+      ctx.registerSettingsPage({ id: 'settings', title: 'Room theme', icon: 'paintcan', render: () => jsx(RoomThemeSettings, {}) })
+    }
 
     stateRow(ctx, {
       id: 'density',
       label: 'Room theme: message density',
       keywords: ['room', 'group', 'density', 'spacing', 'compact', 'roomy', 'tight', 'bubbles'],
       detail: () => density,
-      run: () => {
-        density = cycle(DENSITIES, density)
-        writeSetting(pluginCtx, 'density', density)
-        applyClasses()
-      }
+      run: () => set('density', cycle(DENSITIES, density))
     })
 
     stateRow(ctx, {
@@ -201,11 +233,7 @@ export default {
       label: 'Room theme: meta contrast',
       keywords: ['room', 'group', 'contrast', 'timestamp', 'meta', 'readable', 'dim', 'tertiary'],
       detail: () => meta,
-      run: () => {
-        meta = cycle(METAS, meta)
-        writeSetting(pluginCtx, 'meta', meta)
-        applyClasses()
-      }
+      run: () => set('meta', cycle(METAS, meta))
     })
 
     stateRow(ctx, {
@@ -213,11 +241,7 @@ export default {
       label: 'Room theme: speaker voice',
       keywords: ['room', 'group', 'speaker', 'voice', 'accent', 'color', 'colour', 'dot', 'name'],
       detail: () => VOICE_LABEL[voice] || voice,
-      run: () => {
-        voice = cycle(VOICES, voice)
-        writeSetting(pluginCtx, 'voice', voice)
-        applyClasses()
-      }
+      run: () => set('voice', cycle(VOICES, voice))
     })
 
     if (typeof ctx.onDispose === 'function') ctx.onDispose(dispose)
