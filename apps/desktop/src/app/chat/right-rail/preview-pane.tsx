@@ -20,6 +20,7 @@ import { isLoopbackPreviewUrl, openPreviewTargetInBrowser, remoteHtmlPreviewDocu
 import { isRemoteGateway } from '@/lib/media'
 import {
   addAnnotatePin,
+  type AnnotateMarkupTool,
   beginAnnotateMode,
   clearAnnotatePins,
   compactIdentity,
@@ -55,14 +56,18 @@ import { placeAnnotateCard, PreviewAnnotateCard } from './preview-annotate-card'
 import {
   bindPreviewExecuteJavaScript,
   captureAnnotateCrop,
+  clearAnnotateMarkup,
   hideAnnotateDraft,
   installAnnotateOverlay,
   type PreviewAnnotateGuest,
+  setAnnotateMarkupTool,
   showAnnotateDraft,
   syncAnnotatePins,
   teardownAnnotateOverlay,
+  undoAnnotateMarkup,
   waitAnnotateEvent
 } from './preview-annotate-host'
+import { PreviewAnnotateTools } from './preview-annotate-tools'
 import { ArtifactPreview } from './preview-artifact'
 import { PreviewBrowserBar } from './preview-browser-bar'
 import { mountBrowserPreviewFrame, type PreviewNavigationSurface } from './preview-browser-frame'
@@ -361,6 +366,9 @@ export function PreviewPane({
   const [loadError, setLoadError] = useState<PreviewLoadErrorState | null>(null)
   const [localReloadKey, setLocalReloadKey] = useState(0)
   const [annotate, setAnnotate] = useState(emptyAnnotateSession)
+  // Which markup tool is armed in the guest. Null is the picker: a click picks
+  // an element or drags a comment area, exactly as before markup existed.
+  const [markupTool, setMarkupTool] = useState<AnnotateMarkupTool | null>(null)
   const [draftNote, setDraftNote] = useState('')
   const annotateRef = useRef(annotate)
   const annotateLoopRef = useRef(0)
@@ -552,6 +560,7 @@ export function PreviewPane({
     }
 
     setDraftNote('')
+    setMarkupTool(null)
     setAnnotate(endAnnotateMode)
   }, [annotateGuest])
 
@@ -605,7 +614,12 @@ export function PreviewPane({
         }))
       ).catch(() => undefined)
       await hideAnnotateDraft(guest).catch(() => undefined)
+      // The strokes belong to the comment that was just saved; the next pick
+      // starts on a clean page.
+      await clearAnnotateMarkup(guest).catch(() => undefined)
     }
+
+    setMarkupTool(null)
   }, [annotateGuest, draftNote])
 
   const cancelAnnotateDraft = useCallback(async () => {
@@ -616,7 +630,10 @@ export function PreviewPane({
 
     if (guest) {
       await hideAnnotateDraft(guest).catch(() => undefined)
+      await clearAnnotateMarkup(guest).catch(() => undefined)
     }
+
+    setMarkupTool(null)
   }, [annotateGuest])
 
   const flushComments = useCallback(async () => {
@@ -756,6 +773,49 @@ export function PreviewPane({
       void startAnnotate()
     }
   }, [startAnnotate, stopAnnotate])
+
+  /** Arm a markup tool in the guest; the page then draws instead of picking. */
+  const pickMarkupTool = useCallback(
+    (tool: AnnotateMarkupTool) => {
+      const guest = annotateGuest()
+
+      setMarkupTool(tool)
+
+      if (guest) {
+        void setAnnotateMarkupTool(guest, tool).catch(() => undefined)
+      }
+    },
+    [annotateGuest]
+  )
+
+  /** Hand the page back to the picker without leaving annotate mode. */
+  const pickWithPointer = useCallback(() => {
+    const guest = annotateGuest()
+
+    setMarkupTool(null)
+
+    if (guest) {
+      void setAnnotateMarkupTool(guest, null).catch(() => undefined)
+    }
+  }, [annotateGuest])
+
+  const undoMarkupStroke = useCallback(() => {
+    const guest = annotateGuest()
+
+    if (guest) {
+      void undoAnnotateMarkup(guest).catch(() => undefined)
+    }
+  }, [annotateGuest])
+
+  const dropMarkup = useCallback(() => {
+    const guest = annotateGuest()
+
+    setMarkupTool(null)
+
+    if (guest) {
+      void clearAnnotateMarkup(guest).catch(() => undefined)
+    }
+  }, [annotateGuest])
 
   const appendConsoleEntry = useCallback(
     (entry: Omit<ConsoleEntry, 'id'>) => {
@@ -1658,6 +1718,16 @@ export function PreviewPane({
               restarting={restartingServer}
             />
           )}
+
+          {isWebPreview && annotate.mode ? (
+            <PreviewAnnotateTools
+              onClear={dropMarkup}
+              onPick={pickMarkupTool}
+              onPicker={pickWithPointer}
+              onUndo={undoMarkupStroke}
+              tool={markupTool}
+            />
+          ) : null}
 
           {isWebPreview && annotate.draft ? (
             <PreviewAnnotateCard
