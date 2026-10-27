@@ -69,9 +69,13 @@ const MAX_PASTE_CUT_TEXT = 256 * 1024
 export async function loadRfb(): Promise<
   new (target: HTMLElement, socket: WebSocket, options?: Record<string, unknown>) => RfbLike
 > {
-  const mod = (await import('@novnc/novnc')) as unknown as { default: new (...args: never[]) => RfbLike }
+  type Ctor = new (...args: never[]) => RfbLike
+  // The overlay build ships the client as a lazily evaluated module behind
+  // `loadNovnc`; the app build imports the package itself.
+  const mod = (await import('@novnc/novnc')) as unknown as { default?: Ctor; loadNovnc?: () => Promise<{ default: Ctor }> }
+  const ctor = 'loadNovnc' in mod && mod.loadNovnc ? (await mod.loadNovnc()).default : mod.default
 
-  return mod.default as unknown as new (
+  return ctor as unknown as new (
     target: HTMLElement,
     socket: WebSocket,
     options?: Record<string, unknown>

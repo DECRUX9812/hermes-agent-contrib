@@ -30,6 +30,29 @@ const hostCss = existsSync(hostCssDir)
 const utilities = await pluginUtilitiesCss({ require, srcDir: resolve(here, 'src'), hostCss })
 const utilitiesCss = require('@tailwindcss/node').optimize?.(utilities.css, { minify: true })?.code ?? utilities.css
 
+// noVNC (MPL-2.0) from the core checkout's node_modules, self-contained ESM.
+const novnc = await esbuild.build({
+  bundle: true,
+  entryPoints: [require.resolve('@novnc/novnc')],
+  format: 'esm',
+  legalComments: 'inline',
+  logLevel: 'warning',
+  minify: true,
+  target: 'es2022',
+  write: false
+})
+const novncSource = `/* noVNC ${JSON.parse(readFileSync(resolve(dirname(require.resolve('@novnc/novnc')), '../package.json'), 'utf8')).version}, MPL-2.0, https://github.com/novnc/noVNC */\n${novnc.outputFiles[0].text}`
+const novncLoader = `const source = ${JSON.stringify(novncSource)}
+let loading = null
+export function loadNovnc() {
+  if (!loading) {
+    const url = URL.createObjectURL(new Blob([source], { type: 'text/javascript' }))
+    loading = import(url).finally(() => URL.revokeObjectURL(url))
+    loading.catch(() => { loading = null })
+  }
+  return loading
+}`
+
 const hostImports = {
   name: 'host-imports',
   setup(build) {
@@ -43,13 +66,11 @@ const hostImports = {
       loader: 'js'
     }))
     build.onResolve({ filter: /^nanostores$/ }, () => ({ path: require.resolve('nanostores') }))
-    // The VNC screen viewer is an app dependency, not a plugin one; the pane
-    // reports the import failure instead of bundling a VNC client.
-    build.onResolve({ filter: /^@novnc\/novnc$/ }, () => ({ namespace: 'unavailable', path: 'novnc' }))
-    build.onLoad({ filter: /.*/, namespace: 'unavailable' }, () => ({
-      contents: "throw new Error('The VNC viewer is not available in the hermes-bots-plus overlay build')",
-      loader: 'js'
-    }))
+    // The VNC client rides along as module text and is evaluated from a blob
+    // only when a screen attaches, so plugin load never pays for it. It has
+    // top-level await, so it cannot sit inline in this bundle.
+    build.onResolve({ filter: /^@novnc\/novnc$/ }, () => ({ namespace: 'novnc', path: 'rfb' }))
+    build.onLoad({ filter: /.*/, namespace: 'novnc' }, () => ({ contents: novncLoader, loader: 'js' }))
   }
 }
 
