@@ -63,7 +63,14 @@ describe('BrowserFloat', () => {
 
     expect(screen.queryByRole('region', { name: 'Floating browser' })).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Show floating browser' }))
+    // Bottom-right, whatever corner the float was in, never over the title bar.
+    const pill = screen.getByRole('button', { name: 'Show floating browser' })
+
+    expect(pill.style.right).toBe('12px')
+    expect(pill.style.bottom).toBe('12px')
+    expect(pill.style.top).toBe('')
+
+    fireEvent.click(pill)
 
     expect(screen.getByRole('region', { name: 'Floating browser' })).toBeTruthy()
   })

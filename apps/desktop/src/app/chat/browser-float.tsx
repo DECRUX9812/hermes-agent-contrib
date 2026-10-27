@@ -12,6 +12,7 @@ import {
   clearBrowserFloat,
   dockBrowserFloat,
   dockSideForPointer,
+  floatPillOffset,
   type FloatRect,
   setBrowserFloatMinimized,
   setBrowserFloatRect,
@@ -26,10 +27,27 @@ type Gesture = { kind: 'move' | 'resize'; pointerX: number; pointerY: number; st
 
 const viewport = () => ({ height: window.innerHeight, width: window.innerWidth })
 
+/** Fallback for `--titlebar-height` when the shell hasn't defined it. */
+const TITLEBAR_FALLBACK = 34
+const PILL_HEIGHT_FALLBACK = 32
+
+/** Where the pill goes now: measured against the status bar and title bar. */
+function pillOffset(pill: HTMLElement | null) {
+  const statusbar = document.querySelector<HTMLElement>('[data-slot="statusbar"]')
+  const bottom = statusbar ? Math.max(0, window.innerHeight - statusbar.getBoundingClientRect().top) : 0
+  const titlebar = parseFloat(getComputedStyle(statusbar ?? document.documentElement).getPropertyValue('--titlebar-height'))
+
+  return floatPillOffset(
+    viewport(),
+    { bottom, top: Number.isFinite(titlebar) ? titlebar : TITLEBAR_FALLBACK },
+    pill?.offsetHeight || PILL_HEIGHT_FALLBACK
+  )
+}
+
 /**
  * The floating Browser window (see `store/browser-float.ts`). Renders the same
  * preview pane the layout tree does, in a window over the app, or — minimised —
- * as a pill in the corner it was last in.
+ * as a pill bottom-right, just above the status bar.
  */
 export function BrowserFloat() {
   const { t } = useI18n()
@@ -41,6 +59,8 @@ export function BrowserFloat() {
   const [gesture, setGesture] = useState<Gesture | null>(null)
   const [live, setLive] = useState<FloatRect | null>(null)
   const gestureRef = useRef<Gesture | null>(null)
+  const pillRef = useRef<HTMLButtonElement | null>(null)
+  const [pill, setPill] = useState(() => pillOffset(null))
   const tab = tabId ? tabs.find(item => item.id === tabId) : undefined
 
   // The tab closed while floating: nothing is left to float.
@@ -49,6 +69,20 @@ export function BrowserFloat() {
       clearBrowserFloat()
     }
   }, [tab, tabId])
+
+  // Seat the pill above the status bar, and keep it there as the window resizes.
+  useEffect(() => {
+    if (!minimized) {
+      return
+    }
+
+    const place = () => setPill(pillOffset(pillRef.current))
+
+    place()
+    window.addEventListener('resize', place)
+
+    return () => window.removeEventListener('resize', place)
+  }, [minimized])
 
   // Keep the float on screen when the window shrinks.
   useEffect(() => {
@@ -138,20 +172,17 @@ export function BrowserFloat() {
   }
 
   if (minimized) {
-    const onRight = rect.x + rect.width / 2 > window.innerWidth / 2
-    const onBottom = rect.y + rect.height / 2 > window.innerHeight / 2
-
     return (
       <Tip label={copy.restore}>
         <button
           aria-label={copy.restore}
           className={cn(
-            'fixed z-40 flex max-w-64 items-center gap-2 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-bg-elevated) py-1.5 pr-3 pl-2.5 text-xs text-(--ui-text-primary) shadow-lg hover:bg-(--ui-control-hover-background)',
-            onRight ? 'right-3' : 'left-3',
-            onBottom ? 'bottom-3' : 'top-3'
+            'fixed z-40 flex max-w-64 items-center gap-2 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-bg-elevated) py-1.5 pr-3 pl-2.5 text-xs text-(--ui-text-primary) shadow-lg hover:bg-(--ui-control-hover-background) [-webkit-app-region:no-drag]'
           )}
           data-browser-float-pill=""
           onClick={() => setBrowserFloatMinimized(false)}
+          ref={pillRef}
+          style={pill}
           type="button"
         >
           <span aria-hidden className="relative flex size-2">
