@@ -341,3 +341,9 @@ export function ApprovalComposerEntry({ runtimeSessionId, storedSessionId }: App
     </div>
   )
 }
+
+/** Approvals render in the composer (ApprovalComposerEntry). The transcript list still mounts
+ *  this stock anchor, which now draws nothing, so the list needs no patch of its own. */
+export function PendingApprovalStack() {
+  return null
+}

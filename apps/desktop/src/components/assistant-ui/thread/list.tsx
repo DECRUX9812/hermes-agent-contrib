@@ -44,6 +44,7 @@ import {
 import { isSecondaryWindow } from '@/store/windows'
 
 import { MessageRenderBoundary } from '../message-render-boundary'
+import { PendingApprovalStack } from '../tool/approval'
 
 import { responseMessageRole, ResponseMessages } from './response-group'
 import { holdSessionSwitching } from './session-switching'
@@ -1612,6 +1613,7 @@ const ThreadMessageListInner: FC<ThreadMessageListProps> = ({
           ) : (
             rows
           )}
+          <PendingApprovalStack />
           {!renderEmpty && loadingIndicator}
           {!renderEmpty && clampToComposer && (
             <div
