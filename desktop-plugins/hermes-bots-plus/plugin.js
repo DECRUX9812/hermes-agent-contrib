@@ -33396,10 +33396,18 @@ function waitForElement(find, timeoutMs) {
         resolve(found);
         return;
       }
-      requestAnimationFrame(tick);
+      window.setTimeout(tick, 16);
     };
     tick();
   });
+}
+function shotKey(src) {
+  let hash = 2166136261;
+  for (let index = 0; index < src.length; index += 1) {
+    hash ^= src.charCodeAt(index);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(36);
 }
 async function expandShot(frame, shotSrc, label, session) {
   const img = [...frame.querySelectorAll("img[data-shot-src]")].reverse().find((candidate) => candidate.dataset.shotSrc === shotSrc && candidate.complete);
@@ -33408,15 +33416,19 @@ async function expandShot(frame, shotSrc, label, session) {
   }
   const dataUrl = await imageDataUrl(img).catch(() => "");
   const mimeType = dataUrl && dataUrl.slice(5, dataUrl.indexOf(";")) || "image/png";
+  const inline = shotSrc.startsWith("data:");
+  const key = inline ? `screenshot-${shotKey(shotSrc)}.${mimeType.split("/")[1] || "png"}` : shotSrc;
   const open = () => (0, sdk_compat_exports.openPreview)(
     {
       ...dataUrl ? { dataUrl } : {},
       kind: "file",
       label,
       mimeType,
-      path: shotSrc,
+      path: key,
       previewKind: "image",
-      source: shotSrc
+      source: key,
+      ...inline ? { transient: true } : {},
+      url: key
     },
     session.storedId ?? void 0,
     session.runtimeId

@@ -158,11 +158,31 @@ describe('expandShot', () => {
         kind: 'file',
         label: 'example.com · step 1',
         mimeType: 'image/png',
-        previewKind: 'image'
+        previewKind: 'image',
+        transient: true,
+        url: expect.stringMatching(/^screenshot-[0-9a-z]+\.png$/)
       }),
       'st',
       'rt'
     )
+    expect(openPreview.mock.calls[0]?.[0].url).not.toContain('base64')
+    frame.remove()
+  })
+
+  it('keys a file screenshot by its path and keeps it restorable', async () => {
+    const frame = window.document.createElement('button')
+    const img = window.document.createElement('img')
+    img.dataset.shotSrc = '/tmp/shot.png'
+    img.src = SHOT_A
+    Object.defineProperty(img, 'complete', { value: true })
+    frame.append(img)
+    window.document.body.append(frame)
+
+    await expandShot(frame, '/tmp/shot.png', 'step 2', { runtimeId: null, storedId: null })
+
+    const target = openPreview.mock.calls[0]?.[0]
+    expect(target).toMatchObject({ kind: 'file', path: '/tmp/shot.png', url: '/tmp/shot.png' })
+    expect(target.transient).toBeUndefined()
     frame.remove()
   })
 })

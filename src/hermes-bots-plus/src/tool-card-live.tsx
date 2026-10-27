@@ -136,11 +136,25 @@ function waitForElement<T extends Element>(find: () => T | null, timeoutMs: numb
         return
       }
 
-      requestAnimationFrame(tick)
+      // Timers, not animation frames: a View Transition holds rendering while
+      // its update runs, so frame callbacks would never fire here.
+      window.setTimeout(tick, 16)
     }
 
     tick()
   })
+}
+
+/** A short stable key for a screenshot source (FNV-1a over the string). */
+export function shotKey(src: string): string {
+  let hash = 0x811c9dc5
+
+  for (let index = 0; index < src.length; index += 1) {
+    hash ^= src.charCodeAt(index)
+    hash = Math.imul(hash, 0x01000193)
+  }
+
+  return (hash >>> 0).toString(36)
 }
 
 type ViewTransitionDocument = Document & {
@@ -168,6 +182,11 @@ export async function expandShot(
   const dataUrl = await imageDataUrl(img).catch(() => '')
   const mimeType = (dataUrl && dataUrl.slice(5, dataUrl.indexOf(';'))) || 'image/png'
 
+  // A data-URL screenshot has no file behind it: key the tab by a short hash
+  // (the tab id embeds `url`) and mark it transient so it is not persisted.
+  const inline = shotSrc.startsWith('data:')
+  const key = inline ? `screenshot-${shotKey(shotSrc)}.${mimeType.split('/')[1] || 'png'}` : shotSrc
+
   const open = () =>
     openPreview(
       {
@@ -175,9 +194,11 @@ export async function expandShot(
         kind: 'file',
         label,
         mimeType,
-        path: shotSrc,
+        path: key,
         previewKind: 'image',
-        source: shotSrc
+        source: key,
+        ...(inline ? { transient: true } : {}),
+        url: key
       },
       session.storedId ?? undefined,
       session.runtimeId
