@@ -1,0 +1,7 @@
+{
+  "name": "hermes-bots-plus",
+  "label": "Hermes Browser",
+  "description": "Frame-policy probe and gateway page view for the in-app Hermes Browser.",
+  "api": "plugin_api.py",
+  "tab": { "hidden": true }
+}
