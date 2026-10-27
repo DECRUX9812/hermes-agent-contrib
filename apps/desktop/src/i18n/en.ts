@@ -4262,6 +4262,15 @@ export const en: Translations = {
     popIn: 'Pop in',
     popOut: 'Pop out',
     linkHint: '⌘/Ctrl-click to open in your browser',
+    float: {
+      dock: 'Dock browser',
+      dockLeft: 'Dock to the left',
+      dockRight: 'Dock to the right',
+      float: 'Float over the app',
+      label: 'Floating browser',
+      minimize: 'Minimize (Esc)',
+      restore: 'Show floating browser'
+    },
     sourceLineTitle: 'Click to select · shift-click to extend · drag to composer',
     source: 'SOURCE',
     renderedPreview: 'PREVIEW',

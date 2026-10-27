@@ -40,6 +40,8 @@ interface PreviewBrowserBarProps {
   onForward: () => void
   onNavigate: (url: string) => void
   onOpenExternal?: () => void
+  /** Lift this Browser out of the layout into the floating window. */
+  onFloat?: () => void
   onPopIn?: () => void
   onPopOut?: () => void
   onReload: () => void
@@ -109,6 +111,7 @@ export function PreviewBrowserBar({
   onFlushComments,
   onForward,
   onNavigate,
+  onFloat,
   onOpenExternal,
   onPopIn,
   onPopOut,
@@ -245,6 +248,13 @@ export function PreviewBrowserBar({
         >
           {copy.addComments(commentCount)}
         </button>
+      ) : null}
+      {onFloat ? (
+        <PaneStripGlyph
+          icon={<Codicon name="multiple-windows" size="0.8125rem" />}
+          label={t.preview.float.float}
+          onSelect={onFloat}
+        />
       ) : null}
       {onPopIn ? (
         <PaneStripGlyph
