@@ -22,6 +22,8 @@ _MAX_TRACKED = 512
 _lock = threading.Lock()
 _tool_names: "OrderedDict[str, str]" = OrderedDict()
 _allowed_calls: "OrderedDict[str, None]" = OrderedDict()
+# request_id -> the approval queue key of a prompt still waiting in this process.
+_live_keys: "OrderedDict[str, str]" = OrderedDict()
 
 
 def _remember(store: OrderedDict, key: str, value: Any) -> None:
@@ -45,11 +47,19 @@ def _stored_session_id(session_key: str) -> str:
     return ""
 
 
+def live_session_key(request_id: str) -> str:
+    """The queue key a still-waiting prompt resolves under, or "" once it has settled."""
+    with _lock:
+        return _live_keys.get(request_id, "")
+
+
 def on_pre_approval_request(**kw: Any) -> None:
     request_id = str(kw.get("request_id") or "")
     if not request_id or kw.get("coalesced"):
         return
     session_key = str(kw.get("session_key") or "")
+    if session_key:
+        _remember(_live_keys, request_id, session_key)
     session_id = _stored_session_id(session_key) or str(kw.get("session_id") or "") or session_key
     if not session_id:
         return
@@ -65,6 +75,8 @@ def on_post_approval_response(**kw: Any) -> None:
     request_id = str(kw.get("request_id") or "")
     if not request_id or kw.get("coalesced"):
         return
+    with _lock:
+        _live_keys.pop(request_id, None)
     choice = str(kw.get("choice") or "")
     if choice in _GRANTS or choice == "deny":
         journal.decide_approval(request_id, choice)

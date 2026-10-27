@@ -157,3 +157,31 @@ def test_hooks_install_registers_the_stock_hooks():
 
     assert hooks.install(Ctx()) == seen
     assert set(seen) == {"pre_approval_request", "post_approval_response", "pre_tool_call", "post_tool_call"}
+
+
+def test_decide_answers_a_waiting_prompt_under_its_hook_queue_key(home_env, monkeypatch):
+    from tools import approval as stock
+    calls = []
+
+    def fake_resolve(session_key, choice, request_id=None, **_kw):
+        calls.append((session_key, choice, request_id))
+        return 1
+
+    monkeypatch.setattr(stock, "resolve_gateway_approval", fake_resolve)
+    hooks.HOOKS["pre_approval_request"](request_id="rq-l1", command="w", session_key="agent:main:k1", session_id="s-l")
+    out = rpc.handle_decide(1, {"session_id": "s-l", "request_id": "rq-l1", "choice": "once"})["result"]
+    assert calls == [("agent:main:k1", "once", "rq-l1")]
+    assert out["resolved"] is True and out["approval"]["status"] == "allowed"
+
+
+def test_decide_does_not_allow_a_prompt_that_settled_before_the_answer(home_env, monkeypatch):
+    from tools import approval as stock
+    monkeypatch.setattr(stock, "resolve_gateway_approval", lambda *a, **k: 0)
+    hooks.HOOKS["pre_approval_request"](request_id="rq-l2", command="w", session_key="k2", session_id="s-l")
+    out = rpc.handle_decide(1, {"session_id": "s-l", "request_id": "rq-l2", "choice": "once"})["result"]
+    assert out["resolved"] is False and out["approval"]["status"] == "pending"
+
+    hooks.HOOKS["post_approval_response"](request_id="rq-l2", choice="timeout")
+    assert hooks.live_session_key("rq-l2") == ""
+    out = rpc.handle_decide(1, {"session_id": "s-l", "request_id": "rq-l2", "choice": "once"})["result"]
+    assert out["approval"]["status"] == "withdrawn"

@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from . import journal
+from . import hooks, journal
 
 logger = logging.getLogger("hermes_approvals.rpc")
 
@@ -37,30 +37,24 @@ def handle_decide(rid: Any, params: dict[str, Any]) -> dict[str, Any]:
     if row is None or row.get("session_id") != session_id:
         return _err(rid, 4004, "approval not found")
         
-    row_decided, won = journal.decide_approval(request_id, choice)
-    
-    # Try resolving live gateway blocked thread if tool approval helper exists
+    # A prompt still waiting here is answered through the stock resolver under the
+    # queue key its pre_approval_request hook reported, so the row never says
+    # "allowed" for a prompt the agent did not receive.
     resolved = False
-    try:
-        from tools import approval as _approval
-        # Find session key if gateway sessions exist
-        session_key = ""
+    session_key = hooks.live_session_key(request_id)
+    if session_key:
         try:
-            from tui_gateway.server import _sessions, _sessions_lock
-            with _sessions_lock:
-                for s in _sessions.values():
-                    k = str(s.get("session_key") or "")
-                    if str(getattr(s.get("agent"), "session_id", "") or k) == session_id:
-                        session_key = k
-                        break
-        except Exception:
-            session_key = session_id
-            
-        if session_key and hasattr(_approval, "resolve_gateway_approval"):
+            from tools import approval as _approval
             resolved = bool(_approval.resolve_gateway_approval(session_key, choice, request_id=request_id))
-    except Exception as exc:
-        logger.debug("Live resolve skipped or failed: %s", exc)
-        
+        except Exception as exc:
+            logger.warning("hermes-approvals: live resolve of %s failed: %s", request_id, exc)
+    if resolved or not session_key:
+        # Delivered now, or nothing waits in this process (the row outlived its prompt).
+        row_decided, _won = journal.decide_approval(request_id, choice)
+    else:
+        # The prompt settled (timeout, interrupt) between the lookup and the resolve.
+        row_decided = journal.get_approval(request_id)
+
     return _ok(rid, {
         "approval": journal.public_approval(row_decided or row),
         "resolved": resolved
