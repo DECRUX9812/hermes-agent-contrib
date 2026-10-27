@@ -1,19 +1,11 @@
-import type {
-  ApprovalChoice,
-  ForkApproval,
-  ForkApprovalsDecideResult,
-  ForkApprovalsListResult
-} from '@hermes/shared'
 import { atom, computed, type ReadableAtom } from 'nanostores'
-
-import { journalRequestId } from '@/lib/approval-journal'
 
 import { $clarifyRequest, $clarifyRequests } from './clarify'
 import { isSessionGone, isSessionGoneForBackgroundPolling, markSessionGone } from './runtime-gone'
 import { respondToServerRequest } from './server-requests'
 import { $activeSessionId } from './session'
 import { ambientRequestFor } from './session-gone-latch'
-import { requestForOwnedSession, storedSessionIdForRuntimeId } from './session-states'
+import { requestForOwnedSession } from './session-states'
 
 // Blocking interactive prompts the gateway raises mid-turn. Each is a
 // server→client JSON-RPC request (`tui_gateway/server_requests.py`) the Python
@@ -346,141 +338,73 @@ export async function replayPendingApproval(gateway: ApprovalGateway | null, ses
   )
 }
 
-export interface ApprovalDecision {
-  approval?: ForkApproval
-  choice: ApprovalChoice | null
-  resolved: boolean
-}
-
-/** Read durable approvals for a stored session, routed through that session's
- *  owner rather than whichever profile happens to be foreground. */
-export async function listSessionApprovals(
-  gateway: ApprovalGateway,
-  runtimeSessionId: string,
-  storedSessionId: string
-): Promise<ForkApproval[]> {
-  const result = await requestForOwnedSession<ForkApprovalsListResult>(
-    runtimeSessionId,
-    ambientRequestFor(gateway),
-    'fork.approvals.list',
-    { session_id: storedSessionId }
-  )
-
-  return result.approvals
-}
+/**
+ * Resolve an approval: answer the live server request when it is still open
+ * (the response frame goes back over the socket it arrived on — the owner by
+ * construction), else the queue-level `approval.respond` RPC for a prompt that
+ * was restored from `approval.pending` or is being answered from another
+ * surface. Returns after the backend has the decision.
+ */
 
 // #55433: the backend honors an answer for the whole `approvals.timeout` window
-// (default 300s), but a queue-level RPC otherwise rides the generic 30s
-// deadline. Give it a deadline that covers that window, and retry once on a
-// deadline failure: both resolve paths are idempotent.
+// (default 300s), but `approval.respond` otherwise rides the generic 30s RPC
+// deadline. During a long LLM stream the gateway's WS writes can stall well past
+// 30s while the turn is still live and the approval is still pending — the
+// client gives up with "request timed out: approval.respond" long before the
+// backend would. Give the RPC a deadline that covers the backend window (300s
+// plus margin for the write to drain), and retry once on a deadline failure:
+// `resolve_gateway_approval` pops the queue entry before committing, so a
+// duplicate resolve is a harmless `resolved: 0`.
 export const APPROVAL_RESPOND_REQUEST_TIMEOUT_MS = 330_000
 
 function isRequestTimeoutError(error: unknown): boolean {
   return error instanceof Error && /request timed out/i.test(error.message)
 }
 
-// A gateway that predates the approval journal answers `fork.approvals.*`
-// with a JSON-RPC "method not found"; the queue-level RPC still works there.
-function isMissingMethodError(error: unknown): boolean {
-  if (!(error instanceof Error)) {
-    return false
-  }
-
-  return (error as { code?: unknown }).code === -32601 || /unknown method|method not found/i.test(error.message)
-}
-
-async function requestWithRetry<T>(sessionId: string, gateway: ApprovalGateway, method: string, params: object) {
-  const send = () =>
-    requestForOwnedSession<T>(
-      sessionId,
-      ambientRequestFor(gateway),
-      method,
-      params as Record<string, unknown>,
-      APPROVAL_RESPOND_REQUEST_TIMEOUT_MS
-    )
-
-  try {
-    return await send()
-  } catch (error) {
-    if (!isRequestTimeoutError(error)) {
-      throw error
-    }
-
-    return send()
-  }
-}
-
-async function respondViaQueue(
-  gateway: ApprovalGateway,
-  request: Pick<ApprovalRequest, 'requestId' | 'sessionId'>,
-  choice: ApprovalChoice,
-  all: boolean
-): Promise<ApprovalDecision> {
-  await requestWithRetry(request.sessionId ?? '', gateway, 'approval.respond', {
-    all,
-    choice,
-    ...(request.requestId ? { request_id: request.requestId } : {}),
-    session_id: request.sessionId ?? undefined
-  })
-
-  return { choice, resolved: true }
-}
-
-/** Answer the live request on its owning socket, else record the decision in
- *  the durable journal (compare-and-set, so a second answer resolves nothing).
- *  Approve-all, prompts without a journal id, and gateways without the journal
- *  use the queue-level `approval.respond` RPC. */
-export async function decideApproval(
+export async function answerApproval(
   gateway: ApprovalGateway | null,
   request: Pick<ApprovalRequest, 'requestId' | 'serverRequestId' | 'sessionId'>,
-  choice: ApprovalChoice,
+  choice: string,
   all = false
-): Promise<ApprovalDecision> {
+): Promise<void> {
   if (respondToServerRequest(request.serverRequestId, { choice, ...(all ? { all: true } : {}) })) {
-    return { choice, resolved: true }
+    return
   }
 
   if (!gateway) {
     throw new Error('Hermes gateway is not connected')
   }
 
-  if (!request.sessionId) {
-    throw new Error('This approval is no longer available')
+  const params = {
+    all,
+    choice,
+    ...(request.requestId ? { request_id: request.requestId } : {}),
+    session_id: request.sessionId ?? undefined
   }
-
-  const requestId = journalRequestId(request.requestId)
-
-  if (all || !requestId) {
-    return respondViaQueue(gateway, { requestId, sessionId: request.sessionId }, choice, all)
-  }
-
-  const storedSessionId = storedSessionIdForRuntimeId(request.sessionId) ?? request.sessionId
 
   try {
-    const result = await requestWithRetry<ForkApprovalsDecideResult>(request.sessionId, gateway, 'fork.approvals.decide', {
-      choice,
-      request_id: requestId,
-      session_id: storedSessionId
-    })
-
-    return { approval: result.approval, choice: result.approval.choice ?? choice, resolved: result.resolved }
+    await requestForOwnedSession(
+      request.sessionId,
+      ambientRequestFor(gateway),
+      'approval.respond',
+      params,
+      APPROVAL_RESPOND_REQUEST_TIMEOUT_MS
+    )
   } catch (error) {
-    if (!isMissingMethodError(error)) {
+    if (!isRequestTimeoutError(error)) {
       throw error
     }
 
-    return respondViaQueue(gateway, { requestId, sessionId: request.sessionId }, choice, false)
+    // The deadline fired while the approval may still be pending server-side
+    // (WS stall behind a long LLM stream). Resolve is idempotent: re-send once.
+    await requestForOwnedSession(
+      request.sessionId,
+      ambientRequestFor(gateway),
+      'approval.respond',
+      params,
+      APPROVAL_RESPOND_REQUEST_TIMEOUT_MS
+    )
   }
-}
-
-export async function answerApproval(
-  gateway: ApprovalGateway | null,
-  request: Pick<ApprovalRequest, 'requestId' | 'serverRequestId' | 'sessionId'>,
-  choice: ApprovalChoice,
-  all = false
-): Promise<void> {
-  await decideApproval(gateway, request, choice, all)
-  clearApprovalRequest(request.sessionId, journalRequestId(request.requestId))
 }
 
 /** The prompt request for one specific session — the tile counterpart of the

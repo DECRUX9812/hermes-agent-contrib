@@ -1,30 +1,35 @@
 'use client'
 
-import type { ApprovalChoice, ForkApproval } from '@hermes/shared'
+import type { ApprovalChoice } from '@hermes/shared'
 import { useStore } from '@nanostores/react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { LogView } from '@/components/ui/log-view'
 import { useI18n } from '@/i18n'
-import { journalRequestId, mergePendingApprovals } from '@/lib/approval-journal'
 import { triggerHaptic } from '@/lib/haptics'
 import { cn } from '@/lib/utils'
 import { $gateway } from '@/store/gateway'
 import {
-  type ApprovalDecision,
+  answerApproval,
   type ApprovalRequest,
   clearApprovalRequest,
-  decideApproval,
-  listSessionApprovals,
+  replayPendingApproval,
   sessionApprovalRequests
 } from '@/store/prompts'
 
+/** What an answer did. `approval` is the recorded outcome when the caller keeps one. */
+export interface ApprovalDecision {
+  approval?: { choice?: ApprovalChoice | null; reason?: string | null; status?: string }
+  choice: ApprovalChoice | null
+  resolved: boolean
+}
+
 const RECENT_DECISION_MS = 1800
-const SESSION_STOPPED = 'session_stopped' // approvals plugin: upstream denied it when the turn stopped
+const SESSION_STOPPED = 'session_stopped' // a recorded outcome: denied when the turn stopped
 
 export interface ApprovalCardProps {
-  /** A live server request or a pending row restored from the journal. */
+  /** A live server request, or a pending row a plugin restored from its own store. */
   request: ApprovalRequest & { requestId: string }
   /** Answering stays at the caller's session-owner boundary. */
   onAnswer: (choice: ApprovalChoice) => Promise<ApprovalDecision>
@@ -187,141 +192,63 @@ export function ApprovalCard({
   )
 }
 
-interface RecentApprovalDecision {
-  decision: ApprovalDecision
-  request: ApprovalRequest & { requestId: string }
-  sessionId: string
+// Attribute-safe selector fragment. jsdom (vitest) does not ship `CSS.escape`.
+const cssEscape = (value: string): string =>
+  typeof CSS !== 'undefined' && typeof CSS.escape === 'function'
+    ? CSS.escape(value)
+    : value.replace(/[^a-zA-Z0-9_:-]/g, ch => `\\${ch}`)
+
+/** The session's approval entry, tagged with its session so a split view never scrolls a sibling's. */
+export function findSessionApprovalStack(sessionId: string | null | undefined): HTMLElement | null {
+  return sessionId
+    ? document.querySelector<HTMLElement>(`[data-approval-stack][data-session-id="${cssEscape(sessionId)}"]`)
+    : null
 }
+
+/** Scrolls the session's approval entry into view (`nearest`, so no ancestor scroll moves). */
+export function scrollToSessionApproval(sessionId: string | null | undefined): boolean {
+  const stack = findSessionApprovalStack(sessionId)
+  stack?.scrollIntoView({ block: 'nearest' })
+
+  return Boolean(stack)
+}
+
+type KeyedApproval = ApprovalRequest & { requestId: string }
 
 interface ApprovalComposerEntryProps {
   runtimeSessionId: string | null
   storedSessionId: string | null
 }
 
-/** Session-owned composer entry. Live requests paint immediately; durable
- *  pending rows fill the gap after a reload or a backend reconnect. */
+/** Session-owned composer entry for the live approval prompts (stock replay restores them after a reload). */
 export function ApprovalComposerEntry({ runtimeSessionId, storedSessionId }: ApprovalComposerEntryProps) {
   const gateway = useStore($gateway)
-  const liveRequests = useStore(useMemo(() => sessionApprovalRequests(runtimeSessionId), [runtimeSessionId]))
-  const routeSessionId = runtimeSessionId || storedSessionId
+  const live = useStore(useMemo(() => sessionApprovalRequests(runtimeSessionId), [runtimeSessionId]))
+  const [recent, setRecent] = useState<{ decision: ApprovalDecision; request: KeyedApproval } | null>(null)
+  const clearRecent = useCallback(() => setRecent(null), [])
 
-  const [snapshot, setSnapshot] = useState<{ sessionId: string | null; rows: ForkApproval[] }>({
-    sessionId: null,
-    rows: []
-  })
-
-  const [recent, setRecent] = useState<RecentApprovalDecision | null>(null)
-  const [dismissedIds, setDismissedIds] = useState<ReadonlySet<string>>(new Set())
-  const [seenLive, setSeenLive] = useState(liveRequests)
-  const [gone, setGone] = useState<ApprovalRequest[]>([])
-
-  // A live prompt that left without our answer was stopped, timed out or answered elsewhere: hide it
-  // at once, then show its journal outcome (the cancel can reach us before the plugin's write).
-  if (seenLive !== liveRequests) {
-    const left = seenLive.filter(
-      request => request.requestId && !liveRequests.some(live => live.requestId === request.requestId)
-    )
-
-    setSeenLive(liveRequests)
-    setGone(left)
-    setDismissedIds(current => new Set([...current, ...left.map(request => request.requestId ?? '')]))
-  }
-
-  useEffect(() => {
-    let active = true
-
-    if (!gateway || !routeSessionId || !storedSessionId) {
-      setSnapshot({ sessionId: storedSessionId, rows: [] })
-
-      return () => {
-        active = false
-      }
-    }
-
-    setSnapshot(current => (current.sessionId === storedSessionId ? current : { sessionId: storedSessionId, rows: [] }))
-
-    const load = (attempt: number) =>
-      void listSessionApprovals(gateway, routeSessionId, storedSessionId)
-        .then(rows => {
-          if (!active) {
-            return
-          }
-
-          setSnapshot({ sessionId: storedSessionId, rows })
-
-          const outcomes = gone.map(
-            request => [request, rows.find(row => row.request_id === request.requestId)] as const
-          )
-
-          if (attempt < 4 && outcomes.some(([, row]) => row?.status === 'pending')) {
-            window.setTimeout(() => load(attempt + 1), 400)
-
-            return
-          }
-
-          const stopped = outcomes.find(([, row]) => row?.reason === SESSION_STOPPED)
-
-          if (stopped?.[1]) {
-            const decision = { approval: stopped[1], choice: null, resolved: false }
-            const request = { ...stopped[0], requestId: stopped[1].request_id }
-            setRecent({ decision, request, sessionId: runtimeSessionId || storedSessionId || '' })
-          }
-        })
-        // The snapshot was already reset for a new session above; keep the last rows on a failed re-list.
-        .catch(() => undefined)
-
-    load(0)
-
-    return () => {
-      active = false
-    }
-  }, [gateway, gone, routeSessionId, runtimeSessionId, storedSessionId, liveRequests])
-
-  useEffect(() => {
-    setRecent(null)
-    setDismissedIds(new Set())
-  }, [runtimeSessionId, storedSessionId])
-
-  const pending = useMemo(
-    () =>
-      mergePendingApprovals(
-        liveRequests,
-        snapshot.sessionId === storedSessionId ? snapshot.rows : [],
-        runtimeSessionId || storedSessionId || ''
-      ).filter(request => !dismissedIds.has(request.requestId ?? '')),
-    [dismissedIds, liveRequests, runtimeSessionId, snapshot, storedSessionId]
-  )
+  useEffect(() => setRecent(null), [runtimeSessionId])
 
   const answer = useCallback(
-    async (request: ApprovalRequest & { requestId: string }, choice: ApprovalChoice) => {
-      const result = await decideApproval(gateway, request, choice)
-      const terminal = result.resolved || (result.approval && result.approval.status !== 'pending')
+    async (request: ApprovalRequest, keyed: KeyedApproval, choice: ApprovalChoice): Promise<ApprovalDecision> => {
+      await answerApproval(gateway, request, choice)
+      const decision = { choice, resolved: true }
+      setRecent({ decision, request: keyed })
+      clearApprovalRequest(request.sessionId, request.requestId)
+      void replayPendingApproval(gateway, request.sessionId).catch(() => undefined)
 
-      if (!terminal) {
-        return result
-      }
-
-      const sessionId = request.sessionId ?? runtimeSessionId ?? storedSessionId ?? ''
-
-      setRecent({ decision: result, request, sessionId })
-      setDismissedIds(current => new Set(current).add(request.requestId))
-      clearApprovalRequest(request.sessionId, journalRequestId(request.requestId))
-
-      return result
+      return decision
     },
-    [gateway, runtimeSessionId, storedSessionId]
+    [gateway]
   )
 
-  const clearRecent = useCallback(() => setRecent(null), [])
-  const currentSessionId = runtimeSessionId || storedSessionId
+  const sessionId = runtimeSessionId || storedSessionId
+  const first = live[0]
+  // A prompt without a request id is keyed by its socket request; answers go back over that socket.
+  const keyed = first && { ...first, requestId: first.requestId || `live:${first.serverRequestId ?? sessionId}` }
+  const shown = recent?.request ?? keyed
 
-  if (!currentSessionId) {
-    return null
-  }
-
-  const activeRequest = recent?.sessionId === currentSessionId ? recent.request : pending[0]
-
-  if (!activeRequest) {
+  if (!sessionId || !shown) {
     return null
   }
 
@@ -329,14 +256,15 @@ export function ApprovalComposerEntry({ runtimeSessionId, storedSessionId }: App
     <div
       className="mx-auto mb-2 w-full max-w-(--composer-width)"
       data-approval-stack=""
-      data-session-id={currentSessionId}
+      data-session-id={sessionId}
       data-slot="composer-approval-entry"
     >
       <ApprovalCard
-        initialDecision={recent?.sessionId === currentSessionId ? recent.decision : null}
-        onAnswer={choice => answer(activeRequest, choice)}
+        initialDecision={recent?.decision ?? null}
+        key={shown.requestId}
+        onAnswer={choice => (first && keyed ? answer(first, keyed, choice) : Promise.reject(new Error('gone')))}
         onSettled={clearRecent}
-        request={activeRequest}
+        request={shown}
       />
     </div>
   )
