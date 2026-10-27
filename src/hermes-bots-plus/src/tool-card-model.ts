@@ -5,11 +5,11 @@ import {
   parseMaybeObject,
   stableHash,
   stripAnsi,
-  type ToolCardsCopy,
   type ToolPart,
-  type ToolView,
-  translateNow
+  type ToolView
 } from '@hermes/plugin-sdk'
+
+import { type ToolCardsCopy, toolCardsT } from './tool-cards-i18n'
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   Boolean(value && typeof value === 'object' && !Array.isArray(value))
@@ -193,7 +193,7 @@ export function toolCardArgs(args: unknown): ToolCardDetail[] {
   }
 
   for (const arg of KNOWN_ARGS) {
-    push(translateNow(`assistant.toolCards.argLabels.${arg.label}`), scalarText(record[arg.key], arg.lines))
+    push(toolCardsT(`argLabels.${arg.label}`), scalarText(record[arg.key], arg.lines))
   }
 
   for (const [key, value] of Object.entries(record)) {
@@ -452,7 +452,7 @@ const KNOWN_GENERIC_TOOLS = new Map<string, { icon: string; name: keyof ToolCard
   ['send_message', { icon: 'tools', name: 'message' }]
 ])
 
-const t = (key: string): string => translateNow(`assistant.toolCards.${key}`)
+const t = (key: string): string => toolCardsT(key)
 
 export function toolCardFamily(toolName: string): ToolCardFamily {
   const exact = FAMILY_BY_NAME.get(toolName)
@@ -537,7 +537,7 @@ function toolCardStatus(part: ToolPart, view: ToolView, family: ToolCardFamily, 
     (family === 'browser' || family === 'web') &&
     !parseMaybeObject(part.args).url
   ) {
-    return translateNow('assistant.toolCards.opening', new URL(pageUrl).hostname.replace(/^www\./, ''))
+    return toolCardsT('opening', new URL(pageUrl).hostname.replace(/^www\./, ''))
   }
 
   if (view.title) {

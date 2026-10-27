@@ -6,10 +6,8 @@ import {
   hostPathLabel,
   openPreview,
   Tip,
-  type ToolCardsCopy,
   ToolIcon,
   type ToolRunRendererProps,
-  useI18n,
   useMediaImage
 } from '@hermes/plugin-sdk'
 import {
@@ -29,6 +27,7 @@ import {
 import { ExpandableShot, LiveFrame } from './tool-card-live'
 import { isPublicHost, type ToolCardGroup, toolCardsFromParts, type ToolCardView } from './tool-card-model'
 import { PreviewSessionContext } from './tool-card-session'
+import { type ToolCardsText, useToolCardsText } from './tool-cards-i18n'
 
 /** A site's icon, inline at 14px. Renders nothing for private hosts so the
  *  lookup never touches the LAN; the fixed empty fallback keeps local names
@@ -96,8 +95,7 @@ export function OpenPageButton({
   iconOnly?: boolean
   url: string
 }) {
-  const { t } = useI18n()
-  const label = t.assistant.toolCards.viewer.openPage
+  const label = useToolCardsText().viewer.openPage
   const session = useContext(PreviewSessionContext)
 
   const open = (event: MouseEvent) => {
@@ -130,8 +128,7 @@ export function OpenPageButton({
 
 /** One call's request, output, error and duration inside an expanded card. */
 export function CardBlock({ card, showStatus }: { card: ToolCardView; showStatus: boolean }) {
-  const { t } = useI18n()
-  const copy = t.assistant.toolCards
+  const copy = useToolCardsText()
   // Browser steps show their page and screenshot in the step pager instead.
   const pageUrl = card.family === 'browser' ? '' : stepPageUrl([card])
   const shot = card.family !== 'browser' && card.thumb?.kind === 'screenshot' ? card.thumb.src : ''
@@ -224,8 +221,7 @@ function latestScreenshotIndex(cards: readonly ToolCardView[]): number | null {
  *  step list. Key handling sits on the section so arrows work from any of
  *  its buttons without adding a tab stop. */
 export function BrowserSteps({ group }: { group: ToolCardGroup }) {
-  const { t } = useI18n()
-  const copy = t.assistant.toolCards.viewer
+  const copy = useToolCardsText().viewer
   const { cards, name } = group
   const total = cards.length
   const [manual, setManual] = useState<number | null>(null)
@@ -390,7 +386,7 @@ function toggleOnClick(toggle: () => void) {
 
 interface CardBodyProps {
   actor?: ReactNode
-  copy: ToolCardsCopy
+  copy: ToolCardsText
   group: ToolCardGroup
   onReviewApproval?: () => void
   /** The disclosure control. Review sits beside it, never inside, so it stays reachable. */
@@ -502,7 +498,7 @@ function QuietCardBody({ copy, group, toggle }: Pick<CardBodyProps, 'copy' | 'gr
   )
 }
 
-function cardLabel(copy: ToolCardsCopy, group: ToolCardGroup): string {
+function cardLabel(copy: ToolCardsText, group: ToolCardGroup): string {
   const last = group.cards[group.cards.length - 1]
 
   if (group.state === 'approval') {
@@ -528,8 +524,7 @@ export function ToolCard({
   group: ToolCardGroup
   onReviewApproval?: () => void
 }): JSX.Element {
-  const { t } = useI18n()
-  const copy = t.assistant.toolCards
+  const copy = useToolCardsText()
   const [open, setOpen] = useState(false)
   const [everOpened, setEverOpened] = useState(false)
   const [mountedLive] = useState(() => isLiveState(group.state))
@@ -608,7 +603,7 @@ export interface ToolActivityStackProps {
  *  is nothing to show. Groups stay keyed by their stable key so a group that
  *  grows or settles keeps its DOM node and animates instead of remounting. */
 function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }: ToolActivityStackProps): JSX.Element | null {
-  const { t } = useI18n()
+  const copy = useToolCardsText()
 
   if (groups.length === 0) {
     return null
@@ -616,7 +611,7 @@ function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }: T
 
   return (
     <div
-      aria-label={t.assistant.toolCards.activityLabel}
+      aria-label={copy.activityLabel}
       className={cn('flex min-w-0 max-w-full flex-col gap-1.5', className)}
       data-slot="tool-activity-stack"
       role="list"

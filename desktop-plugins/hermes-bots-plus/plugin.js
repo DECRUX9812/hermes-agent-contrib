@@ -23401,6 +23401,589 @@ function useLiveViewText() {
   return bindTree(t2, LIVE_VIEW_EN, "liveView");
 }
 
+// src/tool-cards-i18n.ts
+init_sdk_compat();
+import { useMemo as useMemo6 } from "react";
+
+// src/i18n-bind.ts
+function bind2(t2, template, prefix = "") {
+  const out = {};
+  for (const [key, value] of Object.entries(template)) {
+    const path = prefix ? `${prefix}.${key}` : key;
+    out[key] = typeof value === "function" ? (...args) => t2(path, ...args) : value && typeof value === "object" ? bind2(t2, value, path) : t2(path);
+  }
+  return out;
+}
+
+// src/tool-cards-i18n.ts
+init_shared();
+var TOOL_CARDS_EN = {
+  activityLabel: "Tool activity",
+  families: {
+    browser: "Browser",
+    code: "Code",
+    files: "Files",
+    generic: "Tool",
+    mcp: "Connector",
+    search: "Search",
+    terminal: "Terminal",
+    web: "Web"
+  },
+  names: {
+    memory: "Memory",
+    message: "Messages",
+    schedule: "Schedule",
+    skills: "Skills",
+    vision: "Vision"
+  },
+  usedTimes: (name, count) => `Used ${name} \xD7${count}`,
+  working: "Working\u2026",
+  opening: (host2) => `Opening ${host2}\u2026`,
+  awaitingApproval: "Waiting for your approval",
+  reviewApproval: "Review",
+  failed: "Failed",
+  stopped: "Stopped",
+  statuses: {
+    browser_back: { done: "Went back", pending: "Going back" },
+    browser_console: { done: "Read the page console", pending: "Reading the page console" },
+    browser_get_images: { done: "Collected page images", pending: "Collecting page images" },
+    browser_press: { done: "Pressed a key", pending: "Pressing a key" },
+    browser_scroll: { done: "Scrolled the page", pending: "Scrolling the page" },
+    browser_vision: { done: "Looked at the page", pending: "Looking at the page" }
+  },
+  details: {
+    request: "Request",
+    output: "Output",
+    duration: "Took",
+    noOutput: "No output"
+  },
+  argLabels: {
+    code: "Code",
+    command: "Command",
+    input: "Input",
+    path: "File",
+    query: "Search",
+    target: "Target",
+    text: "Text",
+    url: "Address"
+  },
+  viewer: {
+    title: (name) => `${name} steps`,
+    step: (index, total) => `Step ${index} of ${total}`,
+    noScreenshot: "No screenshot for this step",
+    previous: "Previous step",
+    next: "Next step",
+    openPage: "Open page"
+  }
+};
+var TOOL_CARDS_DE = {
+  activityLabel: "Werkzeugaktivit\xE4t",
+  families: {
+    browser: "Browser",
+    code: "Code",
+    files: "Dateien",
+    generic: "Werkzeug",
+    mcp: "Connector",
+    search: "Suche",
+    terminal: "Terminal",
+    web: "Web"
+  },
+  names: {
+    memory: "Ged\xE4chtnis",
+    message: "Nachrichten",
+    schedule: "Zeitplan",
+    skills: "Skills",
+    vision: "Bildanalyse"
+  },
+  usedTimes: (name, count) => `${name} \xD7${count} genutzt`,
+  working: "L\xE4uft\u2026",
+  opening: (host2) => `\xD6ffne ${host2}\u2026`,
+  awaitingApproval: "Wartet auf Ihre Freigabe",
+  reviewApproval: "Pr\xFCfen",
+  failed: "Fehlgeschlagen",
+  stopped: "Abgebrochen",
+  statuses: {
+    browser_back: { done: "Zur\xFCckgegangen", pending: "Geht zur\xFCck" },
+    browser_console: { done: "Seitenkonsole gelesen", pending: "Liest die Seitenkonsole" },
+    browser_get_images: { done: "Seitenbilder gesammelt", pending: "Sammelt Seitenbilder" },
+    browser_press: { done: "Taste gedr\xFCckt", pending: "Dr\xFCckt eine Taste" },
+    browser_scroll: { done: "Seite gescrollt", pending: "Scrollt die Seite" },
+    browser_vision: { done: "Seite betrachtet", pending: "Betrachtet die Seite" }
+  },
+  details: {
+    request: "Anfrage",
+    output: "Ausgabe",
+    duration: "Dauer",
+    noOutput: "Keine Ausgabe"
+  },
+  argLabels: {
+    code: "Code",
+    command: "Befehl",
+    input: "Eingabe",
+    path: "Datei",
+    query: "Suche",
+    target: "Ziel",
+    text: "Text",
+    url: "Adresse"
+  },
+  viewer: {
+    title: (name) => `Schritte: ${name}`,
+    step: (index, total) => `Schritt ${index} von ${total}`,
+    noScreenshot: "F\xFCr diesen Schritt gibt es keinen Screenshot",
+    previous: "Vorheriger Schritt",
+    next: "N\xE4chster Schritt",
+    openPage: "Seite \xF6ffnen"
+  }
+};
+var TOOL_CARDS_ES = {
+  activityLabel: "Actividad de herramientas",
+  families: {
+    browser: "Navegador",
+    code: "C\xF3digo",
+    files: "Archivos",
+    generic: "Herramienta",
+    mcp: "Conector",
+    search: "B\xFAsqueda",
+    terminal: "Terminal",
+    web: "Web"
+  },
+  names: {
+    memory: "Memoria",
+    message: "Mensajes",
+    schedule: "Programaci\xF3n",
+    skills: "Habilidades",
+    vision: "Visi\xF3n"
+  },
+  usedTimes: (name, count) => `Us\xF3 ${name} \xD7${count}`,
+  working: "Trabajando\u2026",
+  opening: (host2) => `Abriendo ${host2}\u2026`,
+  awaitingApproval: "Esperando tu aprobaci\xF3n",
+  reviewApproval: "Revisar",
+  failed: "Error",
+  stopped: "Detenido",
+  statuses: {
+    browser_back: { done: "Volvi\xF3 atr\xE1s", pending: "Volviendo atr\xE1s" },
+    browser_console: { done: "Ley\xF3 la consola de la p\xE1gina", pending: "Leyendo la consola de la p\xE1gina" },
+    browser_get_images: { done: "Recopil\xF3 im\xE1genes de la p\xE1gina", pending: "Recopilando im\xE1genes de la p\xE1gina" },
+    browser_press: { done: "Puls\xF3 una tecla", pending: "Pulsando una tecla" },
+    browser_scroll: { done: "Desplaz\xF3 la p\xE1gina", pending: "Desplazando la p\xE1gina" },
+    browser_vision: { done: "Mir\xF3 la p\xE1gina", pending: "Mirando la p\xE1gina" }
+  },
+  details: {
+    request: "Solicitud",
+    output: "Salida",
+    duration: "Duraci\xF3n",
+    noOutput: "Sin salida"
+  },
+  argLabels: {
+    code: "C\xF3digo",
+    command: "Comando",
+    input: "Entrada",
+    path: "Archivo",
+    query: "B\xFAsqueda",
+    target: "Destino",
+    text: "Texto",
+    url: "Direcci\xF3n"
+  },
+  viewer: {
+    title: (name) => `Pasos de ${name}`,
+    step: (index, total) => `Paso ${index} de ${total}`,
+    noScreenshot: "No hay captura para este paso",
+    previous: "Paso anterior",
+    next: "Paso siguiente",
+    openPage: "Abrir p\xE1gina"
+  }
+};
+var TOOL_CARDS_FR = {
+  activityLabel: "Activit\xE9 des outils",
+  families: {
+    browser: "Navigateur",
+    code: "Code",
+    files: "Fichiers",
+    generic: "Outil",
+    mcp: "Connecteur",
+    search: "Recherche",
+    terminal: "Terminal",
+    web: "Web"
+  },
+  names: {
+    memory: "M\xE9moire",
+    message: "Messages",
+    schedule: "Planification",
+    skills: "Comp\xE9tences",
+    vision: "Vision"
+  },
+  usedTimes: (name, count) => `Utilis\xE9 ${name} \xD7${count}`,
+  working: "En cours\u2026",
+  opening: (host2) => `Ouverture de ${host2}\u2026`,
+  awaitingApproval: "En attente de votre approbation",
+  reviewApproval: "Examiner",
+  failed: "\xC9chec",
+  stopped: "Arr\xEAt\xE9",
+  statuses: {
+    browser_back: { done: "Est revenu en arri\xE8re", pending: "Revient en arri\xE8re" },
+    browser_console: { done: "A lu la console de la page", pending: "Lit la console de la page" },
+    browser_get_images: { done: "A rassembl\xE9 les images de la page", pending: "Rassemble les images de la page" },
+    browser_press: { done: "A appuy\xE9 sur une touche", pending: "Appuie sur une touche" },
+    browser_scroll: { done: "A fait d\xE9filer la page", pending: "Fait d\xE9filer la page" },
+    browser_vision: { done: "A regard\xE9 la page", pending: "Regarde la page" }
+  },
+  details: {
+    request: "Demande",
+    output: "Sortie",
+    duration: "Dur\xE9e",
+    noOutput: "Aucune sortie"
+  },
+  argLabels: {
+    code: "Code",
+    command: "Commande",
+    input: "Entr\xE9e",
+    path: "Fichier",
+    query: "Recherche",
+    target: "Cible",
+    text: "Texte",
+    url: "Adresse"
+  },
+  viewer: {
+    title: (name) => `\xC9tapes de ${name}`,
+    step: (index, total) => `\xC9tape ${index} sur ${total}`,
+    noScreenshot: "Pas de capture pour cette \xE9tape",
+    previous: "\xC9tape pr\xE9c\xE9dente",
+    next: "\xC9tape suivante",
+    openPage: "Ouvrir la page"
+  }
+};
+var TOOL_CARDS_JA = {
+  activityLabel: "\u30C4\u30FC\u30EB\u306E\u52D5\u4F5C",
+  families: {
+    browser: "\u30D6\u30E9\u30A6\u30B6",
+    code: "\u30B3\u30FC\u30C9",
+    files: "\u30D5\u30A1\u30A4\u30EB",
+    generic: "\u30C4\u30FC\u30EB",
+    mcp: "\u30B3\u30CD\u30AF\u30BF",
+    search: "\u691C\u7D22",
+    terminal: "\u30BF\u30FC\u30DF\u30CA\u30EB",
+    web: "Web"
+  },
+  names: {
+    memory: "\u30E1\u30E2\u30EA",
+    message: "\u30E1\u30C3\u30BB\u30FC\u30B8",
+    schedule: "\u30B9\u30B1\u30B8\u30E5\u30FC\u30EB",
+    skills: "\u30B9\u30AD\u30EB",
+    vision: "\u30D3\u30B8\u30E7\u30F3"
+  },
+  usedTimes: (name, count) => `${name} \xD7${count} \u56DE\u4F7F\u7528`,
+  working: "\u51E6\u7406\u4E2D\u2026",
+  opening: (host2) => `${host2} \u3092\u958B\u3044\u3066\u3044\u307E\u3059\u2026`,
+  awaitingApproval: "\u627F\u8A8D\u5F85\u3061",
+  reviewApproval: "\u78BA\u8A8D",
+  failed: "\u5931\u6557",
+  stopped: "\u505C\u6B62\u3057\u307E\u3057\u305F",
+  statuses: {
+    browser_back: { done: "\u623B\u308A\u307E\u3057\u305F", pending: "\u623B\u3063\u3066\u3044\u307E\u3059" },
+    browser_console: { done: "\u30DA\u30FC\u30B8\u306E\u30B3\u30F3\u30BD\u30FC\u30EB\u3092\u8AAD\u307F\u307E\u3057\u305F", pending: "\u30DA\u30FC\u30B8\u306E\u30B3\u30F3\u30BD\u30FC\u30EB\u3092\u8AAD\u3093\u3067\u3044\u307E\u3059" },
+    browser_get_images: { done: "\u30DA\u30FC\u30B8\u306E\u753B\u50CF\u3092\u96C6\u3081\u307E\u3057\u305F", pending: "\u30DA\u30FC\u30B8\u306E\u753B\u50CF\u3092\u96C6\u3081\u3066\u3044\u307E\u3059" },
+    browser_press: { done: "\u30AD\u30FC\u3092\u62BC\u3057\u307E\u3057\u305F", pending: "\u30AD\u30FC\u3092\u62BC\u3057\u3066\u3044\u307E\u3059" },
+    browser_scroll: { done: "\u30DA\u30FC\u30B8\u3092\u30B9\u30AF\u30ED\u30FC\u30EB\u3057\u307E\u3057\u305F", pending: "\u30DA\u30FC\u30B8\u3092\u30B9\u30AF\u30ED\u30FC\u30EB\u3057\u3066\u3044\u307E\u3059" },
+    browser_vision: { done: "\u30DA\u30FC\u30B8\u3092\u78BA\u8A8D\u3057\u307E\u3057\u305F", pending: "\u30DA\u30FC\u30B8\u3092\u78BA\u8A8D\u3057\u3066\u3044\u307E\u3059" }
+  },
+  details: {
+    request: "\u30EA\u30AF\u30A8\u30B9\u30C8",
+    output: "\u51FA\u529B",
+    duration: "\u6240\u8981\u6642\u9593",
+    noOutput: "\u51FA\u529B\u306A\u3057"
+  },
+  argLabels: {
+    code: "\u30B3\u30FC\u30C9",
+    command: "\u30B3\u30DE\u30F3\u30C9",
+    input: "\u5165\u529B",
+    path: "\u30D5\u30A1\u30A4\u30EB",
+    query: "\u691C\u7D22",
+    target: "\u5BFE\u8C61",
+    text: "\u30C6\u30AD\u30B9\u30C8",
+    url: "\u30A2\u30C9\u30EC\u30B9"
+  },
+  viewer: {
+    title: (name) => `${name}\u306E\u30B9\u30C6\u30C3\u30D7`,
+    step: (index, total) => `\u30B9\u30C6\u30C3\u30D7 ${index} / ${total}`,
+    noScreenshot: "\u3053\u306E\u30B9\u30C6\u30C3\u30D7\u306E\u30B9\u30AF\u30EA\u30FC\u30F3\u30B7\u30E7\u30C3\u30C8\u306F\u3042\u308A\u307E\u305B\u3093",
+    previous: "\u524D\u306E\u30B9\u30C6\u30C3\u30D7",
+    next: "\u6B21\u306E\u30B9\u30C6\u30C3\u30D7",
+    openPage: "\u30DA\u30FC\u30B8\u3092\u958B\u304F"
+  }
+};
+var TOOL_CARDS_RU = {
+  activityLabel: "\u0410\u043A\u0442\u0438\u0432\u043D\u043E\u0441\u0442\u044C \u0438\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442\u043E\u0432",
+  families: {
+    browser: "\u0411\u0440\u0430\u0443\u0437\u0435\u0440",
+    code: "\u041A\u043E\u0434",
+    files: "\u0424\u0430\u0439\u043B\u044B",
+    generic: "\u0418\u043D\u0441\u0442\u0440\u0443\u043C\u0435\u043D\u0442",
+    mcp: "\u041A\u043E\u043D\u043D\u0435\u043A\u0442\u043E\u0440",
+    search: "\u041F\u043E\u0438\u0441\u043A",
+    terminal: "\u0422\u0435\u0440\u043C\u0438\u043D\u0430\u043B",
+    web: "\u0412\u0435\u0431"
+  },
+  names: {
+    memory: "\u041F\u0430\u043C\u044F\u0442\u044C",
+    message: "\u0421\u043E\u043E\u0431\u0449\u0435\u043D\u0438\u044F",
+    schedule: "\u0420\u0430\u0441\u043F\u0438\u0441\u0430\u043D\u0438\u0435",
+    skills: "\u041D\u0430\u0432\u044B\u043A\u0438",
+    vision: "\u0417\u0440\u0435\u043D\u0438\u0435"
+  },
+  usedTimes: (name, count) => `\u0418\u0441\u043F\u043E\u043B\u044C\u0437\u043E\u0432\u0430\u043D\u043E: ${name} \xD7${count}`,
+  working: "\u0412\u044B\u043F\u043E\u043B\u043D\u044F\u0435\u0442\u0441\u044F\u2026",
+  opening: (host2) => `\u041E\u0442\u043A\u0440\u044B\u0432\u0430\u044E ${host2}\u2026`,
+  awaitingApproval: "\u0416\u0434\u0451\u0442 \u0432\u0430\u0448\u0435\u0433\u043E \u043F\u043E\u0434\u0442\u0432\u0435\u0440\u0436\u0434\u0435\u043D\u0438\u044F",
+  reviewApproval: "\u041F\u0440\u043E\u0432\u0435\u0440\u0438\u0442\u044C",
+  failed: "\u041E\u0448\u0438\u0431\u043A\u0430",
+  stopped: "\u041E\u0441\u0442\u0430\u043D\u043E\u0432\u043B\u0435\u043D\u043E",
+  statuses: {
+    browser_back: { done: "\u0412\u0435\u0440\u043D\u0443\u043B\u0441\u044F \u043D\u0430\u0437\u0430\u0434", pending: "\u0412\u043E\u0437\u0432\u0440\u0430\u0449\u0430\u0435\u0442\u0441\u044F \u043D\u0430\u0437\u0430\u0434" },
+    browser_console: { done: "\u041F\u0440\u043E\u0447\u0438\u0442\u0430\u043B \u043A\u043E\u043D\u0441\u043E\u043B\u044C \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B", pending: "\u0427\u0438\u0442\u0430\u0435\u0442 \u043A\u043E\u043D\u0441\u043E\u043B\u044C \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B" },
+    browser_get_images: { done: "\u0421\u043E\u0431\u0440\u0430\u043B \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B", pending: "\u0421\u043E\u0431\u0438\u0440\u0430\u0435\u0442 \u0438\u0437\u043E\u0431\u0440\u0430\u0436\u0435\u043D\u0438\u044F \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u044B" },
+    browser_press: { done: "\u041D\u0430\u0436\u0430\u043B \u043A\u043B\u0430\u0432\u0438\u0448\u0443", pending: "\u041D\u0430\u0436\u0438\u043C\u0430\u0435\u0442 \u043A\u043B\u0430\u0432\u0438\u0448\u0443" },
+    browser_scroll: { done: "\u041F\u0440\u043E\u043A\u0440\u0443\u0442\u0438\u043B \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443", pending: "\u041F\u0440\u043E\u043A\u0440\u0443\u0447\u0438\u0432\u0430\u0435\u0442 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443" },
+    browser_vision: { done: "\u041F\u043E\u0441\u043C\u043E\u0442\u0440\u0435\u043B \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443", pending: "\u0421\u043C\u043E\u0442\u0440\u0438\u0442 \u043D\u0430 \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443" }
+  },
+  details: {
+    request: "\u0417\u0430\u043F\u0440\u043E\u0441",
+    output: "\u0412\u044B\u0432\u043E\u0434",
+    duration: "\u0414\u043B\u0438\u0442\u0435\u043B\u044C\u043D\u043E\u0441\u0442\u044C",
+    noOutput: "\u041D\u0435\u0442 \u0432\u044B\u0432\u043E\u0434\u0430"
+  },
+  argLabels: {
+    code: "\u041A\u043E\u0434",
+    command: "\u041A\u043E\u043C\u0430\u043D\u0434\u0430",
+    input: "\u0412\u0432\u043E\u0434",
+    path: "\u0424\u0430\u0439\u043B",
+    query: "\u041F\u043E\u0438\u0441\u043A",
+    target: "\u0426\u0435\u043B\u044C",
+    text: "\u0422\u0435\u043A\u0441\u0442",
+    url: "\u0410\u0434\u0440\u0435\u0441"
+  },
+  viewer: {
+    title: (name) => `\u0428\u0430\u0433\u0438: ${name}`,
+    step: (index, total) => `\u0428\u0430\u0433 ${index} \u0438\u0437 ${total}`,
+    noScreenshot: "\u0414\u043B\u044F \u044D\u0442\u043E\u0433\u043E \u0448\u0430\u0433\u0430 \u043D\u0435\u0442 \u0441\u043D\u0438\u043C\u043A\u0430",
+    previous: "\u041F\u0440\u0435\u0434\u044B\u0434\u0443\u0449\u0438\u0439 \u0448\u0430\u0433",
+    next: "\u0421\u043B\u0435\u0434\u0443\u044E\u0449\u0438\u0439 \u0448\u0430\u0433",
+    openPage: "\u041E\u0442\u043A\u0440\u044B\u0442\u044C \u0441\u0442\u0440\u0430\u043D\u0438\u0446\u0443"
+  }
+};
+var TOOL_CARDS_ZH = {
+  activityLabel: "\u5DE5\u5177\u6D3B\u52A8",
+  families: {
+    browser: "\u6D4F\u89C8\u5668",
+    code: "\u4EE3\u7801",
+    files: "\u6587\u4EF6",
+    generic: "\u5DE5\u5177",
+    mcp: "\u8FDE\u63A5\u5668",
+    search: "\u641C\u7D22",
+    terminal: "\u7EC8\u7AEF",
+    web: "\u7F51\u9875"
+  },
+  names: {
+    memory: "\u8BB0\u5FC6",
+    message: "\u6D88\u606F",
+    schedule: "\u8BA1\u5212\u4EFB\u52A1",
+    skills: "\u6280\u80FD",
+    vision: "\u89C6\u89C9"
+  },
+  usedTimes: (name, count) => `\u5DF2\u4F7F\u7528 ${name} \xD7${count}`,
+  working: "\u5904\u7406\u4E2D\u2026",
+  opening: (host2) => `\u6B63\u5728\u6253\u5F00 ${host2}\u2026`,
+  awaitingApproval: "\u7B49\u5F85\u4F60\u7684\u6279\u51C6",
+  reviewApproval: "\u67E5\u770B",
+  failed: "\u5931\u8D25",
+  stopped: "\u5DF2\u505C\u6B62",
+  statuses: {
+    browser_back: { done: "\u5DF2\u8FD4\u56DE", pending: "\u6B63\u5728\u8FD4\u56DE" },
+    browser_console: { done: "\u5DF2\u8BFB\u53D6\u9875\u9762\u63A7\u5236\u53F0", pending: "\u6B63\u5728\u8BFB\u53D6\u9875\u9762\u63A7\u5236\u53F0" },
+    browser_get_images: { done: "\u5DF2\u6536\u96C6\u9875\u9762\u56FE\u7247", pending: "\u6B63\u5728\u6536\u96C6\u9875\u9762\u56FE\u7247" },
+    browser_press: { done: "\u5DF2\u6309\u952E", pending: "\u6B63\u5728\u6309\u952E" },
+    browser_scroll: { done: "\u5DF2\u6EDA\u52A8\u9875\u9762", pending: "\u6B63\u5728\u6EDA\u52A8\u9875\u9762" },
+    browser_vision: { done: "\u5DF2\u67E5\u770B\u9875\u9762", pending: "\u6B63\u5728\u67E5\u770B\u9875\u9762" }
+  },
+  details: {
+    request: "\u8BF7\u6C42",
+    output: "\u8F93\u51FA",
+    duration: "\u8017\u65F6",
+    noOutput: "\u65E0\u8F93\u51FA"
+  },
+  argLabels: {
+    code: "\u4EE3\u7801",
+    command: "\u547D\u4EE4",
+    input: "\u8F93\u5165",
+    path: "\u6587\u4EF6",
+    query: "\u641C\u7D22",
+    target: "\u76EE\u6807",
+    text: "\u6587\u672C",
+    url: "\u5730\u5740"
+  },
+  viewer: {
+    title: (name) => `${name}\u6B65\u9AA4`,
+    step: (index, total) => `\u7B2C ${index} \u6B65\uFF0C\u5171 ${total} \u6B65`,
+    noScreenshot: "\u6B64\u6B65\u9AA4\u6CA1\u6709\u622A\u56FE",
+    previous: "\u4E0A\u4E00\u6B65",
+    next: "\u4E0B\u4E00\u6B65",
+    openPage: "\u6253\u5F00\u9875\u9762"
+  }
+};
+var TOOL_CARDS_AR = {
+  activityLabel: "\u0646\u0634\u0627\u0637 \u0627\u0644\u0623\u062F\u0648\u0627\u062A",
+  families: {
+    browser: "\u0627\u0644\u0645\u062A\u0635\u0641\u062D",
+    code: "\u0627\u0644\u0634\u064A\u0641\u0631\u0629",
+    files: "\u0627\u0644\u0645\u0644\u0641\u0627\u062A",
+    generic: "\u0623\u062F\u0627\u0629",
+    mcp: "\u0645\u0648\u0635\u0651\u0644",
+    search: "\u0627\u0644\u0628\u062D\u062B",
+    terminal: "\u0627\u0644\u0637\u0631\u0641\u064A\u0629",
+    web: "\u0627\u0644\u0648\u064A\u0628"
+  },
+  names: {
+    memory: "\u0627\u0644\u0630\u0627\u0643\u0631\u0629",
+    message: "\u0627\u0644\u0631\u0633\u0627\u0626\u0644",
+    schedule: "\u0627\u0644\u062C\u062F\u0648\u0644\u0629",
+    skills: "\u0627\u0644\u0645\u0647\u0627\u0631\u0627\u062A",
+    vision: "\u0627\u0644\u0631\u0624\u064A\u0629"
+  },
+  usedTimes: (name, count) => `\u0627\u0633\u062A\u064F\u062E\u062F\u0645 ${name} \xD7${count}`,
+  working: "\u062C\u0627\u0631\u064D \u0627\u0644\u0639\u0645\u0644\u2026",
+  opening: (host2) => `\u062C\u0627\u0631\u064D \u0641\u062A\u062D ${host2}\u2026`,
+  awaitingApproval: "\u0641\u064A \u0627\u0646\u062A\u0638\u0627\u0631 \u0645\u0648\u0627\u0641\u0642\u062A\u0643",
+  reviewApproval: "\u0645\u0631\u0627\u062C\u0639\u0629",
+  failed: "\u0641\u0634\u0644",
+  stopped: "\u062A\u0648\u0642\u0651\u0641",
+  statuses: {
+    browser_back: { done: "\u0639\u0627\u062F \u0644\u0644\u062E\u0644\u0641", pending: "\u064A\u0639\u0648\u062F \u0644\u0644\u062E\u0644\u0641" },
+    browser_console: { done: "\u0642\u0631\u0623 \u0648\u062D\u062F\u0629 \u062A\u062D\u0643\u0645 \u0627\u0644\u0635\u0641\u062D\u0629", pending: "\u064A\u0642\u0631\u0623 \u0648\u062D\u062F\u0629 \u062A\u062D\u0643\u0645 \u0627\u0644\u0635\u0641\u062D\u0629" },
+    browser_get_images: { done: "\u062C\u0645\u0639 \u0635\u0648\u0631 \u0627\u0644\u0635\u0641\u062D\u0629", pending: "\u064A\u062C\u0645\u0639 \u0635\u0648\u0631 \u0627\u0644\u0635\u0641\u062D\u0629" },
+    browser_press: { done: "\u0636\u063A\u0637 \u0639\u0644\u0649 \u0645\u0641\u062A\u0627\u062D", pending: "\u064A\u0636\u063A\u0637 \u0639\u0644\u0649 \u0645\u0641\u062A\u0627\u062D" },
+    browser_scroll: { done: "\u0645\u0631\u0631 \u0627\u0644\u0635\u0641\u062D\u0629", pending: "\u064A\u0645\u0631\u0631 \u0627\u0644\u0635\u0641\u062D\u0629" },
+    browser_vision: { done: "\u0646\u0638\u0631 \u0625\u0644\u0649 \u0627\u0644\u0635\u0641\u062D\u0629", pending: "\u064A\u0646\u0638\u0631 \u0625\u0644\u0649 \u0627\u0644\u0635\u0641\u062D\u0629" }
+  },
+  details: {
+    request: "\u0627\u0644\u0637\u0644\u0628",
+    output: "\u0627\u0644\u0645\u062E\u0631\u062C\u0627\u062A",
+    duration: "\u0627\u0644\u0645\u062F\u0629",
+    noOutput: "\u0644\u0627 \u062A\u0648\u062C\u062F \u0645\u062E\u0631\u062C\u0627\u062A"
+  },
+  argLabels: {
+    code: "\u0627\u0644\u0634\u064A\u0641\u0631\u0629",
+    command: "\u0627\u0644\u0623\u0645\u0631",
+    input: "\u0627\u0644\u0625\u062F\u062E\u0627\u0644",
+    path: "\u0627\u0644\u0645\u0644\u0641",
+    query: "\u0627\u0644\u0628\u062D\u062B",
+    target: "\u0627\u0644\u0647\u062F\u0641",
+    text: "\u0627\u0644\u0646\u0635",
+    url: "\u0627\u0644\u0639\u0646\u0648\u0627\u0646"
+  },
+  viewer: {
+    title: (name) => `\u062E\u0637\u0648\u0627\u062A ${name}`,
+    step: (index, total) => `\u0627\u0644\u062E\u0637\u0648\u0629 ${index} \u0645\u0646 ${total}`,
+    noScreenshot: "\u0644\u0627 \u062A\u0648\u062C\u062F \u0644\u0642\u0637\u0629 \u0634\u0627\u0634\u0629 \u0644\u0647\u0630\u0647 \u0627\u0644\u062E\u0637\u0648\u0629",
+    previous: "\u0627\u0644\u062E\u0637\u0648\u0629 \u0627\u0644\u0633\u0627\u0628\u0642\u0629",
+    next: "\u0627\u0644\u062E\u0637\u0648\u0629 \u0627\u0644\u062A\u0627\u0644\u064A\u0629",
+    openPage: "\u0641\u062A\u062D \u0627\u0644\u0635\u0641\u062D\u0629"
+  }
+};
+var TOOL_CARDS_ZH_HANT = {
+  activityLabel: "\u5DE5\u5177\u6D3B\u52D5",
+  families: {
+    browser: "\u700F\u89BD\u5668",
+    code: "\u7A0B\u5F0F\u78BC",
+    files: "\u6A94\u6848",
+    generic: "\u5DE5\u5177",
+    mcp: "\u9023\u63A5\u5668",
+    search: "\u641C\u5C0B",
+    terminal: "\u7D42\u7AEF\u6A5F",
+    web: "\u7DB2\u9801"
+  },
+  names: {
+    memory: "\u8A18\u61B6",
+    message: "\u8A0A\u606F",
+    schedule: "\u6392\u7A0B",
+    skills: "\u6280\u80FD",
+    vision: "\u8996\u89BA"
+  },
+  usedTimes: (name, count) => `\u5DF2\u4F7F\u7528 ${name} \xD7${count}`,
+  working: "\u8655\u7406\u4E2D\u2026",
+  opening: (host2) => `\u6B63\u5728\u958B\u555F ${host2}\u2026`,
+  awaitingApproval: "\u7B49\u5F85\u4F60\u7684\u6279\u51C6",
+  reviewApproval: "\u6AA2\u8996",
+  failed: "\u5931\u6557",
+  stopped: "\u5DF2\u505C\u6B62",
+  statuses: {
+    browser_back: { done: "\u5DF2\u8FD4\u56DE", pending: "\u6B63\u5728\u8FD4\u56DE" },
+    browser_console: { done: "\u5DF2\u8B80\u53D6\u9801\u9762\u4E3B\u63A7\u53F0", pending: "\u6B63\u5728\u8B80\u53D6\u9801\u9762\u4E3B\u63A7\u53F0" },
+    browser_get_images: { done: "\u5DF2\u6536\u96C6\u9801\u9762\u5716\u7247", pending: "\u6B63\u5728\u6536\u96C6\u9801\u9762\u5716\u7247" },
+    browser_press: { done: "\u5DF2\u6309\u9375", pending: "\u6B63\u5728\u6309\u9375" },
+    browser_scroll: { done: "\u5DF2\u6372\u52D5\u9801\u9762", pending: "\u6B63\u5728\u6372\u52D5\u9801\u9762" },
+    browser_vision: { done: "\u5DF2\u6AA2\u8996\u9801\u9762", pending: "\u6B63\u5728\u6AA2\u8996\u9801\u9762" }
+  },
+  details: {
+    request: "\u8ACB\u6C42",
+    output: "\u8F38\u51FA",
+    duration: "\u8017\u6642",
+    noOutput: "\u7121\u8F38\u51FA"
+  },
+  argLabels: {
+    code: "\u7A0B\u5F0F\u78BC",
+    command: "\u6307\u4EE4",
+    input: "\u8F38\u5165",
+    path: "\u6A94\u6848",
+    query: "\u641C\u5C0B",
+    target: "\u76EE\u6A19",
+    text: "\u6587\u5B57",
+    url: "\u7DB2\u5740"
+  },
+  viewer: {
+    title: (name) => `${name}\u6B65\u9A5F`,
+    step: (index, total) => `\u7B2C ${index} \u6B65\uFF0C\u5171 ${total} \u6B65`,
+    noScreenshot: "\u6B64\u6B65\u9A5F\u6C92\u6709\u622A\u5716",
+    previous: "\u4E0A\u4E00\u6B65",
+    next: "\u4E0B\u4E00\u6B65",
+    openPage: "\u958B\u555F\u9801\u9762"
+  }
+};
+var TOOL_CARDS_LOCALES = {
+  en: { toolCards: TOOL_CARDS_EN },
+  de: { toolCards: TOOL_CARDS_DE },
+  es: { toolCards: TOOL_CARDS_ES },
+  fr: { toolCards: TOOL_CARDS_FR },
+  ja: { toolCards: TOOL_CARDS_JA },
+  ru: { toolCards: TOOL_CARDS_RU },
+  zh: { toolCards: TOOL_CARDS_ZH },
+  ar: { toolCards: TOOL_CARDS_AR },
+  "zh-hant": { toolCards: TOOL_CARDS_ZH_HANT }
+};
+function englishFallback(key, args) {
+  const value = key.split(".").slice(1).reduce((node, part) => node && typeof node === "object" ? node[part] : void 0, TOOL_CARDS_EN);
+  if (typeof value === "function") {
+    return String(value(...args));
+  }
+  return typeof value === "string" ? value : key;
+}
+function withFallback(t2) {
+  return (key, ...args) => {
+    const value = t2 ? t2(key, ...args) : key;
+    return value === key ? englishFallback(key, args) : value;
+  };
+}
+var moduleT = null;
+function setToolCardsTranslator(t2) {
+  moduleT = t2;
+}
+function toolCardsT(key, ...args) {
+  return withFallback(moduleT)(`toolCards.${key}`, ...args);
+}
+function useToolCardsText() {
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return useMemo6(() => bind2(withFallback(t2), TOOL_CARDS_EN, "toolCards"), [t2]);
+}
+
 // src/mission-rail.tsx
 init_sdk_compat();
 import { useState as useState36 } from "react";
@@ -25459,7 +26042,7 @@ init_sdk_compat();
 init_data();
 init_i18n();
 init_routing();
-import { useEffect as useEffect16, useMemo as useMemo6 } from "react";
+import { useEffect as useEffect16, useMemo as useMemo7 } from "react";
 import { jsx as jsx51, jsxs as jsxs49 } from "react/jsx-runtime";
 function portalTone(status, lease, viewer = null, unavailable = false) {
   if (unavailable) {
@@ -25599,7 +26182,7 @@ function ScreenPortal({ bot }) {
 function ProfileGroupScreenPortal({ route }) {
   const roster = (0, sdk_compat_exports.useValue)($lastRoster);
   const { connectionId, profile } = route;
-  const bot = useMemo6(
+  const bot = useMemo7(
     () => roster.find((row) => {
       const resolved = resolveBotConnectionRoute(row);
       return resolved.route ? resolved.route.profile === profile && resolved.route.connectionId === (connectionId ?? "local") : row.name === profile && connectionId === null;
@@ -26352,7 +26935,7 @@ function ShareBotDialog({
 
 // src/work-board.tsx
 init_sdk_compat();
-import { useMemo as useMemo8, useState as useState35 } from "react";
+import { useMemo as useMemo9, useState as useState35 } from "react";
 
 // src/activity-detail.tsx
 init_sdk_compat();
@@ -26536,7 +27119,7 @@ function ActivityDetailDialog({ onClose, task }) {
 
 // src/activity-subjects.ts
 init_sdk_compat();
-import { useEffect as useEffect20, useMemo as useMemo7 } from "react";
+import { useEffect as useEffect20, useMemo as useMemo8 } from "react";
 init_shared();
 var STORAGE_KEY3 = "activity-subjects-v1";
 var ENTRY_TTL_MS = 30 * 24 * 60 * 60 * 1e3;
@@ -26716,7 +27299,7 @@ async function requestSubjects(batch2) {
 }
 function useActivitySubjects(tasks, messages, visible) {
   const layer = (0, sdk_compat_exports.useValue)($activitySubjects);
-  const requests = useMemo7(() => {
+  const requests = useMemo8(() => {
     const byId = /* @__PURE__ */ new Map();
     for (const message of messages ?? []) {
       byId.set(message.id, message);
@@ -26728,14 +27311,14 @@ function useActivitySubjects(tasks, messages, visible) {
     }
     return map;
   }, [messages, tasks]);
-  const upgraded = useMemo7(
+  const upgraded = useMemo8(
     () => tasks.map((task) => {
       const entry = layer.entries[activitySubjectKey(task, requests.get(task.id) ?? "")];
       return entry?.source === "model" && entry.subject ? { ...task, subject: entry.subject, subjectSource: "model" } : task;
     }),
     [layer.entries, requests, tasks]
   );
-  const pending = useMemo7(
+  const pending = useMemo8(
     () => visible.filter((task) => task.status !== "running").flatMap((task) => {
       const request = requests.get(task.id) ?? "";
       if (!request || layer.entries[activitySubjectKey(task, request)]) {
@@ -27029,10 +27612,10 @@ function WorkBoard({
   const w = a.work;
   const raw = (0, sdk_compat_exports.useValue)(host.state.focusedActivity);
   const messages = (0, sdk_compat_exports.useValue)(host.state.focusedMessages);
-  const plan = useMemo8(() => deriveBotPlanState(messages), [messages]);
+  const plan = useMemo9(() => deriveBotPlanState(messages), [messages]);
   const [openId, setOpenId] = useState35(null);
   const [showAllDone, setShowAllDone] = useState35(false);
-  const visible = useMemo8(() => {
+  const visible = useMemo9(() => {
     const live = raw.at(-1)?.status === "running" ? [raw.at(-1)] : [];
     const settled2 = raw.filter((task) => task.status !== "running").reverse();
     return [...live, ...settled2.slice(0, showAllDone ? settled2.length : DONE_PREVIEW)];
@@ -27040,12 +27623,12 @@ function WorkBoard({
   const tasks = useActivitySubjects(raw, messages, visible);
   const open = openId ? tasks.find((task) => task.id === openId) ?? null : null;
   const running = tasks.at(-1)?.status === "running" ? tasks.at(-1) : null;
-  const done = useMemo8(() => tasks.filter((task) => task.status !== "running").reverse(), [tasks]);
+  const done = useMemo9(() => tasks.filter((task) => task.status !== "running").reverse(), [tasks]);
   const shownDone = showAllDone ? done : done.slice(0, DONE_PREVIEW);
   const livePlan = plan && !plan.complete ? plan : null;
   const current = livePlan ? activePlanStep(livePlan) : 0;
   const planNext = livePlan ? livePlan.steps.map((text2, i) => ({ n: i + 1, text: text2 })).filter((s) => s.n > current) : [];
-  const routines = useMemo8(
+  const routines = useMemo9(
     () => jobs.filter((job) => job.enabled !== false && job.state !== "paused").sort((x, y) => String(x.next_run_at || "~").localeCompare(String(y.next_run_at || "~"))).slice(0, ROUTINE_PREVIEW),
     [jobs]
   );
@@ -28947,7 +29530,7 @@ init_data();
 
 // src/hire-gallery.tsx
 init_sdk_compat();
-import { useMemo as useMemo9, useState as useState38 } from "react";
+import { useMemo as useMemo10, useState as useState38 } from "react";
 
 // src/team-packs.ts
 var BUILTIN_TEAM_PACKS = [
@@ -29181,7 +29764,7 @@ function HireGallery({ open, onClose, onHire }) {
   const [query, setQuery] = useState38("");
   const [describe, setDescribe] = useState38("");
   const [pick2, setPick] = useState38(null);
-  const starters = useMemo9(
+  const starters = useMemo10(
     () => BOT_STARTERS.filter(
       (starter) => (shelf === "featured" || shelf === starter.category) && starterMatches(starter, query)
     ),
@@ -31941,7 +32524,7 @@ init_routing();
 
 // src/triage-strip.tsx
 init_sdk_compat();
-import { useMemo as useMemo10 } from "react";
+import { useMemo as useMemo11 } from "react";
 init_data();
 init_i18n();
 init_labels();
@@ -32072,7 +32655,7 @@ function TriageStrip({
   const relayInflight = (0, sdk_compat_exports.useValue)($relayInflight);
   const needsYou = (0, sdk_compat_exports.useValue)($needsYouIndex);
   const activeConnectionId = String(host.state.connectionId?.get?.() || "local").trim();
-  const cachedJobs = useMemo10(() => {
+  const cachedJobs = useMemo11(() => {
     const map = /* @__PURE__ */ new Map();
     for (const [key, data] of sdk_compat_exports.queryClient.getQueriesData({
       queryKey: ROUTINES_QUERY_KEY
@@ -32084,7 +32667,7 @@ function TriageStrip({
     }
     return map;
   }, [attention, dotById, statusItems]);
-  const items = useMemo10(() => {
+  const items = useMemo11(() => {
     const signals = {
       attention: attention || {},
       activeConnectionId,
@@ -32890,7 +33473,7 @@ import {
   memo,
   useContext as useContext2,
   useEffect as useEffect29,
-  useMemo as useMemo11,
+  useMemo as useMemo12,
   useRef as useRef18,
   useState as useState47
 } from "react";
@@ -32978,7 +33561,7 @@ function toolCardArgs(args) {
     rows.push({ label, value: clampText(value, MAX_ARG_CHARS) });
   };
   for (const arg of KNOWN_ARGS) {
-    push((0, sdk_compat_exports.translateNow)(`assistant.toolCards.argLabels.${arg.label}`), scalarText(record[arg.key], arg.lines));
+    push(toolCardsT(`argLabels.${arg.label}`), scalarText(record[arg.key], arg.lines));
   }
   for (const [key, value] of Object.entries(record)) {
     if (!KNOWN_KEYS.has(key)) {
@@ -33164,7 +33747,7 @@ var KNOWN_GENERIC_TOOLS = /* @__PURE__ */ new Map([
   ["cronjob", { icon: "watch", name: "schedule" }],
   ["send_message", { icon: "tools", name: "message" }]
 ]);
-var t = (key) => (0, sdk_compat_exports.translateNow)(`assistant.toolCards.${key}`);
+var t = (key) => toolCardsT(key);
 function toolCardFamily(toolName) {
   const exact = FAMILY_BY_NAME.get(toolName);
   if (exact) {
@@ -33219,7 +33802,7 @@ function toolCardStatus(part, view, family, pageUrl) {
     return t(`statuses.${part.toolName}.${view.status === "running" ? "pending" : "done"}`);
   }
   if (view.status === "running" && pageUrl && (family === "browser" || family === "web") && !(0, sdk_compat_exports.parseMaybeObject)(part.args).url) {
-    return (0, sdk_compat_exports.translateNow)("assistant.toolCards.opening", new URL(pageUrl).hostname.replace(/^www\./, ""));
+    return toolCardsT("opening", new URL(pageUrl).hostname.replace(/^www\./, ""));
   }
   if (view.title) {
     return view.title;
@@ -33569,8 +34152,7 @@ function OpenPageButton({
   iconOnly = false,
   url
 }) {
-  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
-  const label = t2.assistant.toolCards.viewer.openPage;
+  const label = useToolCardsText().viewer.openPage;
   const session = useContext2(PreviewSessionContext);
   const open = (event) => {
     event.stopPropagation();
@@ -33599,8 +34181,7 @@ function OpenPageButton({
   ) });
 }
 function CardBlock({ card, showStatus }) {
-  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
-  const copy = t2.assistant.toolCards;
+  const copy = useToolCardsText();
   const pageUrl = card.family === "browser" ? "" : stepPageUrl([card]);
   const shot = card.family !== "browser" && card.thumb?.kind === "screenshot" ? card.thumb.src : "";
   return /* @__PURE__ */ jsxs75("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
@@ -33651,8 +34232,7 @@ function latestScreenshotIndex(cards) {
   return null;
 }
 function BrowserSteps({ group }) {
-  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
-  const copy = t2.assistant.toolCards.viewer;
+  const copy = useToolCardsText().viewer;
   const { cards, name } = group;
   const total = cards.length;
   const [manual, setManual] = useState47(null);
@@ -33873,8 +34453,7 @@ function ToolCard({
   group,
   onReviewApproval
 }) {
-  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
-  const copy = t2.assistant.toolCards;
+  const copy = useToolCardsText();
   const [open, setOpen] = useState47(false);
   const [everOpened, setEverOpened] = useState47(false);
   const [mountedLive] = useState47(() => isLiveState(group.state));
@@ -33922,14 +34501,14 @@ function ToolCard({
   ] });
 }
 function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
-  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const copy = useToolCardsText();
   if (groups.length === 0) {
     return null;
   }
   return /* @__PURE__ */ jsx77(
     "div",
     {
-      "aria-label": t2.assistant.toolCards.activityLabel,
+      "aria-label": copy.activityLabel,
       className: (0, sdk_compat_exports.cn)("flex min-w-0 max-w-full flex-col gap-1.5", className),
       "data-slot": "tool-activity-stack",
       role: "list",
@@ -33955,13 +34534,13 @@ function ToolRunCards({
   sessionId,
   storedSessionId
 }) {
-  const freshGroups = useMemo11(() => toolCardsFromParts(parts, { approvalCallId }), [parts, approvalCallId]);
+  const freshGroups = useMemo12(() => toolCardsFromParts(parts, { approvalCallId }), [parts, approvalCallId]);
   const cacheRef = useRef18({ groups: [], signature: "" });
-  const signature = useMemo11(() => groupsSignature(freshGroups), [freshGroups]);
+  const signature = useMemo12(() => groupsSignature(freshGroups), [freshGroups]);
   if (cacheRef.current.signature !== signature || cacheRef.current.groups.length !== freshGroups.length) {
     cacheRef.current = { groups: freshGroups, signature };
   }
-  const session = useMemo11(() => ({ runtimeId: sessionId, storedId: storedSessionId }), [sessionId, storedSessionId]);
+  const session = useMemo12(() => ({ runtimeId: sessionId, storedId: storedSessionId }), [sessionId, storedSessionId]);
   return /* @__PURE__ */ jsx77(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx77(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
 }
 
@@ -33985,6 +34564,8 @@ var plugin_default = {
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES);
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES);
     const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES);
+    const disposeToolCardsLocales = ctx.i18n.register(TOOL_CARDS_LOCALES);
+    setToolCardsTranslator(ctx.i18n.t);
     setGroupChatSyncDisposed(false);
     startFaceClock();
     startBotRelay();
@@ -33997,6 +34578,8 @@ var plugin_default = {
       ctx.onDispose(disposeHireLocales);
       ctx.onDispose(disposeShareLocales);
       ctx.onDispose(disposeAutopilotLocales);
+      ctx.onDispose(disposeToolCardsLocales);
+      ctx.onDispose(() => setToolCardsTranslator(null));
       ctx.onDispose(stopFaceClock);
       ctx.onDispose(stopBotRelay);
       ctx.onDispose(stopScreenAutoRaise);

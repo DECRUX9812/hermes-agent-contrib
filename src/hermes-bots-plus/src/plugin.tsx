@@ -113,6 +113,7 @@ import { InstantAckLine, wireInstantAck } from './instant-ack-line'
 import { displayName } from './labels'
 import { hydrateRosterSortMode } from './live-status'
 import { LIVE_VIEW_LOCALES } from './live-view-i18n'
+import { setToolCardsTranslator, TOOL_CARDS_LOCALES } from './tool-cards-i18n'
 import { MissionRail } from './mission-rail'
 import { hydrateNeedsYou } from './needs-you'
 import { wireLiveTurns } from './rail-live'
@@ -188,6 +189,8 @@ export default {
     const disposeHireLocales = ctx.i18n.register(HIRE_LOCALES)
     const disposeShareLocales = ctx.i18n.register(SHARE_LOCALES)
     const disposeAutopilotLocales = ctx.i18n.register(AUTOPILOT_LOCALES)
+    const disposeToolCardsLocales = ctx.i18n.register(TOOL_CARDS_LOCALES)
+    setToolCardsTranslator(ctx.i18n.t)
     setGroupChatSyncDisposed(false)
     startFaceClock()
     // The cross-connection relay rides every gateway socket this Desktop
@@ -206,6 +209,8 @@ export default {
       ctx.onDispose(disposeHireLocales)
       ctx.onDispose(disposeShareLocales)
       ctx.onDispose(disposeAutopilotLocales)
+      ctx.onDispose(disposeToolCardsLocales)
+      ctx.onDispose(() => setToolCardsTranslator(null))
       ctx.onDispose(stopFaceClock)
       ctx.onDispose(stopBotRelay)
       ctx.onDispose(stopScreenAutoRaise)
