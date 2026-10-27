@@ -56,7 +56,7 @@
     background: linear-gradient(
       90deg,
       transparent 0%,
-      color-mix(in oklab, var(--color-surface, #fff) 70%, transparent) 50%,
+      color-mix(in oklab, var(--color-surface) 70%, transparent) 50%,
       transparent 100%
     );
     transform: translateX(-100%);
