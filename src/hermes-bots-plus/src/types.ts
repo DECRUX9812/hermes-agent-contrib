@@ -306,14 +306,14 @@ interface GroupPromptBase {
   thread: string
 }
 
-interface GroupApprovalPrompt extends GroupPromptBase {
+export interface GroupApprovalPrompt extends GroupPromptBase {
   choices: string[]
   command?: string
   kind: 'approval'
   question: string
 }
 
-interface GroupClarifyPrompt extends GroupPromptBase {
+export interface GroupClarifyPrompt extends GroupPromptBase {
   kind: 'clarify'
   questions: GroupPromptQuestion[]
 }

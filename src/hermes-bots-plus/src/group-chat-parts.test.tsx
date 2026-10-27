@@ -18,6 +18,16 @@ vi.mock('@hermes/plugin-sdk', async () => {
 
   return {
     ...base,
+    // Stand-in for the app's approval card: one button per choice, calling onAnswer.
+    ApprovalCard: ({ onAnswer, request }: { onAnswer: (choice: string) => Promise<unknown>; request: { toolName: string } }) => (
+      <div data-title={request.toolName}>
+        {['once', 'deny'].map(choice => (
+          <button key={choice} onClick={() => void onAnswer(choice)} type="button">
+            {choice}
+          </button>
+        ))}
+      </div>
+    ),
     Button: (props: React.ComponentProps<'button'>) => <button type="button" {...props} />,
     cn: (...values: unknown[]) => values.filter(Boolean).join(' '),
     Codicon: () => null,
@@ -240,10 +250,9 @@ describe('keyboard (#89884)', () => {
   })
 })
 
-// #91706: a command approval in a room could be SELECTED but never sent — the
-// footer "Respond" button sat off-screen or under an overflowing code block.
-// Approvals are a closed choice set, so the click itself is the answer.
-describe('approval card (#91706)', () => {
+// A room approval renders on the app's one approval card; the answer still
+// goes through the member's own route and is echoed into the room log.
+describe('room approval on the shared approval card', () => {
   const entry = {
     at: 1,
     choices: ['once', 'session', 'always', 'deny'],
@@ -252,27 +261,24 @@ describe('approval card (#91706)', () => {
     kind: 'approval' as const,
     member: 'alpha',
     memberKey: 'alpha',
-    multiSelect: false,
     question: '',
     requestId: 'req-1',
     sessionId: 'sid-1',
     thread: 't1'
   }
 
-  it('submits the clicked choice at once, with no second Respond click', async () => {
+  it('answers through the member route and echoes the choice', async () => {
     const answer = vi.fn(async () => undefined)
+    const append = vi.fn()
     vi.doMock('./group-turns', () => ({ answerGroupClarify: answer }))
-    vi.doMock('./group-chat', () => ({ appendGroupChatEntry: vi.fn() }))
+    vi.doMock('./group-chat', () => ({ appendGroupChatEntry: append }))
     const { GroupClarifyCard } = await import('./group-chat-parts')
 
     render(<GroupClarifyCard entry={entry} members={MEMBERS} />)
-
-    expect(screen.queryByRole('button', { name: 'Respond' })).toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'once' }))
-    // A second click while the first is in flight must not double-submit.
-    fireEvent.click(screen.getByRole('button', { name: 'session' }))
 
-    await vi.waitFor(() => expect(answer).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(append).toHaveBeenCalledTimes(1))
     expect(answer).toHaveBeenCalledWith(entry, MEMBERS[0], 'once')
+    expect(append.mock.calls[0][2]).toBe('once — rm -rf /tmp/scratch')
   })
 })

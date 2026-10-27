@@ -8,7 +8,7 @@
  * controls without either surface importing the other.
  */
 
-import { Button, cn, Codicon, host, Input, RowButton, Textarea, useI18n, useValue } from '@hermes/plugin-sdk'
+import { ApprovalCard, Button, cn, Codicon, host, Input, RowButton, Textarea, useI18n, useValue } from '@hermes/plugin-sdk'
 import type { ClipboardEvent } from 'react'
 import { useRef, useState } from 'react'
 
@@ -20,7 +20,7 @@ import { answerGroupClarify } from './group-turns'
 import { useBots } from './i18n'
 import { displayName } from './labels'
 import { botRosterMeta } from './routing'
-import type { BotMeta, GroupMember, GroupPrompt } from './types'
+import type { BotMeta, GroupApprovalPrompt, GroupClarifyPrompt, GroupMember, GroupPrompt } from './types'
 
 /** The `image.generate` reply. Older gateways answer `image`, newer ones
  *  `image_data`; both are data URLs. */
@@ -377,37 +377,63 @@ interface GroupClarifyCardProps {
   members: GroupMember[]
 }
 
-/** One member's pending prompt, rendered in the room (#90694).
- *  - clarify: choices as tap buttons (multi-select stages; single-select
- *    stages one), free text always available, batch sub-questions each get
- *    their own input.
- *  - approval: the command in a code row plus the server's choice set
- *    (once/session/always/deny) as buttons — no free text; approvals are a
- *    closed choice. Answer sends via the member's own source. */
+/** A member's command approval on the app's one approval card (allow once,
+ *  always with a confirm, deny). The answer still goes through the member's
+ *  own route, and the exchange is echoed into the room log. */
+function GroupApprovalCard({ entry, member }: { entry: GroupApprovalPrompt; member?: GroupMember }) {
+  const b = useBots()
+
+  const request = {
+    allowPermanent: entry.choices.includes('always'),
+    command: entry.command || '',
+    description: entry.question,
+    requestId: entry.requestId,
+    sessionId: entry.sessionId ?? null,
+    toolName: b.group.wantsToRunCommand(botHandle(entry.member, member)).replace(/[:\uff1a]\s*$/, '')
+  }
+
+  const answer = async (choice: 'always' | 'deny' | 'once' | 'session') => {
+    if (!member) {
+      throw new Error('member left the room')
+    }
+
+    await answerGroupClarify(entry, member, choice)
+    const summary = `${choice} — ${entry.command || entry.question || b.group.commandApproval}`
+    appendGroupChatEntry(entry.group, { kind: 'user', name: 'You' }, summary, entry.thread || 'legacy')
+
+    return { choice, resolved: true }
+  }
+
+  return <ApprovalCard compact onAnswer={answer} request={request} />
+}
+
+/** One member's pending prompt, rendered in the room (#90694). Approvals use
+ *  the shared approval card; a clarify shows its choices as tap buttons
+ *  (multi-select stages; single-select stages one), with free text always
+ *  available and each batch sub-question in its own input. */
 export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
+  const member = members.find(m => groupMemberKey(m) === entry.memberKey) || members.find(m => m.name === entry.member)
+
+  return entry.kind === 'approval' ? (
+    <GroupApprovalCard entry={entry} member={member} />
+  ) : (
+    <GroupQuestionCard entry={entry} member={member} />
+  )
+}
+
+function GroupQuestionCard({ entry, member }: { entry: GroupClarifyPrompt; member?: GroupMember }) {
   const b = useBots()
   const { group } = entry
-  const isApproval = entry.kind === 'approval'
-  const member = members.find(m => groupMemberKey(m) === entry.memberKey) || members.find(m => m.name === entry.member)
   const [drafts, setDrafts] = useState<Record<string, string>>({})
   const [picked, setPicked] = useState<Record<string, string[]>>({})
   const [sending, setSending] = useState(false)
 
-  const questions: GroupClarifyQuestion[] = isApproval
-    ? [
-        {
-          qid: 'approval',
-          question: entry.question,
-          choices: entry.choices,
-          multiSelect: false
-        }
-      ]
-    : entry.questions.map(q => ({
-        qid: q.qid,
-        question: typeof q.question === 'string' ? q.question : '',
-        choices: Array.isArray(q.choices) ? q.choices.filter(c => typeof c === 'string' && c) : [],
-        multiSelect: Boolean(q.multi_select)
-      }))
+  const questions: GroupClarifyQuestion[] = entry.questions.map(q => ({
+    qid: q.qid,
+    question: typeof q.question === 'string' ? q.question : '',
+    choices: Array.isArray(q.choices) ? q.choices.filter(c => typeof c === 'string' && c) : [],
+    multiSelect: Boolean(q.multi_select)
+  }))
 
   const answerFor = (q: GroupClarifyQuestion) => {
     const chosen = picked[q.qid] || []
@@ -416,53 +442,34 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
       return q.multiSelect ? JSON.stringify(chosen) : chosen[0]
     }
 
-    return isApproval ? '' : (drafts[q.qid] || '').trim()
+    return (drafts[q.qid] || '').trim()
   }
 
   const anyAnswered = questions.some(q => answerFor(q))
 
-  /** `chosen` short-circuits the staged answer: approval choices submit on
-   *  click (#91706), so the value travels with the click instead of waiting
-   *  for a re-render of `picked` and a second Respond click. */
-  const submit = async (chosen?: string) => {
-    const resolve = (q: GroupClarifyQuestion) => chosen ?? answerFor(q)
-
-    if (!member || sending || !questions.some(q => resolve(q))) {
+  const submit = async () => {
+    if (!member || sending || !anyAnswered) {
       return
     }
 
     setSending(true)
 
     try {
-      if (isApproval) {
-        await answerGroupClarify(entry, member, resolve(questions[0]))
-      } else {
-        const answers: Record<string, null | string> = {}
+      const answers: Record<string, null | string> = {}
 
-        for (const q of questions) {
-          answers[q.qid] = resolve(q) || null
-        }
-
-        await answerGroupClarify(entry, member, answers)
+      for (const q of questions) {
+        answers[q.qid] = answerFor(q) || null
       }
 
-      // Echo the exchange into the room log so the thread reads complete.
-      const summary = isApproval
-        ? `${resolve(questions[0])} — ${entry.command || entry.question || b.group.commandApproval}`
-        : questions
-            .filter(q => resolve(q))
-            .map(q => (questions.length > 1 ? `${q.question}: ${resolve(q)}` : resolve(q)))
-            .join('\n')
+      await answerGroupClarify(entry, member, answers)
 
-      appendGroupChatEntry(
-        group,
-        {
-          kind: 'user',
-          name: 'You'
-        },
-        summary,
-        entry.thread || 'legacy'
-      )
+      // Echo the exchange into the room log so the thread reads complete.
+      const summary = questions
+        .filter(q => answerFor(q))
+        .map(q => (questions.length > 1 ? `${q.question}: ${answerFor(q)}` : answerFor(q)))
+        .join('\n')
+
+      appendGroupChatEntry(group, { kind: 'user', name: 'You' }, summary, entry.thread || 'legacy')
     } catch (err: unknown) {
       host.notify({
         kind: 'error',
@@ -476,16 +483,9 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
   return (
     <div className="grid gap-1.5 rounded-md border border-(--ui-accent)/50 bg-(--ui-accent)/5 px-2.5 py-2">
       <div className="flex items-center gap-1.5 text-xs font-medium">
-        <Codicon className="shrink-0 text-(--ui-accent)" name={isApproval ? 'shield' : 'question'} />
-        {isApproval
-          ? b.group.wantsToRunCommand(botHandle(entry.member, member))
-          : b.group.asks(botHandle(entry.member, member))}
+        <Codicon className="shrink-0 text-(--ui-accent)" name="question" />
+        {b.group.asks(botHandle(entry.member, member))}
       </div>
-      {isApproval && entry.command ? (
-        <code className="block overflow-x-auto rounded bg-(--ui-bg-secondary,rgba(0,0,0,0.25)) px-2 py-1 font-mono text-[0.6875rem] whitespace-pre-wrap break-all">
-          {entry.command}
-        </code>
-      ) : null}
       {questions.map(q => (
         <div className="grid gap-1" key={`q:${q.qid}`}>
           {q.question ? <div className="text-xs whitespace-pre-wrap">{q.question}</div> : null}
@@ -496,30 +496,11 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
 
                 return (
                   <Button
-                    className={cn(
-                      'h-6 px-2 text-[0.75rem]',
-                      isApproval && choice === 'deny' && !chosen && 'text-destructive'
-                    )}
+                    className="h-6 px-2 text-[0.75rem]"
                     disabled={sending || !member}
                     key={`choice:${q.qid}:${choice}`}
                     onClick={() => {
-                      // Approvals are a closed choice set: the click IS the
-                      // answer (#91706). Staging it behind a footer button
-                      // left users with a highlighted choice and no way to
-                      // send it when the footer was clipped or covered.
-                      if (isApproval) {
-                        setPicked({
-                          [q.qid]: [choice]
-                        })
-                        void submit(choice)
-
-                        return
-                      }
-
-                      setDrafts(prev => ({
-                        ...prev,
-                        [q.qid]: ''
-                      }))
+                      setDrafts(prev => ({ ...prev, [q.qid]: '' }))
                       setPicked(prev => {
                         const current = prev[q.qid] || []
 
@@ -531,10 +512,7 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
                             ? []
                             : [choice]
 
-                        return {
-                          ...prev,
-                          [q.qid]: next
-                        }
+                        return { ...prev, [q.qid]: next }
                       })
                     }}
                     size="sm"
@@ -546,48 +524,35 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
               })}
             </div>
           ) : null}
-          {/* Approvals are a closed choice set — no free-text input. */}
-          {isApproval ? null : (
-            <Input
-              aria-label={b.group.answerTo(entry.member)}
-              className="h-7 text-xs"
-              key={`input:${q.qid}`}
-              onChange={event => {
-                const value = event.target.value
-                setPicked(prev => ({
-                  ...prev,
-                  [q.qid]: []
-                }))
-                setDrafts(prev => ({
-                  ...prev,
-                  [q.qid]: value
-                }))
-              }}
-              onKeyDown={event => {
-                // IME guard: Enter confirming a composed word must not submit.
-                if (event.nativeEvent?.isComposing || event.keyCode === 229) {
-                  return
-                }
+          <Input
+            aria-label={b.group.answerTo(entry.member)}
+            className="h-7 text-xs"
+            onChange={event => {
+              const value = event.target.value
+              setPicked(prev => ({ ...prev, [q.qid]: [] }))
+              setDrafts(prev => ({ ...prev, [q.qid]: value }))
+            }}
+            onKeyDown={event => {
+              // IME guard: Enter confirming a composed word must not submit.
+              if (event.nativeEvent?.isComposing || event.keyCode === 229) {
+                return
+              }
 
-                if (event.key === 'Enter' && questions.length === 1) {
-                  event.preventDefault()
-                  void submit()
-                }
-              }}
-              placeholder={q.choices.length ? 'Or type your own answer…' : 'Type your answer…'}
-              value={drafts[q.qid] || ''}
-            />
-          )}
+              if (event.key === 'Enter' && questions.length === 1) {
+                event.preventDefault()
+                void submit()
+              }
+            }}
+            placeholder={q.choices.length ? 'Or type your own answer…' : 'Type your answer…'}
+            value={drafts[q.qid] || ''}
+          />
         </div>
       ))}
-      {/* Approval choices submit on click; only clarify answers need a footer. */}
-      {isApproval ? null : (
-        <div className="flex justify-end">
-          <Button disabled={sending || !anyAnswered || !member} onClick={() => void submit()} size="sm">
-            {sending ? 'Sending…' : 'Answer'}
-          </Button>
-        </div>
-      )}
+      <div className="flex justify-end">
+        <Button disabled={sending || !anyAnswered || !member} onClick={() => void submit()} size="sm">
+          {sending ? 'Sending…' : 'Answer'}
+        </Button>
+      </div>
     </div>
   )
 }

@@ -41,18 +41,18 @@ var __toESM = (mod, isNodeMode, target) => (target = mod != null ? __create(__ge
   mod
 ));
 
-// ../../../hermes-webapp/node_modules/nanostores/clean-stores/index.js
+// ../../../../hermes-overlay-core/.build/webapp-workspace/node_modules/nanostores/clean-stores/index.js
 var clean;
 var init_clean_stores = __esm({
-  "../../../hermes-webapp/node_modules/nanostores/clean-stores/index.js"() {
+  "../../../../hermes-overlay-core/.build/webapp-workspace/node_modules/nanostores/clean-stores/index.js"() {
     clean = /* @__PURE__ */ Symbol("clean");
   }
 });
 
-// ../../../hermes-webapp/node_modules/nanostores/atom/index.js
+// ../../../../hermes-overlay-core/.build/webapp-workspace/node_modules/nanostores/atom/index.js
 var listenerQueue, lqIndex, batchSeen, QUEUE_ITEMS_PER_LISTENER, nanostoresGlobal, drainQueue, atom;
 var init_atom = __esm({
-  "../../../hermes-webapp/node_modules/nanostores/atom/index.js"() {
+  "../../../../hermes-overlay-core/.build/webapp-workspace/node_modules/nanostores/atom/index.js"() {
     init_clean_stores();
     listenerQueue = [];
     lqIndex = 0;
@@ -145,9 +145,9 @@ var init_atom = __esm({
   }
 });
 
-// ../../../hermes-webapp/node_modules/nanostores/index.js
+// ../../../../hermes-overlay-core/.build/webapp-workspace/node_modules/nanostores/index.js
 var init_nanostores = __esm({
-  "../../../hermes-webapp/node_modules/nanostores/index.js"() {
+  "../../../../hermes-overlay-core/.build/webapp-workspace/node_modules/nanostores/index.js"() {
     init_atom();
   }
 });
@@ -11289,22 +11289,38 @@ function GroupMentionInput({ members, onChange, onEscape, onSubmitDraft, value, 
     )
   ] });
 }
+function GroupApprovalCard({ entry, member }) {
+  const b = useBots();
+  const request = {
+    allowPermanent: entry.choices.includes("always"),
+    command: entry.command || "",
+    description: entry.question,
+    requestId: entry.requestId,
+    sessionId: entry.sessionId ?? null,
+    toolName: b.group.wantsToRunCommand(botHandle(entry.member, member)).replace(/[:\uff1a]\s*$/, "")
+  };
+  const answer = async (choice) => {
+    if (!member) {
+      throw new Error("member left the room");
+    }
+    await answerGroupClarify(entry, member, choice);
+    const summary = `${choice} \u2014 ${entry.command || entry.question || b.group.commandApproval}`;
+    appendGroupChatEntry(entry.group, { kind: "user", name: "You" }, summary, entry.thread || "legacy");
+    return { choice, resolved: true };
+  };
+  return /* @__PURE__ */ jsx6(sdk_compat_exports.ApprovalCard, { compact: true, onAnswer: answer, request });
+}
 function GroupClarifyCard({ entry, members }) {
+  const member = members.find((m) => groupMemberKey(m) === entry.memberKey) || members.find((m) => m.name === entry.member);
+  return entry.kind === "approval" ? /* @__PURE__ */ jsx6(GroupApprovalCard, { entry, member }) : /* @__PURE__ */ jsx6(GroupQuestionCard, { entry, member });
+}
+function GroupQuestionCard({ entry, member }) {
   const b = useBots();
   const { group } = entry;
-  const isApproval = entry.kind === "approval";
-  const member = members.find((m) => groupMemberKey(m) === entry.memberKey) || members.find((m) => m.name === entry.member);
   const [drafts, setDrafts] = useState4({});
   const [picked, setPicked] = useState4({});
   const [sending, setSending] = useState4(false);
-  const questions = isApproval ? [
-    {
-      qid: "approval",
-      question: entry.question,
-      choices: entry.choices,
-      multiSelect: false
-    }
-  ] : entry.questions.map((q) => ({
+  const questions = entry.questions.map((q) => ({
     qid: q.qid,
     question: typeof q.question === "string" ? q.question : "",
     choices: Array.isArray(q.choices) ? q.choices.filter((c) => typeof c === "string" && c) : [],
@@ -11315,35 +11331,22 @@ function GroupClarifyCard({ entry, members }) {
     if (chosen.length) {
       return q.multiSelect ? JSON.stringify(chosen) : chosen[0];
     }
-    return isApproval ? "" : (drafts[q.qid] || "").trim();
+    return (drafts[q.qid] || "").trim();
   };
   const anyAnswered = questions.some((q) => answerFor(q));
-  const submit = async (chosen) => {
-    const resolve = (q) => chosen ?? answerFor(q);
-    if (!member || sending || !questions.some((q) => resolve(q))) {
+  const submit = async () => {
+    if (!member || sending || !anyAnswered) {
       return;
     }
     setSending(true);
     try {
-      if (isApproval) {
-        await answerGroupClarify(entry, member, resolve(questions[0]));
-      } else {
-        const answers = {};
-        for (const q of questions) {
-          answers[q.qid] = resolve(q) || null;
-        }
-        await answerGroupClarify(entry, member, answers);
+      const answers = {};
+      for (const q of questions) {
+        answers[q.qid] = answerFor(q) || null;
       }
-      const summary = isApproval ? `${resolve(questions[0])} \u2014 ${entry.command || entry.question || b.group.commandApproval}` : questions.filter((q) => resolve(q)).map((q) => questions.length > 1 ? `${q.question}: ${resolve(q)}` : resolve(q)).join("\n");
-      appendGroupChatEntry(
-        group,
-        {
-          kind: "user",
-          name: "You"
-        },
-        summary,
-        entry.thread || "legacy"
-      );
+      await answerGroupClarify(entry, member, answers);
+      const summary = questions.filter((q) => answerFor(q)).map((q) => questions.length > 1 ? `${q.question}: ${answerFor(q)}` : answerFor(q)).join("\n");
+      appendGroupChatEntry(group, { kind: "user", name: "You" }, summary, entry.thread || "legacy");
     } catch (err) {
       host.notify({
         kind: "error",
@@ -11355,10 +11358,9 @@ function GroupClarifyCard({ entry, members }) {
   };
   return /* @__PURE__ */ jsxs6("div", { className: "grid gap-1.5 rounded-md border border-(--ui-accent)/50 bg-(--ui-accent)/5 px-2.5 py-2", children: [
     /* @__PURE__ */ jsxs6("div", { className: "flex items-center gap-1.5 text-xs font-medium", children: [
-      /* @__PURE__ */ jsx6(sdk_compat_exports.Codicon, { className: "shrink-0 text-(--ui-accent)", name: isApproval ? "shield" : "question" }),
-      isApproval ? b.group.wantsToRunCommand(botHandle(entry.member, member)) : b.group.asks(botHandle(entry.member, member))
+      /* @__PURE__ */ jsx6(sdk_compat_exports.Codicon, { className: "shrink-0 text-(--ui-accent)", name: "question" }),
+      b.group.asks(botHandle(entry.member, member))
     ] }),
-    isApproval && entry.command ? /* @__PURE__ */ jsx6("code", { className: "block overflow-x-auto rounded bg-(--ui-bg-secondary,rgba(0,0,0,0.25)) px-2 py-1 font-mono text-[0.6875rem] whitespace-pre-wrap break-all", children: entry.command }) : null,
     questions.map((q) => /* @__PURE__ */ jsxs6("div", { className: "grid gap-1", children: [
       q.question ? /* @__PURE__ */ jsx6("div", { className: "text-xs whitespace-pre-wrap", children: q.question }) : null,
       q.choices.length ? /* @__PURE__ */ jsx6("div", { className: "flex flex-wrap gap-1", children: q.choices.map((choice) => {
@@ -11366,30 +11368,14 @@ function GroupClarifyCard({ entry, members }) {
         return /* @__PURE__ */ jsx6(
           sdk_compat_exports.Button,
           {
-            className: (0, sdk_compat_exports.cn)(
-              "h-6 px-2 text-[0.75rem]",
-              isApproval && choice === "deny" && !chosen && "text-destructive"
-            ),
+            className: "h-6 px-2 text-[0.75rem]",
             disabled: sending || !member,
             onClick: () => {
-              if (isApproval) {
-                setPicked({
-                  [q.qid]: [choice]
-                });
-                void submit(choice);
-                return;
-              }
-              setDrafts((prev) => ({
-                ...prev,
-                [q.qid]: ""
-              }));
+              setDrafts((prev) => ({ ...prev, [q.qid]: "" }));
               setPicked((prev) => {
                 const current = prev[q.qid] || [];
                 const next = q.multiSelect ? chosen ? current.filter((c) => c !== choice) : [...current, choice] : chosen ? [] : [choice];
-                return {
-                  ...prev,
-                  [q.qid]: next
-                };
+                return { ...prev, [q.qid]: next };
               });
             },
             size: "sm",
@@ -11399,21 +11385,15 @@ function GroupClarifyCard({ entry, members }) {
           `choice:${q.qid}:${choice}`
         );
       }) }) : null,
-      isApproval ? null : /* @__PURE__ */ jsx6(
+      /* @__PURE__ */ jsx6(
         sdk_compat_exports.Input,
         {
           "aria-label": b.group.answerTo(entry.member),
           className: "h-7 text-xs",
           onChange: (event) => {
             const value = event.target.value;
-            setPicked((prev) => ({
-              ...prev,
-              [q.qid]: []
-            }));
-            setDrafts((prev) => ({
-              ...prev,
-              [q.qid]: value
-            }));
+            setPicked((prev) => ({ ...prev, [q.qid]: [] }));
+            setDrafts((prev) => ({ ...prev, [q.qid]: value }));
           },
           onKeyDown: (event) => {
             if (event.nativeEvent?.isComposing || event.keyCode === 229) {
@@ -11426,11 +11406,10 @@ function GroupClarifyCard({ entry, members }) {
           },
           placeholder: q.choices.length ? "Or type your own answer\u2026" : "Type your answer\u2026",
           value: drafts[q.qid] || ""
-        },
-        `input:${q.qid}`
+        }
       )
     ] }, `q:${q.qid}`)),
-    isApproval ? null : /* @__PURE__ */ jsx6("div", { className: "flex justify-end", children: /* @__PURE__ */ jsx6(sdk_compat_exports.Button, { disabled: sending || !anyAnswered || !member, onClick: () => void submit(), size: "sm", children: sending ? "Sending\u2026" : "Answer" }) })
+    /* @__PURE__ */ jsx6("div", { className: "flex justify-end", children: /* @__PURE__ */ jsx6(sdk_compat_exports.Button, { disabled: sending || !anyAnswered || !member, onClick: () => void submit(), size: "sm", children: sending ? "Sending\u2026" : "Answer" }) })
   ] });
 }
 
