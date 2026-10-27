@@ -40,6 +40,14 @@ export type InstantAckEvent =
 export const WAITING_AFTER_MS = 1200
 
 /**
+ * How long a waiting line may stand on a session that is not busy before it is
+ * dropped. `busy` lags a send by a tick or two, so clearing immediately would
+ * blink the line on every send; leaving it longer would keep claiming a turn
+ * that a refused submit never started.
+ */
+export const IDLE_WAITING_GRACE_MS = 2000
+
+/**
  * Apply one real event. Returns `null` when there is nothing left to say, which
  * is the signal for the row to unmount rather than linger on a stale claim.
  */

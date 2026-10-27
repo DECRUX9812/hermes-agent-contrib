@@ -19,6 +19,7 @@ import { toolPresentVerb } from '@/components/assistant-ui/tool/run-summary'
 import { sessionApprovalRequest } from '@/store/prompts'
 import { sessionDraftingTool } from '@/store/tool-drafting'
 
+import { IDLE_WAITING_GRACE_MS } from './state'
 import { $instantAcks, noteInstantAck } from './store'
 
 export interface InstantAckSignals {
@@ -60,11 +61,9 @@ export function useInstantAckFeed(
     }
   }, [approvalPending, key])
 
-  // Hand-off. Three shapes, all derived from real turn state:
+  // Hand-off. Two shapes, both derived from real turn state:
   //   - the bot's own row is now the last one (the reply landed in the thread);
-  //   - the turn that had named work went idle (it finished or errored);
-  //   - the send started nothing at all: after the receipt has already admitted
-  //     it is waiting, an idle session means there is no turn to narrate.
+  //   - the turn that had named work went idle (it finished or errored).
   useEffect(() => {
     if (!key || !ackState) {
       return
@@ -72,10 +71,29 @@ export function useInstantAckFeed(
 
     const replyLanded = busy && !lastVisibleIsUser
     const workEnded = !busy && ackState === 'working'
-    const neverStarted = !busy && ackState === 'waiting'
 
-    if (replyLanded || workEnded || neverStarted) {
+    if (replyLanded || workEnded) {
       noteInstantAck(key, { at: Date.now(), type: 'hand-off' })
     }
   }, [ackState, busy, key, lastVisibleIsUser])
+
+  // A send that never started a turn (refused, or the gateway dropped it) would
+  // otherwise leave a receipt claiming the app took it. Waiting on an idle
+  // session is that case — but only after a grace period, because `busy` lags
+  // the send by a tick or two and clearing on that would blink the line every
+  // time.
+  const waitingOnIdleSession = !busy && ackState === 'waiting'
+
+  useEffect(() => {
+    if (!key || !waitingOnIdleSession) {
+      return
+    }
+
+    const timer = window.setTimeout(
+      () => noteInstantAck(key, { at: Date.now(), type: 'hand-off' }),
+      IDLE_WAITING_GRACE_MS
+    )
+
+    return () => window.clearTimeout(timer)
+  }, [key, waitingOnIdleSession])
 }
