@@ -220,20 +220,10 @@ _DELEGATED_CHILD_DENIED_BOARD_ACTIONS: frozenset[str] = frozenset({
 })
 
 
-def _nested_denied_actions() -> dict[str, tuple[str, frozenset[str]]]:
-    """``hermes kanban <group> <action>`` groups whose mutating actions a fenced child may not run."""
-    from hermes_cli.kanban_squads_cli import MUTATING_ACTIONS
-
-    return {"boards": ("boards_action", _DELEGATED_CHILD_DENIED_BOARD_ACTIONS),
-            "squad": ("squad_action", MUTATING_ACTIONS)}
-
-
 def _is_delegated_child_cli_mutation(args: argparse.Namespace) -> bool:
     action = getattr(args, "kanban_action", None)
-    nested = _nested_denied_actions().get(action)
-    if nested is not None:
-        dest, denied = nested
-        if (getattr(args, dest, None) or "list") not in denied:
+    if action == "boards":
+        if (getattr(args, "boards_action", None) or "list") not in _DELEGATED_CHILD_DENIED_BOARD_ACTIONS:
             return False
     elif action not in _DELEGATED_CHILD_DENIED_ACTIONS:
         return False
@@ -424,12 +414,6 @@ def _cmd_swarm(args: argparse.Namespace) -> int:
               f"Verifier: {created.verifier_id}\n"
               f"Synthesizer: {created.synthesizer_id}")
     return 0
-
-
-def _cmd_squad(args: argparse.Namespace) -> int:
-    from hermes_cli.kanban_squads_cli import cmd_squad
-
-    return cmd_squad(args)
 
 
 def _cmd_list(args: argparse.Namespace) -> int:
@@ -1334,7 +1318,7 @@ def _cmd_decompose(args: argparse.Namespace) -> int:
 
 
 _HANDLERS = {
-    "init": _cmd_init, "create": _cmd_create, "swarm": _cmd_swarm, "squad": _cmd_squad,
+    "init": _cmd_init, "create": _cmd_create, "swarm": _cmd_swarm,
     "list": _cmd_list, "ls": _cmd_list, "show": _cmd_show,
     "assign": _cmd_assign, "set-model": _cmd_set_model,
     "reclaim": _cmd_reclaim, "reassign": _cmd_reassign,

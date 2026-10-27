@@ -40,10 +40,6 @@ import type {
   KanbanTask,
   KanbanTaskDetail,
   OrchestrationSettings,
-  SquadRole,
-  SquadRun,
-  SquadRunSummary,
-  SquadTemplate,
   TaskEstimate,
   WorkerLog
 } from './types'
@@ -180,8 +176,6 @@ function onEventsFrame(scope: string, slug: string, data: unknown, selectedSlug 
   void queryClient.invalidateQueries({ queryKey: boardKeyPrefix(scope) })
   // Any event can change a board's card count — keep the switcher badge honest.
   void queryClient.invalidateQueries({ queryKey: boardsKey(scope) })
-  // A squad's lanes are its tasks: any task event can move one.
-  void queryClient.invalidateQueries({ queryKey: squadsKeyPrefix(scope) })
 
   for (const taskId of new Set(events.map(event => event.task_id).filter(Boolean))) {
     void queryClient.invalidateQueries({ queryKey: taskKey(scope, slug, taskId!) })
@@ -522,43 +516,3 @@ export const autoDescribeProfile = (name: string) =>
     `/profiles/${encodeURIComponent(name)}/describe-auto`,
     { method: 'POST', body: { overwrite: true } }
   )
-
-// ── squads ────────────────────────────────────────────────────────────────────
-
-/** Every squads query on one connection — the events-frame invalidation target. */
-export const squadsKeyPrefix = (scope: string) => ['kanban', 'squads', scope] as const
-export const squadRolesKey = (scope: string) => [...squadsKeyPrefix(scope), 'roles'] as const
-export const squadTemplatesKey = (scope: string) => [...squadsKeyPrefix(scope), 'templates'] as const
-export const squadRunsKey = (scope: string, slug: string) => [...squadsKeyPrefix(scope), 'runs', slug] as const
-export const squadRunKey = (scope: string, slug: string, id: string) =>
-  [...squadsKeyPrefix(scope), 'run', slug, id] as const
-
-export const fetchSquadRoles = () => call<{ roles: SquadRole[] }>('/squads/roles')
-
-export const fetchSquadTemplates = () => call<{ templates: SquadTemplate[] }>('/squads/templates')
-
-export const fetchSquadRuns = () => call<{ runs: SquadRunSummary[] }>(withBoard('/squads/runs'))
-
-export const fetchSquadRun = (id: string) =>
-  call<{ run: SquadRun }>(withBoard(`/squads/runs/${encodeURIComponent(id)}`))
-
-/** Missing teammates are created with the run, so one click starts a squad on a fresh install. */
-export const startSquad = (template: string, goal: string) =>
-  nudged(
-    call<{ run: SquadRun }>(withBoard('/squads/runs'), {
-      method: 'POST',
-      body: { create_missing: true, goal, template }
-    })
-  )
-
-export const setUpSquadRole = (id: string) =>
-  call<{ created: boolean; profile: string }>(`/squads/roles/${encodeURIComponent(id)}/bot`, {
-    method: 'POST',
-    body: {}
-  })
-
-export const postSquadNote = (id: string, body: string) =>
-  call<{ run: SquadRun }>(withBoard(`/squads/runs/${encodeURIComponent(id)}/messages`), {
-    method: 'POST',
-    body: { author: 'desktop', body }
-  })

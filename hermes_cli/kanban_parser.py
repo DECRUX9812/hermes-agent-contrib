@@ -146,31 +146,6 @@ _BOARD_SPECS = [
     )),
 ]
 
-_SQUAD_SPECS = [
-    _cmd("roles", [_json_flag()], help="List roles and whether each has its bot profile"),
-    _cmd("templates", [_json_flag()], help="List squad templates and their steps"),
-    _cmd("bot", [_arg("role", help="Role id")], help="Create the role's bot profile (squad-<role>)"),
-    _cmd("start", [
-        _arg("template", help="Squad template id (see `squad templates`)"),
-        _arg("goal", help="What the squad should deliver"),
-        _arg("--assign", action="append", default=[], metavar="ROLE=PROFILE",
-             help="Staff a role with an existing profile instead of its squad-<role> bot (repeatable)"),
-        _arg("--create-missing", action="store_true", help="Create missing squad-<role> bot profiles"),
-        _arg("--workspace-kind", choices=sorted(kb.VALID_WORKSPACE_KINDS)),
-        _arg("--workspace", help="Workspace path for every step (with --workspace-kind dir or worktree)"),
-        _arg("--idempotency-key", help="Dedup key for the squad root"),
-        _json_flag(),
-    ], help="Start a squad: one gated Kanban task per template step"),
-    _cmd("list", [_arg("--limit", type=int, default=20), _json_flag()], help="Recent squads"),
-    _cmd("show", [_arg("run_id", help="Squad root task id"), _json_flag()], help="A squad's lanes and notes"),
-    _cmd("message", [
-        _arg("run_id", help="Squad root task id"),
-        _arg("text", nargs="+", help="Message body"),
-        _arg("--step", help="Post on this step's task instead of the squad root"),
-        _arg("--author"),
-    ], help="Message the squad, or one step's worker"),
-]
-
 # Top-level ``hermes kanban <action>`` records, in ``--help`` order.
 _SPECS = [
     _cmd("init", help="Create kanban.db if missing (idempotent)"),
@@ -256,8 +231,6 @@ _SPECS = [
         _arg("--idempotency-key", help="Dedup key for the root card"),
         _json_flag(help="Emit JSON output"),
     ], help="Create a Kanban Swarm v1 graph (parallel workers → verifier → synthesizer)"),
-    _cmd("squad", children=("squad_action", _SQUAD_SPECS),
-         help="Role-based squads: start a template as gated Kanban tasks, watch its lanes"),
     _cmd("list", [
         _arg("--mine", action="store_true", help="Filter by $HERMES_PROFILE as assignee"),
         _arg("--assignee"),

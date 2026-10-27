@@ -8,8 +8,6 @@
 import { type PluginLocaleBundles, type PluginTranslate, usePluginI18n } from '@hermes/plugin-sdk'
 import { useMemo } from 'react'
 
-import { squadsEn, squadsJa, type SquadsMessages, squadsZh, squadsZhHant } from './i18n-squads'
-
 type KanbanMessages = {
   nav: string
   openBoard: string
@@ -224,7 +222,6 @@ type KanbanMessages = {
     openKanban: string
     artifacts: (n: number) => string
   }
-  squads: SquadsMessages
 }
 
 export const en: KanbanMessages = {
@@ -452,8 +449,7 @@ export const en: KanbanMessages = {
     timedOutTitle: 'Task took too long — Hermes will retry it automatically',
     openKanban: 'Open Kanban',
     artifacts: (n: number) => `${n} artifacts`
-  },
-  squads: squadsEn
+  }
 }
 
 const ja: KanbanMessages = {
@@ -680,8 +676,7 @@ const ja: KanbanMessages = {
     timedOutTitle: 'タスクに時間がかかりすぎました — Hermes が自動で再試行します',
     openKanban: 'かんばんを開く',
     artifacts: (n: number) => `成果物 ${n} 件`
-  },
-  squads: squadsJa
+  }
 }
 
 const zh: KanbanMessages = {
@@ -905,8 +900,7 @@ const zh: KanbanMessages = {
     timedOutTitle: '任务耗时过长 — Hermes 将自动重试',
     openKanban: '打开看板',
     artifacts: (n: number) => `${n} 个产物`
-  },
-  squads: squadsZh
+  }
 }
 
 const zhHant: KanbanMessages = {
@@ -1130,8 +1124,7 @@ const zhHant: KanbanMessages = {
     timedOutTitle: '任務耗時過長 — Hermes 將自動重試',
     openKanban: '開啟看板',
     artifacts: (n: number) => `${n} 個產物`
-  },
-  squads: squadsZhHant
+  }
 }
 
 /** Registered via `ctx.i18n.register` at plugin load (disposer tracked). */

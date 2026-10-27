@@ -1069,59 +1069,6 @@ hermes kanban swarm "Design a multi-region failover plan" \
 
 The resulting graph is committed atomically: dispatchers and dashboard readers see either no new swarm or the complete topology, never a partially linked root/worker/verifier graph. It then dispatches normally — workers run in parallel, the verifier wakes after they all finish, and the synthesizer wakes after the verifier marks the work clean.
 
-### Squads: role-staffed runs
-
-A **squad** is a small team of agents working one goal together. You pick a playbook (a squad **template**), write the goal, and Hermes puts one card per step on the board, each assigned to a role's profile and gated on the steps it depends on. The dispatcher then runs them like any other dependent cards: nothing about a squad runs outside the board.
-
-Two templates ship built in:
-
-| Template | Steps |
-|----------|-------|
-| `feature` | Plan (analyst) → Build (developer) and Test (qa) in parallel → Review and gate (reviewer, final) |
-| `research-brief` | Primary research + practice research (researchers, in parallel) → Brief (writer, final) |
-
-Each step is staffed by a **role** (`analyst`, `developer`, `qa`, `reviewer`, `researcher`, `writer`). A role's teammate is the profile `squad-<role>`; it is created on demand by cloning your config (messaging channels are stripped, like every clone) and taking the role's `SOUL.md`. Staff a role with one of your own profiles instead with `--assign ROLE=PROFILE`.
-
-```bash
-hermes kanban squad templates                 # playbooks and their steps
-hermes kanban squad roles                     # roles, and whether each teammate exists
-hermes kanban squad start feature "Add a dark mode toggle" --create-missing
-hermes kanban squad list                      # recent squads: state and steps done
-hermes kanban squad show t_root               # lanes (one per step) and squad notes
-hermes kanban squad message t_root "Keep the toggle in Settings"         # note to the whole squad
-hermes kanban squad message t_root "Cover keyboard focus" --step build   # note to one step's worker
-```
-
-The squad's root card completes at once and stays the squad's blackboard: the plan lives there as a structured comment (`squad_run`), notes to the squad are comments on it, and each step's card body tells its worker where the root is and which handoffs to read. A step's completion summary is its handoff to the steps after it; the final step's result is the squad's deliverable.
-
-A squad's state is `done` once the final step is done, `attention` when any step is blocked, in triage, archived or missing, and otherwise `running` or `queued`.
-
-**Your own roles and templates.** Drop YAML files beside the board to add or override them (the file name is the id):
-
-```yaml
-# <kanban home>/kanban/squads/roles/designer.yaml
-name: Designer
-emoji: 🎨
-summary: Turns a brief into screens and a component list.
-soul: |
-  You are the squad's designer. ...
-# model / provider are optional per-role overrides
-```
-
-```yaml
-# <kanban home>/kanban/squads/templates/landing-page.yaml
-name: Landing page
-summary: Copy and design in parallel, then a build.
-steps:
-  - { key: copy, role: writer, title: Write the copy }
-  - { key: design, role: designer, title: Design the page }
-  - { key: build, role: developer, title: Build it, needs: [copy, design], final: true }
-```
-
-A template must have unique step keys, `needs` that name earlier or later steps without forming a cycle, and exactly one `final` step; a bad file is refused with the reason.
-
-**In the Desktop app,** the **Squads** button on the Kanban board header opens the squads panel: the team (with **Set up** for a teammate that does not exist yet), a start form (playbook + goal), recent squads, and a lanes view per squad with one column per step. A lane click opens that step's card; the notes box posts to the squad root. The same data is served by the dashboard plugin routes `GET /squads/roles`, `POST /squads/roles/{id}/bot`, `GET /squads/templates`, `GET|POST /squads/runs`, `GET /squads/runs/{id}` and `POST /squads/runs/{id}/messages` under `/api/plugins/kanban`.
-
 ## `/kanban` slash command {#kanban-slash-command}
 
 Every `hermes kanban <action>` verb is also reachable as `/kanban <action>` — from inside an interactive `hermes chat` session **and** from any gateway platform (Telegram, Discord, Slack, WhatsApp, Signal, Matrix, Mattermost, email, SMS). Both surfaces call the exact same `hermes_cli.kanban.run_slash()` entry point that reuses the `hermes kanban` argparse tree, so the argument surface, flags, and output format are identical across CLI, `/kanban`, and `hermes kanban`. You don't have to leave the chat to drive the board.

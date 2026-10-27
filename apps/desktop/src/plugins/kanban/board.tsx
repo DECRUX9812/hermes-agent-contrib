@@ -86,7 +86,6 @@ import { BoardSwitcher } from './board-switcher'
 import { TaskDrawer } from './drawer'
 import { EMPTY_OVERRIDE, ModelOverrideField, overrideCreateFields, type TaskModelOverride } from './model-override'
 import { OrchestrationPanel } from './orchestration'
-import { SquadsPanel, SquadsToggle } from './squads'
 import { columnMeta, type KanbanBoard, type KanbanTask, type TaskEstimate } from './types'
 import {
   $newTaskLane,
@@ -1118,7 +1117,6 @@ export function KanbanBoardPage() {
   const [openId, setOpenId] = useState<null | string>(null)
   const [addStatus, setAddStatus] = useState<null | string>(null)
   const [settingsOpen, setSettingsOpen] = useState(false)
-  const [squadsOpen, setSquadsOpen] = useState(false)
   const [search, setSearch] = useState('')
   const [tenant, setTenant] = useState('')
   const [assignee, setAssignee] = useState('')
@@ -1368,7 +1366,6 @@ export function KanbanBoardPage() {
         )}
         <SearchField aria-label={k.filterCards} onChange={setSearch} placeholder={k.filterCards} value={search} />
         <div className="ml-auto flex items-center gap-1">
-          <SquadsToggle onToggle={() => setSquadsOpen(!squadsOpen)} open={squadsOpen} />
           <Tip label={k.orchestrationSettings}>
             <Button
               aria-label={k.orchestrationSettings}
@@ -1388,7 +1385,6 @@ export function KanbanBoardPage() {
       </header>
 
       {settingsOpen && <OrchestrationPanel />}
-      {squadsOpen && <SquadsPanel onOpenTask={setOpenId} />}
 
       {board && <Intro />}
 
