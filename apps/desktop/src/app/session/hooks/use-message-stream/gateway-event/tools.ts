@@ -5,7 +5,6 @@ import { leaveIntroOnLayout } from '@/components/onboarding/first-run/intro'
 import { toolCallOwnerMessageId } from '@/lib/chat-messages'
 import { connectorText, recordOf } from '@/lib/connector-tools'
 import { invalidateSlashCompletions } from '@/lib/slash-completion-cache'
-import type { ToolResultMetadata } from '@/lib/tool-result-metadata'
 import { refreshBackgroundProcesses } from '@/store/composer-status'
 import { flashPetActivity, setPetActivity } from '@/store/pet'
 import { recordPreviewArtifact, reofferPreviewArtifact } from '@/store/preview-status'
@@ -33,7 +32,7 @@ function recordToolPreview(ctx: GatewayEventContext, sessionId: string, cwd: str
     toolName: payload.name,
     args: payload.args ?? {},
     result: payload.result,
-    toolResultMetadata: payload as unknown as ToolResultMetadata,
+    toolResultMetadata: payload,
     completedAt: occurredAt
   })
 
