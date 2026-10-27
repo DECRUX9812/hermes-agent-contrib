@@ -34498,7 +34498,7 @@ function reactionPillStyleSheet() {
     `${SCOPE} ${SLOT} .reaction-pop{display:inline-flex;align-items:center;justify-content:center;`,
     `min-width:1.75rem;height:1.375rem;padding:0 0.4375rem;border-radius:999px;`,
     `background:var(--ui-bg-quaternary);box-shadow:inset 0 0 0 1px var(--ui-stroke-tertiary);`,
-    `transition:background-color var(--dur-fast,120ms) var(--ease-standard,ease),box-shadow var(--dur-fast,120ms) var(--ease-standard,ease);}`,
+    `transition:background-color 120ms cubic-bezier(0.2,0,0,1),box-shadow 120ms cubic-bezier(0.2,0,0,1);}`,
     `${SCOPE} button${SLOT}[data-reacted]:hover .reaction-pop,${SCOPE} button${SLOT} .reaction-pop:hover{`,
     `background:var(--ui-control-hover-background);box-shadow:inset 0 0 0 1px var(--ui-stroke-secondary);}`,
     `${SCOPE} button${SLOT}[data-state='open'] .reaction-pop{box-shadow:inset 0 0 0 1px var(--ui-accent);}`
