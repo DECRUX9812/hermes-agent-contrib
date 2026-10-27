@@ -1,22 +1,11 @@
-import type { ApprovalChoice, ForkApproval } from '@hermes/shared'
+import type { ApprovalChoice } from '@hermes/shared'
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { $gateway } from '@/store/gateway'
-import {
-  type ApprovalDecision,
-  type ApprovalRequest,
-  clearApprovalRequest,
-  listSessionApprovals,
-  receiveApprovalRequest
-} from '@/store/prompts'
+import { type ApprovalRequest, clearApprovalRequest, receiveApprovalRequest } from '@/store/prompts'
 
-import { ApprovalCard, ApprovalComposerEntry } from './approval'
-
-vi.mock('@/store/prompts', async original => ({
-  ...(await original<Record<string, unknown>>()),
-  listSessionApprovals: vi.fn(async () => [])
-}))
+import { ApprovalCard, ApprovalComposerEntry, type ApprovalDecision } from './approval'
 
 const request: ApprovalRequest & { requestId: string } = {
   command: 'rm -rf /tmp/cache',
@@ -26,19 +15,9 @@ const request: ApprovalRequest & { requestId: string } = {
   toolName: 'terminal'
 }
 
-function row(choice: ApprovalChoice = 'once', status: ForkApproval['status'] = 'allowed'): ForkApproval {
-  return {
-    choice,
-    command: request.command,
-    created_at: 1,
-    decided_at: 2,
-    description: request.description,
-    ran_at: 3,
-    request_id: request.requestId,
-    status,
-    tool_call_id: 'call-1',
-    tool_name: 'terminal'
-  }
+/** A recorded outcome, as a plugin that keeps its own approval log would pass it. */
+function row(choice: ApprovalChoice | null = 'once', status = 'allowed', reason: string | null = null) {
+  return { choice, reason, status }
 }
 
 function decision(overrides: Partial<ApprovalDecision> = {}): ApprovalDecision {
@@ -120,7 +99,7 @@ describe('ApprovalCard', () => {
   })
 
   it('says the prompt was denied when its session stopped', () => {
-    const stopped = { ...row('once', 'denied'), choice: null, reason: 'session_stopped', ran_at: null }
+    const stopped = row(null, 'denied', 'session_stopped')
     render(
       <ApprovalCard
         initialDecision={decision({ approval: stopped, choice: null, resolved: false })}
@@ -134,24 +113,51 @@ describe('ApprovalCard', () => {
 })
 
 describe('ApprovalComposerEntry', () => {
-  it('turns a prompt withdrawn by an interrupt into a denied outcome instead of a hanging card', async () => {
-    const stopped = { ...row('once', 'denied'), choice: null, reason: 'session_stopped', ran_at: null }
-    const list = vi.mocked(listSessionApprovals)
-    // The cancel reaches the desktop before the plugin's write: the first re-list still says pending.
-    list
-      .mockResolvedValueOnce([])
-      .mockResolvedValueOnce([row('once', 'pending')])
-      .mockResolvedValue([stopped])
-    $gateway.set({} as never)
+  it('answers a live prompt over the stock respond RPC and keeps the outcome briefly', async () => {
+    const send = vi.fn(async () => ({}))
+    $gateway.set({ request: send } as never)
     await act(() => receiveApprovalRequest(null, request))
 
     render(<ApprovalComposerEntry runtimeSessionId="runtime-1" storedSessionId="stored-1" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Allow once' }))
+
+    await waitFor(() =>
+      expect(send.mock.calls.map(call => (call as unknown[])[0])).toContain('approval.respond')
+    )
+    expect((await screen.findByRole('status')).textContent).toContain('Decision recorded: Allow once')
+    act(() => $gateway.set(null as never))
+  })
+
+  it('never paints the previous session answered card after a session switch', async () => {
+    const send = vi.fn(async () => ({}))
+    $gateway.set({ request: send } as never)
+    await act(() => receiveApprovalRequest(null, request))
+
+    const { container, rerender } = render(
+      <ApprovalComposerEntry runtimeSessionId="runtime-1" storedSessionId="stored-1" />
+    )
+
+    fireEvent.click(screen.getByRole('button', { name: 'Allow once' }))
+    await screen.findByRole('status')
+
+    rerender(<ApprovalComposerEntry runtimeSessionId="runtime-2" storedSessionId="stored-2" />)
+
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(container.querySelector('[data-approval-stack]')).toBeNull()
+    act(() => $gateway.set(null as never))
+  })
+
+  it('drops a prompt withdrawn by an interrupt instead of leaving a hanging card', async () => {
+    $gateway.set({} as never)
+    await act(() => receiveApprovalRequest(null, request))
+
+    const { container } = render(<ApprovalComposerEntry runtimeSessionId="runtime-1" storedSessionId="stored-1" />)
     expect(screen.getByRole('button', { name: 'Allow once' })).toBeTruthy()
 
     act(() => clearApprovalRequest('runtime-1', request.requestId))
 
     expect(screen.queryByRole('button', { name: 'Allow once' })).toBeNull()
-    expect((await screen.findByRole('status', {}, { timeout: 2000 })).textContent).toBe('Denied, session stopped.')
-    $gateway.set(null as never)
+    expect(container.querySelector('[data-approval-stack]')).toBeNull()
+    act(() => $gateway.set(null as never))
   })
 })

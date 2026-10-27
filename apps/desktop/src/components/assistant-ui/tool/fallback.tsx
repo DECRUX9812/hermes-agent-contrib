@@ -46,7 +46,6 @@ import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { ToolIcon } from '@/components/ui/tool-icon'
 import { type Contribution, useContributions } from '@/contrib'
 import { useI18n } from '@/i18n'
-import { scrollToSessionApproval } from '@/lib/approval-journal'
 import { connectorCalls, mcpTargets, toolLabels } from '@/lib/connector-tools'
 import { PrettyLink, LinkifiedText as SharedLinkifiedText, urlSlugTitleLabel } from '@/lib/external-link'
 import { AlertCircle, CheckCircle2 } from '@/lib/icons'
@@ -70,6 +69,7 @@ import {
   setToolDisclosureOpen
 } from '@/store/tool-view'
 
+import { scrollToSessionApproval } from './approval'
 import { isApprovalActivity, isCurrentTurnMessage } from './approval-activity'
 import {
   buildToolView,

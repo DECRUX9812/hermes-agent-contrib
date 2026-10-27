@@ -27,7 +27,7 @@ export const openSession = (storedSessionId: string, options?: PluginOpenSession
 export const navigate = (path: string): void => host.navigate(path)
 
 /** The inline approval card core's composer mounts, for plugin surfaces that show pending approvals. */
-export { ApprovalCard, type ApprovalCardProps } from '@/components/assistant-ui/tool/approval'
+export { ApprovalCard, type ApprovalCardProps, type ApprovalDecision } from '@/components/assistant-ui/tool/approval'
 /** Draw a Bot Chat's plain tool activity runs (reads, commands, browser
  *  steps) in place of core's rows. Core picks the calls; you draw them. */
 export {
