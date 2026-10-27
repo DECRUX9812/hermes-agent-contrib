@@ -393,6 +393,9 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         className={cn(titlebarToolClusterClass, 'right-(--titlebar-tools-right) top-(--titlebar-controls-top)')}
         data-titlebar-cluster="right"
       >
+        {/* Separates the window's tools from the tab strip's own "+" — without
+            it the strip and the cluster read as one long row of loose glyphs. */}
+        <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
         {visibleSystemTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
