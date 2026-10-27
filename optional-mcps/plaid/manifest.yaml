@@ -3,6 +3,7 @@
 manifest_version: 1
 
 name: plaid
+connector_slug: plaid_mcp
 description: 'Plaid dashboard: integrations, Items, and usage debugging.'
 source: https://plaid.com/docs/resources/mcp/
 
