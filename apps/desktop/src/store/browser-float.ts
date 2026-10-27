@@ -107,20 +107,24 @@ export function snapFloatRect(rect: FloatRect, viewport: Viewport): FloatRect {
   return { ...clamped, x: snap(clamped.x, left, right), y: snap(clamped.y, top, bottom) }
 }
 
-/** What the minimised pill keeps clear of: the title bar and the status bar. */
+/** What the minimised pill keeps clear of: the title bar, the status bar, and
+ *  the composer when that reaches under the pill. */
 export interface FloatPillInsets {
   bottom: number
+  /** How much of the bottom edge the composer takes up at the pill's corner. */
+  composer?: number
   top: number
 }
 
 /** The minimised pill sits bottom-right of the content area, just above the
- *  status bar. In a window too short for that it stays under the title bar. */
+ *  status bar and clear of the composer's send button. In a window too short
+ *  for that it stays under the title bar. */
 export function floatPillOffset(
   viewport: Viewport,
   insets: FloatPillInsets,
   pillHeight: number
 ): { bottom: number; right: number } {
-  const lowest = insets.bottom + FLOAT_MARGIN
+  const lowest = Math.max(insets.bottom, insets.composer ?? 0) + FLOAT_MARGIN
   const highest = viewport.height - insets.top - FLOAT_MARGIN - pillHeight
 
   return { bottom: Math.max(0, Math.min(lowest, highest)), right: FLOAT_MARGIN }

@@ -85,6 +85,23 @@ describe('float geometry', () => {
     expect(90 - short.bottom - 30).toBeGreaterThanOrEqual(34)
     expect(short.bottom).toBeGreaterThanOrEqual(0)
   })
+
+  it('lifts the pill over the composer when the composer reaches its corner', () => {
+    // The composer's send button sits at the composer's right edge, under the
+    // pill, so the pill clears the whole composer rather than the status bar.
+    expect(floatPillOffset(viewport, { bottom: 20, composer: 120, top: 34 }, 30)).toEqual({
+      bottom: 120 + FLOAT_MARGIN,
+      right: FLOAT_MARGIN
+    })
+
+    // A composer shorter than the status bar doesn't pull the pill down.
+    expect(floatPillOffset(viewport, { bottom: 20, composer: 4, top: 34 }, 30).bottom).toBe(20 + FLOAT_MARGIN)
+
+    // A short window still wins: the pill stays under the title bar.
+    expect(floatPillOffset({ height: 200, width: 400 }, { bottom: 0, composer: 180, top: 34 }, 30).bottom).toBe(
+      200 - 34 - FLOAT_MARGIN - 30
+    )
+  })
 })
 
 describe('floating a Browser tab', () => {

@@ -27,6 +27,18 @@ function floatExample() {
   return id
 }
 
+/** A composer dock whose box sits at the bottom of the window. */
+function composerDock({ right, top }: { right: number; top: number }) {
+  const dock = document.createElement('div')
+
+  dock.dataset.slot = 'composer-dock'
+  dock.getBoundingClientRect = () =>
+    ({ bottom: window.innerHeight, height: window.innerHeight - top, left: 0, right, top, width: right, x: 0, y: top }) as DOMRect
+  document.body.append(dock)
+
+  return dock
+}
+
 beforeEach(() => {
   window.localStorage.clear()
   closeRightRail()
@@ -35,6 +47,7 @@ beforeEach(() => {
 
 afterEach(() => {
   cleanup()
+  document.body.innerHTML = ''
   clearBrowserFloat()
   closeRightRail()
 })
@@ -73,6 +86,27 @@ describe('BrowserFloat', () => {
     fireEvent.click(pill)
 
     expect(screen.getByRole('region', { name: 'Floating browser' })).toBeTruthy()
+  })
+
+  it('keeps the pill clear of the composer, where the send button sits', () => {
+    composerDock({ right: window.innerWidth, top: window.innerHeight - 168 })
+    floatExample()
+    render(<BrowserFloat />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Minimize (Esc)' }))
+
+    expect(screen.getByRole('button', { name: 'Show floating browser' }).style.bottom).toBe('180px')
+  })
+
+  it('leaves the pill at the status bar when the composer is in its own column', () => {
+    // An open rail narrows the chat column, so the corner over the pill is free.
+    composerDock({ right: window.innerWidth - 500, top: window.innerHeight - 168 })
+    floatExample()
+    render(<BrowserFloat />)
+
+    fireEvent.click(screen.getByRole('button', { name: 'Minimize (Esc)' }))
+
+    expect(screen.getByRole('button', { name: 'Show floating browser' }).style.bottom).toBe('12px')
   })
 
   it('docks back into the layout from the title bar', () => {
