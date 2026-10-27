@@ -55,13 +55,3 @@
     box-shadow: var(--ds-focus-ring);
   }
 }
-
-@keyframes ds-fade-in {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}

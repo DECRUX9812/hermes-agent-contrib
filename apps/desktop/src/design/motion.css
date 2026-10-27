@@ -9,8 +9,6 @@
 @layer base {
   :root {
     --dur-enter: 200ms;
-    --dur-panel: 220ms;
-    --dur-flight: 240ms;
     --dur-ring: 1.6s;
     --dur-shimmer: 1.8s;
   }
@@ -20,20 +18,6 @@
   /* A row that arrived while the view was open. */
   .motion-arrive {
     animation: motion-arrive var(--dur-enter) var(--ease-out-quint) both;
-  }
-
-  /* Panels and sheets entering from the right edge. */
-  .motion-slide-in {
-    animation: motion-slide-in var(--dur-panel) var(--ease-out-quint) both;
-  }
-
-  .motion-fade-in {
-    animation: ds-fade-in var(--dur-enter) var(--ease-out-quint) both;
-  }
-
-  /* A face that just received something (handoff landed, turn started). */
-  .motion-pop {
-    animation: motion-pop var(--dur-panel) var(--ease-spring) both;
   }
 
   /* Working presence: a soft ring that breathes outward from the avatar.
@@ -127,32 +111,6 @@
   to {
     opacity: 1;
     transform: none;
-  }
-}
-
-@keyframes motion-slide-in {
-  from {
-    opacity: 0;
-    transform: translateX(20px);
-  }
-
-  to {
-    opacity: 1;
-    transform: none;
-  }
-}
-
-@keyframes motion-pop {
-  0% {
-    transform: scale(1);
-  }
-
-  45% {
-    transform: scale(1.12);
-  }
-
-  100% {
-    transform: scale(1);
   }
 }
 

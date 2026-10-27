@@ -30,7 +30,7 @@ import {
   localDisplaySkinProfile
 } from './backend-sync'
 import { $chatFontFamily, resolveChatFontFamily } from './chat-font'
-import { harmonize, normalizeHex, readableInk } from './color'
+import { ensureContrastOklch, harmonize, normalizeHex, readableInk } from './color'
 import { BUILTIN_THEME_LIST, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme, RETIRED_SKINS } from './presets'
 import { $pendingModeApply } from './request'
 import { retintTheme } from './retint'
@@ -323,7 +323,10 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
   const typo = { ...DEFAULT_TYPOGRAPHY, ...nousTheme.typography, ...theme.typography }
   const rendered = renderedModeFor(c, mode)
   const isDark = rendered === 'dark'
-  const midground = c.midground ?? c.ring
+  // AA guard at paint time, hue kept: accents clear 4.5:1 (plus margin) and ink 7:1 on any skin, imported ones included.
+  const midground = ensureContrastOklch(c.midground ?? c.ring, c.background, 4.8)
+  const primary = ensureContrastOklch(c.primary, c.background, 4.8)
+  const ink = ensureContrastOklch(c.foreground, c.background, 7)
   const skinName = theme.name.endsWith(`-${mode}`) ? theme.name.slice(0, -mode.length - 1) : theme.name
 
   root.style.setProperty('color-scheme', rendered)
@@ -339,12 +342,12 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
 
   // Brand seeds feed every glass + shadcn token via `color-mix()` in styles.css.
   const seeds: Record<string, string> = {
-    '--theme-foreground': c.foreground,
-    '--theme-primary': c.primary,
+    '--theme-foreground': ink,
+    '--theme-primary': primary,
     '--theme-secondary': c.secondary,
     '--theme-accent-soft': c.accent,
     '--theme-midground': midground,
-    '--theme-warm': c.primary,
+    '--theme-warm': primary,
     '--theme-background-seed': c.background,
     '--theme-sidebar-seed': c.sidebarBackground ?? c.background,
     '--theme-card-seed': c.card,
@@ -361,6 +364,9 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
     '--dt-input': c.input,
     '--dt-ring': c.ring,
     '--dt-muted': c.muted,
+    // Secondary and muted text as solid roles, not 74%/54% washes of ink, so they hold 5.5:1 / 4.6:1 on every skin.
+    '--ui-text-secondary': ensureContrastOklch(mix(c.background, ink, 0.8), c.background, 5.5),
+    '--ui-text-tertiary': ensureContrastOklch(mix(c.background, ink, 0.68), c.background, 4.6),
     '--dt-midground-foreground': c.midgroundForeground ?? readableInk(midground),
     // A LOUD fill of the brand colour, for the rare surface that has to read as
     // the app speaking rather than as chrome. `primary` alone can't do that job:
