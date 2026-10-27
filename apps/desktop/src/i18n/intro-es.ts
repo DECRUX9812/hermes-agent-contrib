@@ -116,10 +116,5 @@ export const introEs: Translations['intro'] = {
     'Deja la tarea aquí. Mantendré el trabajo ligado al repositorio.',
     `Dame el contexto y responderé en modo ${label}.`
   ],
-  starters: {
-    featureSquad: { label: 'Equipo de función', prompt: 'Planifica, construye y prueba una función en paralelo: ' },
-    bugHunt: { label: 'Caza de bugs', prompt: 'Reproduce y corrige este bug: ' },
-    research: { label: 'Investigar', prompt: 'Busca en la web y la documentación y resume: ' }
-  },
   connectPortal: 'Conectar Nous Portal'
 }

@@ -116,10 +116,5 @@ export const introFr: Translations['intro'] = {
     'Déposez la tâche ici. Je travaillerai en restant fidèle à la réalité du dépôt.',
     `Donnez-moi le contexte. Je réponds en mode ${label}.`
   ],
-  starters: {
-    featureSquad: { label: 'Équipe fonctionnalité', prompt: 'Planifie, construis et teste une fonctionnalité en parallèle : ' },
-    bugHunt: { label: 'Chasse aux bugs', prompt: 'Reproduis et corrige ce bug : ' },
-    research: { label: 'Recherche', prompt: 'Cherche sur le web et dans la doc, puis résume : ' }
-  },
   connectPortal: 'Connecter Nous Portal'
 }

@@ -116,10 +116,5 @@ export const introDe: Translations['intro'] = {
     'Legen Sie die Aufgabe hier ab. Ich halte die Arbeit nah am Repo.',
     `Geben Sie mir den Kontext, und ich antworte im ${label}-Modus.`
   ],
-  starters: {
-    featureSquad: { label: 'Feature-Team', prompt: 'Plane, baue und teste ein Feature parallel: ' },
-    bugHunt: { label: 'Bugjagd', prompt: 'Reproduziere und behebe diesen Bug: ' },
-    research: { label: 'Recherche', prompt: 'Durchsuche Web und Doku und fasse zusammen: ' }
-  },
   connectPortal: 'Nous Portal verbinden'
 }

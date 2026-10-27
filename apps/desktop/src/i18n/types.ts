@@ -29,7 +29,6 @@ import type { PluginPreviewAccessTranslations } from './types_plugin_preview_acc
 import type { PluginUpdateTranslations } from './types_plugin_update'
 import type { SidebarProjectsTranslations } from './types_projects'
 import type { RightSidebarTranslations } from './types_right_sidebar'
-import type { SetupConnectTranslations } from './types_setup_connect'
 import type { SharedMetricsTranslations } from './types_shared_metrics'
 import type { ThemePickerCopy } from './types_theme_picker'
 import type { UninstallSectionTranslations } from './types_uninstall_section'
@@ -96,12 +95,6 @@ export interface Translations extends NoticeTranslations {
   intro: {
     stock: Record<string, string[]>
     custom: (label: string) => string[]
-    /** Starter chips under the splash; `prompt` is inserted into the composer as-is. */
-    starters: {
-      featureSquad: { label: string; prompt: string }
-      bugHunt: { label: string; prompt: string }
-      research: { label: string; prompt: string }
-    }
     connectPortal: string
   }
   connectors: ConnectorCardTranslations
@@ -3368,7 +3361,6 @@ catalog: CatalogTranslations
 
   onboarding: OnboardingTranslations
 
-  setupConnect: SetupConnectTranslations
 
   freeTier: {
     /** Settings › Providers row title while the Nous identity is the free tier. */

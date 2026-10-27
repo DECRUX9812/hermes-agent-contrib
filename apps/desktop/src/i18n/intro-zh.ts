@@ -116,10 +116,5 @@ export const introZh: Translations['intro'] = {
     '把任务放在这里。我会根据仓库的实际情况开展工作。',
     `给我上下文，我会以 ${label} 模式回答。`
   ],
-  starters: {
-    featureSquad: { label: '功能小队', prompt: '并行规划、构建并测试一个功能：' },
-    bugHunt: { label: '捉虫', prompt: '复现并修复这个 bug：' },
-    research: { label: '调研', prompt: '搜索网页和文档并总结：' }
-  },
   connectPortal: '连接 Nous Portal'
 }

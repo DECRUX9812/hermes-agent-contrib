@@ -25,7 +25,6 @@ import { enPluginPreviewAccess } from './en_plugin_preview_access'
 import { enPluginUpdate } from './en_plugin_update'
 import { enPreviewWeb } from './en_preview_web'
 import { enProjects } from './en_projects'
-import { enSetupConnect } from './en_setup_connect'
 import { enSharedMetrics } from './en_shared_metrics'
 import { enThemePicker } from './en_theme_picker'
 import { enUninstallSection } from './en_uninstall_section'
@@ -41,11 +40,6 @@ export const en: Translations = {
   intro: {
     stock: {},
     custom: () => [],
-    starters: {
-      featureSquad: { label: 'Feature Squad', prompt: 'Plan, build, and test a feature in parallel: ' },
-      bugHunt: { label: 'Bug Hunt', prompt: 'Reproduce and fix this bug: ' },
-      research: { label: 'Research', prompt: 'Search the web and docs to summarize: ' }
-    },
     connectPortal: 'Connect Nous Portal'
   },
   connectors: enConnectorCard,
@@ -3909,7 +3903,6 @@ export const en: Translations = {
 
   onboarding: enOnboarding,
 
-  setupConnect: enSetupConnect,
 
   freeTier: {
     providerRowTitle: 'Nous · free tier',
