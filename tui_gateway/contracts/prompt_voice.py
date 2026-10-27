@@ -29,6 +29,10 @@ class PromptSubmitParams(SessionParams):
     consent: ``confirm_truncate`` plus one durable target (``truncate_before_row_id`` preferred,
     ``truncate_before_message_id``, or the legacy ``truncate_before_user_ordinal``)."""
 
+    # The desktop client names each send (``submission_id``), as the canonical gateway's
+    # prompt.submit accepts. This path does not use it, but refusing it as an unknown key
+    # (4000) failed every prompt.
+    submission_id: str | None = None
     text: JsonValue = ""
     display_kind: str | None = None  # only "hidden" is honoured; anything else renders as a user row
     interrupted: bool | None = None  # client-side barge-in: the turn's model message carries the note
