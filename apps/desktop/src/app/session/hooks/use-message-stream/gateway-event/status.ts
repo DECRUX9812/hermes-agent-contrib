@@ -29,6 +29,10 @@ export function isFallbackSwitchStatus(kind: string | undefined, text: string): 
   return /model fallback|provider fallback|switched to fallback|switching to fallback/i.test(text)
 }
 
+// How long a background-thread error toast waits for a thread that is being
+// opened to bind its runtime id (see the `error` branch below).
+const BACKGROUND_ERROR_TOAST_SETTLE_MS = 2000
+
 /** status.update / review.summary / notification.show / notification.clear /
  *  error — the status-and-notice tail of the dispatcher. */
 export function handleStatusEvent(ctx: GatewayEventContext): boolean {
@@ -343,13 +347,27 @@ export function handleStatusEvent(ctx: GatewayEventContext): boolean {
       // glossed sentence with the raw gateway text as the detail.
       // No Retry action: assistant-ui's reload is per-thread, and for the
       // codes recovered above a retry would fail identically anyway.
-      notify({
-        detail: surface ? errorMessage : undefined,
-        id: `gateway-error:${errorMessage}`,
-        kind: 'error',
-        message: toastMessage,
-        title: translateNow('assistant.thread.errorToastTitle')
-      })
+      // Opening a thread races too: agent init can fail before session.resume
+      // answers and binds the runtime id, so the thread being opened still
+      // looks like a background one here. Decide once the resume has settled:
+      // if it is now the thread in view, re-paint its inline card (the resume
+      // hydrate can replace the card painted below) instead of toasting.
+      const { activeSessionIdRef } = deps
+      setTimeout(() => {
+        if (sessionId && activeSessionIdRef.current === sessionId) {
+          failAssistantMessage(sessionId, errorMessage, occurredAt, surface)
+
+          return
+        }
+
+        notify({
+          detail: surface ? errorMessage : undefined,
+          id: `gateway-error:${errorMessage}`,
+          kind: 'error',
+          message: toastMessage,
+          title: translateNow('assistant.thread.errorToastTitle')
+        })
+      }, BACKGROUND_ERROR_TOAST_SETTLE_MS)
     }
 
     if (sessionId) {
