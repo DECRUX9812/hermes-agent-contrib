@@ -1,4 +1,4 @@
-import { type ChatMessage, chatMessageText, withUniqueToolCallIdsWithinMessage } from '@/lib/chat-messages'
+import { type ChatMessage, type ChatMessagePart, chatMessageText, withUniqueToolCallIdsWithinMessage } from '@/lib/chat-messages'
 
 export interface DuplicateFinalCollapse {
   /** The surviving bubble replaces the removed stream id at completion. */
@@ -58,12 +58,94 @@ function mergeLiveIntoKept(
   next[keptIndex] = completeMessage(
     withUniqueToolCallIdsWithinMessage({
       ...kept,
-      parts: [...kept.parts, ...messages[streamIndex].parts.filter(part => part.type !== 'text')]
+      parts: foldLiveParts(kept.parts, messages[streamIndex].parts)
     })
   )
   next.splice(streamIndex, 1)
 
   return { keptId: kept.id, messages: next }
+}
+
+/**
+ * The parts this fold moves from the live bubble onto the kept one.
+ *
+ * Both bubbles can describe the SAME tool call: the kept interim was sealed
+ * around the segment's tools (it keeps their cards), and a superseded attempt
+ * or a reconnect replay re-streams that segment, so its tools reach the live
+ * bubble under the same call ids. Appending them would put every card in the
+ * reply twice — `withUniqueToolCallIdsWithinMessage` then renames the copy
+ * (`<id>-dup-<index>`) rather than dropping it, because a rename is the right
+ * answer for two genuinely different calls, not for one call seen twice.
+ *
+ * The id alone cannot decide it: the backend reuses a `tool_id` for a second
+ * call (a retried tool, a wrapper dispatching again), and those are two cards.
+ * A repeat is the same id describing the same call — same tool, same args. Only
+ * that is skipped; the newer copy replaces the kept one when it knows more (a
+ * sealed interim can hold a call that never reached its result before the seal).
+ */
+function foldLiveParts(kept: ChatMessage['parts'], live: ChatMessage['parts']): ChatMessage['parts'] {
+  const merged = kept.slice()
+  const appended: ChatMessagePart[] = []
+  const slots = new Map<string, number>()
+
+  kept.forEach((part, index) => {
+    if (part.type === 'tool-call' && part.toolCallId) {
+      slots.set(toolCallKey(part), index)
+    }
+  })
+
+  for (const part of live) {
+    if (part.type === 'text') {
+      continue
+    }
+
+    if (part.type !== 'tool-call' || !part.toolCallId) {
+      appended.push(part)
+
+      continue
+    }
+
+    const slot = slots.get(toolCallKey(part))
+
+    if (slot === undefined) {
+      slots.set(toolCallKey(part), merged.length)
+      appended.push(part)
+
+      continue
+    }
+
+    const current = merged[slot]
+
+    if (current.type === 'tool-call' && current.completedAt === undefined && part.completedAt !== undefined) {
+      merged[slot] = part
+    }
+  }
+
+  return [...merged, ...appended]
+}
+
+/** Identity of one call: its id, its tool, and the arguments it was made with. */
+function toolCallKey(part: ChatMessagePart): string {
+  const call = part as { args?: unknown; toolCallId?: string; toolName?: string }
+
+  return `${call.toolCallId ?? ''}\u0000${call.toolName ?? ''}\u0000${canonicalArgs(call.args)}`
+}
+
+/** Key-sorted JSON so one call cannot look like two by argument order alone. */
+function canonicalArgs(value: unknown): string {
+  if (value === null || typeof value !== 'object') {
+    return JSON.stringify(value) ?? 'undefined'
+  }
+
+  if (Array.isArray(value)) {
+    return `[${value.map(item => canonicalArgs(item)).join(',')}]`
+  }
+
+  const entries = Object.entries(value as Record<string, unknown>)
+    .filter(([, item]) => item !== undefined)
+    .sort(([left], [right]) => (left < right ? -1 : left > right ? 1 : 0))
+
+  return `{${entries.map(([key, item]) => `${JSON.stringify(key)}:${canonicalArgs(item)}`).join(',')}}`
 }
 
 /**
