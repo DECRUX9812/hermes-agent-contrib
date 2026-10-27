@@ -851,17 +851,17 @@ var init_deliverables_i18n = __esm({
 
 // src/i18n.ts
 import { useMemo } from "react";
-function bind(t, template, prefix = "") {
+function bind(t2, template, prefix = "") {
   const out = {};
   for (const [key, value] of Object.entries(template)) {
     const path = prefix ? `${prefix}.${key}` : key;
-    out[key] = typeof value === "function" ? (...args) => t(path, ...args) : value && typeof value === "object" ? bind(t, value, path) : t(path);
+    out[key] = typeof value === "function" ? (...args) => t2(path, ...args) : value && typeof value === "object" ? bind(t2, value, path) : t2(path);
   }
   return out;
 }
 function useBots() {
-  const t = (0, sdk_compat_exports.usePluginI18n)(i18nId());
-  return useMemo(() => bind(t, en), [t]);
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return useMemo(() => bind(t2, en), [t2]);
 }
 function english(key, ...args) {
   const leaf = key.split(".").reduce((node, part) => node?.[part], en);
@@ -6646,11 +6646,11 @@ function shapeNode(shape, color, botName = "agent") {
       return /* @__PURE__ */ jsx("circle", { cx: 20, cy: 20, fill: color, r: 17.5 });
   }
 }
-function cubicAt(p0, p1, p2, p3, t) {
-  const u = 1 - t;
+function cubicAt(p0, p1, p2, p3, t2) {
+  const u = 1 - t2;
   return [
-    u * u * u * p0[0] + 3 * u * u * t * p1[0] + 3 * u * t * t * p2[0] + t * t * t * p3[0],
-    u * u * u * p0[1] + 3 * u * u * t * p1[1] + 3 * u * t * t * p2[1] + t * t * t * p3[1]
+    u * u * u * p0[0] + 3 * u * u * t2 * p1[0] + 3 * u * t2 * t2 * p2[0] + t2 * t2 * t2 * p3[0],
+    u * u * u * p0[1] + 3 * u * u * t2 * p1[1] + 3 * u * t2 * t2 * p2[1] + t2 * t2 * t2 * p3[1]
   ];
 }
 function sampleDropRing(steps) {
@@ -6660,8 +6660,8 @@ function sampleDropRing(steps) {
     pts.push(cubicAt([20, 3], [20, 3], [6, 20], [6, 27], i / n));
   }
   for (let i = 0; i <= n; i++) {
-    const t = i / n * Math.PI;
-    pts.push([20 - 14 * Math.cos(t), 27 + 13.5 * Math.sin(t)]);
+    const t2 = i / n * Math.PI;
+    pts.push([20 - 14 * Math.cos(t2), 27 + 13.5 * Math.sin(t2)]);
   }
   for (let i = 1; i <= n; i++) {
     pts.push(cubicAt([34, 27], [34, 20], [20, 3], [20, 3], i / n));
@@ -6813,40 +6813,40 @@ function ringToPath(pts) {
   }
   return d + "Z";
 }
-function facePose(mood, t) {
+function facePose(mood, t2) {
   if (mood === "think") {
     return {
-      turn: -18 + Math.sin(t * 0.55) * 14,
-      tilt: Math.sin(t * 0.48) * 12 + Math.sin(t * 1.35) * 3,
-      roll: Math.sin(t * 0.95) * 10,
-      gazeX: Math.sin(t * 0.7) * 3.6,
-      gazeY: -2.2 + Math.sin(t * 0.4) * 2.2,
-      blink: t % 1.45 > 1.26,
-      d0: 0.2 + 0.8 * Math.max(0, Math.sin(t * 2.4)),
-      d1: 0.2 + 0.8 * Math.max(0, Math.sin(t * 2.4 - 0.7)),
-      d2: 0.2 + 0.8 * Math.max(0, Math.sin(t * 2.4 - 1.4))
+      turn: -18 + Math.sin(t2 * 0.55) * 14,
+      tilt: Math.sin(t2 * 0.48) * 12 + Math.sin(t2 * 1.35) * 3,
+      roll: Math.sin(t2 * 0.95) * 10,
+      gazeX: Math.sin(t2 * 0.7) * 3.6,
+      gazeY: -2.2 + Math.sin(t2 * 0.4) * 2.2,
+      blink: t2 % 1.45 > 1.26,
+      d0: 0.2 + 0.8 * Math.max(0, Math.sin(t2 * 2.4)),
+      d1: 0.2 + 0.8 * Math.max(0, Math.sin(t2 * 2.4 - 0.7)),
+      d2: 0.2 + 0.8 * Math.max(0, Math.sin(t2 * 2.4 - 1.4))
     };
   }
   if (mood === "work") {
     return {
-      turn: -11 + Math.sin(t * 0.48) * 8,
-      tilt: Math.sin(t * 0.42) * 8 + Math.sin(t * 1.1) * 1.6,
-      roll: Math.sin(t * 0.75) * 4.2,
-      gazeX: Math.sin(t * 0.55) * 3.6,
-      gazeY: -1.6 + Math.sin(t * 0.38) * 2,
-      blink: t % 1.45 > 1.26,
-      d0: 0.2 + 0.8 * Math.max(0, Math.sin(t * 2.6)),
-      d1: 0.2 + 0.8 * Math.max(0, Math.sin(t * 2.6 - 0.7)),
-      d2: 0.2 + 0.8 * Math.max(0, Math.sin(t * 2.6 - 1.4))
+      turn: -11 + Math.sin(t2 * 0.48) * 8,
+      tilt: Math.sin(t2 * 0.42) * 8 + Math.sin(t2 * 1.1) * 1.6,
+      roll: Math.sin(t2 * 0.75) * 4.2,
+      gazeX: Math.sin(t2 * 0.55) * 3.6,
+      gazeY: -1.6 + Math.sin(t2 * 0.38) * 2,
+      blink: t2 % 1.45 > 1.26,
+      d0: 0.2 + 0.8 * Math.max(0, Math.sin(t2 * 2.6)),
+      d1: 0.2 + 0.8 * Math.max(0, Math.sin(t2 * 2.6 - 0.7)),
+      d2: 0.2 + 0.8 * Math.max(0, Math.sin(t2 * 2.6 - 1.4))
     };
   }
   return {
-    turn: Math.sin(t * 0.5) * 1.5,
-    tilt: Math.sin(t * 0.27),
-    roll: Math.sin(t * 0.85) * 1.2,
+    turn: Math.sin(t2 * 0.5) * 1.5,
+    tilt: Math.sin(t2 * 0.27),
+    roll: Math.sin(t2 * 0.85) * 1.2,
     gazeX: 0,
     gazeY: 0,
-    blink: t % 3.2 > 3.02,
+    blink: t2 % 3.2 > 3.02,
     d0: 0,
     d1: 0,
     d2: 0
@@ -6873,18 +6873,18 @@ function followOffset(svg, now) {
   return next;
 }
 var faceTransitions = /* @__PURE__ */ new WeakMap();
-function settlePose(svg, mood, target, t) {
+function settlePose(svg, mood, target, t2) {
   let state = faceTransitions.get(svg);
   if (!state) {
-    state = { mood, pose: target, from: target, since: t - 0.4 };
+    state = { mood, pose: target, from: target, since: t2 - 0.4 };
     faceTransitions.set(svg, state);
   }
   if (state.mood !== mood) {
     state.mood = mood;
     state.from = state.pose;
-    state.since = t;
+    state.since = t2;
   }
-  const progress = Math.min(1, Math.max(0, (t - state.since) / 0.4));
+  const progress = Math.min(1, Math.max(0, (t2 - state.since) / 0.4));
   const blend = 1 - (1 - progress) ** 2;
   const pose = { ...target };
   const keys = ["turn", "tilt", "roll", "gazeX", "gazeY", "d0", "d1", "d2"];
@@ -6894,10 +6894,10 @@ function settlePose(svg, mood, target, t) {
   state.pose = pose;
   return pose;
 }
-function paintMathFace(svg, t) {
+function paintMathFace(svg, t2) {
   const mood = svg.getAttribute("data-hb-mood") || "idle";
   const shape = svg.getAttribute("data-hb-shape") || "circle";
-  const pose = settlePose(svg, mood, facePose(mood, t), t);
+  const pose = settlePose(svg, mood, facePose(mood, t2), t2);
   if (svg.hasAttribute("data-hb-follow")) {
     const look = followOffset(svg, performance.now());
     pose.turn += look.x * 16;
@@ -7030,11 +7030,11 @@ function startFaceClock() {
       scanFaces();
       lastScan = now;
     }
-    const t = (now - t0) / 1e3;
+    const t2 = (now - t0) / 1e3;
     const facesToPaint = observer ? visibleFaces : faces;
     for (const svg of facesToPaint) {
       if (svg.isConnected) {
-        paintMathFace(svg, t);
+        paintMathFace(svg, t2);
       }
     }
   };
@@ -9482,7 +9482,7 @@ function QuickCreateDialog({
   onConfigureModel,
   roster
 }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const [name, setName] = useState3("");
   const [title, setTitle] = useState3("");
@@ -9643,7 +9643,7 @@ function QuickCreateDialog({
         ] }),
         /* @__PURE__ */ jsxs5(sdk_compat_exports.DialogFooter, { children: [
           onBrowseGallery ? /* @__PURE__ */ jsx5(sdk_compat_exports.Button, { className: "mr-auto", onClick: onBrowseGallery, size: "sm", variant: "ghost", children: b.quick.browse }) : null,
-          /* @__PURE__ */ jsx5(sdk_compat_exports.Button, { onClick: onClose, variant: "ghost", children: t.common.cancel }),
+          /* @__PURE__ */ jsx5(sdk_compat_exports.Button, { onClick: onClose, variant: "ghost", children: t2.common.cancel }),
           /* @__PURE__ */ jsx5(sdk_compat_exports.Button, { disabled: !valid || taken || busy, onClick: () => void submit(), children: busy ? b.editor.creating : b.editor.createBot })
         ] })
       ] })
@@ -11198,7 +11198,7 @@ init_routing();
 import { jsx as jsx6, jsxs as jsxs6 } from "react/jsx-runtime";
 function GroupImageControls({ image, onImage, seedName, seedMembers }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const imagen = (0, sdk_compat_exports.useValue)($imagenAvailable);
   const [busy, setBusy] = useState4(false);
   if (imagen === null) {
@@ -11238,7 +11238,7 @@ function GroupImageControls({ image, onImage, seedName, seedMembers }) {
     /* @__PURE__ */ jsx6("div", { className: "flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-(--chrome-action-hover)", children: image ? /* @__PURE__ */ jsx6("img", { alt: "", className: "size-full object-cover", src: image }) : /* @__PURE__ */ jsx6(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "organization" }) }),
     /* @__PURE__ */ jsx6(sdk_compat_exports.Button, { onClick: upload, size: "sm", type: "button", variant: "secondary", children: b.avatar.upload }),
     imagen ? /* @__PURE__ */ jsx6(sdk_compat_exports.Button, { disabled: busy, onClick: generate, size: "sm", type: "button", variant: "secondary", children: busy ? b.avatar.generating : b.avatar.generate }) : null,
-    image ? /* @__PURE__ */ jsx6(sdk_compat_exports.Button, { onClick: () => onImage(null), size: "sm", type: "button", variant: "ghost", children: t.common.remove }) : null
+    image ? /* @__PURE__ */ jsx6(sdk_compat_exports.Button, { onClick: () => onImage(null), size: "sm", type: "button", variant: "ghost", children: t2.common.remove }) : null
   ] });
 }
 function mentionTokenAt(text2, caret) {
@@ -14483,13 +14483,13 @@ function GroupRoomHeader({
   workingLabel,
   workingNow
 }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   return /* @__PURE__ */ jsxs14("div", { className: "flex items-center gap-2 px-2.5 pt-2.5 pb-2", children: [
-    /* @__PURE__ */ jsx15(sdk_compat_exports.Tip, { label: t.common.back, children: /* @__PURE__ */ jsx15(
+    /* @__PURE__ */ jsx15(sdk_compat_exports.Tip, { label: t2.common.back, children: /* @__PURE__ */ jsx15(
       sdk_compat_exports.Button,
       {
-        "aria-label": t.common.back,
+        "aria-label": t2.common.back,
         className: "shrink-0 text-(--ui-text-tertiary) hover:text-foreground",
         onClick: () => onBack ? onBack() : $groupChatWorkspace.set(null),
         size: "icon-xs",
@@ -14677,7 +14677,7 @@ function togglePin(roomKey, thread) {
     const pins = prefs.pins[roomKey] || [];
     return {
       ...prefs,
-      pins: { ...prefs.pins, [roomKey]: pins.includes(thread) ? pins.filter((t) => t !== thread) : [...pins, thread] }
+      pins: { ...prefs.pins, [roomKey]: pins.includes(thread) ? pins.filter((t2) => t2 !== thread) : [...pins, thread] }
     };
   });
 }
@@ -15176,7 +15176,7 @@ function GoalRow({
   depth,
   goal,
   progress,
-  t,
+  t: t2,
   team
 }) {
   const [adding, setAdding] = useState11("");
@@ -15200,11 +15200,11 @@ function GoalRow({
       /* @__PURE__ */ jsx19(
         "select",
         {
-          "aria-label": t.goalStatus[goal.status] ?? goal.status,
+          "aria-label": t2.goalStatus[goal.status] ?? goal.status,
           className: "h-6 rounded border border-transparent bg-transparent text-[0.6875rem] text-(--ui-text-tertiary) hover:border-(--ui-stroke-tertiary)",
           onChange: (e) => void run("bots_team.goal.upsert", { goal_id: goal.id, status: e.target.value }),
           value: goal.status,
-          children: STATUS_ORDER.map((s) => /* @__PURE__ */ jsx19("option", { value: s, children: t.goalStatus[s] }, s))
+          children: STATUS_ORDER.map((s) => /* @__PURE__ */ jsx19("option", { value: s, children: t2.goalStatus[s] }, s))
         }
       ),
       /* @__PURE__ */ jsx19(
@@ -15217,14 +15217,14 @@ function GoalRow({
           children: goal.title
         }
       ),
-      progress?.blocked && /* @__PURE__ */ jsx19(sdk_compat_exports.Badge, { variant: "muted", children: t.goalStatus.blocked }),
-      owner && /* @__PURE__ */ jsx19("span", { className: "hidden max-w-28 truncate text-[0.6875rem] text-(--ui-text-tertiary) sm:inline", children: seatName(owner, t.openSeat) }),
-      /* @__PURE__ */ jsx19("span", { className: "w-24 shrink-0 text-right text-[0.6875rem] tabular-nums text-(--ui-text-tertiary)", children: progressLabel(progress, t.goalNone) }),
+      progress?.blocked && /* @__PURE__ */ jsx19(sdk_compat_exports.Badge, { variant: "muted", children: t2.goalStatus.blocked }),
+      owner && /* @__PURE__ */ jsx19("span", { className: "hidden max-w-28 truncate text-[0.6875rem] text-(--ui-text-tertiary) sm:inline", children: seatName(owner, t2.openSeat) }),
+      /* @__PURE__ */ jsx19("span", { className: "w-24 shrink-0 text-right text-[0.6875rem] tabular-nums text-(--ui-text-tertiary)", children: progressLabel(progress, t2.goalNone) }),
       /* @__PURE__ */ jsxs18("span", { className: "hidden gap-0.5 group-hover/goal:flex", children: [
         /* @__PURE__ */ jsx19(
           sdk_compat_exports.Button,
           {
-            "aria-label": t.subGoal,
+            "aria-label": t2.subGoal,
             className: "size-6",
             onClick: () => setAdding("sub"),
             size: "icon",
@@ -15235,7 +15235,7 @@ function GoalRow({
         /* @__PURE__ */ jsx19(
           sdk_compat_exports.Button,
           {
-            "aria-label": t.assignWork,
+            "aria-label": t2.assignWork,
             className: "size-6",
             onClick: () => setAdding("work"),
             size: "icon",
@@ -15246,7 +15246,7 @@ function GoalRow({
         /* @__PURE__ */ jsx19(
           sdk_compat_exports.Button,
           {
-            "aria-label": t.linkTask,
+            "aria-label": t2.linkTask,
             className: "size-6",
             onClick: () => setAdding("task"),
             size: "icon",
@@ -15278,11 +15278,11 @@ function GoalRow({
           adding === "work" && /* @__PURE__ */ jsx19(
             "select",
             {
-              "aria-label": t.assignTo,
+              "aria-label": t2.assignTo,
               className: "h-8 max-w-40 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-control-background) px-2 text-[0.8125rem]",
               onChange: (e) => setAssignee(e.target.value),
               value: assignee,
-              children: hired.map((m) => /* @__PURE__ */ jsx19("option", { value: m.slot, children: seatName(m, t.openSeat) }, m.slot))
+              children: hired.map((m) => /* @__PURE__ */ jsx19("option", { value: m.slot, children: seatName(m, t2.openSeat) }, m.slot))
             }
           ),
           /* @__PURE__ */ jsx19(
@@ -15290,11 +15290,11 @@ function GoalRow({
             {
               autoFocus: true,
               onChange: (e) => setDraft(e.target.value),
-              placeholder: adding === "sub" ? t.goalTitlePlaceholder : adding === "work" ? t.assignWorkPlaceholder : t.taskId,
+              placeholder: adding === "sub" ? t2.goalTitlePlaceholder : adding === "work" ? t2.assignWorkPlaceholder : t2.taskId,
               value: draft
             }
           ),
-          /* @__PURE__ */ jsx19(sdk_compat_exports.Button, { size: "sm", type: "submit", children: t.save })
+          /* @__PURE__ */ jsx19(sdk_compat_exports.Button, { size: "sm", type: "submit", children: t2.save })
         ]
       }
     )
@@ -15302,7 +15302,7 @@ function GoalRow({
 }
 function GoalsSection({
   progress,
-  t,
+  t: t2,
   team
 }) {
   const [title, setTitle] = useState11("");
@@ -15319,10 +15319,10 @@ function GoalsSection({
       host.notifyError(err, "Team");
     }
   };
-  return /* @__PURE__ */ jsxs18("section", { "aria-label": t.section.goals, "data-slot": "team-goals", children: [
-    /* @__PURE__ */ jsx19("h3", { className: "mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)", children: t.section.goals }),
+  return /* @__PURE__ */ jsxs18("section", { "aria-label": t2.section.goals, "data-slot": "team-goals", children: [
+    /* @__PURE__ */ jsx19("h3", { className: "mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)", children: t2.section.goals }),
     team.mission && /* @__PURE__ */ jsx19("p", { className: "mb-2 px-2 text-[0.75rem] text-(--ui-text-tertiary)", children: team.mission }),
-    /* @__PURE__ */ jsx19("ul", { className: "grid grid-cols-[minmax(0,1fr)] gap-0.5", children: outline.map(({ depth, goal }) => /* @__PURE__ */ jsx19(GoalRow, { depth, goal, progress: progress[goal.id], t, team }, goal.id)) }),
+    /* @__PURE__ */ jsx19("ul", { className: "grid grid-cols-[minmax(0,1fr)] gap-0.5", children: outline.map(({ depth, goal }) => /* @__PURE__ */ jsx19(GoalRow, { depth, goal, progress: progress[goal.id], t: t2, team }, goal.id)) }),
     /* @__PURE__ */ jsxs18(
       "form",
       {
@@ -15332,8 +15332,8 @@ function GoalsSection({
           void add();
         },
         children: [
-          /* @__PURE__ */ jsx19(sdk_compat_exports.Input, { onChange: (e) => setTitle(e.target.value), placeholder: t.goalTitlePlaceholder, value: title }),
-          /* @__PURE__ */ jsx19(sdk_compat_exports.Button, { size: "sm", type: "submit", variant: "outline", children: t.addGoal })
+          /* @__PURE__ */ jsx19(sdk_compat_exports.Input, { onChange: (e) => setTitle(e.target.value), placeholder: t2.goalTitlePlaceholder, value: title }),
+          /* @__PURE__ */ jsx19(sdk_compat_exports.Button, { size: "sm", type: "submit", variant: "outline", children: t2.addGoal })
         ]
       }
     )
@@ -15438,14 +15438,14 @@ var TEAM_EN = {
 };
 var TEAM_LOCALES = { en: { team: TEAM_EN } };
 function useTeamText() {
-  const t = (0, sdk_compat_exports.usePluginI18n)(i18nId());
-  return bindTree(t, TEAM_EN, "team");
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, TEAM_EN, "team");
 }
-function bindTree(t, node, path) {
+function bindTree(t2, node, path) {
   const out = {};
   for (const [key, value] of Object.entries(node)) {
     const next = `${path}.${key}`;
-    out[key] = typeof value === "function" ? (...args) => t(next, ...args) : value && typeof value === "object" ? bindTree(t, value, next) : t(next);
+    out[key] = typeof value === "function" ? (...args) => t2(next, ...args) : value && typeof value === "object" ? bindTree(t2, value, next) : t2(next);
   }
   return out;
 }
@@ -15464,7 +15464,7 @@ var TONE_BAR = {
   warn: "bg-(--ui-warning,#f5a524)"
 };
 var usd2 = (n) => `$${n >= 100 ? Math.round(n) : n.toFixed(2).replace(/\.00$/, "")}`;
-function BudgetMeter({ member, t }) {
+function BudgetMeter({ member, t: t2 }) {
   const { percent, tone } = budgetState(member);
   const limit = member.budget.monthly_usd;
   return /* @__PURE__ */ jsxs19("div", { className: "mt-2 min-w-0", "data-slot": "team-budget", "data-tone": tone, children: [
@@ -15475,7 +15475,7 @@ function BudgetMeter({ member, t }) {
         style: { width: `${percent ?? 0}%` }
       }
     ) }),
-    /* @__PURE__ */ jsx20("p", { className: "mt-1 truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: tone === "paused" ? t.paused : tone === "exhausted" ? t.budgetExhausted : limit === null ? t.budgetUncapped : t.budgetLine(usd2(member.budget.spent_usd), usd2(limit)) })
+    /* @__PURE__ */ jsx20("p", { className: "mt-1 truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: tone === "paused" ? t2.paused : tone === "exhausted" ? t2.budgetExhausted : limit === null ? t2.budgetUncapped : t2.budgetLine(usd2(member.budget.spent_usd), usd2(limit)) })
   ] });
 }
 function useSeatBot(profile) {
@@ -15492,7 +15492,7 @@ function SeatCard({
   node,
   onEdit,
   team,
-  t
+  t: t2
 }) {
   const open = !node.profile;
   const face = useSeatBot(node.profile);
@@ -15526,14 +15526,14 @@ function SeatCard({
             }
           ),
           /* @__PURE__ */ jsxs19("div", { className: "min-w-0 flex-1", children: [
-            /* @__PURE__ */ jsx20("p", { className: "truncate text-[0.8125rem] font-medium text-(--ui-text-primary)", children: face?.label || seatName(node, t.openSeat) }),
+            /* @__PURE__ */ jsx20("p", { className: "truncate text-[0.8125rem] font-medium text-(--ui-text-primary)", children: face?.label || seatName(node, t2.openSeat) }),
             /* @__PURE__ */ jsx20("p", { className: "truncate text-[0.6875rem] text-(--ui-text-tertiary)", children: node.role || node.title || "\u2014" })
           ] }),
           /* @__PURE__ */ jsxs19(sdk_compat_exports.DropdownMenu, { children: [
             /* @__PURE__ */ jsx20(sdk_compat_exports.DropdownMenuTrigger, { asChild: true, children: /* @__PURE__ */ jsx20(
               sdk_compat_exports.Button,
               {
-                "aria-label": t.edit,
+                "aria-label": t2.edit,
                 className: "-mr-1 size-6 opacity-70 transition-opacity hover:opacity-100 focus-visible:opacity-100 group-hover/seat:opacity-100",
                 size: "icon",
                 variant: "ghost",
@@ -15541,8 +15541,8 @@ function SeatCard({
               }
             ) }),
             /* @__PURE__ */ jsxs19(sdk_compat_exports.DropdownMenuContent, { align: "end", children: [
-              /* @__PURE__ */ jsx20(sdk_compat_exports.DropdownMenuItem, { onSelect: () => onEdit(node), children: t.edit }),
-              !node.lead && /* @__PURE__ */ jsx20(sdk_compat_exports.DropdownMenuItem, { onSelect: () => call("bots_team.member.upsert", { slot: node.slot, lead: true }), children: t.makeLead }),
+              /* @__PURE__ */ jsx20(sdk_compat_exports.DropdownMenuItem, { onSelect: () => onEdit(node), children: t2.edit }),
+              !node.lead && /* @__PURE__ */ jsx20(sdk_compat_exports.DropdownMenuItem, { onSelect: () => call("bots_team.member.upsert", { slot: node.slot, lead: true }), children: t2.makeLead }),
               /* @__PURE__ */ jsx20(
                 sdk_compat_exports.DropdownMenuItem,
                 {
@@ -15550,7 +15550,7 @@ function SeatCard({
                     slot: node.slot,
                     status: node.status === "paused" ? "active" : "paused"
                   }),
-                  children: node.status === "paused" ? t.resume : t.pause
+                  children: node.status === "paused" ? t2.resume : t2.pause
                 }
               ),
               /* @__PURE__ */ jsx20(sdk_compat_exports.DropdownMenuSeparator, {}),
@@ -15559,23 +15559,23 @@ function SeatCard({
                 {
                   onSelect: () => {
                     void confirm({
-                      confirmLabel: t.remove,
-                      description: face?.label || seatName(node, t.openSeat),
+                      confirmLabel: t2.remove,
+                      description: face?.label || seatName(node, t2.openSeat),
                       destructive: true,
                       onConfirm: async () => {
                         await call("bots_team.member.remove", { member: node.slot });
                       },
-                      title: t.remove
+                      title: t2.remove
                     });
                   },
-                  children: t.remove
+                  children: t2.remove
                 }
               )
             ] })
           ] })
         ] }),
-        node.lead && /* @__PURE__ */ jsx20(sdk_compat_exports.Badge, { className: "absolute -top-2 left-3", variant: "muted", children: t.lead }),
-        !open && /* @__PURE__ */ jsx20(BudgetMeter, { member: node, t }),
+        node.lead && /* @__PURE__ */ jsx20(sdk_compat_exports.Badge, { className: "absolute -top-2 left-3", variant: "muted", children: t2.lead }),
+        !open && /* @__PURE__ */ jsx20(BudgetMeter, { member: node, t: t2 }),
         node.skills.length > 0 && /* @__PURE__ */ jsx20(sdk_compat_exports.Tip, { label: node.skills.join(", "), children: /* @__PURE__ */ jsx20("p", { className: "mt-1.5 truncate text-[0.6875rem] text-(--ui-text-quaternary)", children: node.skills.join(" \xB7 ") }) })
       ]
     }
@@ -15595,33 +15595,33 @@ function OrgBranch({
     ] })
   ] }, node.slot)) });
 }
-function OrgChart({ team, tree, t }) {
+function OrgChart({ team, tree, t: t2 }) {
   const [editing, setEditing] = useState12(null);
-  return /* @__PURE__ */ jsxs19("section", { "aria-label": t.section.org, "data-slot": "team-org", children: [
+  return /* @__PURE__ */ jsxs19("section", { "aria-label": t2.section.org, "data-slot": "team-org", children: [
     /* @__PURE__ */ jsxs19("div", { className: "mb-3 flex items-center justify-between", children: [
-      /* @__PURE__ */ jsx20("h3", { className: "text-[0.8125rem] font-semibold text-(--ui-text-primary)", children: t.section.org }),
+      /* @__PURE__ */ jsx20("h3", { className: "text-[0.8125rem] font-semibold text-(--ui-text-primary)", children: t2.section.org }),
       /* @__PURE__ */ jsxs19(sdk_compat_exports.Button, { onClick: () => setEditing({}), size: "sm", variant: "outline", children: [
         /* @__PURE__ */ jsx20(sdk_compat_exports.Codicon, { name: "add", size: "0.75rem" }),
-        t.addSeat
+        t2.addSeat
       ] })
     ] }),
-    tree.length === 0 ? /* @__PURE__ */ jsx20("p", { className: "text-[0.75rem] text-(--ui-text-tertiary)", children: t.emptyBody }) : /* @__PURE__ */ jsx20("div", { className: "overflow-x-auto pb-2 pt-3", children: /* @__PURE__ */ jsx20("div", { className: "mx-auto w-max", children: /* @__PURE__ */ jsx20(OrgBranch, { nodes: tree, onEdit: setEditing, root: true, t, team }) }) }),
-    /* @__PURE__ */ jsx20(SeatDialog, { member: editing, onClose: () => setEditing(null), t, team })
+    tree.length === 0 ? /* @__PURE__ */ jsx20("p", { className: "text-[0.75rem] text-(--ui-text-tertiary)", children: t2.emptyBody }) : /* @__PURE__ */ jsx20("div", { className: "overflow-x-auto pb-2 pt-3", children: /* @__PURE__ */ jsx20("div", { className: "mx-auto w-max", children: /* @__PURE__ */ jsx20(OrgBranch, { nodes: tree, onEdit: setEditing, root: true, t: t2, team }) }) }),
+    /* @__PURE__ */ jsx20(SeatDialog, { member: editing, onClose: () => setEditing(null), t: t2, team })
   ] });
 }
 var splitList = (s) => s.split(",").map((x) => x.trim()).filter(Boolean);
 function SeatDialog({
   member,
   onClose,
-  t,
+  t: t2,
   team
 }) {
-  return /* @__PURE__ */ jsx20(sdk_compat_exports.Dialog, { onOpenChange: (open) => !open && onClose(), open: member !== null, children: /* @__PURE__ */ jsx20(sdk_compat_exports.DialogContent, { className: "max-w-md", children: member && /* @__PURE__ */ jsx20(SeatForm, { member, onClose, t, team }, member.slot ?? "new") }) });
+  return /* @__PURE__ */ jsx20(sdk_compat_exports.Dialog, { onOpenChange: (open) => !open && onClose(), open: member !== null, children: /* @__PURE__ */ jsx20(sdk_compat_exports.DialogContent, { className: "max-w-md", children: member && /* @__PURE__ */ jsx20(SeatForm, { member, onClose, t: t2, team }, member.slot ?? "new") }) });
 }
 function SeatForm({
   member,
   onClose,
-  t,
+  t: t2,
   team
 }) {
   const [profile, setProfile] = useState12(member.profile ?? "");
@@ -15661,45 +15661,45 @@ function SeatForm({
         void save();
       },
       children: [
-        /* @__PURE__ */ jsx20(sdk_compat_exports.DialogHeader, { children: /* @__PURE__ */ jsx20(sdk_compat_exports.DialogTitle, { children: member.slot ? t.edit : t.addSeat }) }),
-        /* @__PURE__ */ jsxs19(Field2, { label: t.seatProfile, children: [
+        /* @__PURE__ */ jsx20(sdk_compat_exports.DialogHeader, { children: /* @__PURE__ */ jsx20(sdk_compat_exports.DialogTitle, { children: member.slot ? t2.edit : t2.addSeat }) }),
+        /* @__PURE__ */ jsxs19(Field2, { label: t2.seatProfile, children: [
           /* @__PURE__ */ jsx20(
             sdk_compat_exports.Input,
             {
               list: "team-hireable",
               onChange: (e) => setProfile(e.target.value),
-              placeholder: t.seatProfilePlaceholder,
+              placeholder: t2.seatProfilePlaceholder,
               value: profile
             }
           ),
           /* @__PURE__ */ jsx20("datalist", { id: "team-hireable", children: hireable.map((n) => /* @__PURE__ */ jsx20("option", { value: n }, n)) })
         ] }),
-        /* @__PURE__ */ jsx20(Field2, { label: t.seatRole, children: /* @__PURE__ */ jsx20(sdk_compat_exports.Input, { onChange: (e) => setRole(e.target.value), placeholder: t.seatRolePlaceholder, value: role }) }),
-        /* @__PURE__ */ jsx20(Field2, { label: t.seatSkills, children: /* @__PURE__ */ jsx20(sdk_compat_exports.Input, { onChange: (e) => setSkills(e.target.value), placeholder: t.seatSkillsPlaceholder, value: skills }) }),
+        /* @__PURE__ */ jsx20(Field2, { label: t2.seatRole, children: /* @__PURE__ */ jsx20(sdk_compat_exports.Input, { onChange: (e) => setRole(e.target.value), placeholder: t2.seatRolePlaceholder, value: role }) }),
+        /* @__PURE__ */ jsx20(Field2, { label: t2.seatSkills, children: /* @__PURE__ */ jsx20(sdk_compat_exports.Input, { onChange: (e) => setSkills(e.target.value), placeholder: t2.seatSkillsPlaceholder, value: skills }) }),
         /* @__PURE__ */ jsxs19("div", { className: "grid grid-cols-2 gap-3", children: [
-          /* @__PURE__ */ jsx20(Field2, { label: t.seatBudget, children: /* @__PURE__ */ jsx20(
+          /* @__PURE__ */ jsx20(Field2, { label: t2.seatBudget, children: /* @__PURE__ */ jsx20(
             sdk_compat_exports.Input,
             {
               inputMode: "decimal",
               onChange: (e) => setBudget(e.target.value),
-              placeholder: t.seatBudgetPlaceholder,
+              placeholder: t2.seatBudgetPlaceholder,
               value: budget
             }
           ) }),
-          /* @__PURE__ */ jsx20(Field2, { label: t.seatReportsTo, children: /* @__PURE__ */ jsxs19(
+          /* @__PURE__ */ jsx20(Field2, { label: t2.seatReportsTo, children: /* @__PURE__ */ jsxs19(
             "select",
             {
               className: "h-8 w-full rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-control-background) px-2 text-[0.8125rem]",
               onChange: (e) => setBoss(e.target.value),
               value: boss,
               children: [
-                /* @__PURE__ */ jsx20("option", { value: "", children: t.nobody }),
-                others.map((m) => /* @__PURE__ */ jsx20("option", { value: m.slot, children: seatName(m, t.openSeat) }, m.slot))
+                /* @__PURE__ */ jsx20("option", { value: "", children: t2.nobody }),
+                others.map((m) => /* @__PURE__ */ jsx20("option", { value: m.slot, children: seatName(m, t2.openSeat) }, m.slot))
               ]
             }
           ) })
         ] }),
-        /* @__PURE__ */ jsx20(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx20(sdk_compat_exports.Button, { disabled: busy, type: "submit", children: t.save }) })
+        /* @__PURE__ */ jsx20(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx20(sdk_compat_exports.Button, { disabled: busy, type: "submit", children: t2.save }) })
       ]
     }
   );
@@ -15716,7 +15716,7 @@ init_sdk_compat();
 import { useEffect as useEffect4, useState as useState13 } from "react";
 import { Fragment as Fragment7, jsx as jsx21, jsxs as jsxs20 } from "react/jsx-runtime";
 var fail = (err) => host.notifyError(err, "Team");
-function CreateTeamDialog({ onClose, open, t }) {
+function CreateTeamDialog({ onClose, open, t: t2 }) {
   const [name, setName] = useState13("");
   const [mission, setMission] = useState13("");
   const [busy, setBusy] = useState13(false);
@@ -15743,31 +15743,31 @@ function CreateTeamDialog({ onClose, open, t }) {
         void submit();
       },
       children: [
-        /* @__PURE__ */ jsx21(sdk_compat_exports.DialogHeader, { children: /* @__PURE__ */ jsx21(sdk_compat_exports.DialogTitle, { children: t.createTitle }) }),
-        /* @__PURE__ */ jsx21(Field2, { label: t.createName, children: /* @__PURE__ */ jsx21(
+        /* @__PURE__ */ jsx21(sdk_compat_exports.DialogHeader, { children: /* @__PURE__ */ jsx21(sdk_compat_exports.DialogTitle, { children: t2.createTitle }) }),
+        /* @__PURE__ */ jsx21(Field2, { label: t2.createName, children: /* @__PURE__ */ jsx21(
           sdk_compat_exports.Input,
           {
             autoFocus: true,
             onChange: (e) => setName(e.target.value),
-            placeholder: t.createNamePlaceholder,
+            placeholder: t2.createNamePlaceholder,
             value: name
           }
         ) }),
-        /* @__PURE__ */ jsx21(Field2, { label: t.createMission, children: /* @__PURE__ */ jsx21(
+        /* @__PURE__ */ jsx21(Field2, { label: t2.createMission, children: /* @__PURE__ */ jsx21(
           sdk_compat_exports.Textarea,
           {
             onChange: (e) => setMission(e.target.value),
-            placeholder: t.createMissionPlaceholder,
+            placeholder: t2.createMissionPlaceholder,
             rows: 3,
             value: mission
           }
         ) }),
-        /* @__PURE__ */ jsx21(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { disabled: busy || !name.trim(), type: "submit", children: t.create }) })
+        /* @__PURE__ */ jsx21(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { disabled: busy || !name.trim(), type: "submit", children: t2.create }) })
       ]
     }
   ) }) });
 }
-function Approvals({ t, team }) {
+function Approvals({ t: t2, team }) {
   const pending = pendingApprovals(team);
   if (pending.length === 0) {
     return null;
@@ -15776,28 +15776,28 @@ function Approvals({ t, team }) {
   return /* @__PURE__ */ jsxs20(
     "section",
     {
-      "aria-label": t.section.approvals,
+      "aria-label": t2.section.approvals,
       className: "border-y border-(--ui-stroke-secondary) py-4",
       "data-slot": "team-approvals",
       children: [
-        /* @__PURE__ */ jsx21("h3", { className: "mb-3 text-sm font-semibold text-(--ui-text-primary)", children: t.section.approvals }),
+        /* @__PURE__ */ jsx21("h3", { className: "mb-3 text-sm font-semibold text-(--ui-text-primary)", children: t2.section.approvals }),
         /* @__PURE__ */ jsx21("ul", { className: "grid grid-cols-[minmax(0,1fr)] gap-2", children: pending.map((a) => /* @__PURE__ */ jsxs20("li", { className: "flex flex-wrap items-center gap-x-3 gap-y-1", children: [
-          /* @__PURE__ */ jsx21("span", { className: "rounded bg-(--ui-control-active-background) px-1.5 py-0.5 text-xs font-medium text-(--ui-text-secondary)", children: t.kind[a.kind] ?? a.kind }),
+          /* @__PURE__ */ jsx21("span", { className: "rounded bg-(--ui-control-active-background) px-1.5 py-0.5 text-xs font-medium text-(--ui-text-secondary)", children: t2.kind[a.kind] ?? a.kind }),
           /* @__PURE__ */ jsxs20("span", { className: "min-w-0 flex-1", children: [
             /* @__PURE__ */ jsx21("span", { className: "block text-sm leading-relaxed text-(--ui-text-primary)", children: a.subject }),
             /* @__PURE__ */ jsxs20("span", { className: "block text-xs leading-relaxed text-(--ui-text-tertiary)", children: [
-              t.requestedBy(a.requested_by),
+              t2.requestedBy(a.requested_by),
               a.detail ? ` \u2014 ${a.detail}` : ""
             ] })
           ] }),
-          /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => decide(a.id, false), size: "sm", variant: "ghost", children: t.reject }),
-          /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => decide(a.id, true), size: "sm", children: t.approve })
+          /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => decide(a.id, false), size: "sm", variant: "ghost", children: t2.reject }),
+          /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => decide(a.id, true), size: "sm", children: t2.approve })
         ] }, a.id)) })
       ]
     }
   );
 }
-function Learnings({ t, team }) {
+function Learnings({ t: t2, team }) {
   const [text2, setText] = useState13("");
   const items = topLearnings(team.learnings);
   const add = async () => {
@@ -15811,15 +15811,15 @@ function Learnings({ t, team }) {
       fail(err);
     }
   };
-  return /* @__PURE__ */ jsxs20("section", { "aria-label": t.section.learnings, "data-slot": "team-learnings", children: [
-    /* @__PURE__ */ jsx21("h3", { className: "mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)", children: t.section.learnings }),
-    items.length === 0 ? /* @__PURE__ */ jsx21("p", { className: "text-[0.75rem] text-(--ui-text-tertiary)", children: t.learningsEmpty }) : /* @__PURE__ */ jsx21("ul", { className: "grid grid-cols-[minmax(0,1fr)] gap-1", children: items.map((l) => /* @__PURE__ */ jsxs20("li", { className: "group/l flex items-baseline gap-2 text-[0.8125rem] text-(--ui-text-secondary)", children: [
+  return /* @__PURE__ */ jsxs20("section", { "aria-label": t2.section.learnings, "data-slot": "team-learnings", children: [
+    /* @__PURE__ */ jsx21("h3", { className: "mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)", children: t2.section.learnings }),
+    items.length === 0 ? /* @__PURE__ */ jsx21("p", { className: "text-[0.75rem] text-(--ui-text-tertiary)", children: t2.learningsEmpty }) : /* @__PURE__ */ jsx21("ul", { className: "grid grid-cols-[minmax(0,1fr)] gap-1", children: items.map((l) => /* @__PURE__ */ jsxs20("li", { className: "group/l flex items-baseline gap-2 text-[0.8125rem] text-(--ui-text-secondary)", children: [
       /* @__PURE__ */ jsx21("span", { className: "min-w-0 flex-1", children: l.text }),
-      l.count > 1 && /* @__PURE__ */ jsx21("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: t.confirmed(l.count) }),
+      l.count > 1 && /* @__PURE__ */ jsx21("span", { className: "text-[0.6875rem] text-(--ui-text-quaternary)", children: t2.confirmed(l.count) }),
       /* @__PURE__ */ jsx21(
         sdk_compat_exports.Button,
         {
-          "aria-label": t.remove,
+          "aria-label": t2.remove,
           className: "opacity-0 group-hover/l:opacity-100 focus-visible:opacity-100",
           onClick: () => void mutateTeam("bots_team.learning.remove", { team_id: team.id, learning_id: l.id }).catch(fail),
           size: "icon",
@@ -15837,29 +15837,29 @@ function Learnings({ t, team }) {
           void add();
         },
         children: [
-          /* @__PURE__ */ jsx21(sdk_compat_exports.Input, { onChange: (e) => setText(e.target.value), placeholder: t.learningPlaceholder, value: text2 }),
-          /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { size: "sm", type: "submit", variant: "outline", children: t.addLearning })
+          /* @__PURE__ */ jsx21(sdk_compat_exports.Input, { onChange: (e) => setText(e.target.value), placeholder: t2.learningPlaceholder, value: text2 }),
+          /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { size: "sm", type: "submit", variant: "outline", children: t2.addLearning })
         ]
       }
     )
   ] });
 }
-function Activity({ t, team }) {
+function Activity({ t: t2, team }) {
   const { data } = (0, sdk_compat_exports.useQuery)({
     queryKey: ["hermes-bots", "team-audit", team.id, team.updated_at],
     queryFn: async () => (await host.request("bots_team.audit.list", { team_id: team.id, limit: 50 })).entries
   });
-  return /* @__PURE__ */ jsxs20("section", { "aria-label": t.section.activity, "data-slot": "team-activity", children: [
-    /* @__PURE__ */ jsx21("h3", { className: "mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)", children: t.section.activity }),
-    !data?.length ? /* @__PURE__ */ jsx21("p", { className: "text-[0.75rem] text-(--ui-text-tertiary)", children: t.activityEmpty }) : /* @__PURE__ */ jsx21("ol", { className: "grid gap-1 font-mono text-[0.6875rem] text-(--ui-text-tertiary)", children: data.map((e, i) => /* @__PURE__ */ jsxs20("li", { className: "flex gap-2", children: [
+  return /* @__PURE__ */ jsxs20("section", { "aria-label": t2.section.activity, "data-slot": "team-activity", children: [
+    /* @__PURE__ */ jsx21("h3", { className: "mb-2 text-[0.8125rem] font-semibold text-(--ui-text-primary)", children: t2.section.activity }),
+    !data?.length ? /* @__PURE__ */ jsx21("p", { className: "text-[0.75rem] text-(--ui-text-tertiary)", children: t2.activityEmpty }) : /* @__PURE__ */ jsx21("ol", { className: "grid gap-1 font-mono text-[0.6875rem] text-(--ui-text-tertiary)", children: data.map((e, i) => /* @__PURE__ */ jsxs20("li", { className: "flex gap-2", children: [
       /* @__PURE__ */ jsx21("time", { className: "shrink-0 tabular-nums", children: new Date(e.at * 1e3).toLocaleString() }),
       /* @__PURE__ */ jsx21("span", { className: "shrink-0 text-(--ui-text-secondary)", children: e.actor }),
       /* @__PURE__ */ jsx21("span", { className: "truncate", children: e.action })
     ] }, `${e.at}-${i}`)) })
   ] });
 }
-function AdvancedPanel({ t, team }) {
-  const a = t.advanced;
+function AdvancedPanel({ t: t2, team }) {
+  const a = t2.advanced;
   const [deleting, setDeleting] = useState13(false);
   const exportPack = async () => {
     try {
@@ -15930,34 +15930,34 @@ function AdvancedPanel({ t, team }) {
     )
   ] });
 }
-function TeamLoader({ onRetry, t }) {
+function TeamLoader({ onRetry, t: t2 }) {
   const [slow, setSlow] = useState13(false);
   const [round, setRound] = useState13(0);
   useEffect4(() => {
     const timer = window.setTimeout(() => setSlow(true), 8e3);
     return () => window.clearTimeout(timer);
   }, [round]);
-  return /* @__PURE__ */ jsx21("div", { "aria-label": t.stillLoading, className: "grid h-full place-items-center", role: "status", children: slow ? /* @__PURE__ */ jsxs20("div", { className: "grid justify-items-center gap-3 text-sm text-muted-foreground", children: [
-    t.stillLoading,
+  return /* @__PURE__ */ jsx21("div", { "aria-label": t2.stillLoading, className: "grid h-full place-items-center", role: "status", children: slow ? /* @__PURE__ */ jsxs20("div", { className: "grid justify-items-center gap-3 text-sm text-muted-foreground", children: [
+    t2.stillLoading,
     /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => {
       setSlow(false);
       setRound((r) => r + 1);
       onRetry();
-    }, size: "sm", variant: "outline", children: t.retry })
+    }, size: "sm", variant: "outline", children: t2.retry })
   ] }) : /* @__PURE__ */ jsxs20("div", { "aria-hidden": "true", className: "grid w-full max-w-md gap-3 p-6", children: [
     /* @__PURE__ */ jsx21(sdk_compat_exports.Skeleton, { className: "h-4 w-2/5" }),
     /* @__PURE__ */ jsx21(sdk_compat_exports.Skeleton, { className: "h-3 w-full" }),
     /* @__PURE__ */ jsx21(sdk_compat_exports.Skeleton, { className: "h-3 w-4/5" })
   ] }) });
 }
-function TeamDetail({ id, t }) {
+function TeamDetail({ id, t: t2 }) {
   const advanced = (0, sdk_compat_exports.useValue)(host.state.showsAdvancedChrome);
   const { data: view, isPending, error, refetch } = useTeam(id);
   if (isPending) {
-    return /* @__PURE__ */ jsx21(TeamLoader, { onRetry: () => void refetch(), t });
+    return /* @__PURE__ */ jsx21(TeamLoader, { onRetry: () => void refetch(), t: t2 });
   }
   if (error || !view) {
-    return /* @__PURE__ */ jsx21(sdk_compat_exports.ErrorState, { className: "place-items-center p-6", description: t.loadFailedBody, title: t.loadFailed, children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t.retry }) });
+    return /* @__PURE__ */ jsx21(sdk_compat_exports.ErrorState, { className: "place-items-center p-6", description: t2.loadFailedBody, title: t2.loadFailed, children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t2.retry }) });
   }
   const { team, tree, rollup } = view;
   const pending = pendingApprovals(team).length;
@@ -15967,14 +15967,14 @@ function TeamDetail({ id, t }) {
       /* @__PURE__ */ jsx21("h2", { className: "text-xl font-semibold tracking-tight text-(--ui-text-primary)", children: team.name }),
       team.mission && /* @__PURE__ */ jsx21("p", { className: "mt-2 max-w-2xl text-sm leading-relaxed text-(--ui-text-secondary)", children: team.mission }),
       /* @__PURE__ */ jsxs20("div", { className: "mt-3 flex flex-wrap items-center gap-3 text-[0.75rem] text-(--ui-text-tertiary)", children: [
-        /* @__PURE__ */ jsx21("span", { children: t.seats(team.members.length) }),
-        open > 0 && /* @__PURE__ */ jsx21("span", { children: t.openSeats(open) }),
-        pending > 0 && /* @__PURE__ */ jsx21("span", { className: "font-medium text-(--ui-accent)", children: t.needsYou(pending) })
+        /* @__PURE__ */ jsx21("span", { children: t2.seats(team.members.length) }),
+        open > 0 && /* @__PURE__ */ jsx21("span", { children: t2.openSeats(open) }),
+        pending > 0 && /* @__PURE__ */ jsx21("span", { className: "font-medium text-(--ui-accent)", children: t2.needsYou(pending) })
       ] }),
       /* @__PURE__ */ jsxs20("div", { className: "mt-3", "data-slot": "team-overall", children: [
         /* @__PURE__ */ jsxs20("div", { className: "mb-1 flex justify-between text-[0.6875rem] text-(--ui-text-tertiary)", children: [
-          /* @__PURE__ */ jsx21("span", { children: t.overall }),
-          /* @__PURE__ */ jsx21("span", { className: "tabular-nums", children: rollup.overall.total ? `${rollup.overall.done}/${rollup.overall.total} \xB7 ${rollup.overall.percent}%` : t.goalNone })
+          /* @__PURE__ */ jsx21("span", { children: t2.overall }),
+          /* @__PURE__ */ jsx21("span", { className: "tabular-nums", children: rollup.overall.total ? `${rollup.overall.done}/${rollup.overall.total} \xB7 ${rollup.overall.percent}%` : t2.goalNone })
         ] }),
         /* @__PURE__ */ jsx21("div", { className: "h-1.5 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)", children: /* @__PURE__ */ jsx21(
           "div",
@@ -15985,18 +15985,18 @@ function TeamDetail({ id, t }) {
         ) })
       ] })
     ] }),
-    /* @__PURE__ */ jsx21(Approvals, { t, team }),
-    /* @__PURE__ */ jsx21(OrgChart, { t, team, tree }),
-    /* @__PURE__ */ jsx21(GoalsSection, { progress: rollup.goals, t, team }),
-    /* @__PURE__ */ jsx21(Learnings, { t, team }),
+    /* @__PURE__ */ jsx21(Approvals, { t: t2, team }),
+    /* @__PURE__ */ jsx21(OrgChart, { t: t2, team, tree }),
+    /* @__PURE__ */ jsx21(GoalsSection, { progress: rollup.goals, t: t2, team }),
+    /* @__PURE__ */ jsx21(Learnings, { t: t2, team }),
     advanced && /* @__PURE__ */ jsxs20(Fragment7, { children: [
-      /* @__PURE__ */ jsx21(Activity, { t, team }),
-      /* @__PURE__ */ jsx21(AdvancedPanel, { t, team })
+      /* @__PURE__ */ jsx21(Activity, { t: t2, team }),
+      /* @__PURE__ */ jsx21(AdvancedPanel, { t: t2, team })
     ] })
   ] });
 }
 function TeamPage() {
-  const t = useTeamText();
+  const t2 = useTeamText();
   const selected = (0, sdk_compat_exports.useValue)($selectedTeamId);
   const { data: teams, isPending, error, refetch } = useTeams();
   const [creating, setCreating] = useState13(false);
@@ -16005,13 +16005,13 @@ function TeamPage() {
     /* @__PURE__ */ jsxs20("div", { className: "flex flex-wrap items-center gap-3 border-b border-(--ui-stroke-tertiary) px-4 py-3", children: [
       /* @__PURE__ */ jsx21(sdk_compat_exports.Codicon, { name: "organization", size: "1rem" }),
       /* @__PURE__ */ jsxs20("div", { className: "min-w-0 flex-1", children: [
-        /* @__PURE__ */ jsx21("h1", { className: "truncate text-[0.9375rem] font-semibold text-(--ui-text-primary)", children: t.title }),
-        /* @__PURE__ */ jsx21("p", { className: "text-xs leading-relaxed text-(--ui-text-tertiary)", children: t.subtitle })
+        /* @__PURE__ */ jsx21("h1", { className: "truncate text-[0.9375rem] font-semibold text-(--ui-text-primary)", children: t2.title }),
+        /* @__PURE__ */ jsx21("p", { className: "text-xs leading-relaxed text-(--ui-text-tertiary)", children: t2.subtitle })
       ] }),
       teams && teams.length > 1 && /* @__PURE__ */ jsx21(
         "select",
         {
-          "aria-label": t.title,
+          "aria-label": t2.title,
           className: "h-8 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-control-background) px-2 text-[0.8125rem]",
           onChange: (e) => $selectedTeamId.set(e.target.value),
           value: current ?? "",
@@ -16023,17 +16023,17 @@ function TeamPage() {
       ),
       isMissingRpcMethod(error) ? (
         // A disabled button swallows hover, so the Tip sits on a span that says why.
-        /* @__PURE__ */ jsx21(sdk_compat_exports.Tip, { label: t.unavailableTitle, children: /* @__PURE__ */ jsx21("span", { className: "inline-flex", tabIndex: 0, children: /* @__PURE__ */ jsxs20(sdk_compat_exports.Button, { disabled: true, size: "sm", variant: teams?.length ? "outline" : "default", children: [
+        /* @__PURE__ */ jsx21(sdk_compat_exports.Tip, { label: t2.unavailableTitle, children: /* @__PURE__ */ jsx21("span", { className: "inline-flex", tabIndex: 0, children: /* @__PURE__ */ jsxs20(sdk_compat_exports.Button, { disabled: true, size: "sm", variant: teams?.length ? "outline" : "default", children: [
           /* @__PURE__ */ jsx21(sdk_compat_exports.Codicon, { name: "add", size: "0.75rem" }),
-          t.newTeam
+          t2.newTeam
         ] }) }) })
       ) : /* @__PURE__ */ jsxs20(sdk_compat_exports.Button, { onClick: () => setCreating(true), size: "sm", variant: teams?.length ? "outline" : "default", children: [
         /* @__PURE__ */ jsx21(sdk_compat_exports.Codicon, { name: "add", size: "0.75rem" }),
-        t.newTeam
+        t2.newTeam
       ] })
     ] }),
-    /* @__PURE__ */ jsx21("div", { className: (0, sdk_compat_exports.cn)("min-h-0 flex-1 overflow-y-auto"), children: isPending ? /* @__PURE__ */ jsx21(TeamLoader, { onRetry: () => void refetch(), t }) : isMissingRpcMethod(error) ? /* @__PURE__ */ jsx21(sdk_compat_exports.EmptyState, { description: t.unavailableBody, title: t.unavailableTitle }) : error ? /* @__PURE__ */ jsx21(sdk_compat_exports.ErrorState, { className: "place-items-center p-6", description: t.loadFailedBody, title: t.loadFailed, children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t.retry }) }) : current ? /* @__PURE__ */ jsx21(TeamDetail, { id: current, t }, current) : /* @__PURE__ */ jsx21(sdk_compat_exports.EmptyState, { description: t.emptyBody, title: t.emptyTitle }) }),
-    /* @__PURE__ */ jsx21(CreateTeamDialog, { onClose: () => setCreating(false), open: creating, t })
+    /* @__PURE__ */ jsx21("div", { className: (0, sdk_compat_exports.cn)("min-h-0 flex-1 overflow-y-auto"), children: isPending ? /* @__PURE__ */ jsx21(TeamLoader, { onRetry: () => void refetch(), t: t2 }) : isMissingRpcMethod(error) ? /* @__PURE__ */ jsx21(sdk_compat_exports.EmptyState, { description: t2.unavailableBody, title: t2.unavailableTitle }) : error ? /* @__PURE__ */ jsx21(sdk_compat_exports.ErrorState, { className: "place-items-center p-6", description: t2.loadFailedBody, title: t2.loadFailed, children: /* @__PURE__ */ jsx21(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t2.retry }) }) : current ? /* @__PURE__ */ jsx21(TeamDetail, { id: current, t: t2 }, current) : /* @__PURE__ */ jsx21(sdk_compat_exports.EmptyState, { description: t2.emptyBody, title: t2.emptyTitle }) }),
+    /* @__PURE__ */ jsx21(CreateTeamDialog, { onClose: () => setCreating(false), open: creating, t: t2 })
   ] });
 }
 
@@ -16058,7 +16058,7 @@ async function runRoomAsTeam(group, goal, members, leadMember) {
 }
 function TeamTab(props) {
   const b = useBots();
-  const t = useTeamText();
+  const t2 = useTeamText();
   const { data: view } = useTeam(props.teamId);
   const [busy, setBusy] = useState14(false);
   const localCount = props.members.filter((member) => !member.remoteSource).length;
@@ -16107,14 +16107,14 @@ function TeamTab(props) {
       /* @__PURE__ */ jsx22(Mission, { label: team.name, text: team.mission || props.goal }),
       rollup.overall.total ? /* @__PURE__ */ jsxs21("div", { className: "mt-2", children: [
         /* @__PURE__ */ jsxs21("div", { className: "mb-1 flex justify-between text-[0.625rem] text-(--ui-text-tertiary)", children: [
-          /* @__PURE__ */ jsx22("span", { children: t.overall }),
+          /* @__PURE__ */ jsx22("span", { children: t2.overall }),
           /* @__PURE__ */ jsx22("span", { className: "tabular-nums", children: `${rollup.overall.done}/${rollup.overall.total} \xB7 ${rollup.overall.percent}%` })
         ] }),
         /* @__PURE__ */ jsx22("div", { className: "h-1 overflow-hidden rounded-full bg-(--ui-stroke-tertiary)", children: /* @__PURE__ */ jsx22("div", { className: "h-full rounded-full bg-(--ui-accent)", style: { width: `${rollup.overall.percent}%` } }) })
       ] }) : null
     ] }),
-    /* @__PURE__ */ jsx22(GoalsSection, { progress: rollup.goals, t, team }),
-    /* @__PURE__ */ jsx22(OrgChart, { t, team, tree })
+    /* @__PURE__ */ jsx22(GoalsSection, { progress: rollup.goals, t: t2, team }),
+    /* @__PURE__ */ jsx22(OrgChart, { t: t2, team, tree })
   ] });
 }
 function Mission({ label, text: text2 }) {
@@ -16145,9 +16145,9 @@ function FloorSquad(props) {
   );
 }
 function TeamApprovals({ teamId }) {
-  const t = useTeamText();
+  const t2 = useTeamText();
   const { data: view } = useTeam(teamId);
-  return view ? /* @__PURE__ */ jsx22(Approvals, { t, team: view.team }) : null;
+  return view ? /* @__PURE__ */ jsx22(Approvals, { t: t2, team: view.team }) : null;
 }
 function GroupRoomPanel(props) {
   const b = useBots();
@@ -16627,7 +16627,7 @@ function markGroupThreadsRead(group, threads) {
   const next = { ...$groupThreadReadAt.get() };
   let changed = false;
   for (const [thread, at] of Object.entries(
-    threads ? Object.fromEntries(threads.map((t) => [t, tails[t] ?? 0])) : tails
+    threads ? Object.fromEntries(threads.map((t2) => [t2, tails[t2] ?? 0])) : tails
   )) {
     const mark = `${key}::${thread}`;
     if (at > (next[mark] ?? -1)) {
@@ -16944,7 +16944,7 @@ function GroupChatSettingsDialog({
   onManageMembers,
   onRenamed
 }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const rooms = (0, sdk_compat_exports.useValue)($groupChats);
   const current = (rooms[group] || {}).image || null;
@@ -17183,15 +17183,15 @@ function GroupChatSettingsDialog({
               ]
             }
           ) : null,
-          /* @__PURE__ */ jsx24(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t.common.cancel }),
-          /* @__PURE__ */ jsx24(sdk_compat_exports.Button, { disabled: !name.trim(), onClick: () => void save(), children: t.common.save })
+          /* @__PURE__ */ jsx24(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t2.common.cancel }),
+          /* @__PURE__ */ jsx24(sdk_compat_exports.Button, { disabled: !name.trim(), onClick: () => void save(), children: t2.common.save })
         ] })
       ] })
     }
   );
 }
 function GroupChatWorkspace({ group, members, onBack, visible = true }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const rooms = (0, sdk_compat_exports.useValue)($groupChats);
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
@@ -18920,7 +18920,7 @@ init_routing();
 import { jsx as jsx26, jsxs as jsxs25 } from "react/jsx-runtime";
 var AGENTS_ROW_CAP = 7;
 function AgentsSection() {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const open = (0, sdk_compat_exports.useValue)($agentsSectionOpen);
   const { data, error, refetch } = useRoster();
@@ -18955,7 +18955,7 @@ function AgentsSection() {
   if (searchQuery && shown.length === 0) {
     return null;
   }
-  return /* @__PURE__ */ jsxs25("section", { "aria-label": t.common.bots, className: "px-0", children: [
+  return /* @__PURE__ */ jsxs25("section", { "aria-label": t2.common.bots, className: "px-0", children: [
     /* @__PURE__ */ jsxs25("div", { className: "group/section flex shrink-0 items-center justify-between gap-1 pb-1 pt-1.5", children: [
       /* @__PURE__ */ jsxs25(
         "button",
@@ -18965,7 +18965,7 @@ function AgentsSection() {
           onClick: () => setAgentsSectionOpen(!open),
           type: "button",
           children: [
-            /* @__PURE__ */ jsx26(SidebarPanelLabel, { children: t.common.bots }),
+            /* @__PURE__ */ jsx26(SidebarPanelLabel, { children: t2.common.bots }),
             visible.length > 0 && /* @__PURE__ */ jsx26(SidebarSectionMeta, { children: visible.length }),
             !open && Object.keys(attentionByKey).length > 0 && /* @__PURE__ */ jsx26("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full hbp-bg-warn" }),
             /* @__PURE__ */ jsx26(
@@ -19058,7 +19058,7 @@ function AgentsSection() {
   ] });
 }
 function AgentRow({ bot }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
   const meta = botRosterMeta(bot, allMeta);
@@ -19122,7 +19122,7 @@ function AgentRow({ bot }) {
                 name: "warning"
               }
             ) }) : null,
-            rowAgeTs ? /* @__PURE__ */ jsx26("span", { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", children: rosterRowAge(rowAgeTs * 1e3, t.sidebar.row) }) : null
+            rowAgeTs ? /* @__PURE__ */ jsx26("span", { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", children: rosterRowAge(rowAgeTs * 1e3, t2.sidebar.row) }) : null
           ] }),
           displayPreview ? /* @__PURE__ */ jsx26("div", { className: "flex min-w-0 items-center text-xs text-(--ui-text-tertiary)", children: /* @__PURE__ */ jsx26("span", { className: (0, sdk_compat_exports.cn)("min-w-0 truncate", fromBot && "italic"), children: displayPreview }) }) : null
         ] })
@@ -19153,8 +19153,8 @@ var AUTOPILOT_EN = {
 };
 var AUTOPILOT_LOCALES = { en: { autopilot: AUTOPILOT_EN } };
 function useAutopilotText() {
-  const t = (0, sdk_compat_exports.usePluginI18n)(i18nId());
-  return bindTree(t, AUTOPILOT_EN, "autopilot");
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, AUTOPILOT_EN, "autopilot");
 }
 
 // src/bot-delegate-hint-view.tsx
@@ -20089,7 +20089,7 @@ function routineRunDurationMs(run) {
 var RUN_HISTORY_LIMIT = 8;
 function RoutineRunHistory({ job, owner }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const [runs, setRuns] = useState20(null);
   useEffect8(() => {
     let cancelled = false;
@@ -20154,7 +20154,7 @@ function RoutineRunHistory({ job, owner }) {
           children: [
             /* @__PURE__ */ jsx29(sdk_compat_exports.Codicon, { "aria-label": statusLabel2, className: "shrink-0 text-[0.6875rem]", name: statusIcon }),
             /* @__PURE__ */ jsx29("span", { className: "min-w-0 flex-1 truncate", children: label }),
-            /* @__PURE__ */ jsx29("span", { className: "shrink-0 text-[0.65rem] text-(--ui-text-quaternary)", children: atMs ? rosterRowAge(atMs, t.sidebar.row) : "" })
+            /* @__PURE__ */ jsx29("span", { className: "shrink-0 text-[0.65rem] text-(--ui-text-quaternary)", children: atMs ? rosterRowAge(atMs, t2.sidebar.row) : "" })
           ]
         },
         run.id
@@ -20187,7 +20187,7 @@ function RoutineRunHistory({ job, owner }) {
             Math.round(durationMs / 1e3),
             "s"
           ] }) : null,
-          /* @__PURE__ */ jsx29("span", { className: "shrink-0 text-[0.65rem] text-(--ui-text-quaternary)", children: atMs ? rosterRowAge(atMs, t.sidebar.row) : "" })
+          /* @__PURE__ */ jsx29("span", { className: "shrink-0 text-[0.65rem] text-(--ui-text-quaternary)", children: atMs ? rosterRowAge(atMs, t2.sidebar.row) : "" })
         ]
       },
       run.id
@@ -20196,7 +20196,7 @@ function RoutineRunHistory({ job, owner }) {
 }
 function RoutineDetailDialog({ job, onClose, open, owner }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const rows = job ? routineDetailRows(job, b.cron) : [];
   const issue = job ? routineDetailIssue(job) : null;
   const instruction = String(job?.prompt_preview || "").trim();
@@ -20226,7 +20226,7 @@ function RoutineDetailDialog({ job, onClose, open, owner }) {
           ) : null,
           job && owner ? labeled(b.cron.runHistory, /* @__PURE__ */ jsx29(RoutineRunHistory, { job, owner })) : null
         ] }),
-        /* @__PURE__ */ jsx29(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx29(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t.common.close }) })
+        /* @__PURE__ */ jsx29(sdk_compat_exports.DialogFooter, { children: /* @__PURE__ */ jsx29(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t2.common.close }) })
       ] })
     }
   );
@@ -20234,8 +20234,8 @@ function RoutineDetailDialog({ job, onClose, open, owner }) {
 var HEALTH_DOT = { good: "bg-(--ui-success)", off: "bg-(--ui-text-quaternary)", warn: "hbp-bg-warn" };
 function RoutineRow({ job, onOpen, owner }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
-  const c = t.cron;
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const c = t2.cron;
   const profile = typeof owner === "string" ? owner : owner?.name;
   const [busy, setBusy] = useState20(false);
   const [pendingActive, setPendingActive] = useState20(null);
@@ -20304,15 +20304,15 @@ function RoutineRow({ job, onOpen, owner }) {
               onCheckedChange: (value) => act(value ? "resume" : "pause")
             }
           ),
-          /* @__PURE__ */ jsx29(sdk_compat_exports.Tip, { label: t.common.delete, children: /* @__PURE__ */ jsx29(
+          /* @__PURE__ */ jsx29(sdk_compat_exports.Tip, { label: t2.common.delete, children: /* @__PURE__ */ jsx29(
             sdk_compat_exports.Button,
             {
-              "aria-label": t.common.delete,
+              "aria-label": t2.common.delete,
               className: "opacity-0 transition-opacity group-hover:opacity-100",
               disabled: busy,
               onClick: () => {
                 void confirm({
-                  confirmLabel: t.common.delete,
+                  confirmLabel: t2.common.delete,
                   description: `${c.deleteDescPrefix}${routineTitle(job, b.cron)}${c.deleteDescSuffix}`,
                   destructive: true,
                   onConfirm: () => act("remove"),
@@ -20580,8 +20580,8 @@ function defaultScheduleState() {
 }
 function CreateRoutineDialog({ bot, open, onClose, preset = null }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
-  const c = t.cron;
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const c = t2.cron;
   const [name, setName] = useState20("");
   const [instruction, setInstruction] = useState20("");
   const [sched, setSched] = useState20(defaultScheduleState());
@@ -20729,10 +20729,10 @@ function CreateRoutineDialog({ bot, open, onClose, preset = null }) {
                 onClose();
               },
               variant: "ghost",
-              children: t.common.cancel
+              children: t2.common.cancel
             }
           ),
-          /* @__PURE__ */ jsx29(sdk_compat_exports.Button, { disabled: busy || !name.trim() || !instruction.trim() || !schedule.trim(), onClick: submit, children: busy ? t.common.saving : c.createAction })
+          /* @__PURE__ */ jsx29(sdk_compat_exports.Button, { disabled: busy || !name.trim() || !instruction.trim() || !schedule.trim(), onClick: submit, children: busy ? t2.common.saving : c.createAction })
         ] })
       ] })
     }
@@ -21589,7 +21589,7 @@ function useModelOptions(bot = null) {
 }
 function ModelPicker({ bot = null, value, onChange, placeholderModel }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const { data, isLoading, error } = useModelOptions(bot);
   const NONE = "__default__";
   const CUSTOM = "__custom__";
@@ -21603,7 +21603,7 @@ function ModelPicker({ bot = null, value, onChange, placeholderModel }) {
   if (error || !providers.length) {
     return /* @__PURE__ */ jsxs30("div", { className: "grid grid-cols-2 gap-2.5", children: [
       labeled(
-        t.settings.model.provider,
+        t2.settings.model.provider,
         /* @__PURE__ */ jsx31(
           sdk_compat_exports.Input,
           {
@@ -21616,7 +21616,7 @@ function ModelPicker({ bot = null, value, onChange, placeholderModel }) {
         )
       ),
       labeled(
-        t.settings.model.model,
+        t2.settings.model.model,
         /* @__PURE__ */ jsx31(
           sdk_compat_exports.Input,
           {
@@ -21676,7 +21676,7 @@ function ModelPicker({ bot = null, value, onChange, placeholderModel }) {
   const models = providerModelIds(activeProvider);
   return /* @__PURE__ */ jsxs30("div", { className: "grid grid-cols-[1fr_1.4fr] gap-2.5", children: [
     labeled(
-      t.settings.model.provider,
+      t2.settings.model.provider,
       /* @__PURE__ */ jsxs30(
         sdk_compat_exports.Select,
         {
@@ -21711,7 +21711,7 @@ function ModelPicker({ bot = null, value, onChange, placeholderModel }) {
       )
     ),
     labeled(
-      t.settings.model.model,
+      t2.settings.model.model,
       activeProvider && models.length > 0 ? /* @__PURE__ */ jsxs30(
         sdk_compat_exports.Select,
         {
@@ -22032,7 +22032,7 @@ function BotPlanCard({ messageText: messageText2, streaming }) {
   const runtimeId = (0, sdk_compat_exports.useValue)(view.$runtimeId);
   const messages = (0, sdk_compat_exports.useValue)(view.$messages);
   (0, sdk_compat_exports.useValue)($lastRoster);
-  const t = useBots();
+  const t2 = useBots();
   const parsed = parseBotPlanReply(messageText2);
   const identity = `${storedId}:${parsed.planText}`;
   const sessionId = storedId ?? runtimeId;
@@ -22074,13 +22074,13 @@ function BotPlanCard({ messageText: messageText2, streaming }) {
   return /* @__PURE__ */ jsxs33("div", { className: "my-2 flex min-w-0 max-w-full flex-col gap-2", "data-bot-plan-card": true, children: [
     /* @__PURE__ */ jsxs33("div", { className: "flex min-w-0 items-center gap-2 text-[13px] font-medium", children: [
       /* @__PURE__ */ jsx34(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.8rem] text-(--ui-text-tertiary)", name: "list-ordered" }),
-      /* @__PURE__ */ jsx34("span", { className: "truncate", children: t.plan.proposedTitle }),
-      parsed.steps.length > 0 && /* @__PURE__ */ jsx34("span", { className: "shrink-0 text-[11px] font-normal text-(--ui-text-quaternary)", children: t.plan.stepsCount(parsed.steps.length) })
+      /* @__PURE__ */ jsx34("span", { className: "truncate", children: t2.plan.proposedTitle }),
+      parsed.steps.length > 0 && /* @__PURE__ */ jsx34("span", { className: "shrink-0 text-[11px] font-normal text-(--ui-text-quaternary)", children: t2.plan.stepsCount(parsed.steps.length) })
     ] }),
-    closed ? /* @__PURE__ */ jsx34("div", { className: "text-[12px] text-(--ui-text-quaternary)", children: t.plan.settledNote }) : /* @__PURE__ */ jsxs33("div", { className: "flex min-w-0 max-w-full flex-wrap items-center gap-2", children: [
-      /* @__PURE__ */ jsx34("button", { className: buttonClass(true), disabled: streaming, onClick: approve, type: "button", children: t.plan.approve }),
-      /* @__PURE__ */ jsx34("button", { className: buttonClass(false), disabled: streaming, onClick: edit, type: "button", children: t.plan.edit }),
-      /* @__PURE__ */ jsx34("button", { className: buttonClass(false), disabled: streaming, onClick: settle, type: "button", children: t.plan.dismiss })
+    closed ? /* @__PURE__ */ jsx34("div", { className: "text-[12px] text-(--ui-text-quaternary)", children: t2.plan.settledNote }) : /* @__PURE__ */ jsxs33("div", { className: "flex min-w-0 max-w-full flex-wrap items-center gap-2", children: [
+      /* @__PURE__ */ jsx34("button", { className: buttonClass(true), disabled: streaming, onClick: approve, type: "button", children: t2.plan.approve }),
+      /* @__PURE__ */ jsx34("button", { className: buttonClass(false), disabled: streaming, onClick: edit, type: "button", children: t2.plan.edit }),
+      /* @__PURE__ */ jsx34("button", { className: buttonClass(false), disabled: streaming, onClick: settle, type: "button", children: t2.plan.dismiss })
     ] })
   ] });
 }
@@ -22097,7 +22097,7 @@ function BotPlanChecklist() {
   const storedId = (0, sdk_compat_exports.useValue)(view.$storedId);
   const messages = (0, sdk_compat_exports.useValue)(view.$messages);
   (0, sdk_compat_exports.useValue)($lastRoster);
-  const t = useBots();
+  const t2 = useBots();
   const [, force] = useState23(0);
   const plan = deriveBotPlanState(messages);
   if (!plan || !canonicalBotChatOnScreen(storedId) || dismissed.has(`${storedId}:${plan.planMessageId}`)) {
@@ -22116,14 +22116,14 @@ function BotPlanChecklist() {
         /* @__PURE__ */ jsxs34("div", { className: "flex items-center gap-2", children: [
           /* @__PURE__ */ jsx35(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.75rem] text-(--ui-text-tertiary)", name: "checklist" }),
           /* @__PURE__ */ jsxs34("span", { className: "min-w-0 flex-1 truncate text-[0.7rem] font-medium text-muted-foreground/88", children: [
-            t.plan.checklistTitle,
+            t2.plan.checklistTitle,
             " \xB7 ",
-            plan.complete ? t.plan.complete : t.plan.stepsDone(plan.doneSteps.size, plan.steps.length)
+            plan.complete ? t2.plan.complete : t2.plan.stepsDone(plan.doneSteps.size, plan.steps.length)
           ] }),
           /* @__PURE__ */ jsx35(
             "button",
             {
-              "aria-label": t.plan.clearChecklist,
+              "aria-label": t2.plan.clearChecklist,
               className: "flex shrink-0 cursor-pointer items-center text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
               onClick: () => {
                 dismissed.add(`${storedId}:${plan.planMessageId}`);
@@ -22359,14 +22359,14 @@ import { useCallback, useEffect as useEffect9, useRef as useRef5, useState as us
 import { jsx as jsx36, jsxs as jsxs35 } from "react/jsx-runtime";
 var LOG_KEEP = 200;
 function ScreenNotInstalled(props) {
-  const t = useBots();
+  const t2 = useBots();
   if (isManagedBackend(props.bot)) {
-    return /* @__PURE__ */ jsx36(sdk_compat_exports.EmptyState, { description: t.screen.managedNotIncludedBody, title: t.screen.managedNotIncludedTitle });
+    return /* @__PURE__ */ jsx36(sdk_compat_exports.EmptyState, { description: t2.screen.managedNotIncludedBody, title: t2.screen.managedNotIncludedTitle });
   }
   return /* @__PURE__ */ jsx36(ScreenInstallCard, { ...props });
 }
 function ScreenInstallCard({ bot, status, onInstalled }) {
-  const t = useBots();
+  const t2 = useBots();
   const [phase, setPhase] = useState24("idle");
   const [log, setLog] = useState24([]);
   const [error, setError] = useState24(null);
@@ -22406,14 +22406,14 @@ function ScreenInstallCard({ bot, status, onInstalled }) {
         onInstalled(payload.status);
       } else {
         setPhase("failed");
-        setError(payload.code === -1 ? t.screen.installCancelled : t.screen.installFailed);
+        setError(payload.code === -1 ? t2.screen.installCancelled : t2.screen.installFailed);
       }
     });
     return () => {
       offLog();
       offDone();
     };
-  }, [bot, onInstalled, releaseRetention, status.profile_key, t.screen.installCancelled, t.screen.installFailed]);
+  }, [bot, onInstalled, releaseRetention, status.profile_key, t2.screen.installCancelled, t2.screen.installFailed]);
   const install = useCallback(async () => {
     setPhase("running");
     setLog([]);
@@ -22433,19 +22433,19 @@ function ScreenInstallCard({ bot, status, onInstalled }) {
     }
   }, [bot, releaseRetention]);
   return /* @__PURE__ */ jsx36("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs35("div", { className: "flex w-full max-w-lg flex-col gap-2", children: [
-    /* @__PURE__ */ jsx36("div", { className: "text-sm font-medium", children: t.screen.notInstalledTitle }),
-    /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t.screen.notInstalledBody }),
-    status.install_command ? /* @__PURE__ */ jsx36("code", { className: "select-text break-all rounded bg-muted px-2 py-1 text-left text-xs", children: status.install_command }) : /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t.screen.noPackageManager }),
+    /* @__PURE__ */ jsx36("div", { className: "text-sm font-medium", children: t2.screen.notInstalledTitle }),
+    /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t2.screen.notInstalledBody }),
+    status.install_command ? /* @__PURE__ */ jsx36("code", { className: "select-text break-all rounded bg-muted px-2 py-1 text-left text-xs", children: status.install_command }) : /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t2.screen.noPackageManager }),
     status.install_command ? /* @__PURE__ */ jsxs35(sdk_compat_exports.Button, { disabled: phase === "running", onClick: () => void install(), size: "sm", children: [
       phase === "running" ? /* @__PURE__ */ jsx36(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx36(sdk_compat_exports.Codicon, { name: "cloud-download" }),
-      phase === "running" ? t.screen.installing : t.screen.install
+      phase === "running" ? t2.screen.installing : t2.screen.install
     ] }) : null,
     log.length > 0 ? /* @__PURE__ */ jsxs35("pre", { className: "max-h-48 overflow-auto rounded bg-black/80 p-2 text-left font-mono text-[0.65rem] leading-tight text-white/85", children: [
       log.join("\n"),
       /* @__PURE__ */ jsx36("div", { ref: logEnd })
     ] }) : null,
     error ? /* @__PURE__ */ jsx36("div", { className: "text-xs hbp-fg-danger", children: error }) : null,
-    /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t.screen.installHint })
+    /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t2.screen.installHint })
   ] }) });
 }
 
@@ -22520,7 +22520,7 @@ async function loadRfb() {
   return mod.default;
 }
 function BotScreenPane({ bot }) {
-  const t = useBots();
+  const t2 = useBots();
   const screen = (0, sdk_compat_exports.useValue)($screenState);
   const state = screenStateFor(screen, bot);
   const status = state?.status ?? null;
@@ -22652,7 +22652,7 @@ function BotScreenPane({ bot }) {
             if (rapidEvictions.current > MAX_RAPID_EVICTIONS) {
               setEvicted(false);
               setConn("error");
-              setError(t.screen.controlTaken);
+              setError(t2.screen.controlTaken);
             } else {
               setEvicted(true);
               setConn("idle");
@@ -22661,7 +22661,7 @@ function BotScreenPane({ bot }) {
             setConn("idle");
           } else {
             setConn("error");
-            setError(reason || t.screen.streamLost);
+            setError(reason || t2.screen.streamLost);
           }
           void refresh();
         });
@@ -22686,7 +22686,7 @@ function BotScreenPane({ bot }) {
         }
       }
     },
-    [bot, detach, refresh, t.screen.controlTaken, t.screen.streamLost]
+    [bot, detach, refresh, t2.screen.controlTaken, t2.screen.streamLost]
   );
   useEffect10(() => () => detach(true), [detach]);
   useEffect10(() => {
@@ -22763,11 +22763,11 @@ function BotScreenPane({ bot }) {
     [bot, viewer?.id]
   );
   if (state?.unavailable) {
-    const description = isManagedBackend(bot) ? t.screen.portalUnavailableManaged : t.screen.portalUnavailable;
-    return /* @__PURE__ */ jsx37(sdk_compat_exports.EmptyState, { description, title: t.screen.unavailableTitle });
+    const description = isManagedBackend(bot) ? t2.screen.portalUnavailableManaged : t2.screen.portalUnavailable;
+    return /* @__PURE__ */ jsx37(sdk_compat_exports.EmptyState, { description, title: t2.screen.unavailableTitle });
   }
   if (status && !status.supported) {
-    return /* @__PURE__ */ jsx37(sdk_compat_exports.EmptyState, { description: t.screen.unsupportedBody, title: t.screen.unsupportedTitle });
+    return /* @__PURE__ */ jsx37(sdk_compat_exports.EmptyState, { description: t2.screen.unsupportedBody, title: t2.screen.unsupportedTitle });
   }
   if (status && !status.installed) {
     return /* @__PURE__ */ jsx37(ScreenNotInstalled, { bot, onInstalled: (next) => setScreenStatus(bot, next), status });
@@ -22775,25 +22775,25 @@ function BotScreenPane({ bot }) {
   if (status && !status.running && status.image_switch) {
     const sw = status.image_switch;
     return /* @__PURE__ */ jsx37("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs36("div", { className: "flex max-w-md flex-col items-center gap-2", children: [
-      /* @__PURE__ */ jsx37("div", { className: "text-sm font-medium", children: t.screen.imageSwitchTitle }),
-      /* @__PURE__ */ jsx37("div", { className: "text-xs text-muted-foreground", children: t.screen.imageSwitchBody(sw.current_image, sw.target_image) }),
+      /* @__PURE__ */ jsx37("div", { className: "text-sm font-medium", children: t2.screen.imageSwitchTitle }),
+      /* @__PURE__ */ jsx37("div", { className: "text-xs text-muted-foreground", children: t2.screen.imageSwitchBody(sw.current_image, sw.target_image) }),
       /* @__PURE__ */ jsxs36("div", { className: "flex gap-2", children: [
         /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy, onClick: () => void decideImageSwitch(true), size: "sm", children: [
           busy ? /* @__PURE__ */ jsx37(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "arrow-swap" }),
-          t.screen.imageSwitchApprove
+          t2.screen.imageSwitchApprove
         ] }),
-        /* @__PURE__ */ jsx37(sdk_compat_exports.Button, { disabled: busy, onClick: () => void decideImageSwitch(false), size: "sm", variant: "ghost", children: t.screen.imageSwitchKeep })
+        /* @__PURE__ */ jsx37(sdk_compat_exports.Button, { disabled: busy, onClick: () => void decideImageSwitch(false), size: "sm", variant: "ghost", children: t2.screen.imageSwitchKeep })
       ] }),
       error ? /* @__PURE__ */ jsx37("div", { className: "text-xs hbp-fg-danger", children: error }) : null
     ] }) });
   }
   if (status && !status.running) {
     return /* @__PURE__ */ jsx37("div", { className: "grid min-h-48 place-items-center p-6 text-center", children: /* @__PURE__ */ jsxs36("div", { className: "flex flex-col items-center gap-2", children: [
-      /* @__PURE__ */ jsx37("div", { className: "text-sm font-medium", children: t.screen.stoppedTitle }),
-      /* @__PURE__ */ jsx37("div", { className: "text-xs text-muted-foreground", children: status.blocker ?? t.screen.stoppedBody }),
+      /* @__PURE__ */ jsx37("div", { className: "text-sm font-medium", children: t2.screen.stoppedTitle }),
+      /* @__PURE__ */ jsx37("div", { className: "text-xs text-muted-foreground", children: status.blocker ?? t2.screen.stoppedBody }),
       /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy || Boolean(status.blocker), onClick: () => void start(), size: "sm", children: [
         busy ? /* @__PURE__ */ jsx37(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "play" }),
-        t.screen.start
+        t2.screen.start
       ] }),
       error ? /* @__PURE__ */ jsx37("div", { className: "text-xs hbp-fg-danger", children: error }) : null
     ] }) });
@@ -22802,7 +22802,7 @@ function BotScreenPane({ bot }) {
   return /* @__PURE__ */ jsxs36("div", { className: "flex h-full min-h-0 flex-col", children: [
     /* @__PURE__ */ jsxs36("div", { className: "flex items-center gap-2 border-b px-3 py-1.5 text-xs", children: [
       /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "device-desktop" }),
-      /* @__PURE__ */ jsx37("span", { className: "font-medium", children: t.screen.title }),
+      /* @__PURE__ */ jsx37("span", { className: "font-medium", children: t2.screen.title }),
       status?.display ? /* @__PURE__ */ jsxs36("span", { className: "text-muted-foreground", children: [
         status.display,
         " \xB7 ",
@@ -22811,7 +22811,7 @@ function BotScreenPane({ bot }) {
       status?.placement?.startsWith("terminal:") ? (
         // Where the desktop lives matters for what a takeover can reach: inside the terminal's sandbox,
         // not on the gateway host.
-        /* @__PURE__ */ jsx37("span", { className: "rounded bg-(--ui-bg-tertiary) px-1.5 py-0.5 text-muted-foreground", children: t.screen.placementSandbox(status.placement.slice("terminal:".length)) })
+        /* @__PURE__ */ jsx37("span", { className: "rounded bg-(--ui-bg-tertiary) px-1.5 py-0.5 text-muted-foreground", children: t2.screen.placementSandbox(status.placement.slice("terminal:".length)) })
       ) : null,
       /* @__PURE__ */ jsx37("span", { className: "grow" }),
       lease?.holder === "human" && lease.reason ? (
@@ -22829,27 +22829,27 @@ function BotScreenPane({ bot }) {
           }
         )
       ) : null,
-      iHold ? /* @__PURE__ */ jsx37("span", { className: "rounded hbp-bg-danger-15 px-2 py-0.5 font-medium hbp-fg-danger", children: t.screen.youControl }) : humanOther ? /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t.screen.otherControls }) : /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t.screen.agentControls }),
+      iHold ? /* @__PURE__ */ jsx37("span", { className: "rounded hbp-bg-danger-15 px-2 py-0.5 font-medium hbp-fg-danger", children: t2.screen.youControl }) : humanOther ? /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t2.screen.otherControls }) : /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t2.screen.agentControls }),
       iHold ? /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy, onClick: () => void handBack(), size: "sm", variant: "secondary", children: [
         /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "debug-continue" }),
         " ",
-        t.screen.handBack
+        t2.screen.handBack
       ] }) : /* @__PURE__ */ jsxs36(Fragment9, { children: [
-        humanOther ? /* @__PURE__ */ jsx37(sdk_compat_exports.Tip, { label: t.screen.handBackForceHint, children: /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy, onClick: () => void handBack(true), size: "sm", variant: "secondary", children: [
+        humanOther ? /* @__PURE__ */ jsx37(sdk_compat_exports.Tip, { label: t2.screen.handBackForceHint, children: /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy, onClick: () => void handBack(true), size: "sm", variant: "secondary", children: [
           /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "debug-continue" }),
           " ",
-          t.screen.handBackForce
+          t2.screen.handBackForce
         ] }) }) : null,
         /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy || conn === "attaching" || !viewer, onClick: () => void takeOver(), size: "sm", children: [
           /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "record-keys" }),
           " ",
-          t.screen.takeOver
+          t2.screen.takeOver
         ] })
       ] }),
-      /* @__PURE__ */ jsx37(sdk_compat_exports.Tip, { label: t.screen.reconnect, children: /* @__PURE__ */ jsx37(
+      /* @__PURE__ */ jsx37(sdk_compat_exports.Tip, { label: t2.screen.reconnect, children: /* @__PURE__ */ jsx37(
         sdk_compat_exports.Button,
         {
-          "aria-label": t.screen.reconnect,
+          "aria-label": t2.screen.reconnect,
           disabled: conn === "attaching",
           onClick: () => void attach(),
           size: "sm",
@@ -22867,9 +22867,9 @@ function BotScreenPane({ bot }) {
           conn === "attaching" ? /* @__PURE__ */ jsxs36("div", { className: "pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-white/70", children: [
             /* @__PURE__ */ jsx37(sdk_compat_exports.GlyphSpinner, {}),
             " ",
-            t.screen.attaching
+            t2.screen.attaching
           ] }) : null,
-          evicted ? /* @__PURE__ */ jsx37("div", { className: "pointer-events-none absolute inset-x-0 top-0 bg-amber-950/80 px-3 py-1.5 text-center text-xs text-amber-100", children: t.screen.controlTaken }) : null,
+          evicted ? /* @__PURE__ */ jsx37("div", { className: "pointer-events-none absolute inset-x-0 top-0 bg-amber-950/80 px-3 py-1.5 text-center text-xs text-amber-100", children: t2.screen.controlTaken }) : null,
           conn === "error" && error ? /* @__PURE__ */ jsx37("div", { className: "absolute inset-x-0 bottom-0 bg-red-950/80 px-3 py-1.5 text-xs text-red-200", children: error }) : null
         ]
       }
@@ -22930,7 +22930,7 @@ function botTips(bot, meta) {
   ];
 }
 function BotChatTips({ sessionId }) {
-  const t = useBots();
+  const t2 = useBots();
   const roster = (0, sdk_compat_exports.useValue)($lastRoster);
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
   const dismissed2 = (0, sdk_compat_exports.useValue)($dismissedBotTips);
@@ -22946,9 +22946,9 @@ function BotChatTips({ sessionId }) {
     return null;
   }
   const copy = {
-    computer: { action: t.tips.openComputer, text: t.tips.computer },
-    delegate: { action: t.tips.openBots, text: t.tips.delegate },
-    schedule: { action: t.tips.openRoutines, text: t.tips.schedule }
+    computer: { action: t2.tips.openComputer, text: t2.tips.computer },
+    delegate: { action: t2.tips.openBots, text: t2.tips.delegate },
+    schedule: { action: t2.tips.openRoutines, text: t2.tips.schedule }
   };
   return /* @__PURE__ */ jsx39("div", { className: "pointer-events-auto flex w-full max-w-lg flex-col gap-1.5 px-6 pt-2", "data-slot": "bot_chat_tips", children: tips.map((tip) => /* @__PURE__ */ jsxs37(
     "div",
@@ -22970,7 +22970,7 @@ function BotChatTips({ sessionId }) {
         /* @__PURE__ */ jsx39(
           "button",
           {
-            "aria-label": t.tips.dismiss,
+            "aria-label": t2.tips.dismiss,
             className: "flex shrink-0 cursor-pointer items-center text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
             onClick: () => dismissBotTip(key, tip.id),
             type: "button",
@@ -23062,7 +23062,7 @@ import { jsx as jsx40, jsxs as jsxs38 } from "react/jsx-runtime";
 var sizeCache = /* @__PURE__ */ new Map();
 var SIZE_TTL_MS = 6e4;
 function BotContextNudge() {
-  const t = useBots();
+  const t2 = useBots();
   const roster = (0, sdk_compat_exports.useValue)($lastRoster);
   const dismissed2 = (0, sdk_compat_exports.useValue)($dismissedNudgeCounts);
   const storedId = String(host.state.focusedStoredSessionId?.get?.() ?? "");
@@ -23111,20 +23111,20 @@ function BotContextNudge() {
       "data-slot": "bot_context_nudge",
       children: [
         /* @__PURE__ */ jsx40(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.8rem] text-(--ui-text-tertiary)", name: "comment-discussion" }),
-        /* @__PURE__ */ jsx40("p", { className: "m-0 min-w-0 flex-1 text-[0.72rem] leading-snug text-muted-foreground/90", children: t.nudge.text }),
+        /* @__PURE__ */ jsx40("p", { className: "m-0 min-w-0 flex-1 text-[0.72rem] leading-snug text-muted-foreground/90", children: t2.nudge.text }),
         /* @__PURE__ */ jsx40(
           "button",
           {
             className: "shrink-0 cursor-pointer rounded-md px-2 py-1 text-[0.7rem] font-medium text-(--ui-accent-primary, var(--primary)) transition-colors hover:bg-accent/40",
             onClick: () => void newBotChat(bot),
             type: "button",
-            children: t.nudge.action
+            children: t2.nudge.action
           }
         ),
         /* @__PURE__ */ jsx40(
           "button",
           {
-            "aria-label": t.nudge.dismiss,
+            "aria-label": t2.nudge.dismiss,
             className: "flex shrink-0 cursor-pointer items-center text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)",
             onClick: () => dismissContextNudge(botKey, messages),
             type: "button",
@@ -23185,8 +23185,8 @@ var HIRE_EN = {
 };
 var HIRE_LOCALES = { en: { hire: HIRE_EN } };
 function useHireText() {
-  const t = (0, sdk_compat_exports.usePluginI18n)(i18nId());
-  return bindTree(t, HIRE_EN, "hire");
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, HIRE_EN, "hire");
 }
 
 // src/plugin.tsx
@@ -23344,7 +23344,7 @@ function InstantAckLine() {
   const storedId = (0, sdk_compat_exports.useValue)(host.state.focusedStoredSessionId);
   const ack = (0, sdk_compat_exports.useValue)($instantAcks)[runtimeId ?? ""] ?? null;
   (0, sdk_compat_exports.useValue)($lastRoster);
-  const t = useBots().ack;
+  const t2 = useBots().ack;
   const state = ack?.state;
   const armedAt = ack?.armedAt ?? 0;
   useEffect12(() => {
@@ -23366,7 +23366,7 @@ function InstantAckLine() {
   if (!ack || ack.storedId !== storedId || !canonicalBotChatOnScreen(storedId)) {
     return null;
   }
-  const label = ack.state === "receipt" ? ack.kind === "command" ? t.command(ack.text) : t.prompt(ack.text) : ack.state === "working" ? ack.tool === "tool" ? t.using(ack.name.replace(/_/g, " ")) : t.verbs[ack.tool] : t.waiting;
+  const label = ack.state === "receipt" ? ack.kind === "command" ? t2.command(ack.text) : t2.prompt(ack.text) : ack.state === "working" ? ack.tool === "tool" ? t2.using(ack.name.replace(/_/g, " ")) : t2.verbs[ack.tool] : t2.waiting;
   return /* @__PURE__ */ jsxs39(
     "div",
     {
@@ -23558,7 +23558,7 @@ function ownerLiveFiles(files, owner, storedByRuntime) {
 var baseName = (path) => path.split("/").filter(Boolean).at(-1) || path;
 function BotDeliverablesSection({ owner }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const [view, setView] = useState27({
     ownerKey: "",
     items: [],
@@ -23659,7 +23659,7 @@ function BotDeliverablesSection({ owner }) {
     ] }),
     status === "error" ? /* @__PURE__ */ jsxs41("div", { className: "grid gap-2 pb-2 text-xs text-(--ui-text-secondary)", role: "alert", children: [
       /* @__PURE__ */ jsx43("p", { children: items.length ? b.deliverables.stale : b.deliverables.failed }),
-      /* @__PURE__ */ jsx43(sdk_compat_exports.Button, { className: "justify-self-start", onClick: load2, size: "xs", variant: "secondary", children: t.common.retry })
+      /* @__PURE__ */ jsx43(sdk_compat_exports.Button, { className: "justify-self-start", onClick: load2, size: "xs", variant: "secondary", children: t2.common.retry })
     ] }) : null,
     live.length ? /* @__PURE__ */ jsx43("div", { className: "grid gap-0.5", "data-testid": "bot-deliverables-live", children: live.map((file) => /* @__PURE__ */ jsx43(sdk_compat_exports.Tip, { label: file.path, children: /* @__PURE__ */ jsxs41(
       sdk_compat_exports.RowButton,
@@ -23673,7 +23673,7 @@ function BotDeliverablesSection({ owner }) {
         children: [
           /* @__PURE__ */ jsx43(sdk_compat_exports.Codicon, { "aria-hidden": true, className: "shrink-0 text-xs text-(--ui-text-tertiary)", name: "file" }),
           /* @__PURE__ */ jsx43("span", { className: "min-w-0 flex-1 truncate text-xs font-medium text-(--ui-text-secondary)", children: baseName(file.path) }),
-          /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(file.at, t.sidebar.row) })
+          /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(file.at, t2.sidebar.row) })
         ]
       }
     ) }, file.path)) }) : refreshing && items.length === 0 ? /* @__PURE__ */ jsxs41("div", { className: "flex items-center gap-2 py-3 text-xs text-(--ui-text-tertiary)", role: "status", children: [
@@ -23704,7 +23704,7 @@ function BotDeliverablesSection({ owner }) {
               /* @__PURE__ */ jsx43("span", { className: "block min-w-0 truncate text-[0.75rem] font-medium text-(--ui-text-secondary)", children: item.label }),
               sessionTitle ? /* @__PURE__ */ jsx43("span", { className: "block min-w-0 truncate text-xs text-(--ui-text-tertiary)", children: sessionTitle }) : null
             ] }),
-            /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(item.timestamp, t.sidebar.row) })
+            /* @__PURE__ */ jsx43("span", { className: "shrink-0 text-xs text-(--ui-text-tertiary)", children: rosterRowAge(item.timestamp, t2.sidebar.row) })
           ]
         },
         item.id
@@ -24096,7 +24096,7 @@ async function mcpSetupSupported(route) {
   return ok;
 }
 function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const [phase, setPhase] = useState28("idle");
   const [supported, setSupported] = useState28(null);
@@ -24188,7 +24188,7 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
         return;
       }
     }
-    const t2 = await mcpRpc(
+    const t3 = await mcpRpc(
       "mcp.servers.test",
       {
         profile: target,
@@ -24196,7 +24196,7 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
       },
       route
     );
-    if (t2.ok && t2.result && (t2.result.ok || t2.result.result && t2.result.result.ok)) {
+    if (t3.ok && t3.result && (t3.result.ok || t3.result.result && t3.result.result.ok)) {
       setPhase("done");
       host.notify({
         kind: "success",
@@ -24205,7 +24205,7 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
       onDone && onDone();
     } else {
       setPhase("error");
-      setMessage(t2.result && (t2.result.error || t2.result.result && t2.result.result.error) || b.tools.testFailed);
+      setMessage(t3.result && (t3.result.error || t3.result.result && t3.result.result.error) || b.tools.testFailed);
     }
   };
   const beginOAuth = async () => {
@@ -24268,7 +24268,7 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
       )),
       /* @__PURE__ */ jsxs44("div", { className: "flex gap-1", children: [
         /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { onClick: () => void submitKeys(), size: "xs", variant: "secondary", children: b.tools.saveTest }),
-        /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { onClick: () => setPhase("idle"), size: "xs", variant: "ghost", children: t.common.cancel })
+        /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { onClick: () => setPhase("idle"), size: "xs", variant: "ghost", children: t2.common.cancel })
       ] })
     ] });
   }
@@ -24281,7 +24281,7 @@ function McpSetupButton({ profile, entry, onDone, ensureProfile, route }) {
   if (phase === "error") {
     return /* @__PURE__ */ jsxs44("span", { className: "ml-1.5 text-[0.65rem] text-(--ui-danger,#f87171)", children: [
       (message || b.tools.setupFailed) + " ",
-      /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { className: "underline", onClick: () => setPhase("idle"), size: "inline", variant: "link", children: t.common.retry })
+      /* @__PURE__ */ jsx46(sdk_compat_exports.Button, { className: "underline", onClick: () => setPhase("idle"), size: "inline", variant: "link", children: t2.common.retry })
     ] });
   }
   return /* @__PURE__ */ jsx46(
@@ -24315,8 +24315,8 @@ function isHubOrigin(origin) {
 }
 function HubSkillsSection({ bot, onInstalled }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
-  const h = t.skills.hub;
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const h = t2.skills.hub;
   const [query, setQuery] = useState29("");
   const [results, setResults] = useState29(null);
   const [searching, setSearching] = useState29(false);
@@ -24636,10 +24636,10 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     ...prev,
     dirtyToolsets: true,
     toolsets: prev.toolsets.map(
-      (t) => t.name === name ? {
-        ...t,
+      (t2) => t2.name === name ? {
+        ...t2,
         enabled
-      } : t
+      } : t2
     )
   }));
   const toggleMcp = (name, enabled) => setState((prev) => ({
@@ -24653,7 +24653,7 @@ function AdvancedProfileConfig({ bot, state, setState }) {
     )
   }));
   const enabledSkills = state.skills.filter((s) => s.enabled).length;
-  const enabledToolsets = state.toolsets.filter((t) => t.enabled).length;
+  const enabledToolsets = state.toolsets.filter((t2) => t2.enabled).length;
   const mcpList = state.mcp || [];
   if (CapabilitiesView2 && (!botRoute || capabilitiesViewRoutesConnections)) {
     return /* @__PURE__ */ jsxs46("div", { className: "grid gap-4", children: [
@@ -24934,8 +24934,8 @@ async function applyAdvancedConfig(bot, state) {
   }
   if (state.dirtyToolsets) {
     const all = state.toolsets.length;
-    const enabled = state.toolsets.filter((t) => t.enabled);
-    payload.enabled_toolsets = enabled.length === all || enabled.length === 0 ? [] : enabled.map((t) => t.name);
+    const enabled = state.toolsets.filter((t2) => t2.enabled);
+    payload.enabled_toolsets = enabled.length === all || enabled.length === 0 ? [] : enabled.map((t2) => t2.name);
   }
   if (state.dirtyMcp) {
     payload.enabled_mcp_servers = (state.mcp || []).filter((m) => m.enabled).map((m) => m.name);
@@ -24979,7 +24979,7 @@ async function applyAdvancedConfig(bot, state) {
 init_routing();
 import { jsx as jsx49, jsxs as jsxs47 } from "react/jsx-runtime";
 function EditProfileDialog({ bot, open, onClose }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const metaAll = (0, sdk_compat_exports.useValue)($botMeta);
   const meta = bot ? botRosterMeta(bot, metaAll) : null;
@@ -25189,8 +25189,8 @@ function EditProfileDialog({ bot, open, onClose }) {
           advanced ? /* @__PURE__ */ jsx49("div", { className: "rounded-md border border-(--ui-stroke-secondary) p-3", children: /* @__PURE__ */ jsx49(AdvancedProfileConfig, { bot, setState: setAdv, state: adv }) }) : null
         ] }),
         /* @__PURE__ */ jsxs47(sdk_compat_exports.DialogFooter, { children: [
-          /* @__PURE__ */ jsx49(sdk_compat_exports.Button, { disabled: busy, onClick: onClose, variant: "ghost", children: t.common.cancel }),
-          /* @__PURE__ */ jsx49(sdk_compat_exports.Button, { disabled: busy, onClick: submit, children: busy ? t.common.saving : t.common.save })
+          /* @__PURE__ */ jsx49(sdk_compat_exports.Button, { disabled: busy, onClick: onClose, variant: "ghost", children: t2.common.cancel }),
+          /* @__PURE__ */ jsx49(sdk_compat_exports.Button, { disabled: busy, onClick: submit, children: busy ? t2.common.saving : t2.common.save })
         ] })
       ]
     }
@@ -25536,16 +25536,16 @@ function useScreenPortalState(bot) {
   };
 }
 function ScreenPortal({ bot }) {
-  const t = useBots();
+  const t2 = useBots();
   const { status, tone } = useScreenPortalState(bot);
   const subtitle = {
-    live: t.screen.portalWatching,
-    human: t.screen.portalYouControl,
-    other: t.screen.portalOtherControls,
-    off: t.screen.portalStopped,
-    missing: t.screen.portalNotInstalled,
-    unsupported: t.screen.portalUnsupported,
-    unavailable: isManagedBackend(bot) ? t.screen.portalUnavailableManaged : t.screen.portalUnavailable,
+    live: t2.screen.portalWatching,
+    human: t2.screen.portalYouControl,
+    other: t2.screen.portalOtherControls,
+    off: t2.screen.portalStopped,
+    missing: t2.screen.portalNotInstalled,
+    unsupported: t2.screen.portalUnsupported,
+    unavailable: isManagedBackend(bot) ? t2.screen.portalUnavailableManaged : t2.screen.portalUnavailable,
     unknown: status?.display ?? ""
   }[tone];
   if (tone === "unsupported" || tone === "unavailable") {
@@ -25554,7 +25554,7 @@ function ScreenPortal({ bot }) {
   return /* @__PURE__ */ jsxs49(
     "button",
     {
-      "aria-label": `${t.screen.portalTitle}: ${subtitle}`,
+      "aria-label": `${t2.screen.portalTitle}: ${subtitle}`,
       className: "group flex w-full items-center gap-2 rounded-md border border-(--ui-stroke-secondary) bg-(--chrome-action-hover)/40 px-2 py-1.5 text-left transition-colors hover:bg-(--chrome-action-hover)",
       onClick: () => openBotScreen(bot, null),
       type: "button",
@@ -25569,11 +25569,11 @@ function ScreenPortal({ bot }) {
           )
         ] }),
         /* @__PURE__ */ jsxs49("span", { className: "min-w-0 flex-1", children: [
-          /* @__PURE__ */ jsx51("span", { className: "block truncate text-xs font-medium", children: t.screen.portalTitle }),
+          /* @__PURE__ */ jsx51("span", { className: "block truncate text-xs font-medium", children: t2.screen.portalTitle }),
           subtitle ? /* @__PURE__ */ jsx51("span", { className: "block truncate text-[0.65rem] text-(--ui-text-tertiary)", children: subtitle }) : null
         ] }),
         /* @__PURE__ */ jsxs49("span", { className: "flex shrink-0 items-center gap-1 text-[0.65rem] text-(--ui-text-tertiary) opacity-0 transition-opacity group-hover:opacity-100", children: [
-          t.screen.portalOpen,
+          t2.screen.portalOpen,
           " ",
           /* @__PURE__ */ jsx51(sdk_compat_exports.Codicon, { name: "arrow-right" })
         ] })
@@ -25677,7 +25677,7 @@ function BotComputerPanel({ bot, meta }) {
   return /* @__PURE__ */ jsx52(ComputerPanelContent, { bot, meta }, botSelectionKey(bot));
 }
 function ComputerPanelContent({ bot, meta }) {
-  const t = useBots();
+  const t2 = useBots();
   const { lease, tone } = useScreenPortalState(bot);
   const running = tone === "live" || tone === "human" || tone === "other";
   const { dataUrl, boxRef, stale, suppressed } = useLiveThumbnail(bot, running);
@@ -25687,16 +25687,16 @@ function ComputerPanelContent({ bot, meta }) {
   const [height, setHeight] = useState32(frameHeight);
   const [busy, setBusy] = useState32(null);
   const chip = {
-    live: t.screen.portalWatching,
-    human: t.screen.portalYouControl,
-    other: t.screen.portalOtherControls,
-    off: t.screen.portalStopped,
-    missing: t.screen.portalNotInstalled,
-    unsupported: t.screen.portalUnsupported,
-    unavailable: t.screen.portalUnavailable,
-    unknown: t.screen.heroConnecting
+    live: t2.screen.portalWatching,
+    human: t2.screen.portalYouControl,
+    other: t2.screen.portalOtherControls,
+    off: t2.screen.portalStopped,
+    missing: t2.screen.portalNotInstalled,
+    unsupported: t2.screen.portalUnsupported,
+    unavailable: t2.screen.portalUnavailable,
+    unknown: t2.screen.heroConnecting
   }[tone];
-  const caption = suppressed ? t.screen.heroSuppressed : stale ? t.screen.heroStale : "";
+  const caption = suppressed ? t2.screen.heroSuppressed : stale ? t2.screen.heroStale : "";
   const act = (key, work, fallback) => {
     if (busy) {
       return;
@@ -25710,27 +25710,27 @@ function ComputerPanelContent({ bot, meta }) {
       await acquireScreenLease(bot);
       openBotScreen(bot, meta ?? null);
     },
-    t.screen.takeOver
+    t2.screen.takeOver
   );
-  const handBack = (force = false) => act("handback", () => releaseScreenLease(bot, force), t.screen.handBack);
+  const handBack = (force = false) => act("handback", () => releaseScreenLease(bot, force), t2.screen.handBack);
   const copyShot = () => act(
     "copy",
     async () => {
       await copyBotScreenshot(bot);
-      host.notify({ kind: "success", message: t.screen.screenshotCopied });
+      host.notify({ kind: "success", message: t2.screen.screenshotCopied });
     },
-    t.screen.screenshotFailed
+    t2.screen.screenshotFailed
   );
-  const restart = () => act("restart", () => restartBotScreen(bot), t.screen.restartFailed);
+  const restart = () => act("restart", () => restartBotScreen(bot), t2.screen.restartFailed);
   const openWorkdir = () => act(
     "workdir",
     async () => {
       const opened = await openBotWorkdir(bot);
       if (!opened) {
-        host.notify({ kind: "error", message: t.screen.workdirUnavailable });
+        host.notify({ kind: "error", message: t2.screen.workdirUnavailable });
       }
     },
-    t.screen.workdirFailed
+    t2.screen.workdirFailed
   );
   const onDragStart = (event) => {
     const startY = event.clientY;
@@ -25753,18 +25753,18 @@ function ComputerPanelContent({ bot, meta }) {
   return /* @__PURE__ */ jsxs50(
     "section",
     {
-      "aria-label": t.screen.panelTitle,
+      "aria-label": t2.screen.panelTitle,
       className: "overflow-hidden rounded-lg border border-(--ui-stroke-secondary)",
       children: [
         /* @__PURE__ */ jsxs50("div", { className: "flex items-center gap-1.5 border-b border-(--ui-stroke-secondary) px-2 py-1", children: [
           /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { className: "text-(--ui-text-tertiary)", name: "device-desktop", size: "0.8rem" }),
-          /* @__PURE__ */ jsx52("span", { className: "text-[0.65rem] font-medium text-(--ui-text-secondary)", children: t.screen.panelTitle }),
+          /* @__PURE__ */ jsx52("span", { className: "text-[0.65rem] font-medium text-(--ui-text-secondary)", children: t2.screen.panelTitle }),
           /* @__PURE__ */ jsx52("span", { className: `shrink-0 rounded px-1.5 py-0.5 text-[0.6rem] font-medium ${CHIP_CLASS[tone]}`, children: chip }),
           /* @__PURE__ */ jsx52("span", { className: "grow" }),
-          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.openFullPane, children: /* @__PURE__ */ jsx52(
+          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t2.screen.openFullPane, children: /* @__PURE__ */ jsx52(
             sdk_compat_exports.Button,
             {
-              "aria-label": t.screen.openFullPane,
+              "aria-label": t2.screen.openFullPane,
               disabled: unsupported,
               onClick: () => openBotScreen(bot, meta ?? null),
               size: "icon-xs",
@@ -25772,10 +25772,10 @@ function ComputerPanelContent({ bot, meta }) {
               children: /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "screen-full" })
             }
           ) }),
-          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.copyScreenshot, children: /* @__PURE__ */ jsx52(
+          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t2.screen.copyScreenshot, children: /* @__PURE__ */ jsx52(
             sdk_compat_exports.Button,
             {
-              "aria-label": t.screen.copyScreenshot,
+              "aria-label": t2.screen.copyScreenshot,
               disabled: unsupported || !running || busy !== null,
               onClick: copyShot,
               size: "icon-xs",
@@ -25783,10 +25783,10 @@ function ComputerPanelContent({ bot, meta }) {
               children: busy === "copy" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "copy" })
             }
           ) }),
-          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.restartScreen, children: /* @__PURE__ */ jsx52(
+          /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t2.screen.restartScreen, children: /* @__PURE__ */ jsx52(
             sdk_compat_exports.Button,
             {
-              "aria-label": t.screen.restartScreen,
+              "aria-label": t2.screen.restartScreen,
               disabled: unsupported || tone === "missing" || busy !== null,
               onClick: restart,
               size: "icon-xs",
@@ -25794,10 +25794,10 @@ function ComputerPanelContent({ bot, meta }) {
               children: busy === "restart" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "debug-restart" })
             }
           ) }),
-          canOpenBotWorkdir(bot) ? /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.openWorkdir, children: /* @__PURE__ */ jsx52(
+          canOpenBotWorkdir(bot) ? /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t2.screen.openWorkdir, children: /* @__PURE__ */ jsx52(
             sdk_compat_exports.Button,
             {
-              "aria-label": t.screen.openWorkdir,
+              "aria-label": t2.screen.openWorkdir,
               disabled: busy !== null,
               onClick: openWorkdir,
               size: "icon-xs",
@@ -25811,7 +25811,7 @@ function ComputerPanelContent({ bot, meta }) {
             /* @__PURE__ */ jsx52(
               "button",
               {
-                "aria-label": `${t.screen.portalTitle}: ${caption || chip}`,
+                "aria-label": `${t2.screen.portalTitle}: ${caption || chip}`,
                 className: `absolute inset-0 block size-full overflow-hidden text-left ${tone === "human" ? "ring-2 ring-inset hbp-ring-danger-80" : tone === "other" ? "ring-2 ring-inset hbp-ring-warn-70" : ""}`,
                 onClick: () => openBotScreen(bot, meta ?? null),
                 ref: boxRef,
@@ -25838,7 +25838,7 @@ function ComputerPanelContent({ bot, meta }) {
           /* @__PURE__ */ jsx52(
             "div",
             {
-              "aria-label": t.screen.resizePanel,
+              "aria-label": t2.screen.resizePanel,
               className: "h-1.5 cursor-ns-resize bg-(--chrome-action-hover)/40 transition-colors hover:bg-(--chrome-action-hover)",
               onPointerDown: onDragStart,
               role: "separator"
@@ -25847,17 +25847,17 @@ function ComputerPanelContent({ bot, meta }) {
           /* @__PURE__ */ jsx52("div", { className: "flex items-center gap-2 border-t border-(--ui-stroke-secondary) px-2 py-1.5", children: iHold ? /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(), size: "sm", variant: "secondary", children: [
             busy === "handback" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "debug-continue" }),
             " ",
-            t.screen.handBack
+            t2.screen.handBack
           ] }) : /* @__PURE__ */ jsxs50(Fragment10, { children: [
-            humanOther ? /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t.screen.handBackForceHint, children: /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(true), size: "sm", variant: "secondary", children: [
+            humanOther ? /* @__PURE__ */ jsx52(sdk_compat_exports.Tip, { label: t2.screen.handBackForceHint, children: /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: busy !== null, onClick: () => handBack(true), size: "sm", variant: "secondary", children: [
               /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "debug-continue" }),
               " ",
-              t.screen.handBackForce
+              t2.screen.handBackForce
             ] }) }) : null,
             /* @__PURE__ */ jsxs50(sdk_compat_exports.Button, { disabled: busy !== null || !running, onClick: takeOver, size: "sm", children: [
               busy === "takeover" ? /* @__PURE__ */ jsx52(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx52(sdk_compat_exports.Codicon, { name: "record-keys" }),
               " ",
-              t.screen.takeOver
+              t2.screen.takeOver
             ] })
           ] }) })
         ] }) : null
@@ -26200,8 +26200,8 @@ var SHARE_EN = {
 };
 var SHARE_LOCALES = { en: { share: SHARE_EN } };
 function useShareText() {
-  const t = (0, sdk_compat_exports.usePluginI18n)(i18nId());
-  return bindTree(t, SHARE_EN, "share");
+  const t2 = (0, sdk_compat_exports.usePluginI18n)(i18nId());
+  return bindTree(t2, SHARE_EN, "share");
 }
 
 // src/share-dialog.tsx
@@ -27316,8 +27316,8 @@ function MissionRail() {
   const meta = owner ? botRosterMeta(owner, allMeta) : null;
   const { data, error, isLoading, refetch } = useRoutines(owner);
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
-  const c = t.cron;
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const c = t2.cron;
   const [createOpen, setCreateOpen] = useState36(false);
   const [createOwner, setCreateOwner] = useState36(null);
   const [detailJobId, setDetailJobId] = useState36(null);
@@ -27402,7 +27402,7 @@ function MissionRail() {
                   isLoading && !view.all.length ? /* @__PURE__ */ jsx56("div", { className: "flex items-center justify-center py-4", children: /* @__PURE__ */ jsx56(sdk_compat_exports.GlyphSpinner, { className: "text-(--ui-text-tertiary)", spinner: "breathe" }) }) : error && !view.all.length ? /* @__PURE__ */ jsx56(
                     sdk_compat_exports.PanelEmpty,
                     {
-                      action: /* @__PURE__ */ jsx56(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t.common.retry }),
+                      action: /* @__PURE__ */ jsx56(sdk_compat_exports.Button, { onClick: () => void refetch(), size: "sm", variant: "secondary", children: t2.common.retry }),
                       description: b.cron.readFailure,
                       icon: "warning",
                       title: c.failedLoad
@@ -27803,7 +27803,7 @@ var BOT_DRAG_MIME = "application/x-hermes-bot-key";
 // src/bot-menu.tsx
 import { jsx as jsx57, jsxs as jsxs55 } from "react/jsx-runtime";
 function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, onNewSection }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
   const meta = botRosterMeta(bot, allMeta);
@@ -28019,7 +28019,7 @@ function BotRowMenu({ bot, children, onAssignTask, onDelete, onEdit, onGroup, on
         ] })
       ] }),
       isDefaultBot(bot) ? null : /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuSeparator, {}),
-      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => onDelete(bot), variant: "destructive", children: t.common.delete })
+      isDefaultBot(bot) ? null : /* @__PURE__ */ jsx57(sdk_compat_exports.ContextMenuItem, { onSelect: () => onDelete(bot), variant: "destructive", children: t2.common.delete })
     ] })
   ] });
 }
@@ -28064,7 +28064,7 @@ function BotCard({
   onGroup,
   onNewSection
 }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const focusedOwner = focusedRosterOwner((0, sdk_compat_exports.useValue)($focusedBotOwner));
   const selectedRosterKey = (0, sdk_compat_exports.useValue)($selectedRosterKey);
@@ -28082,7 +28082,7 @@ function BotCard({
   const previewSession = bot.canonical_session || last;
   const activitySession = botActivitySession(bot);
   const rowAgeTs = Math.max(activitySession?.last_active || 0, bot.worker_session?.last_active || 0);
-  const rowAge = rowAgeTs ? rosterRowAge(rowAgeTs * 1e3, t.sidebar.row) : null;
+  const rowAge = rowAgeTs ? rosterRowAge(rowAgeTs * 1e3, t2.sidebar.row) : null;
   const canonicalSessionId = botCanonicalSessionId(bot);
   const watchedMap = (0, sdk_compat_exports.useValue)($watchedSessionKeys);
   const watched = Boolean(
@@ -28184,7 +28184,7 @@ function BotCard({
             ),
             /* @__PURE__ */ jsxs57("div", { className: "mt-auto flex min-w-0 flex-col gap-1", children: [
               /* @__PURE__ */ jsx59("div", { className: "flex min-w-0", children: /* @__PURE__ */ jsx59("span", { className: "min-w-0 max-w-full", children: /* @__PURE__ */ jsx59(BotModelChip, { bot }) }) }),
-              rowAge ? /* @__PURE__ */ jsx59("div", { className: "flex min-w-0 justify-end", children: /* @__PURE__ */ jsx59("span", { className: "text-xs text-(--ui-text-tertiary)", children: rowAge === t.sidebar.row.ageNow ? b.roster.activeNow : b.roster.cardActive(rowAge) }) }) : null
+              rowAge ? /* @__PURE__ */ jsx59("div", { className: "flex min-w-0 justify-end", children: /* @__PURE__ */ jsx59("span", { className: "text-xs text-(--ui-text-tertiary)", children: rowAge === t2.sidebar.row.ageNow ? b.roster.activeNow : b.roster.cardActive(rowAge) }) }) : null
             ] })
           ]
         }
@@ -28225,7 +28225,7 @@ function BotRow({
   openTasks,
   showHandle
 }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const focusedOwner = focusedRosterOwner((0, sdk_compat_exports.useValue)($focusedBotOwner));
   const selectedRosterKey = (0, sdk_compat_exports.useValue)($selectedRosterKey);
@@ -28388,7 +28388,7 @@ function BotRow({
               openTasks
             ] }) }) : null,
             isOpening ? /* @__PURE__ */ jsx60(sdk_compat_exports.GlyphSpinner, { ariaLabel: b.bot.openingChat, className: "shrink-0 text-xs text-(--ui-text-secondary)" }) : null,
-            rowAgeTs ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(rowAgeTs * 1e3, t.sidebar.row) }) : null
+            rowAgeTs ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(rowAgeTs * 1e3, t2.sidebar.row) }) : null
           ] }),
           showDetailsRow ? /* @__PURE__ */ jsxs58("div", { className: "mt-1 flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-secondary)", children: [
             showHandle ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)", children: `@${handle}` }) : null,
@@ -28427,7 +28427,7 @@ function BotRow({
   );
 }
 function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSection }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const rooms = (0, sdk_compat_exports.useValue)($groupChats);
   const sections = (0, sdk_compat_exports.useValue)($botSections);
@@ -28511,7 +28511,7 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
             room.pinned ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.roster.pinned, children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)", name: "pinned" }) }) : null,
             needsYou ? /* @__PURE__ */ jsx60(sdk_compat_exports.Tip, { label: b.group.needsYourInput, children: /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { "aria-label": b.roster.needsInput, className: "shrink-0 text-(--ui-accent)", name: "question" }) }) : null,
             unread > 0 ? /* @__PURE__ */ jsx60(sdk_compat_exports.Badge, { "aria-label": b.group.unreadCount(unread), className: "shrink-0", size: "xs", variant: "solid", children: unread > 99 ? "99+" : unread }) : null,
-            lastAt ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(lastAt, t.sidebar.row) }) : null
+            lastAt ? /* @__PURE__ */ jsx60("span", { className: "shrink-0 text-[0.75rem] tabular-nums text-(--ui-text-tertiary)", children: rosterRowAge(lastAt, t2.sidebar.row) }) : null
           ] }),
           /* @__PURE__ */ jsx60("div", { className: "mt-1 min-w-0 truncate text-xs text-(--ui-text-secondary)", title: previewTitle || void 0, children: preview })
         ] })
@@ -29454,7 +29454,7 @@ function MailboxNoteCard({ note, members }) {
 }
 function MailboxTaskDialog({ member, onClose }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const metaByName = (0, sdk_compat_exports.useValue)($botMeta);
   const label = member ? displayName(member, botRosterMeta(member, metaByName) || null) : null;
   const [title, setTitle] = useState39("");
@@ -29496,7 +29496,7 @@ function MailboxTaskDialog({ member, onClose }) {
       )
     ] }),
     /* @__PURE__ */ jsxs61(sdk_compat_exports.DialogFooter, { children: [
-      /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { onClick: onClose, size: "sm", variant: "ghost", children: t.common.cancel }),
+      /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { onClick: onClose, size: "sm", variant: "ghost", children: t2.common.cancel }),
       /* @__PURE__ */ jsx63(sdk_compat_exports.Button, { disabled: !title.trim() || sending, onClick: send, size: "sm", children: b.mailbox.send })
     ] })
   ] }) });
@@ -29919,8 +29919,8 @@ function capabilityPayload(caps, dirty) {
     payload.disabled_skills = caps.skills.filter((s) => !s.enabled).map((s) => s.name);
   }
   if (dirty.toolsets) {
-    const en2 = caps.toolsets.filter((t) => t.enabled);
-    payload.enabled_toolsets = en2.length === caps.toolsets.length || en2.length === 0 ? [] : en2.map((t) => t.name);
+    const en2 = caps.toolsets.filter((t2) => t2.enabled);
+    payload.enabled_toolsets = en2.length === caps.toolsets.length || en2.length === 0 ? [] : en2.map((t2) => t2.name);
   }
   if (dirty.mcp) {
     payload.enabled_mcp_servers = caps.mcp.filter((m) => m.enabled).map((m) => m.name);
@@ -29984,7 +29984,7 @@ function useDraftProfile(createdRef, flightRef) {
   return { discardDraft, draftGenRef, draftTargetRef };
 }
 function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const [name, setName] = useState42("");
   const createdRef = useRef14(null);
@@ -30621,7 +30621,7 @@ function CreateAgentDialog({ open, onClose, onConfigureModel, roster }) {
                     onClose();
                   },
                   variant: "ghost",
-                  children: t.common.cancel
+                  children: t2.common.cancel
                 }
               ),
               /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { disabled: busy || !valid || taken, onClick: submit, children: busy ? b.editor.creating : b.editor.createBot })
@@ -30733,7 +30733,7 @@ async function revalidateGroupCreationMode(route, capability, source, unavailabl
   return { mode, sourceCurrent };
 }
 function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const allMeta = (0, sdk_compat_exports.useValue)($botMeta);
   const { capability, connectionId, mode, observedRoute, seatable, source } = useGroupCapability(open);
@@ -30948,7 +30948,7 @@ function CreateGroupChatDialog({ open, roster, onClose, onCreated }) {
           )
         ] }),
         /* @__PURE__ */ jsxs65(sdk_compat_exports.DialogFooter, { children: [
-          /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t.common.cancel }),
+          /* @__PURE__ */ jsx67(sdk_compat_exports.Button, { onClick: onClose, variant: "secondary", children: t2.common.cancel }),
           /* @__PURE__ */ jsx67(
             sdk_compat_exports.Button,
             {
@@ -30972,7 +30972,7 @@ init_i18n();
 import { useEffect as useEffect25, useRef as useRef15, useState as useState43 } from "react";
 import { jsx as jsx68, jsxs as jsxs66 } from "react/jsx-runtime";
 function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const [value, setValue] = useState43(initialName);
   const inputRef = useRef15(null);
@@ -31013,8 +31013,8 @@ function SectionNameDialog({ initialName, mode, onOpenChange, onSubmit, open }) 
       }
     ),
     /* @__PURE__ */ jsxs66(sdk_compat_exports.DialogFooter, { children: [
-      /* @__PURE__ */ jsx68(sdk_compat_exports.Button, { onClick: () => onOpenChange(false), type: "button", variant: "ghost", children: t.common.cancel }),
-      /* @__PURE__ */ jsx68(sdk_compat_exports.Button, { disabled: !value.trim(), onClick: submit, type: "button", children: mode === "create" ? b.sections.create : t.common.save })
+      /* @__PURE__ */ jsx68(sdk_compat_exports.Button, { onClick: () => onOpenChange(false), type: "button", variant: "ghost", children: t2.common.cancel }),
+      /* @__PURE__ */ jsx68(sdk_compat_exports.Button, { disabled: !value.trim(), onClick: submit, type: "button", children: mode === "create" ? b.sections.create : t2.common.save })
     ] })
   ] }) });
 }
@@ -31031,7 +31031,7 @@ function UserSectionHeader({
   onToggle
 }) {
   const b = useBots();
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   if (!id) {
     return /* @__PURE__ */ jsx68(
       RosterSectionHeader,
@@ -31067,7 +31067,7 @@ function UserSectionHeader({
       /* @__PURE__ */ jsx68(sdk_compat_exports.DropdownMenuSeparator, {}),
       /* @__PURE__ */ jsxs66(sdk_compat_exports.DropdownMenuItem, { onSelect: onDelete, variant: "destructive", children: [
         /* @__PURE__ */ jsx68(sdk_compat_exports.Codicon, { className: "mr-1.5", name: "trash" }),
-        t.common.delete
+        t2.common.delete
       ] })
     ] })
   ] });
@@ -31088,7 +31088,7 @@ function UserSectionHeader({
     /* @__PURE__ */ jsxs66(sdk_compat_exports.ContextMenuContent, { children: [
       items.map((item) => /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { disabled: item.disabled, onSelect: item.onSelect, children: item.label }, item.label)),
       /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuSeparator, {}),
-      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: onDelete, variant: "destructive", children: t.common.delete })
+      /* @__PURE__ */ jsx68(sdk_compat_exports.ContextMenuItem, { onSelect: onDelete, variant: "destructive", children: t2.common.delete })
     ] })
   ] });
 }
@@ -31171,7 +31171,7 @@ function SectionDropZone({ children, isSource, nested, onDropBot }) {
 import { Fragment as Fragment14, jsx as jsx69, jsxs as jsxs67 } from "react/jsx-runtime";
 function renderRosterDialogs({
   b,
-  t,
+  t: t2,
   createOpen,
   setCreateOpen,
   groupCreateOpen,
@@ -31251,7 +31251,7 @@ function renderRosterDialogs({
       sdk_compat_exports.ConfirmDialog,
       {
         busyLabel: "Deleting\u2026",
-        confirmLabel: t.common.delete,
+        confirmLabel: t2.common.delete,
         description: deleting ? /* @__PURE__ */ jsxs67("span", { children: [
           "This will permanently delete the bot ",
           /* @__PURE__ */ jsx69("span", { className: "font-medium text-foreground", children: deleting.name }),
@@ -32231,7 +32231,7 @@ function useReconcileRosterOwner(data, error, selectionHydrated, roster, sourceS
   }, [data, error, selectionHydrated, roster, sourceSnapshot, allMeta]);
 }
 function BotsPane() {
-  const { t } = (0, sdk_compat_exports.useI18n)();
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
   const b = useBots();
   const { data, error, isLoading, refetch } = useRoster();
   const gatewayState = (0, sdk_compat_exports.useValue)(host.state.gateway);
@@ -32550,7 +32550,7 @@ function BotsPane() {
     ),
     renderRosterDialogs({
       b,
-      t,
+      t: t2,
       createOpen,
       setCreateOpen,
       createDraft,
@@ -32717,8 +32717,8 @@ function hidePersistedBotSession(bot, sessionId, profileOverride = "") {
 var BOT_MODE_SWEEP_TITLES = /* @__PURE__ */ new Set(["Bot Chat", "Agent Inbox"]);
 var BOT_MODE_SWEEP_MIN_AGE_SECONDS = 5 * 60;
 function isBotModeSweepTitle(title) {
-  const t = String(title || "").trim();
-  return BOT_MODE_SWEEP_TITLES.has(t) || t.startsWith("Group: ");
+  const t2 = String(title || "").trim();
+  return BOT_MODE_SWEEP_TITLES.has(t2) || t2.startsWith("Group: ");
 }
 function isBotModeSweepCandidate(row, nowSeconds = Date.now() / 1e3) {
   const startedAt = Number(row?.started_at);
@@ -32767,6 +32767,54 @@ async function sweepBotProfileSessions(nowSeconds = Date.now() / 1e3) {
 // src/plugin.tsx
 init_shared();
 
+// src/tool-card-styles.ts
+var SPRING = "cubic-bezier(0.34, 1.36, 0.64, 1)";
+var STANDARD = "cubic-bezier(0.2, 0, 0, 1)";
+var OUT_QUINT = "cubic-bezier(0.22, 1, 0.36, 1)";
+var UTILITIES = [
+  ".hbp-tc-muted{color:var(--ui-text-tertiary)}",
+  ".hbp-tc-subtle{color:var(--ui-text-quaternary)}",
+  ".hbp-tc-hover-fg:hover{color:var(--ui-text-primary)}",
+  ".hbp-tc-info{color:var(--ui-blue)}",
+  ".hbp-tc-sunken{background-color:var(--ui-bg-quaternary)}",
+  ".hbp-tc-hover:hover{background-color:var(--ui-row-hover-background)}",
+  ".hbp-tc-selected{background-color:var(--ui-row-active-background);color:var(--ui-text-primary)}",
+  ".hbp-tc-rc{border-radius:var(--radius-control,0.375rem)}",
+  ".hbp-tc-rr{border-radius:var(--radius-row,0.4375rem)}",
+  ".hbp-tc-pl12{padding-left:3rem}",
+  ".hbp-tc-top{object-position:top}",
+  ".hbp-tc-face{box-shadow:0 0 0 2px var(--ui-bg-elevated)}",
+  `.hbp-tc-surface{transition-property:background-color,border-color,box-shadow,padding,min-height;transition-duration:180ms;transition-timing-function:${SPRING}}`,
+  ".hbp-tc-reveal{opacity:0;transition:opacity 120ms ease-out}",
+  ".hbp-tc-row:hover .hbp-tc-reveal,.hbp-tc-reveal:focus-visible{opacity:1}"
+];
+var MOTION = [
+  `.hbp-tc-arrive{animation:hbp-tc-arrive 200ms ${OUT_QUINT} both}`,
+  ".hbp-tc-ring{position:relative;isolation:isolate}",
+  '.hbp-tc-ring::after{content:"";position:absolute;inset:-2px;border-radius:inherit;border:2px solid currentColor;opacity:0;pointer-events:none;animation:hbp-tc-ring 1.6s cubic-bezier(0.25,0.6,0.3,1) infinite;will-change:transform,opacity}',
+  ".hbp-tc-shimmer{position:relative;overflow:hidden}",
+  '.hbp-tc-shimmer::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(90deg,transparent 0%,color-mix(in oklab,var(--ui-chat-surface-background) 70%,transparent) 50%,transparent 100%);transform:translateX(-100%);animation:hbp-tc-shimmer 1.8s linear infinite;will-change:transform}',
+  ".hbp-tc-typing>span{animation:hbp-tc-typing 1.2s ease-in-out infinite;will-change:transform,opacity}",
+  ".hbp-tc-typing>span:nth-child(2){animation-delay:0.15s}",
+  ".hbp-tc-typing>span:nth-child(3){animation-delay:0.3s}",
+  `.hbp-tc-collapse{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows 180ms ${STANDARD},opacity 180ms ${STANDARD}}`,
+  ".hbp-tc-collapse[data-open='true']{grid-template-rows:1fr;opacity:1}",
+  ".hbp-tc-collapse>*{min-height:0;overflow:hidden}"
+];
+var KEYFRAMES = [
+  "@keyframes hbp-tc-arrive{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}",
+  "@keyframes hbp-tc-ring{0%{opacity:0.55;transform:scale(1)}100%{opacity:0;transform:scale(1.18)}}",
+  "@keyframes hbp-tc-shimmer{from{transform:translateX(-100%)}to{transform:translateX(100%)}}",
+  "@keyframes hbp-tc-typing{0%,60%,100%{opacity:0.35;transform:translateY(0)}30%{opacity:1;transform:translateY(-2px)}}"
+];
+var QUIET = [
+  "@media (prefers-reduced-motion: reduce){.hbp-tc-ring::after,.hbp-tc-shimmer::after,.hbp-tc-typing>span,.hbp-tc-arrive{animation:none!important}.hbp-tc-ring::after{opacity:0.55}.hbp-tc-shimmer::after{display:none}.hbp-tc-collapse,.hbp-tc-surface{transition:none}}",
+  ":root[data-renderer-animations-paused] :is(.hbp-tc-ring,.hbp-tc-shimmer)::after,:root[data-renderer-animations-paused] .hbp-tc-typing>span{animation-play-state:paused}"
+];
+function toolCardStyleSheet() {
+  return `@layer utilities{${[...UTILITIES, ...MOTION].join("")}}${KEYFRAMES.join("")}${QUIET.join("")}`;
+}
+
 // src/tones.ts
 var TONES = {
   warn: "var(--color-warning, var(--ui-yellow))",
@@ -32807,14 +32855,868 @@ function mountPluginStyles(utilities = "") {
     el.id = STYLE_ID;
     document.head.appendChild(el);
   }
-  el.textContent = toneStyleSheet() + utilities;
+  el.textContent = toneStyleSheet() + toolCardStyleSheet() + utilities;
   return () => el?.remove();
 }
 
+// src/tool-card.tsx
+init_sdk_compat();
+import {
+  createContext,
+  memo,
+  useContext,
+  useMemo as useMemo11,
+  useRef as useRef17,
+  useState as useState46
+} from "react";
+
+// src/tool-card-model.ts
+init_sdk_compat();
+var isRecord2 = (value) => Boolean(value && typeof value === "object" && !Array.isArray(value));
+var capitalize = (value) => value ? value.charAt(0).toUpperCase() + value.slice(1) : value;
+var PRIVATE_SUFFIXES = [".localhost", ".local", ".internal", ".lan", ".home.arpa"];
+function isPublicHost(host2) {
+  let name = host2.trim().toLowerCase();
+  if (name.endsWith(".")) {
+    name = name.slice(0, -1);
+  }
+  if (!name || name === "localhost") {
+    return false;
+  }
+  if (name.startsWith("[") && name.endsWith("]")) {
+    name = name.slice(1, -1);
+  }
+  if (!name || name === "localhost") {
+    return false;
+  }
+  if (name.includes(":")) {
+    return false;
+  }
+  if (!name.includes(".")) {
+    return false;
+  }
+  if (/^[0-9.]+$/.test(name)) {
+    return false;
+  }
+  return !PRIVATE_SUFFIXES.some((suffix) => name.endsWith(suffix));
+}
+var MAX_ARG_ROWS = 4;
+var MAX_ARG_CHARS = 200;
+function clampText(value, max) {
+  return value.length > max ? `${value.slice(0, max - 1).trimEnd()}\u2026` : value;
+}
+var KNOWN_ARGS = [
+  { key: "url", label: "url" },
+  { key: "command", label: "command" },
+  { key: "path", label: "path" },
+  { key: "file_path", label: "path" },
+  { key: "query", label: "query" },
+  { key: "pattern", label: "query" },
+  { key: "code", label: "code", lines: 3 },
+  { key: "text", label: "text" },
+  { key: "ref", label: "target" },
+  { key: "selector", label: "target" },
+  { key: "element", label: "target" }
+];
+var KNOWN_KEYS = new Set(KNOWN_ARGS.map((arg) => arg.key));
+function humanize(key) {
+  return capitalize(
+    key.replace(/[_-]+/g, " ").trim().toLowerCase()
+  );
+}
+function scalarText(value, lines) {
+  if (typeof value === "string") {
+    const text2 = value.trim();
+    return lines ? text2.split("\n").slice(0, lines).join("\n") : text2;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return String(value);
+  }
+  if (Array.isArray(value) && value.every((item) => typeof item === "string")) {
+    return value.map((item) => item.trim()).filter(Boolean).join(", ");
+  }
+  return "";
+}
+function toolCardArgs(args) {
+  const record = (0, sdk_compat_exports.parseMaybeObject)(args);
+  const rows = [];
+  const labels = /* @__PURE__ */ new Set();
+  const push = (label, value) => {
+    if (!value || labels.has(label) || rows.length >= MAX_ARG_ROWS) {
+      return;
+    }
+    labels.add(label);
+    rows.push({ label, value: clampText(value, MAX_ARG_CHARS) });
+  };
+  for (const arg of KNOWN_ARGS) {
+    push((0, sdk_compat_exports.translateNow)(`assistant.toolCards.argLabels.${arg.label}`), scalarText(record[arg.key], arg.lines));
+  }
+  for (const [key, value] of Object.entries(record)) {
+    if (!KNOWN_KEYS.has(key)) {
+      push(humanize(key), scalarText(value));
+    }
+  }
+  return rows;
+}
+var MAX_OUTPUT_CHARS = 600;
+var MAX_REASON_CHARS = 120;
+var OUTPUT_TEXT_KEYS = ["output", "stdout", "content", "text", "message", "summary"];
+var IMAGE_PATH = /\.(png|jpe?g|webp|gif)(\?|#|$)/i;
+var HTTP_URL = /^https?:\/\//i;
+var nonEmptyString = (value) => typeof value === "string" && value.trim().length > 0;
+function scalarLine(key, value) {
+  if (typeof value === "string" && value.trim()) {
+    return `${key}: ${(0, sdk_compat_exports.stripAnsi)(value).trim()}`;
+  }
+  return typeof value === "number" || typeof value === "boolean" ? `${key}: ${value}` : "";
+}
+function recordOutput(record, family) {
+  const text2 = OUTPUT_TEXT_KEYS.map((key) => record[key]).find(nonEmptyString);
+  if (text2) {
+    return (0, sdk_compat_exports.stripAnsi)(text2);
+  }
+  if (family === "browser") {
+    const page = [record.title, record.url].filter(nonEmptyString).join("\n");
+    if (page) {
+      return page;
+    }
+  }
+  return Object.entries(record).map(([key, value]) => scalarLine(key, value)).filter(Boolean).join("\n");
+}
+var UNTRUSTED_WRAPPER = /^\s*<untrusted_tool_result\b[^>]*>([\s\S]*?)<\/untrusted_tool_result>\s*$/i;
+function unwrapToolResult(result) {
+  if (typeof result !== "string") {
+    return result;
+  }
+  const inner = UNTRUSTED_WRAPPER.exec(result)?.[1];
+  if (inner === void 0) {
+    return result;
+  }
+  const start = inner.search(/^\s*\{/m);
+  if (start >= 0) {
+    try {
+      const parsed = JSON.parse(inner.slice(start).trim());
+      if (parsed && typeof parsed === "object") {
+        return parsed;
+      }
+    } catch {
+    }
+  }
+  return inner.trim();
+}
+function toolCardOutput(rawResult, family) {
+  const result = unwrapToolResult(rawResult);
+  const record = (0, sdk_compat_exports.parseMaybeObject)(result);
+  let text2 = "";
+  if (Object.keys(record).length > 0) {
+    text2 = recordOutput(record, family);
+  } else if (typeof result === "string" && !/^\s*[[{]/.test(result)) {
+    text2 = (0, sdk_compat_exports.stripAnsi)(result);
+  }
+  const trimmed2 = text2.trim();
+  return trimmed2 ? clampText(trimmed2, MAX_OUTPUT_CHARS) : void 0;
+}
+function toolCardReason(part, view) {
+  const record = (0, sdk_compat_exports.parseMaybeObject)(part.result);
+  const plainResult = typeof part.result === "string" && Object.keys(record).length === 0 ? part.result : void 0;
+  const raw = [record.error, record.message, plainResult].find(nonEmptyString) ?? view.detail;
+  const firstLine3 = raw.split("\n").find((line) => line.trim());
+  return firstLine3 ? (0, sdk_compat_exports.compactPreview)(firstLine3, MAX_REASON_CHARS) : void 0;
+}
+var SCREENSHOT_KEYS = ["screenshot_path", "screenshot", "screenshot_url", "image_path", "image_url", "image"];
+function lastOf(value) {
+  return Array.isArray(value) ? value[value.length - 1] : void 0;
+}
+function screenshotSrc(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const src = value.trim();
+  if (/^data:image\//i.test(src)) {
+    return src;
+  }
+  return IMAGE_PATH.test(src) ? src : "";
+}
+var URL_IN_TEXT = /https?:\/\/[^\s"'`<>()[\]{}\\]+/i;
+var URL_TEXT_KEYS = ["code", "task", "instruction", "instructions", "goal", "text", "command", "script"];
+var RESULT_URL_KEYS = ["url", "page_url", "current_url", "final_url"];
+function urlInText(value) {
+  if (typeof value !== "string") {
+    return "";
+  }
+  const match = URL_IN_TEXT.exec(value);
+  return match ? match[0].replace(/[.,;:!?'"]+$/, "") : "";
+}
+function validUrl(value) {
+  if (!HTTP_URL.test(value)) {
+    return "";
+  }
+  try {
+    return new URL(value).hostname ? value : "";
+  } catch {
+    return "";
+  }
+}
+function toolCardPageUrl(args, rawResult) {
+  const result = unwrapToolResult(rawResult);
+  const argRecord = (0, sdk_compat_exports.parseMaybeObject)(args);
+  const resultRecord = (0, sdk_compat_exports.parseMaybeObject)(result);
+  const candidates = [
+    (0, sdk_compat_exports.findFirstUrl)(argRecord.url, ...RESULT_URL_KEYS.map((key) => resultRecord[key])),
+    ...URL_TEXT_KEYS.map((key) => urlInText(argRecord[key])),
+    ...OUTPUT_TEXT_KEYS.map((key) => urlInText(resultRecord[key])),
+    urlInText(typeof result === "string" ? result : "")
+  ];
+  for (const candidate of candidates) {
+    const url = validUrl(candidate);
+    if (url) {
+      return url;
+    }
+  }
+  return void 0;
+}
+function toolCardThumb(family, view, result, pageUrl) {
+  if (family !== "browser" && family !== "web") {
+    return pageUrl ? { kind: "site", url: pageUrl, host: new URL(pageUrl).hostname } : void 0;
+  }
+  const record = (0, sdk_compat_exports.parseMaybeObject)(unwrapToolResult(result));
+  const src = view.imageUrl || SCREENSHOT_KEYS.map((key) => screenshotSrc(record[key])).find(Boolean) || screenshotSrc(lastOf(record.screenshots));
+  if (src) {
+    return { kind: "screenshot", src, url: pageUrl };
+  }
+  return pageUrl ? { kind: "site", url: pageUrl, host: new URL(pageUrl).hostname } : void 0;
+}
+var FAMILY_BY_NAME = /* @__PURE__ */ new Map([
+  ["web_search", "search"],
+  ["search_files", "search"],
+  ["session_search", "search"],
+  ["session_search_recall", "search"],
+  ["fetch_url", "web"],
+  ["terminal", "terminal"],
+  ["process", "terminal"],
+  ["execute_code", "code"],
+  ["read_file", "files"],
+  ["write_file", "files"],
+  ["edit_file", "files"],
+  ["patch", "files"],
+  ["list_files", "files"],
+  ["list_directory", "files"]
+]);
+var FAMILY_BY_PREFIX = [
+  ["browser_", "browser"],
+  ["web_", "web"],
+  ["mcp__", "mcp"],
+  ["connectors__", "mcp"]
+];
+var FAMILY_ICON = {
+  browser: "globe",
+  code: "code",
+  files: "files",
+  generic: "tools",
+  mcp: "plug",
+  search: "search",
+  terminal: "terminal",
+  web: "globe"
+};
+var FILE_ICON = /* @__PURE__ */ new Map([
+  ["read_file", "file"],
+  ["write_file", "edit"],
+  ["edit_file", "edit"],
+  ["patch", "edit"],
+  ["list_files", "files"],
+  ["list_directory", "files"]
+]);
+var KNOWN_GENERIC_TOOLS = /* @__PURE__ */ new Map([
+  ["memory", { icon: "brain", name: "memory" }],
+  ["skill_view", { icon: "tools", name: "skills" }],
+  ["skills_list", { icon: "tools", name: "skills" }],
+  ["skill_manage", { icon: "tools", name: "skills" }],
+  ["vision_analyze", { icon: "eye", name: "vision" }],
+  ["cronjob", { icon: "watch", name: "schedule" }],
+  ["send_message", { icon: "tools", name: "message" }]
+]);
+var t = (key) => (0, sdk_compat_exports.translateNow)(`assistant.toolCards.${key}`);
+function toolCardFamily(toolName) {
+  const exact = FAMILY_BY_NAME.get(toolName);
+  if (exact) {
+    return exact;
+  }
+  return FAMILY_BY_PREFIX.find(([prefix]) => toolName.startsWith(prefix))?.[1] ?? "generic";
+}
+function toolCardIcon(toolName, family) {
+  if (family === "files") {
+    return FILE_ICON.get(toolName) ?? FAMILY_ICON.files;
+  }
+  if (family === "generic") {
+    return KNOWN_GENERIC_TOOLS.get(toolName)?.icon ?? FAMILY_ICON.generic;
+  }
+  return FAMILY_ICON[family];
+}
+function titleCase2(value) {
+  return value.split(/[\s_-]+/).filter(Boolean).map(capitalize).join(" ");
+}
+function toolCardName(toolName, family) {
+  if (family === "mcp") {
+    return titleCase2(toolName.split("__")[1] ?? "") || t("families.mcp");
+  }
+  if (family === "generic") {
+    const known = KNOWN_GENERIC_TOOLS.get(toolName);
+    return known ? t(`names.${known.name}`) : titleCase2(toolName) || t("families.generic");
+  }
+  return t(`families.${family}`);
+}
+function toolCardState(part, view, approvalPending) {
+  if (part.interrupted) {
+    return "done";
+  }
+  if (view.status === "running") {
+    return approvalPending ? "approval" : "running";
+  }
+  return view.status === "error" ? "error" : "done";
+}
+var TITLELESS_TOOLS = /* @__PURE__ */ new Set([
+  "browser_back",
+  "browser_console",
+  "browser_get_images",
+  "browser_press",
+  "browser_scroll",
+  "browser_vision"
+]);
+function toolCardStatus(part, view, family, pageUrl) {
+  if (part.interrupted) {
+    return t("stopped");
+  }
+  if (TITLELESS_TOOLS.has(part.toolName)) {
+    return t(`statuses.${part.toolName}.${view.status === "running" ? "pending" : "done"}`);
+  }
+  if (view.status === "running" && pageUrl && (family === "browser" || family === "web") && !(0, sdk_compat_exports.parseMaybeObject)(part.args).url) {
+    return (0, sdk_compat_exports.translateNow)("assistant.toolCards.opening", new URL(pageUrl).hostname.replace(/^www\./, ""));
+  }
+  if (view.title) {
+    return view.title;
+  }
+  return view.status === "running" ? t("working") : "";
+}
+function explicitPageUrl(args) {
+  const url = (0, sdk_compat_exports.parseMaybeObject)(args).url;
+  return typeof url === "string" && /^https?:\/\//i.test(url.trim()) && URL.canParse(url.trim()) ? url.trim() : void 0;
+}
+function epochMs(value) {
+  if (value === void 0 || !Number.isFinite(value)) {
+    return void 0;
+  }
+  return value < 1e12 ? value * 1e3 : value;
+}
+function toolCardView(part, options = {}) {
+  const view = (0, sdk_compat_exports.buildToolView)(part, "");
+  const family = toolCardFamily(part.toolName);
+  const state = toolCardState(part, view, options.approvalPending === true);
+  const webish = family === "browser" || family === "web";
+  const pageUrl = webish ? toolCardPageUrl(part.args, part.result) : explicitPageUrl(part.args);
+  const card = {
+    id: part.toolCallId || (0, sdk_compat_exports.stableHash)(part.toolName + JSON.stringify(part.args ?? {})),
+    family,
+    icon: toolCardIcon(part.toolName, family),
+    name: toolCardName(part.toolName, family),
+    status: toolCardStatus(part, view, family, pageUrl),
+    state,
+    args: toolCardArgs(part.args),
+    durationLabel: view.durationLabel,
+    startedAt: epochMs(part.timestamp),
+    completedAt: epochMs(part.completedAt)
+  };
+  if (state === "error") {
+    card.reason = toolCardReason(part, view) ?? t("failed");
+  }
+  card.thumb = toolCardThumb(family, view, part.result, pageUrl);
+  card.output = toolCardOutput(part.result, family);
+  return card;
+}
+var isSoloCard = (card) => card.state === "error" || card.state === "approval";
+function joinsRun(previous, card) {
+  return !isSoloCard(previous) && !isSoloCard(card) && previous.family === card.family && previous.name === card.name;
+}
+function groupOf(cards) {
+  const latest = cards[cards.length - 1];
+  const thumbs = cards.map((card) => card.thumb);
+  const screenshot = thumbs.findLast((thumb) => thumb?.kind === "screenshot");
+  return {
+    key: cards[0].id,
+    family: latest.family,
+    icon: latest.icon,
+    name: latest.name,
+    state: latest.state,
+    cards,
+    thumb: screenshot ?? thumbs.findLast((thumb) => thumb?.kind === "site")
+  };
+}
+function groupToolCards(cards) {
+  const runs = [];
+  for (const card of cards) {
+    const run = runs.at(-1);
+    if (run && joinsRun(run[run.length - 1], card)) {
+      run.push(card);
+    } else {
+      runs.push([card]);
+    }
+  }
+  return runs.map(groupOf);
+}
+var isToolCallPart = (part) => isRecord2(part) && (part.type === void 0 || part.type === "tool-call") && typeof part.toolName === "string";
+function toolCardsFromParts(parts, options = {}) {
+  const cards = [];
+  for (const part of parts) {
+    if (!isToolCallPart(part)) {
+      continue;
+    }
+    const approvalPending = Boolean(options.approvalCallId) && part.toolCallId === options.approvalCallId;
+    cards.push(toolCardView(part, { approvalPending }));
+  }
+  return groupToolCards(cards);
+}
+
+// src/tool-card.tsx
+import { Fragment as Fragment17, jsx as jsx76, jsxs as jsxs74 } from "react/jsx-runtime";
+var PreviewSessionContext = createContext({
+  runtimeId: null,
+  storedId: null
+});
+function SiteFavicon({ host: host2, url }) {
+  if (!isPublicHost(host2)) {
+    return null;
+  }
+  return /* @__PURE__ */ jsx76("span", { className: "inline-grid size-3.5 shrink-0 place-items-center", children: /* @__PURE__ */ jsx76(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx76("span", { className: "block size-full" }), url }) });
+}
+function ScreenshotThumb({ src }) {
+  const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 10);
+  if (image.failed) {
+    return null;
+  }
+  return /* @__PURE__ */ jsx76("span", { className: "h-10 w-16 shrink-0 overflow-hidden hbp-tc-rc border border-line hbp-tc-sunken", children: image.src ? /* @__PURE__ */ jsx76(
+    "img",
+    {
+      alt: "",
+      "aria-hidden": true,
+      className: "hbp-tc-top h-full w-full object-cover",
+      onError: image.onError,
+      onLoad: (event) => image.onLoad(event.currentTarget),
+      src: image.src
+    }
+  ) : null });
+}
+function stepPageUrl(cards, index = cards.length - 1) {
+  for (let at = Math.min(index, cards.length - 1); at >= 0; at -= 1) {
+    const url = cards[at]?.thumb?.url;
+    if (url && /^https?:\/\//i.test(url)) {
+      return url;
+    }
+  }
+  return "";
+}
+function OpenPageButton({
+  className,
+  iconOnly = false,
+  url
+}) {
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const label = t2.assistant.toolCards.viewer.openPage;
+  const session = useContext(PreviewSessionContext);
+  const open = (event) => {
+    event.stopPropagation();
+    (0, sdk_compat_exports.openPreview)(
+      { kind: "url", label: (0, sdk_compat_exports.hostPathLabel)(url), source: url, url },
+      session.storedId ?? void 0,
+      session.runtimeId
+    );
+  };
+  return /* @__PURE__ */ jsx76(sdk_compat_exports.Tip, { label: url, children: /* @__PURE__ */ jsxs74(
+    sdk_compat_exports.Button,
+    {
+      "aria-label": label,
+      className: (0, sdk_compat_exports.cn)(iconOnly ? "shrink-0 hbp-tc-subtle hbp-tc-hover-fg" : "h-6 gap-1 px-1.5 text-ui-xs", className),
+      "data-open-page": "",
+      onClick: open,
+      onKeyDown: (event) => event.stopPropagation(),
+      size: iconOnly ? "icon-xs" : "sm",
+      type: "button",
+      variant: "ghost",
+      children: [
+        /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "link-external" }),
+        iconOnly ? null : label
+      ]
+    }
+  ) });
+}
+function CardBlock({ card, showStatus }) {
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const copy = t2.assistant.toolCards;
+  const pageUrl = card.family === "browser" ? "" : stepPageUrl([card]);
+  const shot = card.family !== "browser" && card.thumb?.kind === "screenshot" ? card.thumb.src : "";
+  return /* @__PURE__ */ jsxs74("div", { className: "flex min-w-0 flex-col gap-1.5", children: [
+    showStatus ? /* @__PURE__ */ jsx76("div", { className: "truncate text-ui-xs hbp-tc-muted", children: card.status }) : null,
+    pageUrl || shot ? /* @__PURE__ */ jsxs74("div", { className: "flex min-w-0 items-center gap-2", "data-card-page": "", children: [
+      shot ? /* @__PURE__ */ jsx76(ScreenshotThumb, { src: shot }) : /* @__PURE__ */ jsx76("span", { className: "inline-grid size-4 shrink-0 place-items-center hbp-tc-subtle", children: isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx76(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "globe", size: 14 }), url: pageUrl }) : /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "globe", size: 14 }) }),
+      pageUrl ? /* @__PURE__ */ jsxs74(Fragment17, { children: [
+        /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 truncate text-ui-xs text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }),
+        /* @__PURE__ */ jsx76(OpenPageButton, { url: pageUrl })
+      ] }) : null
+    ] }) : null,
+    card.args.length > 0 ? /* @__PURE__ */ jsxs74("div", { className: "flex min-w-0 flex-col gap-1", children: [
+      /* @__PURE__ */ jsx76("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.request }),
+      card.args.map((detail) => /* @__PURE__ */ jsxs74("div", { className: "flex min-w-0 gap-2", children: [
+        /* @__PURE__ */ jsx76("span", { className: "w-16 shrink-0 hbp-tc-subtle", children: detail.label }),
+        /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 break-words font-mono text-ui-2xs text-fg-secondary line-clamp-3", children: detail.value })
+      ] }, detail.label))
+    ] }) : null,
+    /* @__PURE__ */ jsx76("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.output }),
+    card.output ? /* @__PURE__ */ jsx76("pre", { className: "max-h-40 overflow-auto whitespace-pre-wrap hbp-tc-rc hbp-tc-sunken p-2 font-mono text-ui-2xs text-fg-secondary", children: card.output }) : /* @__PURE__ */ jsx76("div", { className: "text-ui-2xs hbp-tc-subtle", children: copy.details.noOutput }),
+    card.reason ? /* @__PURE__ */ jsx76("div", { className: "text-ui-xs text-danger", children: card.reason }) : null,
+    card.durationLabel ? /* @__PURE__ */ jsxs74("div", { className: "text-ui-2xs hbp-tc-subtle", children: [
+      copy.details.duration,
+      " ",
+      /* @__PURE__ */ jsx76("span", { className: "tabular-nums", children: card.durationLabel })
+    ] }) : null
+  ] });
+}
+function stepHost(card) {
+  return card.thumb?.kind === "site" ? card.thumb.host : "";
+}
+function stepScreenshot(card) {
+  return card.thumb?.kind === "screenshot" ? card.thumb.src : "";
+}
+function latestScreenshotIndex(cards) {
+  for (let index = cards.length - 1; index >= 0; index -= 1) {
+    if (stepScreenshot(cards[index])) {
+      return index;
+    }
+  }
+  return null;
+}
+function StepShot({ src }) {
+  const image = (0, sdk_compat_exports.useMediaImage)(src, 16 / 9);
+  if (!image.src || image.failed) {
+    return null;
+  }
+  return /* @__PURE__ */ jsx76(
+    "img",
+    {
+      alt: "",
+      "aria-hidden": true,
+      className: "h-full w-full object-contain",
+      onError: image.onError,
+      onLoad: (event) => image.onLoad(event.currentTarget),
+      src: image.src
+    }
+  );
+}
+function BrowserSteps({ group }) {
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const copy = t2.assistant.toolCards.viewer;
+  const { cards, name } = group;
+  const total = cards.length;
+  const [manual, setManual] = useState46(null);
+  const live = group.state !== "done";
+  const settledDefault = latestScreenshotIndex(cards) ?? total - 1;
+  const selected = Math.min(manual ?? (live ? total - 1 : settledDefault), total - 1);
+  const step = cards[selected];
+  const shot = stepScreenshot(step);
+  const host2 = stepHost(step);
+  const pageUrl = stepPageUrl(cards, selected);
+  const move = (delta) => {
+    setManual(Math.min(total - 1, Math.max(0, selected + delta)));
+  };
+  return /* @__PURE__ */ jsxs74(
+    "section",
+    {
+      "aria-label": copy.title(name),
+      onKeyDown: (event) => {
+        if (event.key === "ArrowLeft") {
+          move(-1);
+        } else if (event.key === "ArrowRight") {
+          move(1);
+        }
+      },
+      children: [
+        /* @__PURE__ */ jsx76("div", { className: "text-ui-xs font-semibold text-fg", children: copy.title(name) }),
+        /* @__PURE__ */ jsx76("div", { className: "mt-1 aspect-video w-full max-w-md overflow-hidden rounded-card border border-line hbp-tc-sunken", children: shot ? /* @__PURE__ */ jsx76(StepShot, { src: shot }, shot) : /* @__PURE__ */ jsxs74("div", { className: "flex h-full w-full flex-col items-center justify-center gap-1.5 px-4 text-ui-xs hbp-tc-subtle", children: [
+          pageUrl && isPublicHost(new URL(pageUrl).hostname) ? /* @__PURE__ */ jsx76("span", { className: "inline-grid size-6 place-items-center", children: /* @__PURE__ */ jsx76(sdk_compat_exports.Favicon, { fallback: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "globe", size: 20 }), url: pageUrl }) }) : null,
+          pageUrl ? /* @__PURE__ */ jsx76("span", { className: "max-w-full truncate text-ui-sm text-fg-secondary", children: (0, sdk_compat_exports.hostPathLabel)(pageUrl) }) : host2 ? /* @__PURE__ */ jsx76("span", { className: "truncate", children: host2 }) : null,
+          /* @__PURE__ */ jsx76("span", { children: copy.noScreenshot })
+        ] }) }),
+        /* @__PURE__ */ jsxs74("div", { className: "mt-1 flex items-center gap-1", children: [
+          /* @__PURE__ */ jsx76(
+            sdk_compat_exports.Button,
+            {
+              "aria-label": copy.previous,
+              disabled: selected <= 0,
+              onClick: () => move(-1),
+              size: "icon-xs",
+              variant: "ghost",
+              children: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "chevron-left" })
+            }
+          ),
+          /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 text-center text-ui-xs hbp-tc-muted tabular-nums", children: copy.step(selected + 1, total) }),
+          /* @__PURE__ */ jsx76(
+            sdk_compat_exports.Button,
+            {
+              "aria-label": copy.next,
+              disabled: selected >= total - 1,
+              onClick: () => move(1),
+              size: "icon-xs",
+              variant: "ghost",
+              children: /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "chevron-right" })
+            }
+          ),
+          pageUrl ? /* @__PURE__ */ jsx76(OpenPageButton, { url: pageUrl }) : null
+        ] }),
+        /* @__PURE__ */ jsx76("ol", { className: "mt-1 flex flex-col gap-0.5", children: cards.map((card, index) => {
+          const rowHost = stepHost(card);
+          return /* @__PURE__ */ jsx76("li", { children: /* @__PURE__ */ jsxs74(
+            "button",
+            {
+              "aria-current": index === selected ? "true" : void 0,
+              className: (0, sdk_compat_exports.cn)(
+                "flex w-full items-center gap-2 hbp-tc-rr px-2 py-1 text-left text-ui-xs hbp-tc-muted hbp-tc-hover",
+                index === selected && "hbp-tc-selected"
+              ),
+              onClick: () => setManual(index),
+              type: "button",
+              children: [
+                /* @__PURE__ */ jsx76("span", { className: "shrink-0 tabular-nums", children: index + 1 }),
+                /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 truncate", children: card.status }),
+                rowHost ? /* @__PURE__ */ jsx76("span", { className: "shrink-0 truncate", children: rowHost }) : null
+              ]
+            }
+          ) }, card.id);
+        }) }),
+        /* @__PURE__ */ jsx76("div", { className: "mt-2", children: /* @__PURE__ */ jsx76(CardBlock, { card: step, showStatus: false }) })
+      ]
+    }
+  );
+}
+function ToolCardDetails({
+  group,
+  live,
+  open
+}) {
+  const multi = group.cards.length > 1;
+  return /* @__PURE__ */ jsx76("div", { className: "hbp-tc-collapse", "data-open": open, children: /* @__PURE__ */ jsx76("div", { children: /* @__PURE__ */ jsx76("div", { className: (0, sdk_compat_exports.cn)("flex min-w-0 flex-col gap-2 pt-1 pr-1 pb-1 text-ui-xs", live ? "hbp-tc-pl12" : "pl-6"), children: group.family === "browser" ? /* @__PURE__ */ jsx76(BrowserSteps, { group }) : group.cards.map((card) => /* @__PURE__ */ jsx76(CardBlock, { card, showStatus: multi }, card.id)) }) }) });
+}
+function TypingDots() {
+  return /* @__PURE__ */ jsxs74("span", { "aria-hidden": "true", className: "hbp-tc-typing inline-flex shrink-0 items-center gap-0.5", "data-typing": "", children: [
+    /* @__PURE__ */ jsx76("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx76("span", { className: "size-1 rounded-full bg-current" }),
+    /* @__PURE__ */ jsx76("span", { className: "size-1 rounded-full bg-current" })
+  ] });
+}
+function isLiveState(state) {
+  return state !== "done";
+}
+function toggleOnKey(toggle) {
+  return (event) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      toggle();
+    }
+  };
+}
+function toggleOnClick(toggle) {
+  return (event) => {
+    if (event.target instanceof HTMLElement && event.target.closest("button")) {
+      return;
+    }
+    toggle();
+  };
+}
+function LiveStatus({ copy, group }) {
+  const status = group.cards[group.cards.length - 1].status;
+  if (group.state === "running") {
+    return /* @__PURE__ */ jsxs74(Fragment17, { children: [
+      /* @__PURE__ */ jsx76("span", { className: "hbp-tc-shimmer min-w-0 truncate hbp-tc-muted", children: status }),
+      /* @__PURE__ */ jsx76(TypingDots, {})
+    ] });
+  }
+  if (group.state === "approval") {
+    return /* @__PURE__ */ jsx76("span", { className: "min-w-0 truncate text-warning", children: copy.awaitingApproval });
+  }
+  return /* @__PURE__ */ jsx76("span", { className: "min-w-0 truncate hbp-tc-muted", children: status });
+}
+function LiveCardBody({ actor, copy, group, onReviewApproval, toggle }) {
+  const last = group.cards[group.cards.length - 1];
+  const site = group.thumb?.kind === "site" ? group.thumb : null;
+  const shot = group.thumb?.kind === "screenshot" ? group.thumb.src : null;
+  const pageUrl = stepPageUrl(group.cards);
+  return /* @__PURE__ */ jsxs74(Fragment17, { children: [
+    /* @__PURE__ */ jsxs74("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-3 hbp-tc-rc", children: [
+      /* @__PURE__ */ jsxs74(
+        "span",
+        {
+          className: (0, sdk_compat_exports.cn)(
+            "relative grid size-9 shrink-0 place-items-center hbp-tc-rc hbp-tc-sunken text-fg-secondary",
+            group.state === "running" && "hbp-tc-ring hbp-tc-info",
+            group.state === "error" && "hbp-bg-danger-10 text-danger",
+            group.state === "approval" && "hbp-bg-warn-10 text-warning"
+          ),
+          children: [
+            /* @__PURE__ */ jsx76(sdk_compat_exports.ToolIcon, { className: group.state === "running" ? "text-fg-secondary" : void 0, name: group.icon, size: 18 }),
+            actor ? /* @__PURE__ */ jsx76("span", { className: "absolute -right-1 -bottom-1 block overflow-hidden rounded-full hbp-tc-face", children: actor }) : null
+          ]
+        }
+      ),
+      /* @__PURE__ */ jsxs74("span", { className: "flex min-w-0 flex-1 flex-col", children: [
+        /* @__PURE__ */ jsxs74("span", { className: "truncate text-ui-sm font-semibold text-fg", children: [
+          group.name,
+          group.cards.length > 1 ? /* @__PURE__ */ jsxs74("span", { className: "font-normal hbp-tc-subtle tabular-nums", children: [
+            " \xB7 ",
+            group.cards.length
+          ] }) : null
+        ] }),
+        /* @__PURE__ */ jsxs74("span", { className: "flex min-w-0 items-center gap-1.5 truncate text-ui-xs", children: [
+          site ? /* @__PURE__ */ jsx76(SiteFavicon, { host: site.host, url: site.url }) : null,
+          /* @__PURE__ */ jsx76(LiveStatus, { copy, group })
+        ] }),
+        group.state === "error" && last.reason ? /* @__PURE__ */ jsx76("span", { className: "text-ui-xs text-danger line-clamp-2", children: last.reason }) : null
+      ] })
+    ] }),
+    group.state === "approval" && onReviewApproval ? /* @__PURE__ */ jsx76(
+      sdk_compat_exports.Button,
+      {
+        onClick: (event) => {
+          event.stopPropagation();
+          onReviewApproval();
+        },
+        size: "xs",
+        variant: "outline",
+        children: copy.reviewApproval
+      }
+    ) : null,
+    shot ? /* @__PURE__ */ jsx76(ScreenshotThumb, { src: shot }) : null,
+    pageUrl && group.state !== "approval" ? /* @__PURE__ */ jsx76(OpenPageButton, { iconOnly: true, url: pageUrl }) : null
+  ] });
+}
+function QuietCardBody({ copy, group, toggle }) {
+  const last = group.cards[group.cards.length - 1];
+  const header = group.cards.length > 1 ? copy.usedTimes(group.name, group.cards.length) : last.status;
+  const site = group.thumb?.kind === "site" ? group.thumb : null;
+  const pageUrl = stepPageUrl(group.cards);
+  return /* @__PURE__ */ jsxs74(Fragment17, { children: [
+    /* @__PURE__ */ jsxs74("span", { ...toggle, className: "focus-ring flex min-w-0 flex-1 items-center gap-2 hbp-tc-rr", children: [
+      /* @__PURE__ */ jsx76(sdk_compat_exports.ToolIcon, { className: "shrink-0 hbp-tc-subtle", name: group.icon, size: 14 }),
+      /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { className: "shrink-0 hbp-fg-ok", name: "check", size: 12 }),
+      /* @__PURE__ */ jsx76("span", { className: "min-w-0 flex-1 truncate", children: header }),
+      site ? /* @__PURE__ */ jsx76(SiteFavicon, { host: site.host, url: site.url }) : null,
+      last.durationLabel ? /* @__PURE__ */ jsx76("span", { className: "shrink-0 text-ui-2xs hbp-tc-subtle tabular-nums", children: last.durationLabel }) : null
+    ] }),
+    pageUrl ? /* @__PURE__ */ jsx76(
+      OpenPageButton,
+      {
+        className: "hbp-tc-reveal",
+        iconOnly: true,
+        url: pageUrl
+      }
+    ) : null
+  ] });
+}
+function cardLabel(copy, group) {
+  const last = group.cards[group.cards.length - 1];
+  if (group.state === "approval") {
+    return `${group.name}: ${copy.awaitingApproval}`;
+  }
+  if (group.state === "done" && group.cards.length > 1) {
+    return copy.usedTimes(group.name, group.cards.length);
+  }
+  return [`${group.name}: ${last.status}`, group.state === "error" ? last.reason : null].filter(Boolean).join(". ");
+}
+function ToolCard({
+  actor,
+  group,
+  onReviewApproval
+}) {
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  const copy = t2.assistant.toolCards;
+  const [open, setOpen] = useState46(false);
+  const [everOpened, setEverOpened] = useState46(false);
+  const [mountedLive] = useState46(() => isLiveState(group.state));
+  const live = isLiveState(group.state);
+  const toggle = () => {
+    if (everOpened) {
+      setOpen((current) => !current);
+      return;
+    }
+    setEverOpened(true);
+    requestAnimationFrame(() => setOpen(true));
+  };
+  const toggleProps = {
+    "aria-expanded": open,
+    "aria-label": cardLabel(copy, group),
+    onKeyDown: toggleOnKey(toggle),
+    role: "button",
+    tabIndex: 0
+  };
+  return /* @__PURE__ */ jsxs74("div", { "data-tool-card": group.state, "data-tool-card-key": group.key, role: "listitem", children: [
+    /* @__PURE__ */ jsx76(
+      "div",
+      {
+        className: (0, sdk_compat_exports.cn)(
+          "hbp-tc-surface w-full max-w-md",
+          mountedLive && "hbp-tc-arrive",
+          live ? "flex min-h-14 items-center gap-3 rounded-card border border-line bg-surface-raised px-3 py-2.5 text-left" : "hbp-tc-row flex min-h-7 items-center gap-2 hbp-tc-rr border border-transparent px-1.5 text-left text-ui-xs hbp-tc-muted hbp-tc-hover"
+        ),
+        onClick: toggleOnClick(toggle),
+        children: live ? /* @__PURE__ */ jsx76(LiveCardBody, { actor, copy, group, onReviewApproval, toggle: toggleProps }) : /* @__PURE__ */ jsx76(QuietCardBody, { copy, group, toggle: toggleProps })
+      }
+    ),
+    everOpened ? /* @__PURE__ */ jsx76(ToolCardDetails, { group, live, open }) : null
+  ] });
+}
+function ToolActivityStackImpl({ actor, className, groups, onReviewApproval }) {
+  const { t: t2 } = (0, sdk_compat_exports.useI18n)();
+  if (groups.length === 0) {
+    return null;
+  }
+  return /* @__PURE__ */ jsx76(
+    "div",
+    {
+      "aria-label": t2.assistant.toolCards.activityLabel,
+      className: (0, sdk_compat_exports.cn)("flex min-w-0 max-w-full flex-col gap-1.5", className),
+      "data-slot": "tool-activity-stack",
+      role: "list",
+      children: groups.map((group) => /* @__PURE__ */ jsx76(ToolCard, { actor, group, onReviewApproval }, group.key))
+    }
+  );
+}
+var ToolActivityStack = memo(ToolActivityStackImpl);
+function cardSignature(card) {
+  return `${card.id}:${card.state}:${card.status}:${card.reason ?? ""}:${card.durationLabel ?? ""}:${card.output?.length ?? 0}`;
+}
+function groupSignature(group) {
+  const thumbUrl = group.thumb ? group.thumb.kind === "screenshot" ? group.thumb.src : group.thumb.url : "";
+  return `${group.key}|${group.state}|${thumbUrl}|${group.cards.map(cardSignature).join(",")}`;
+}
+function groupsSignature(groups) {
+  return groups.map(groupSignature).join(";");
+}
+function ToolRunCards({
+  approvalCallId,
+  onReviewApproval,
+  parts,
+  sessionId,
+  storedSessionId
+}) {
+  const freshGroups = useMemo11(() => toolCardsFromParts(parts, { approvalCallId }), [parts, approvalCallId]);
+  const cacheRef = useRef17({ groups: [], signature: "" });
+  const signature = useMemo11(() => groupsSignature(freshGroups), [freshGroups]);
+  if (cacheRef.current.signature !== signature || cacheRef.current.groups.length !== freshGroups.length) {
+    cacheRef.current = { groups: freshGroups, signature };
+  }
+  const session = useMemo11(() => ({ runtimeId: sessionId, storedId: storedSessionId }), [sessionId, storedSessionId]);
+  return /* @__PURE__ */ jsx76(PreviewSessionContext.Provider, { value: session, children: /* @__PURE__ */ jsx76(ToolActivityStack, { groups: cacheRef.current.groups, onReviewApproval }) });
+}
+
 // src/plugin.tsx
-import { Fragment as Fragment17, jsx as jsx76 } from "react/jsx-runtime";
+import { Fragment as Fragment18, jsx as jsx77 } from "react/jsx-runtime";
 function RailTabTitle() {
-  return /* @__PURE__ */ jsx76(Fragment17, { children: useBots().rail.title });
+  return /* @__PURE__ */ jsx77(Fragment18, { children: useBots().rail.title });
 }
 var plugin_default = {
   id: "hermes-bots-plus",
@@ -33038,17 +33940,17 @@ var plugin_default = {
     ctx.register({
       id: "screen-portal",
       area: sdk_compat_exports.SIDEBAR_PROFILE_GROUP_HEADER_AREA,
-      data: { render: (route) => /* @__PURE__ */ jsx76(ProfileGroupScreenPortal, { route }) }
+      data: { render: (route) => /* @__PURE__ */ jsx77(ProfileGroupScreenPortal, { route }) }
     });
     ctx.register({
       id: "agents-section",
       area: SIDEBAR_LIST_TOP_AREA,
-      data: { render: () => /* @__PURE__ */ jsx76(AgentsSection, {}), searchable: true }
+      data: { render: () => /* @__PURE__ */ jsx77(AgentsSection, {}), searchable: true }
     });
     ctx.register({
       id: "bot-header-identity",
       area: CHAT_HEADER_AREAS.title,
-      data: { render: (props) => /* @__PURE__ */ jsx76(BotHeaderIdentity, { ...props }) }
+      data: { render: (props) => /* @__PURE__ */ jsx77(BotHeaderIdentity, { ...props }) }
     });
     ctx.register({
       id: "pane",
@@ -33083,7 +33985,7 @@ var plugin_default = {
         width: "260px",
         collapsible: true,
         hideOnly: true,
-        tabTitle: () => /* @__PURE__ */ jsx76(sdk_compat_exports.LocalizedTabTitle, { select: (t) => t.common.bots }),
+        tabTitle: () => /* @__PURE__ */ jsx77(sdk_compat_exports.LocalizedTabTitle, { select: (t2) => t2.common.bots }),
         tabTitleText: () => (0, sdk_compat_exports.translateNow)("common.bots"),
         dock: {
           pane: "sessions",
@@ -33091,7 +33993,7 @@ var plugin_default = {
           enforce: true
         }
       },
-      render: () => /* @__PURE__ */ jsx76(BotsPane, {})
+      render: () => /* @__PURE__ */ jsx77(BotsPane, {})
     });
     const registerRoutinesPane = (restoreDismissed) => {
       const dispose = ctx.register({
@@ -33103,7 +34005,7 @@ var plugin_default = {
         // not `useI18n`: a pane title is read at registration, outside React.
         title: botsText().rail.title,
         data: {
-          tabTitle: () => /* @__PURE__ */ jsx76(RailTabTitle, {}),
+          tabTitle: () => /* @__PURE__ */ jsx77(RailTabTitle, {}),
           tabTitleText: () => botsText().rail.title,
           placement: "main",
           // Repair persisted layouts that stranded Cronjobs in the Bots tab strip.
@@ -33118,7 +34020,7 @@ var plugin_default = {
           defaultCollapsed: true,
           width: "320px"
         },
-        render: () => /* @__PURE__ */ jsx76(MissionRail, {})
+        render: () => /* @__PURE__ */ jsx77(MissionRail, {})
       });
       if (restoreDismissed && typeof host.undismissPane === "function") {
         host.undismissPane(`${ID}:routines`);
@@ -33226,33 +34128,40 @@ var plugin_default = {
       registerRoutinesPane(true);
     }
     ctx.register({
+      id: "bot-tool-cards",
+      area: sdk_compat_exports.TOOL_RUN_RENDERER_AREA,
+      data: {
+        render: (props) => /* @__PURE__ */ jsx77(ToolRunCards, { ...props })
+      }
+    });
+    ctx.register({
       id: "chat-empty",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx76(BotChatEmpty, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx77(BotChatEmpty, { sessionId })
       }
     });
     ctx.register({
       id: "chat-empty-tips",
       area: sdk_compat_exports.CHAT_EMPTY_AREA,
       data: {
-        render: ({ sessionId }) => /* @__PURE__ */ jsx76(BotChatTips, { sessionId })
+        render: ({ sessionId }) => /* @__PURE__ */ jsx77(BotChatTips, { sessionId })
       }
     });
     ctx.register({
       id: "bot-inbound-cards",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx76(BotInboundCards, {})
+      render: () => /* @__PURE__ */ jsx77(BotInboundCards, {})
     });
     ctx.register({
       id: "bot-context-nudge",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx76(BotContextNudge, {})
+      render: () => /* @__PURE__ */ jsx77(BotContextNudge, {})
     });
     ctx.register({
       id: "bot-delegate-hint",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx76(BotDelegateHint, {})
+      render: () => /* @__PURE__ */ jsx77(BotDelegateHint, {})
     });
     ctx.register({
       id: "new-agent",
@@ -33291,7 +34200,7 @@ var plugin_default = {
             label: displayName(bot, botRosterMeta(bot, meta)),
             keywords: ["bot", "agent", "chat", bot.name, botHandle(bot.name, bot)].filter(Boolean),
             detail: () => bot.remoteSource ? "remote" : "local",
-            icon: (props) => /* @__PURE__ */ jsx76(sdk_compat_exports.Codicon, { name: "robot", ...props }),
+            icon: (props) => /* @__PURE__ */ jsx77(sdk_compat_exports.Codicon, { name: "robot", ...props }),
             run: () => void openRosterBot(bot)
           }));
         }
@@ -33315,13 +34224,13 @@ var plugin_default = {
       area: sdk_compat_exports.TRANSCRIPT_DIRECTIVE_AREA,
       data: {
         name: BOT_PLAN_DIRECTIVE,
-        render: (props) => /* @__PURE__ */ jsx76(BotPlanCard, { ...props })
+        render: (props) => /* @__PURE__ */ jsx77(BotPlanCard, { ...props })
       }
     });
     ctx.register({
       id: "bot-plan-checklist",
       area: sdk_compat_exports.COMPOSER_AREAS.top,
-      render: () => /* @__PURE__ */ jsx76(BotPlanChecklist, {})
+      render: () => /* @__PURE__ */ jsx77(BotPlanChecklist, {})
     });
     ctx.register({
       id: "mention-middleware",
@@ -33416,7 +34325,7 @@ var plugin_default = {
       ctx.register({
         id: "instant-ack",
         area: sdk_compat_exports.COMPOSER_AREAS.top,
-        render: () => /* @__PURE__ */ jsx76(InstantAckLine, {})
+        render: () => /* @__PURE__ */ jsx77(InstantAckLine, {})
       });
     }
     for (const contribution of [
@@ -33424,7 +34333,7 @@ var plugin_default = {
         id: "team-page",
         area: sdk_compat_exports.ROUTES_AREA,
         data: { path: "/team" },
-        render: () => /* @__PURE__ */ jsx76(TeamPage, {})
+        render: () => /* @__PURE__ */ jsx77(TeamPage, {})
       },
       {
         id: "team-nav",

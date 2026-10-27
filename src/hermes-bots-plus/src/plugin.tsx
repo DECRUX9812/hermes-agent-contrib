@@ -31,6 +31,7 @@ import {
   SIDEBAR_NAV_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
   type SidebarNavContribution,
+  TOOL_RUN_RENDERER_AREA,
   TRANSCRIPT_DIRECTIVE_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
@@ -39,6 +40,7 @@ import type {
   ChatHeaderSlotContribution,
   PluginContext,
   ProfileGroupRoute,
+  ToolRunRendererProps,
   TranscriptDirectiveProps
 } from '@hermes/plugin-sdk'
 import pluginUtilities from 'virtual:plugin-utilities'
@@ -133,6 +135,7 @@ import { bumpBotOpenGeneration, getBotOpenGeneration, ID, setPluginCtx } from '.
 import { TEAM_LOCALES } from './team-i18n'
 import { TeamPage } from './team-page'
 import { mountPluginStyles } from './tones'
+import { ToolRunCards } from './tool-card'
 import type { GroupChat, RosterRow } from './types'
 import { loadBotSections } from './user-sections'
 
@@ -851,6 +854,17 @@ export default {
     } else {
       registerRoutinesPane(true)
     }
+
+    // Bot Chat tool activity: live cards for a transcript tool run (browser
+    // steps with screenshots, file reads, searches). Core only offers the
+    // slot in a Bot Chat and keeps its own rows for everything else.
+    ctx.register({
+      id: 'bot-tool-cards',
+      area: TOOL_RUN_RENDERER_AREA,
+      data: {
+        render: (props: ToolRunRendererProps) => <ToolRunCards {...props} />
+      }
+    })
 
     // A bot's chat before it has spoken: core's splash is Hermes' wordmark and
     // stands down for any session that exists, so the bot titles its own.

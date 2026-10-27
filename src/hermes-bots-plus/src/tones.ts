@@ -1,3 +1,5 @@
+import { toolCardStyleSheet } from './tool-card-styles'
+
 /** Status tones for Bot Mode, painted from the host theme's status tokens.
  *
  *  Bot Mode used raw Tailwind palette classes (amber/emerald/red/violet with
@@ -67,7 +69,7 @@ export function mountPluginStyles(utilities = ''): () => void {
     document.head.appendChild(el)
   }
 
-  el.textContent = toneStyleSheet() + utilities
+  el.textContent = toneStyleSheet() + toolCardStyleSheet() + utilities
 
   return () => el?.remove()
 }
