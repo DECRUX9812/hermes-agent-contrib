@@ -41,6 +41,12 @@ export function i18nId(): string {
   return source.startsWith('plugin:') ? source.slice('plugin:'.length) : ID
 }
 
+/** A contribution's pane id. `register` scopes panes by `plugin.id` too, so
+ *  the same `ID`-vs-`plugin.id` split applies: build pane ids from i18nId(). */
+export function paneId(local: string): string {
+  return `${i18nId()}:${local}`
+}
+
 /** Monotonic open generation. A bot open and a group open supersede each
  *  other, so both bump it and both compare against it — and they no longer
  *  live in the same module. */

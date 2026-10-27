@@ -325,6 +325,9 @@ function i18nId() {
   const source = pluginCtx?.source ?? "";
   return source.startsWith("plugin:") ? source.slice("plugin:".length) : ID;
 }
+function paneId2(local) {
+  return `${i18nId()}:${local}`;
+}
 function getBotOpenGeneration() {
   return botOpenGeneration;
 }
@@ -6393,6 +6396,7 @@ var css_default = '@layer utilities{.-left-\\[9999px\\]{left:-9999px}.aspect-\\[
 
 // src/agents-section.tsx
 init_sdk_compat();
+init_shared();
 import { useState as useState18 } from "react";
 
 // src/avatar.tsx
@@ -18997,7 +19001,7 @@ function AgentsSection() {
           {
             "aria-label": b.agents.manage,
             className: "grid size-5 place-items-center rounded-sm bg-transparent text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground group-hover/section:opacity-100 focus-visible:opacity-100",
-            onClick: () => host.revealPane("hermes-bots:pane"),
+            onClick: () => host.revealPane(paneId2("pane")),
             type: "button",
             children: /* @__PURE__ */ jsx26(sdk_compat_exports.Codicon, { name: "settings-gear", size: "0.75rem" })
           }
@@ -19035,7 +19039,7 @@ function AgentsSection() {
         sdk_compat_exports.RowButton,
         {
           className: "flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--ui-control-hover-background) hover:text-foreground",
-          onClick: () => host.revealPane("hermes-bots:pane"),
+          onClick: () => host.revealPane(paneId2("pane")),
           children: [
             /* @__PURE__ */ jsx26("span", { className: "min-w-0 truncate", children: b.agents.allBots(visible.length) }),
             /* @__PURE__ */ jsx26(sdk_compat_exports.Codicon, { className: "ml-auto shrink-0 text-[0.75rem] text-(--ui-text-quaternary)", name: "arrow-right" })
@@ -21415,7 +21419,6 @@ function stopBotRelay() {
 }
 
 // src/bot-events-view.tsx
-init_shared();
 import { jsx as jsx30, jsxs as jsxs29 } from "react/jsx-runtime";
 function eventGlyphClass(status) {
   switch (status) {
@@ -21468,7 +21471,7 @@ function BotInboundCards() {
     if (event.action === "group" && event.room) {
       openGroupChat(event.room);
     } else if (event.action === "routines") {
-      void host.revealPane(`${ID}:routines`);
+      void host.revealPane(paneId("routines"));
     }
   };
   const summaryFor = (event) => {
@@ -22908,7 +22911,6 @@ function openBotScreen(bot, meta) {
 }
 
 // src/bot-tips-view.tsx
-init_shared();
 import { jsx as jsx39, jsxs as jsxs37 } from "react/jsx-runtime";
 function botTips(bot, meta) {
   return [
@@ -22920,12 +22922,12 @@ function botTips(bot, meta) {
     {
       icon: "history",
       id: "schedule",
-      run: () => void host.revealPane(`${ID}:routines`)
+      run: () => void host.revealPane(paneId("routines"))
     },
     {
       icon: "organization",
       id: "delegate",
-      run: () => void host.revealPane(`${ID}:pane`)
+      run: () => void host.revealPane(paneId("pane"))
     }
   ];
 }
@@ -35275,29 +35277,22 @@ var plugin_default = {
         render: () => /* @__PURE__ */ jsx79(MissionRail, {})
       });
       if (restoreDismissed && typeof host.undismissPane === "function") {
-        host.undismissPane(`${ID}:routines`);
+        host.undismissPane(paneId2("routines"));
       }
       return dispose;
     };
     if (typeof host.paneVisibility === "function") {
-      const $sidebarVisible = host.paneVisibility(`${ID}:pane`);
+      const $sidebarVisible = host.paneVisibility(paneId2("pane"));
       let unregisterRoutines = null;
       let restoreDismissedOnRegister = true;
       const syncRoutinesPane = () => {
-        const sidebarNow = Boolean($sidebarVisible.get());
-        if ($botsPaneVisible.get() !== sidebarNow) {
-          $botsPaneVisible.set(sidebarNow);
-          if (sidebarNow) {
-            restoreDismissedOnRegister = true;
-          }
-        }
         if (botChatOwnsWorkspace()) {
           if (!unregisterRoutines) {
             unregisterRoutines = registerRoutinesPane(restoreDismissedOnRegister);
             restoreDismissedOnRegister = false;
           }
         } else if (unregisterRoutines) {
-          const $self = host.paneVisibility(`${ID}:routines`);
+          const $self = host.paneVisibility(paneId2("routines"));
           if ($botsPaneVisible.get() && $self && typeof $self.get === "function" && $self.get()) {
             return;
           }
@@ -35444,7 +35439,7 @@ var plugin_default = {
         id: `${ID}.agents`,
         label: "Bots",
         keywords: ["bot", "agent", "roster", "chat"],
-        run: () => void host.revealPane(`${ID}:pane`),
+        run: () => void host.revealPane(paneId2("pane")),
         items: () => {
           const meta = $botMeta.get();
           const snapshot = cachedUnionRoster();

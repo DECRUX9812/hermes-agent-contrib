@@ -42,12 +42,12 @@ export function botTips(bot: RosterRow, meta: BotMeta | null | undefined): BotTi
     {
       icon: 'history',
       id: 'schedule',
-      run: () => void host.revealPane(`${ID}:routines`)
+      run: () => void host.revealPane(paneId('routines'))
     },
     {
       icon: 'organization',
       id: 'delegate',
-      run: () => void host.revealPane(`${ID}:pane`)
+      run: () => void host.revealPane(paneId('pane'))
     }
   ]
 }

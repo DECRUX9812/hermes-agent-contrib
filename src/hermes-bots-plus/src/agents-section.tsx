@@ -30,6 +30,7 @@ import {
 } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
+import { paneId } from './shared'
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { isBackfilledFacePng } from './avatar-image'
 import {
@@ -178,7 +179,7 @@ export function AgentsSection() {
             <button
               aria-label={b.agents.manage}
               className="grid size-5 place-items-center rounded-sm bg-transparent text-(--ui-text-tertiary) opacity-0 transition-opacity hover:bg-(--ui-control-hover-background) hover:text-foreground group-hover/section:opacity-100 focus-visible:opacity-100"
-              onClick={() => host.revealPane('hermes-bots:pane')}
+              onClick={() => host.revealPane(paneId('pane'))}
               type="button"
             >
               <Codicon name="settings-gear" size="0.75rem" />
@@ -222,7 +223,7 @@ export function AgentsSection() {
           {visible.length > 0 && !searchQuery && (
             <RowButton
               className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1 text-left text-[0.8125rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--ui-control-hover-background) hover:text-foreground"
-              onClick={() => host.revealPane('hermes-bots:pane')}
+              onClick={() => host.revealPane(paneId('pane'))}
             >
               <span className="min-w-0 truncate">{b.agents.allBots(visible.length)}</span>
               <Codicon className="ml-auto shrink-0 text-[0.75rem] text-(--ui-text-quaternary)" name="arrow-right" />

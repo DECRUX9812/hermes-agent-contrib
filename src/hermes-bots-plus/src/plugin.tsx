@@ -134,7 +134,7 @@ import { startScreenAutoRaise } from './screen-autoraise'
 import { ProfileGroupScreenPortal } from './screen-portal'
 import { startHideSweepScheduler } from './session-sweep'
 import { SHARE_LOCALES } from './share-i18n'
-import { bumpBotOpenGeneration, getBotOpenGeneration, ID, setPluginCtx } from './shared'
+import { bumpBotOpenGeneration, getBotOpenGeneration, ID, paneId, setPluginCtx } from './shared'
 import { TEAM_LOCALES } from './team-i18n'
 import { TeamPage } from './team-page'
 import { mountPluginStyles } from './tones'
@@ -675,32 +675,20 @@ export default {
       // inside one Bots session (a group room and back), and a ✕ from that
       // same session must survive those.
       if (restoreDismissed && typeof host.undismissPane === 'function') {
-        host.undismissPane(`${ID}:routines`)
+        host.undismissPane(paneId('routines'))
       }
 
       return dispose
     }
 
     if (typeof host.paneVisibility === 'function') {
-      // The contribution-scoped pane id (`register` prefixes `${ID}:`).
-      const $sidebarVisible = host.paneVisibility(`${ID}:pane`)
+      // The contribution-scoped pane id (`register` prefixes `plugin.id:`).
+      const $sidebarVisible = host.paneVisibility(paneId('pane'))
       let unregisterRoutines: null | (() => void) = null
       // Armed by each Bots-tab entry, spent by the first registration after it.
       let restoreDismissedOnRegister = true
 
       const syncRoutinesPane = () => {
-        // The pane-visibility listener can miss the first Bots-tab entry, so
-        // reconcile the cached flag from the atom before deciding.
-        const sidebarNow = Boolean($sidebarVisible.get())
-
-        if ($botsPaneVisible.get() !== sidebarNow) {
-          $botsPaneVisible.set(sidebarNow)
-
-          if (sidebarNow) {
-            restoreDismissedOnRegister = true
-          }
-        }
-
         if (botChatOwnsWorkspace()) {
           if (!unregisterRoutines) {
             unregisterRoutines = registerRoutinesPane(restoreDismissedOnRegister)
@@ -712,7 +700,7 @@ export default {
           // still on screen and the tile is the one holding focus, keep it —
           // a pane must never unregister itself out from under its own click.
           // Leaving Bot Mode ($botsPaneVisible false) still unregisters.
-          const $self = host.paneVisibility(`${ID}:routines`)
+          const $self = host.paneVisibility(paneId('routines'))
 
           if ($botsPaneVisible.get() && $self && typeof $self.get === 'function' && $self.get()) {
             return
@@ -967,7 +955,7 @@ export default {
         id: `${ID}.agents`,
         label: 'Bots',
         keywords: ['bot', 'agent', 'roster', 'chat'],
-        run: () => void host.revealPane(`${ID}:pane`),
+        run: () => void host.revealPane(paneId('pane')),
         items: () => {
           const meta = $botMeta.get()
           const snapshot = cachedUnionRoster()

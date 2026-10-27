@@ -105,7 +105,7 @@ export function BotInboundCards() {
     if (event.action === 'group' && event.room) {
       openGroupChat(event.room)
     } else if (event.action === 'routines') {
-      void host.revealPane(`${ID}:routines`)
+      void host.revealPane(paneId('routines'))
     }
   }
 
