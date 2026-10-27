@@ -30,7 +30,7 @@ import {
   localDisplaySkinProfile
 } from './backend-sync'
 import { $chatFontFamily, resolveChatFontFamily } from './chat-font'
-import { ensureContrastOklch, harmonize, normalizeHex, readableInk } from './color'
+import { harmonize, normalizeHex, readableInk } from './color'
 import { BUILTIN_THEME_LIST, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme, RETIRED_SKINS } from './presets'
 import { $pendingModeApply } from './request'
 import { retintTheme } from './retint'
@@ -52,51 +52,13 @@ const LAST_PROFILE_KEY = 'hermes-desktop-active-profile-v1'
 
 export type ThemeMode = 'light' | 'dark' | 'system'
 
-// Same list as the inline pre-paint script in index.html.
-const TRANSPARENT_WINDOWS = new Set(['hud', 'overlay', 'quick', 'wake'])
 const INJECTED_FONT_URLS = new Set<string>()
 
 const resolveMode = (mode: ThemeMode, systemDark = matchesQuery('(prefers-color-scheme: dark)')): 'light' | 'dark' =>
   mode === 'system' ? (systemDark ? 'dark' : 'light') : mode
 
-// Plugin and backend skins register after first paint. The last one painted is replayed from storage until
-// the registry resolves it, so a contributed default (Warm Paper) never flashes the stock palette first.
-const BOOT_SKIN_KEY = 'hermes-boot-skin'
-
-const bootSkin = (name: string): DesktopTheme | undefined => {
-  try {
-    const seed = JSON.parse(window.localStorage.getItem(BOOT_SKIN_KEY) ?? 'null') as DesktopTheme | null
-
-    return seed?.name === name && seed.colors ? seed : undefined
-  } catch {
-    return undefined
-  }
-}
-
-const seedOf = (name: string): DesktopTheme | undefined => {
-  const seed = resolveTheme(name)
-
-  if (!seed) {
-    return typeof window === 'undefined' ? undefined : bootSkin(name)
-  }
-
-  if (typeof window !== 'undefined' && !BUILTIN_THEME_LIST.includes(seed)) {
-    try {
-      const json = JSON.stringify(seed)
-
-      if (window.localStorage.getItem(BOOT_SKIN_KEY) !== json) {
-        window.localStorage.setItem(BOOT_SKIN_KEY, json)
-      }
-    } catch {
-      // Storage unavailable: the plugin skin just paints once it registers.
-    }
-  }
-
-  return seed
-}
-
 const normalizeSkin = (name: string | null): string =>
-  name && seedOf(name) && !RETIRED_SKINS.has(name) ? name : DEFAULT_SKIN_NAME
+  name && resolveTheme(name) && !RETIRED_SKINS.has(name) ? name : DEFAULT_SKIN_NAME
 
 /**
  * A stored mode, or `system` when there isn't one.
@@ -175,7 +137,7 @@ const storedSkin = (profile: string): string =>
 
 /** The live profile's committed theme: what the ThemeProvider paints without a preview. */
 export const committedTheme = (): DesktopTheme =>
-  seedOf(normalizeSkin(storedSkin(normalizeProfileKey($activeGatewayProfile.get())))) ?? nousTheme
+  resolveTheme(normalizeSkin(storedSkin(normalizeProfileKey($activeGatewayProfile.get())))) ?? nousTheme
 
 /** Everything a peer window could change that this one has to repaint for. */
 const APPEARANCE_KEYS = new Set([SKIN_KEY, PROFILE_SKINS_KEY, MODE_KEY, PROFILE_MODES_KEY])
@@ -224,7 +186,7 @@ function synthLightColors(seed: DesktopTheme): DesktopThemeColors {
 
 /** Returns the seed palette for a given skin + mode (no overrides applied). */
 export function getBaseColors(skinName: string, mode: 'light' | 'dark'): DesktopThemeColors {
-  return paletteFor(seedOf(skinName) ?? nousTheme, mode)
+  return paletteFor(resolveTheme(skinName) ?? nousTheme, mode)
 }
 
 function paletteFor(seed: DesktopTheme, mode: 'light' | 'dark'): DesktopThemeColors {
@@ -253,7 +215,7 @@ function deriveFrom(seed: DesktopTheme, mode: 'light' | 'dark'): DesktopTheme {
 }
 
 const deriveTheme = (skinName: string, mode: 'light' | 'dark'): DesktopTheme =>
-  deriveFrom({ ...(seedOf(skinName) ?? nousTheme), name: skinName }, mode)
+  deriveFrom({ ...(resolveTheme(skinName) ?? nousTheme), name: skinName }, mode)
 
 /** The theme a saved accent was retinted from; any other theme is its own base. */
 export const accentBase = (theme: DesktopTheme): DesktopTheme =>
@@ -359,10 +321,7 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
   const typo = { ...DEFAULT_TYPOGRAPHY, ...nousTheme.typography, ...theme.typography }
   const rendered = renderedModeFor(c, mode)
   const isDark = rendered === 'dark'
-  // AA guard at paint time, hue kept: accents clear 4.5:1 (plus margin) and ink 7:1 on any skin, imported ones included.
-  const midground = ensureContrastOklch(c.midground ?? c.ring, c.background, 4.8)
-  const primary = ensureContrastOklch(c.primary, c.background, 4.8)
-  const ink = ensureContrastOklch(c.foreground, c.background, 7)
+  const midground = c.midground ?? c.ring
   const skinName = theme.name.endsWith(`-${mode}`) ? theme.name.slice(0, -mode.length - 1) : theme.name
 
   root.style.setProperty('color-scheme', rendered)
@@ -378,12 +337,12 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
 
   // Brand seeds feed every glass + shadcn token via `color-mix()` in styles.css.
   const seeds: Record<string, string> = {
-    '--theme-foreground': ink,
-    '--theme-primary': primary,
+    '--theme-foreground': c.foreground,
+    '--theme-primary': c.primary,
     '--theme-secondary': c.secondary,
     '--theme-accent-soft': c.accent,
     '--theme-midground': midground,
-    '--theme-warm': primary,
+    '--theme-warm': c.primary,
     '--theme-background-seed': c.background,
     '--theme-sidebar-seed': c.sidebarBackground ?? c.background,
     '--theme-card-seed': c.card,
@@ -400,10 +359,6 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
     '--dt-input': c.input,
     '--dt-ring': c.ring,
     '--dt-muted': c.muted,
-    // Secondary and muted text as solid roles, not 74%/54% washes of ink, so they hold 5.5:1 / 4.6:1 on every skin.
-    '--ui-text-secondary': ensureContrastOklch(mix(c.background, ink, 0.8), c.background, 5.5),
-    '--ui-text-tertiary': ensureContrastOklch(mix(c.background, ink, 0.68), c.background, 4.6),
-    '--ui-text-quaternary': ensureContrastOklch(mix(c.background, ink, 0.5), c.background, 3.2),
     '--dt-midground-foreground': c.midgroundForeground ?? readableInk(midground),
     // A LOUD fill of the brand colour, for the rare surface that has to read as
     // the app speaking rather than as chrome. `primary` alone can't do that job:
@@ -442,14 +397,6 @@ function applyTheme(theme: DesktopTheme, mode: 'light' | 'dark', chatFontFamily 
     background: chromeBg,
     foreground: c.foreground
   })
-
-  // The pre-paint script pins an inline background on <html> for the first
-  // frame. Keep it in step with the live theme, or a theme switch leaves the
-  // old colour behind every overscroll / rubber-band edge until the next
-  // reload. Transparent windows (HUD, overlay, quick, wake) never get one.
-  if (!TRANSPARENT_WINDOWS.has(new URLSearchParams(window.location.search).get('win') ?? '')) {
-    document.documentElement.style.backgroundColor = chromeBg
-  }
 
   // Raw (non-JSON) keys read by the inline pre-paint script in index.html —
   // they let a brand-new window paint the themed background on its very first

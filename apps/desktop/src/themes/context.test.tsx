@@ -52,8 +52,8 @@ describe('ThemeProvider ← backend skin sync', () => {
     // Recolor the same skin file. The same-name apply guard correctly no-ops
     // (protects manual desktop picks), so the repaint must come from the
     // registry update reaching the active theme derivation.
-    act(() => ingestBackendSkin(bloomberg('#ff8fc8'), { apply: true }))
-    expect(cssVar('--theme-foreground')).toBe('#ff8fc8')
+    act(() => ingestBackendSkin(bloomberg('#ff2d95'), { apply: true }))
+    expect(cssVar('--theme-foreground')).toBe('#ff2d95')
   })
 
   it('does not repaint an edit to an INACTIVE skin', () => {
