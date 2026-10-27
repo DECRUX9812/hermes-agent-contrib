@@ -1,5 +1,5 @@
 /**
- * Hermes Teams (Bot Mode v3) — Roles, Team Templates, and Kanban DAG Lanes.
+ * Hermes Teams: roles, team templates, and the lanes of each team run.
  *
  * Speaks to the `hermes-teams` gateway plugin RPCs:
  *   teams.roles.list      {} -> { roles: [{ id, name, profile, avatar, model, bot_exists, summary }] }
@@ -16,7 +16,10 @@ import {
   Input,
   PALETTE_AREA,
   PANES_AREA,
+  PanelEmpty,
+  Skeleton,
   STATUSBAR_AREAS,
+  Tip,
   haptic,
   host,
 } from '@hermes/plugin-sdk'
@@ -27,13 +30,22 @@ const ID = 'hermes-teams'
 const PANE_ID = `${ID}:pane`
 const POLL_MS = 3500
 
+// Theme vars only (audit M3/M11): the tint is the dot colour mixed into the surface.
+const tone = (label, dot) => ({ label, dot, bg: `color-mix(in srgb, ${dot} 14%, transparent)` })
 const LANE_TONE = {
-  done: { label: 'done', dot: 'var(--ui-green)', bg: 'rgba(61, 220, 151, 0.14)' },
-  in_progress: { label: 'running', dot: 'var(--ui-purple)', bg: 'rgba(180, 140, 255, 0.16)' },
-  ready: { label: 'ready', dot: 'var(--ui-accent)', bg: 'rgba(90, 167, 255, 0.14)' },
-  todo: { label: 'gated', dot: 'var(--ui-text-quaternary)', bg: 'rgba(127, 127, 127, 0.1)' },
-  blocked: { label: 'blocked', dot: 'var(--ui-red)', bg: 'rgba(255, 92, 108, 0.15)' },
+  done: tone('done', 'var(--ui-green)'),
+  in_progress: tone('running', 'var(--ui-purple)'),
+  ready: tone('ready', 'var(--ui-accent)'),
+  todo: tone('waiting', 'var(--ui-text-quaternary)'),
+  blocked: tone('blocked', 'var(--ui-red)'),
 }
+
+// A backend without the hermes-teams gateway plugin answers "unknown method".
+// That is a version gap, not an error, so the pane says so once and stops polling (audit M11).
+const isMissingMethod = (err) => (err && err.code === -32601) || /unknown method/i.test(String(err && err.message))
+const errText = (err) => (err && err.message ? err.message : String(err))
+const SECTION = 'text-xs font-medium text-(--ui-text-secondary)'
+const CARD = 'flex flex-col gap-2 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) p-2.5'
 
 function laneStyle(status) {
   return LANE_TONE[status] || LANE_TONE.todo
@@ -51,6 +63,7 @@ function TeamsPane() {
   const [noteBody, setNoteBody] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState(null)
+  const [phase, setPhase] = useState('loading') // loading | ready | missing
 
   const refreshAll = useCallback(async () => {
     try {
@@ -68,16 +81,19 @@ function TeamsPane() {
         }
       }
       setError(null)
+      setPhase('ready')
     } catch (err) {
-      setError(err && err.message ? err.message : String(err))
+      if (isMissingMethod(err)) setPhase('missing')
+      else setError(errText(err))
     }
   }, [selectedRunId])
 
   useEffect(() => {
+    if (phase === 'missing') return undefined
     refreshAll()
     const timer = setInterval(refreshAll, POLL_MS)
     return () => clearInterval(timer)
-  }, [refreshAll])
+  }, [refreshAll, phase])
 
   useEffect(() => {
     if (!selectedRunId) {
@@ -105,7 +121,7 @@ function TeamsPane() {
       await host.request('teams.roles.ensure', { role: roleId })
       await refreshAll()
     } catch (err) {
-      setError(err && err.message ? err.message : String(err))
+      setError(errText(err))
     } finally {
       setBusy(false)
     }
@@ -129,7 +145,7 @@ function TeamsPane() {
       }
       await refreshAll()
     } catch (err) {
-      setError(err && err.message ? err.message : String(err))
+      setError(errText(err))
     } finally {
       setBusy(false)
     }
@@ -148,13 +164,29 @@ function TeamsPane() {
       setNoteBody('')
       await refreshAll()
     } catch (err) {
-      setError(err && err.message ? err.message : String(err))
+      setError(errText(err))
     } finally {
       setBusy(false)
     }
   }
 
   const activeRun = selectedRun || runs.find((r) => r.id === selectedRunId) || null
+
+  if (phase === 'missing') {
+    return jsx(PanelEmpty, {
+      icon: 'organization',
+      title: 'Teams needs a newer Hermes',
+      description: "This Hermes backend doesn't have the Teams service yet. Update Hermes, then check again.",
+      action: jsx(Button, { size: 'sm', variant: 'outline', onClick: () => setPhase('loading'), children: 'Check again' }),
+    })
+  }
+  if (phase === 'loading' && !error) {
+    return jsxs('div', {
+      'aria-busy': true,
+      className: 'flex flex-col gap-3 p-3',
+      children: [jsx(Skeleton, { className: 'h-4 w-1/3' }), jsx(Skeleton, { className: 'h-20 w-full' }), jsx(Skeleton, { className: 'h-32 w-full' })],
+    })
+  }
 
   return jsxs('div', {
     className: 'flex h-full flex-col gap-3 overflow-y-auto p-3 text-xs text-(--ui-text-primary)',
@@ -164,53 +196,36 @@ function TeamsPane() {
         children: [
           jsxs('div', {
             children: [
-              jsx('div', {
-                className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-tertiary)',
-                children: 'Bot Mode v3 · Team OS',
-              }),
-              jsx('div', {
-                className: 'text-sm font-semibold',
-                children: 'Roles & Kanban DAG Lanes',
-              }),
+              jsx('div', { className: 'text-sm font-semibold', children: 'Teams' }),
+              jsx('div', { className: 'text-xs text-(--ui-text-tertiary)', children: 'Roles, team templates and their runs' }),
             ],
           }),
-          jsx(Button, {
-            size: 'sm',
-            variant: 'ghost',
-            onClick: refreshAll,
-            children: '↻',
-          }),
+          jsx(Button, { size: 'sm', variant: 'ghost', onClick: refreshAll, children: 'Refresh' }),
         ],
       }),
 
       error
         ? jsx('div', {
-            className: 'rounded-md border border-(--ui-red)/40 bg-(--ui-red)/10 p-2 text-[0.6875rem] text-(--ui-red)',
-            children: error,
+            className: 'rounded-md border border-(--ui-red)/40 bg-(--ui-red)/10 p-2 text-xs text-(--ui-red)',
+            children: `Couldn't reach Teams: ${error}`,
           })
         : null,
 
-      /* Dispatch New Team Run */
+      /* Start a team run */
       jsxs('div', {
-        className: 'flex flex-col gap-2 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) p-2.5',
+        className: CARD,
         children: [
-          jsx('div', {
-            className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-tertiary)',
-            children: 'Dispatch Team Run',
-          }),
+          jsx('div', { className: SECTION, children: 'Start a team run' }),
           jsxs('div', {
             className: 'flex flex-wrap gap-1.5',
             children: templates.map((tpl) =>
-              jsx('button', {
+              jsx(Button, {
                 key: tpl.id,
-                type: 'button',
+                size: 'xs',
+                variant: selectedTemplate === tpl.id ? 'default' : 'chip',
+                'aria-pressed': selectedTemplate === tpl.id,
                 onClick: () => setSelectedTemplate(tpl.id),
-                className: `rounded-md px-2 py-1 text-[0.6875rem] font-medium transition ${
-                  selectedTemplate === tpl.id
-                    ? 'bg-(--ui-accent) text-white'
-                    : 'bg-(--ui-bg-primary) text-(--ui-text-secondary) hover:text-(--ui-text-primary)'
-                }`,
-                children: `${tpl.name} (${(tpl.steps || []).length} steps)`,
+                children: `${tpl.name} · ${(tpl.steps || []).length} steps`,
               })
             ),
           }),
@@ -219,7 +234,7 @@ function TeamsPane() {
             children: [
               jsx(Input, {
                 value: goal,
-                placeholder: 'Team mission / goal…',
+                placeholder: 'What should the team do?',
                 onChange: (e) => setGoal(e.target.value),
                 onKeyDown: (e) => {
                   if (e.key === 'Enter') handleStartRun()
@@ -236,20 +251,17 @@ function TeamsPane() {
         ],
       }),
 
-      /* Active Team Runs & DAG Lanes */
+      /* Team runs and their lanes */
       jsxs('div', {
-        className: 'flex flex-col gap-2 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) p-2.5',
+        className: CARD,
         children: [
           jsxs('div', {
             className: 'flex items-center justify-between',
             children: [
-              jsx('span', {
-                className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-tertiary)',
-                children: `Team Runs (${runs.length})`,
-              }),
+              jsx('span', { className: SECTION, children: `Team runs (${runs.length})` }),
               activeRun
                 ? jsx('span', {
-                    className: 'font-mono text-[0.6875rem] text-(--ui-text-secondary)',
+                    className: 'text-xs text-(--ui-text-secondary)',
                     children: `${activeRun.done}/${activeRun.total} done · ${activeRun.state}`,
                   })
                 : null,
@@ -258,8 +270,8 @@ function TeamsPane() {
 
           runs.length === 0
             ? jsx('div', {
-                className: 'py-2 text-[0.6875rem] text-(--ui-text-tertiary)',
-                children: 'No team runs yet. Pick a template above and dispatch a goal.',
+                className: 'py-2 text-xs text-(--ui-text-tertiary)',
+                children: 'No team runs yet. Pick a template above and give it a goal.',
               })
             : jsxs('div', {
                 className: 'flex flex-col gap-1.5',
@@ -271,7 +283,7 @@ function TeamsPane() {
                         key: r.id,
                         type: 'button',
                         onClick: () => setSelectedRunId(r.id),
-                        className: `rounded px-2 py-0.5 text-left text-[0.6875rem] ${
+                        className: `rounded-md px-2 py-0.5 text-left text-xs ${
                           selectedRunId === r.id
                             ? 'bg-(--ui-accent)/20 font-semibold text-(--ui-text-primary)'
                             : 'bg-(--ui-bg-primary) text-(--ui-text-secondary)'
@@ -293,7 +305,7 @@ function TeamsPane() {
                             const st = laneStyle(lane.status)
                             return jsxs('div', {
                               key: lane.key,
-                              className: 'flex flex-col gap-0.5 rounded border border-(--ui-stroke-secondary) p-2',
+                              className: 'flex flex-col gap-0.5 rounded-md border border-(--ui-stroke-secondary) p-2',
                               style: { background: st.bg },
                               children: [
                                 jsxs('div', {
@@ -309,27 +321,27 @@ function TeamsPane() {
                                         jsx('span', { children: lane.title || lane.key }),
                                         lane.final
                                           ? jsx('span', {
-                                              className: 'rounded bg-(--ui-bg-primary) px-1 text-[0.625rem] text-(--ui-text-tertiary)',
+                                              className: 'rounded-md bg-(--ui-bg-primary) px-1 text-xs text-(--ui-text-tertiary)',
                                               children: 'final',
                                             })
                                           : null,
                                       ],
                                     }),
                                     jsx('span', {
-                                      className: 'font-mono text-[0.6875rem] text-(--ui-text-secondary)',
+                                      className: 'text-xs text-(--ui-text-secondary)',
                                       children: `${lane.profile} · ${st.label}`,
                                     }),
                                   ],
                                 }),
                                 (lane.needs || []).length > 0
                                   ? jsx('div', {
-                                      className: 'text-[0.625rem] text-(--ui-text-tertiary)',
-                                      children: `depends on: ${lane.needs.join(', ')}`,
+                                      className: 'text-xs text-(--ui-text-tertiary)',
+                                      children: `Waits for ${lane.needs.join(', ')}`,
                                     })
                                   : null,
                                 lane.summary
                                   ? jsx('div', {
-                                      className: 'mt-0.5 text-[0.6875rem] text-(--ui-text-secondary)',
+                                      className: 'mt-0.5 text-xs text-(--ui-text-secondary)',
                                       children: lane.summary,
                                     })
                                   : null,
@@ -343,7 +355,8 @@ function TeamsPane() {
                               jsx('select', {
                                 value: noteStep,
                                 onChange: (e) => setNoteStep(e.target.value),
-                                className: 'rounded border border-(--ui-stroke-secondary) bg-(--ui-bg-primary) px-1.5 py-1 text-[0.6875rem]',
+                                'aria-label': 'Step',
+                                className: 'rounded-md border border-(--ui-stroke-secondary) bg-(--ui-bg-primary) px-1.5 py-1 text-xs',
                                 children: [
                                   jsx('option', { key: '', value: '', children: 'All steps' }),
                                   ...(activeRun.lanes || []).map((lane) =>
@@ -353,7 +366,7 @@ function TeamsPane() {
                               }),
                               jsx(Input, {
                                 value: noteBody,
-                                placeholder: 'Post guidance to lane…',
+                                placeholder: 'Add a note for this step…',
                                 onChange: (e) => setNoteBody(e.target.value),
                                 onKeyDown: (e) => {
                                   if (e.key === 'Enter') handleSendNote()
@@ -375,29 +388,26 @@ function TeamsPane() {
         ],
       }),
 
-      /* Role Roster */
+      /* Roles */
       jsxs('div', {
-        className: 'flex flex-col gap-1.5 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) p-2.5',
+        className: CARD,
         children: [
-          jsx('div', {
-            className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-tertiary)',
-            children: `Role Roster (${roles.length})`,
-          }),
+          jsx('div', { className: SECTION, children: `Roles (${roles.length})` }),
           ...roles.map((r) =>
             jsxs('div', {
               key: r.id,
-              className: 'flex items-center justify-between gap-2 rounded bg-(--ui-bg-primary) px-2 py-1.5',
+              className: 'flex items-center justify-between gap-2 rounded-md bg-(--ui-bg-primary) px-2 py-1.5',
               children: [
                 jsxs('div', {
                   className: 'flex flex-col',
                   children: [
                     jsxs('span', {
                       className: 'font-medium',
-                      children: [`${r.avatar || '🤖'} ${r.name}`, ' · ', jsx('span', { className: 'font-mono text-[0.6875rem] text-(--ui-text-tertiary)', children: r.profile })],
+                      children: [`${r.avatar || '🤖'} ${r.name}`, ' · ', jsx('span', { className: 'text-xs text-(--ui-text-tertiary)', children: r.profile })],
                     }),
                     r.summary
                       ? jsx('span', {
-                          className: 'text-[0.6875rem] text-(--ui-text-tertiary)',
+                          className: 'text-xs text-(--ui-text-tertiary)',
                           children: r.summary,
                         })
                       : null,
@@ -405,7 +415,7 @@ function TeamsPane() {
                 }),
                 r.bot_exists
                   ? jsx('span', {
-                      className: 'rounded bg-(--ui-green)/15 px-1.5 py-0.5 font-mono text-[0.625rem] text-(--ui-green)',
+                      className: 'rounded-md bg-(--ui-green)/15 px-1.5 py-0.5 text-xs text-(--ui-green)',
                       children: 'ready',
                     })
                   : jsx(Button, {
@@ -425,10 +435,10 @@ function TeamsPane() {
 }
 
 function TeamsChip() {
-  return jsx('button', {
+  return jsx(Tip, { label: 'Open Teams: roles and team runs', children: jsx('button', {
     type: 'button',
-    title: 'Hermes Teams (Bot Mode v3) — click to reveal roles & Kanban lanes',
-    className: 'flex items-center gap-1 px-1.5 text-[0.6875rem] text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)',
+    'aria-label': 'Open Teams',
+    className: 'flex items-center gap-1 px-1.5 text-xs text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)',
     onClick: () => {
       haptic('tap')
       if (typeof host.revealPane === 'function') {
@@ -442,10 +452,10 @@ function TeamsChip() {
           className: 'h-1.5 w-1.5 rounded-full',
           style: { background: 'var(--ui-accent)' },
         }),
-        jsx('span', { children: 'teams' }),
+        jsx('span', { children: 'Teams' }),
       ],
     }),
-  })
+  }) })
 }
 
 export default {
@@ -456,7 +466,7 @@ export default {
     ctx.register({
       id: 'pane',
       area: PANES_AREA,
-      title: 'teams',
+      title: 'Teams',
       data: { placement: 'right', width: '380px' },
       render: () => jsx(TeamsPane, {}),
     })
@@ -473,7 +483,7 @@ export default {
       area: PALETTE_AREA,
       data: {
         id: 'hermes-teams.reveal',
-        label: 'Hermes Teams: Open Roles & Lanes',
+        label: 'Teams: open roles and runs',
         keywords: ['team', 'roles', 'lanes', 'kanban', 'bot mode', 'dag'],
         run: () => {
           if (typeof host.revealPane === 'function') {
