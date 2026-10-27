@@ -1,0 +1,48 @@
+name: inline-visualization
+version: 1.0.0
+description: >
+  Inline visualizations for the chat thread. Gives the agent a
+  `create_visualization` tool that renders a rich, interactive card — chart,
+  stats dashboard, heatmap, timeline — directly inside the conversation. The
+  card is a self-contained HTML document written to $HERMES_HOME/visualizations/
+  and surfaced through the desktop's existing `::preview{file="…"}` inline frame
+  (sandboxed iframe, opaque origin, themed, live-sized, `data-hermes-send`
+  talk-back). No Desktop code and no core changes: the renderer already ships in
+  Hermes, so this works on any current install. Cards are appended to the agent's
+  reply, never scraped from it — the agent's own text is never rewritten.
+author: DECRUX9812
+kind: backend
+platforms:
+  - linux
+  - macos
+  - windows
+provides_hooks:
+  - transform_llm_output
+provides_tools:
+  - create_visualization
+config_schema:
+  enabled:
+    type: bool
+    default: true
+    label: Render inline cards
+    description: Attach the visualization card to the turn that created it.
+  max_chars:
+    type: int
+    default: 200000
+    label: Max HTML size
+    description: Reject a visualization larger than this many characters.
+  keep_frames:
+    type: int
+    default: 40
+    label: Frames to keep
+    description: Newest N rendered frames retained on disk before pruning.
+  state_dir:
+    type: str
+    default: ""
+    label: Frames directory
+    description: Override where frames are written (default $HERMES_HOME/visualizations).
+  allow_remote_scripts:
+    type: bool
+    default: true
+    label: Allow CDN scripts
+    description: Permit <script src> from jsdelivr, unpkg and cdnjs only.
