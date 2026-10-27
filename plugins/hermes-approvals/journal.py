@@ -16,9 +16,10 @@ import logging
 import os
 from pathlib import Path
 import sqlite3
-import threading
 import time
 from typing import Any, Optional
+
+from . import shared
 
 logger = logging.getLogger("hermes_approvals.journal")
 
@@ -31,6 +32,8 @@ WITHDRAWN = "withdrawn"
 ALREADY_RAN_REASON = "This exact step already ran once; Hermes will not run it twice."
 RESTART_REASON = "Hermes restarted before this was answered. Nothing ran."
 RAN_BEFORE_RESTART_REASON = "Hermes restarted while this step was running. It will not run again."
+# Upstream answers a prompt withdrawn by an interrupt or session stop with a deny; the desktop names it.
+SESSION_STOPPED_REASON = "session_stopped"
 
 _GRANT_CHOICES = frozenset({"once", "session", "always"})
 _CANONICAL_CHOICES = frozenset({"once", "session", "always", "deny"})
@@ -66,8 +69,10 @@ _PUBLIC_FIELDS = (
     "reason",
 )
 
-_swept_paths: set[str] = set()
-_sweep_lock = threading.Lock()
+# Process-wide (shared.py), so a reloaded copy of the plugin does not sweep the file again.
+_STATE = shared.get()
+_swept_paths: set[str] = _STATE.swept_paths
+_sweep_lock = _STATE.sweep_lock
 
 
 def normalize_choice(choice: Any) -> Optional[str]:
@@ -407,8 +412,8 @@ def list_approvals(
 approvals_for_session = list_approvals
 
 
-def settle(request_id: str, reason: str, *, home: Optional[str | Path] = None) -> None:
-    """Withdraw a pending approval with a reason."""
+def settle(request_id: str, reason: str, *, status: str = WITHDRAWN, home: Optional[str | Path] = None) -> None:
+    """Close a pending approval with a reason (withdrawn unless the agent was told otherwise)."""
     if not request_id or reason == "resolved":
         return
     now = time.time()
@@ -416,7 +421,7 @@ def settle(request_id: str, reason: str, *, home: Optional[str | Path] = None) -
         conn.execute(
             "UPDATE fork_approvals SET status = ?, reason = ?, decided_at = ? "
             "WHERE request_id = ? AND status = ?",
-            (WITHDRAWN, reason, now, request_id, PENDING),
+            (status, reason, now, request_id, PENDING),
         )
         conn.commit()
 

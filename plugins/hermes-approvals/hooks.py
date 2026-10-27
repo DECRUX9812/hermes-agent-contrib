@@ -9,21 +9,22 @@
 from __future__ import annotations
 
 import logging
-import threading
 from collections import OrderedDict
 from typing import Any
 
-from . import journal
+from . import journal, shared
 
 log = logging.getLogger("hermes_approvals.hooks")
 
 _GRANTS = frozenset({"once", "session", "always"})
 _MAX_TRACKED = 512
-_lock = threading.Lock()
-_tool_names: "OrderedDict[str, str]" = OrderedDict()
-_allowed_calls: "OrderedDict[str, None]" = OrderedDict()
+# Process-wide (shared.py): a reloaded copy of this module sees the same prompts and calls.
+_STATE = shared.get()
+_lock = _STATE.lock
+_tool_names: "OrderedDict[str, str]" = _STATE.tool_names
+_allowed_calls: "OrderedDict[str, None]" = _STATE.allowed_calls
 # request_id -> the approval queue key of a prompt still waiting in this process.
-_live_keys: "OrderedDict[str, str]" = OrderedDict()
+_live_keys: "OrderedDict[str, str]" = _STATE.live_keys
 
 
 def _remember(store: OrderedDict, key: str, value: Any) -> None:
@@ -84,7 +85,11 @@ def on_post_approval_response(**kw: Any) -> None:
         if row and row.get("status") == journal.ALLOWED and row.get("tool_call_id"):
             _remember(_allowed_calls, str(row["tool_call_id"]), None)
         return
-    journal.settle(request_id, str(kw.get("cancelled") or choice or "session_closed"))
+    if kw.get("cancelled"):
+        # An interrupt or session stop: the agent was denied, so the row says so rather than "withdrawn".
+        journal.settle(request_id, journal.SESSION_STOPPED_REASON, status=journal.DENIED)
+        return
+    journal.settle(request_id, choice or "session_closed")
 
 
 def on_pre_tool_call(**kw: Any):

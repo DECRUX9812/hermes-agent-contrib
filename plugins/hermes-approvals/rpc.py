@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Any
 
-from . import hooks, journal
+from . import hooks, journal, shared
 
 logger = logging.getLogger("hermes_approvals.rpc")
 
@@ -60,10 +60,20 @@ def handle_decide(rid: Any, params: dict[str, Any]) -> dict[str, Any]:
         "resolved": resolved
     })
 
+METHODS = ("fork.approvals.list", "fork.approvals.decide")
+
+
 def install(server: Any) -> list[str]:
-    names = []
-    if hasattr(server, "register_method"):
+    """Register the methods once per server per process. A reloaded copy of the plugin
+    re-points them at its own handlers (same names, one entry each); every copy shares
+    shared.py's state, so either copy's handler answers the same prompts. Returns the names
+    newly registered by this call ([] when this server already had them)."""
+    if not hasattr(server, "register_method"):
+        return []
+    state = shared.get()
+    with state.install_lock:
+        first = id(server) not in state.registered
         server.register_method("fork.approvals.list", handle_list)
         server.register_method("fork.approvals.decide", handle_decide)
-        names.extend(["fork.approvals.list", "fork.approvals.decide"])
-    return names
+        state.registered[id(server)] = METHODS
+    return list(METHODS) if first else []

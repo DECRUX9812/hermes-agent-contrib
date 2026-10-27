@@ -119,7 +119,7 @@ def test_hooks_journal_a_prompt_its_answer_and_the_run(home_env):
     assert blocked == {"action": "block", "message": journal.ALREADY_RAN_REASON}
 
 
-def test_hooks_answer_once_and_withdraw_without_a_deny(home_env):
+def test_hooks_answer_once_and_record_an_interrupt_as_a_deny(home_env):
     hooks.HOOKS["pre_approval_request"](request_id="rq-h2", command="x", session_key="k", session_id="s")
     journal.decide_approval("rq-h2", "deny")
     hooks.HOOKS["post_approval_response"](request_id="rq-h2", choice="once", session_key="k")
@@ -128,7 +128,12 @@ def test_hooks_answer_once_and_withdraw_without_a_deny(home_env):
     hooks.HOOKS["pre_approval_request"](request_id="rq-h3", command="y", session_key="k", session_id="s")
     hooks.HOOKS["post_approval_response"](request_id="rq-h3", choice="cancelled", cancelled="interrupt")
     row = journal.get_approval("rq-h3")
-    assert row["status"] == "withdrawn" and row["reason"] == "interrupt"
+    assert row["status"] == "denied" and row["reason"] == journal.SESSION_STOPPED_REASON
+    assert row["choice"] is None and row["decided_at"]
+
+    hooks.HOOKS["pre_approval_request"](request_id="rq-h5", command="v", session_key="k", session_id="s")
+    hooks.HOOKS["post_approval_response"](request_id="rq-h5", choice="timeout")
+    assert journal.get_approval("rq-h5")["status"] == "withdrawn"
 
 
 def test_hooks_skip_coalesced_followers_and_prompts_without_ids(home_env):
@@ -185,3 +190,48 @@ def test_decide_does_not_allow_a_prompt_that_settled_before_the_answer(home_env,
     assert hooks.live_session_key("rq-l2") == ""
     out = rpc.handle_decide(1, {"session_id": "s-l", "request_id": "rq-l2", "choice": "once"})["result"]
     assert out["approval"]["status"] == "withdrawn"
+
+
+def _fresh_copy(name):
+    """Import the plugin again the way a second plugin manager does: evict, then re-execute."""
+    for key in [k for k in sys.modules if k == name or k.startswith(name + ".")]:
+        sys.modules.pop(key)
+    spec = importlib.util.spec_from_file_location(name, PLUGIN / "__init__.py", submodule_search_locations=[str(PLUGIN)])
+    copy = importlib.util.module_from_spec(spec)
+    sys.modules[name] = copy
+    spec.loader.exec_module(copy)
+    return copy
+
+
+def test_a_reloaded_copy_shares_state_and_registers_once(home_env, monkeypatch):
+    from tools import approval as stock
+    calls = []
+    monkeypatch.setattr(stock, "resolve_gateway_approval",
+                        lambda key, choice, request_id=None, **_k: calls.append((key, request_id)) or 1)
+    saved = {k: v for k, v in sys.modules.items() if k.startswith("hermes_plugins.hermes_approvals")}
+    try:
+        first = _fresh_copy("hermes_plugins.hermes_approvals_copy_a")
+        second = _fresh_copy("hermes_plugins.hermes_approvals_copy_b")
+        assert first.hooks is not second.hooks
+        assert first.hooks._live_keys is second.hooks._live_keys
+        assert first.journal._swept_paths is second.journal._swept_paths
+
+        methods = {}
+
+        class Server:
+            def register_method(self, name, fn):
+                methods[name] = fn
+
+        server = Server()
+        assert first.rpc.install(server) == ["fork.approvals.list", "fork.approvals.decide"]
+        assert second.rpc.install(server) == []
+        assert sorted(methods) == ["fork.approvals.decide", "fork.approvals.list"]
+
+        # The prompt is seen by the first copy's hook, answered through the second copy's method.
+        first.hooks.HOOKS["pre_approval_request"](request_id="rq-c1", command="w", session_key="key-c", session_id="s-c")
+        out = methods["fork.approvals.decide"](1, {"session_id": "s-c", "request_id": "rq-c1", "choice": "once"})["result"]
+        assert calls == [("key-c", "rq-c1")] and out["resolved"] is True
+    finally:
+        for key in [k for k in sys.modules if k.startswith("hermes_plugins.hermes_approvals_copy_")]:
+            sys.modules.pop(key)
+        sys.modules.update(saved)

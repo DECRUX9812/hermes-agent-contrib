@@ -27,7 +27,10 @@ def _install(server: Any) -> None:
         return
     names = rpc.install(server)
     _installed = True
-    log.info("hermes-approvals: registered %d gateway methods", len(names))
+    if names:
+        log.info("hermes-approvals: registered %d gateway methods", len(names))
+    else:
+        log.debug("hermes-approvals: gateway methods already registered; this copy now serves them")
 
 
 class _AfterServerImport(importlib.abc.MetaPathFinder):
