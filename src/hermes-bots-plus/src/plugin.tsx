@@ -34,7 +34,6 @@ import {
   TRANSCRIPT_DIRECTIVE_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
-import pluginUtilities from 'virtual:plugin-utilities'
 import type {
   ChatEmptyProps,
   ChatHeaderSlotContribution,
@@ -42,6 +41,7 @@ import type {
   ProfileGroupRoute,
   TranscriptDirectiveProps
 } from '@hermes/plugin-sdk'
+import pluginUtilities from 'virtual:plugin-utilities'
 
 import { AgentsSection } from './agents-section'
 import { AUTOPILOT_LOCALES } from './autopilot-i18n'
@@ -112,6 +112,7 @@ import { displayName } from './labels'
 import { hydrateRosterSortMode } from './live-status'
 import { MissionRail } from './mission-rail'
 import { hydrateNeedsYou } from './needs-you'
+import { wireLiveTurns } from './rail-live'
 import { hydrateRailSections, hydrateRailTab } from './rail-state'
 import { startBotRelay, stopBotRelay } from './relay'
 import { $activityToasts, openRosterBot } from './roster-actions'
@@ -1136,6 +1137,9 @@ export default {
         }
       }
     })
+
+    // Live turn state for the rail header and Approvals tab (rail-live.ts).
+    wireLiveTurns(dispose => ctx.onDispose?.(dispose))
 
     // Instant ack (zero core): registered AFTER the plan and mention
     // middleware so the receipt restates the draft that is actually sent

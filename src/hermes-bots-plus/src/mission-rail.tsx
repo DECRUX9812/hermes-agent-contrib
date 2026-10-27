@@ -51,6 +51,7 @@ import { EditProfileDialog } from './edit-profile-dialog'
 import { useBots } from './i18n'
 import { botRole, displayName } from './labels'
 import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
+import { $liveTurns } from './rail-live'
 import { $railCollapsed, $railTab, type RailSectionId, setRailSectionCollapsed, setRailTab } from './rail-state'
 import { RailTabs } from './rail-tabs'
 import { openRosterBot } from './roster-actions'
@@ -227,7 +228,9 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
   const a = b.activity
   const items = useValue(host.state.attentionItems)
   const sessionId = useValue(host.state.focusedSessionId)
-  const mine = sessionId ? items.filter(item => item.sessionId === sessionId) : []
+  const gate = useLiveGate(sessionId, b.roster.needsInput)
+  const listed = sessionId ? items.filter(item => item.sessionId === sessionId) : []
+  const mine = listed.length || !gate ? listed : [gate]
 
   return (
     <div className="grid gap-3 px-3 pb-3 pt-1">
@@ -267,6 +270,16 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
       {!bot.remoteSource && <AskRulesCard name={name} profile={bot.name} />}
     </div>
   )
+}
+
+/** The focused chat's open approval gate from the event-fed turn, shaped
+ *  like an attention item, for a host that publishes none. */
+function useLiveGate(sessionId: null | string, title: string) {
+  const turn = useValue($liveTurns)[sessionId ?? '']
+
+  return turn?.phase === 'approval' && sessionId
+    ? { detail: turn.command, id: turn.promptId || `gate:${sessionId}`, kind: 'approval', sessionId, title }
+    : null
 }
 
 /** "Put <bot> on autopilot": presets that prefill the routine dialog. A
@@ -352,7 +365,9 @@ export function MissionRail() {
   const tab = useValue($railTab)
   const attention = useValue(host.state.attentionItems)
   const focusedSessionId = useValue(host.state.focusedSessionId)
-  const approvalCount = focusedSessionId ? attention.filter(item => item.sessionId === focusedSessionId).length : 0
+  const liveGate = useLiveGate(focusedSessionId, '')
+  const listedApprovals = focusedSessionId ? attention.filter(item => item.sessionId === focusedSessionId).length : 0
+  const approvalCount = listedApprovals || (liveGate ? 1 : 0)
   const createTarget = owner ? routineCreateTarget(createOwner, bot) : null
 
   const [preset, setPreset] = useState<null | RoutinePreset>(null)

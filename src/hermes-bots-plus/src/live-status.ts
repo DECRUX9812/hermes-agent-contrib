@@ -31,6 +31,7 @@ import { useMemo } from 'react'
 import { $botAttention, botRosterKey, botSelectionKey, botSourceStatus } from './data'
 import { $activeGroupMemberKeys } from './group-presence'
 import type { BotsText } from './i18n'
+import { $learnedStoredByRuntime, $liveTurns } from './rail-live'
 import { botCanonicalRuntimeId, botCanonicalSessionId, workerActiveAt } from './row-helpers'
 import { getPluginCtx } from './shared'
 import type { RosterRow } from './types'
@@ -174,22 +175,27 @@ export function useBotLiveStatus(bot: RosterRow): BotLiveStatus {
   const storedByRuntime = useValue(host.state.storedSessionByRuntimeId)
   const cronJobs = useValue(host.state.cronJobs)
   const groupKeys = useValue($activeGroupMemberKeys)
+  const liveTurns = useValue($liveTurns)
+  const learned = useValue($learnedStoredByRuntime)
 
   const canonicalId = botCanonicalSessionId(bot)
 
   const runtimeId = useMemo(
-    () => botCanonicalRuntimeId(bot, storedByRuntime || {}) ?? undefined,
-    [bot, storedByRuntime]
+    () => botCanonicalRuntimeId(bot, { ...learned, ...(storedByRuntime || {}) }) ?? undefined,
+    [bot, learned, storedByRuntime]
   )
 
   const items = runtimeId ? statusItems?.[runtimeId] : undefined
+  const hostDot = canonicalId ? dotById?.[canonicalId] : undefined
+  // The host's dot wins; without one, the event-fed turn (rail-live.ts) speaks.
+  const turn = !hostDot && runtimeId ? liveTurns[runtimeId] : undefined
 
   return botLiveStatus({
-    dot: canonicalId ? dotById?.[canonicalId] : undefined,
+    dot: hostDot ?? (turn ? (turn.phase === 'approval' ? 'needs-input' : 'working') : undefined),
     group: groupKeys.has(botRosterKey(bot)),
     reachable: botSourceStatus(bot).available,
     routines: runningRoutineTitles(cronJobs, bot),
-    tool: liveTool(items),
+    tool: liveTool(items) || turn?.tool,
     worker: workerActiveAt(bot)
   })
 }

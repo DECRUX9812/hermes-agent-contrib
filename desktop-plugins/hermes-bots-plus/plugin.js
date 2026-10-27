@@ -13081,6 +13081,111 @@ var $activeGroupMemberKeys = (0, sdk_compat_exports.computed)(
   )
 );
 
+// src/rail-live.ts
+init_sdk_compat();
+var $liveTurns = (0, sdk_compat_exports.atom)({});
+var $learnedStoredByRuntime = (0, sdk_compat_exports.atom)({});
+var LIVE_TURN_EVENTS = [
+  "approval.cancelled",
+  "approval.request",
+  "approval.responded",
+  "approval.settled",
+  "error",
+  "message.complete",
+  "message.start",
+  "tool.complete",
+  "tool.start"
+];
+var field = (payload, key) => {
+  const value = payload && typeof payload === "object" ? payload[key] : void 0;
+  return typeof value === "string" ? value : "";
+};
+function reduceLiveTurn(current, event, at) {
+  switch (event.type) {
+    case "message.complete":
+    case "error":
+      return null;
+    case "message.start":
+      return current ?? { phase: "thinking", since: at };
+    case "tool.start": {
+      const tool = field(event.payload, "name") || field(event.payload, "tool_name");
+      return current?.phase === "approval" ? current : { phase: "tool", since: at, ...tool ? { tool } : {} };
+    }
+    case "tool.complete":
+      return current?.phase === "approval" ? current : { phase: "thinking", since: at };
+    case "approval.request": {
+      const command = field(event.payload, "command") || field(event.payload, "description");
+      const promptId = field(event.payload, "prompt_id");
+      return {
+        phase: "approval",
+        since: at,
+        ...command ? { command } : {},
+        ...promptId ? { promptId } : {},
+        ...current?.tool ? { tool: current.tool } : {}
+      };
+    }
+    default:
+      return current?.phase === "approval" ? { phase: current.tool ? "tool" : "thinking", since: at, ...current.tool ? { tool: current.tool } : {} } : current;
+  }
+}
+function feedLiveTurn(event, busy, at = Date.now()) {
+  const id = event?.session_id;
+  if (!id) {
+    return;
+  }
+  const turns = $liveTurns.get();
+  const current = turns[id] ?? null;
+  if (!current && !busy[id]) {
+    return;
+  }
+  const next = reduceLiveTurn(current, event, at);
+  if (next === current) {
+    return;
+  }
+  const copy = { ...turns };
+  if (next) {
+    copy[id] = next;
+  } else {
+    delete copy[id];
+  }
+  $liveTurns.set(copy);
+}
+function sweepLiveTurns(busy) {
+  const turns = $liveTurns.get();
+  const stale = Object.keys(turns).filter((id) => !busy[id]);
+  if (!stale.length) {
+    return;
+  }
+  const copy = { ...turns };
+  for (const id of stale) {
+    delete copy[id];
+  }
+  $liveTurns.set(copy);
+}
+function learnStoredId(runtimeId, storedId) {
+  if (!runtimeId || !storedId || $learnedStoredByRuntime.get()[runtimeId] === storedId) {
+    return;
+  }
+  $learnedStoredByRuntime.set({ ...$learnedStoredByRuntime.get(), [runtimeId]: storedId });
+}
+function wireLiveTurns(onDispose) {
+  const busyAtom = host.state.busyBySession;
+  if (typeof host.onEvent !== "function" || !busyAtom) {
+    return false;
+  }
+  for (const type of LIVE_TURN_EVENTS) {
+    onDispose(host.onEvent(type, (event) => feedLiveTurn({ ...event, type }, busyAtom.get() || {})));
+  }
+  onDispose(busyAtom.listen((busy) => sweepLiveTurns(busy || {})));
+  const learn = () => learnStoredId(host.state.focusedSessionId?.get(), host.state.focusedStoredSessionId?.get());
+  if (host.state.focusedSessionId && host.state.focusedStoredSessionId) {
+    onDispose(host.state.focusedSessionId.listen(learn));
+    onDispose(host.state.focusedStoredSessionId.listen(learn));
+    learn();
+  }
+  return true;
+}
+
 // src/row-helpers.ts
 init_sdk_compat();
 init_data();
@@ -13260,18 +13365,22 @@ function useBotLiveStatus(bot) {
   const storedByRuntime = (0, sdk_compat_exports.useValue)(host.state.storedSessionByRuntimeId);
   const cronJobs = (0, sdk_compat_exports.useValue)(host.state.cronJobs);
   const groupKeys = (0, sdk_compat_exports.useValue)($activeGroupMemberKeys);
+  const liveTurns = (0, sdk_compat_exports.useValue)($liveTurns);
+  const learned = (0, sdk_compat_exports.useValue)($learnedStoredByRuntime);
   const canonicalId = botCanonicalSessionId(bot);
   const runtimeId = useMemo3(
-    () => botCanonicalRuntimeId(bot, storedByRuntime || {}) ?? void 0,
-    [bot, storedByRuntime]
+    () => botCanonicalRuntimeId(bot, { ...learned, ...storedByRuntime || {} }) ?? void 0,
+    [bot, learned, storedByRuntime]
   );
   const items = runtimeId ? statusItems?.[runtimeId] : void 0;
+  const hostDot = canonicalId ? dotById?.[canonicalId] : void 0;
+  const turn = !hostDot && runtimeId ? liveTurns[runtimeId] : void 0;
   return botLiveStatus({
-    dot: canonicalId ? dotById?.[canonicalId] : void 0,
+    dot: hostDot ?? (turn ? turn.phase === "approval" ? "needs-input" : "working" : void 0),
     group: groupKeys.has(botRosterKey(bot)),
     reachable: botSourceStatus(bot).available,
     routines: runningRoutineTitles(cronJobs, bot),
-    tool: liveTool(items),
+    tool: liveTool(items) || turn?.tool,
     worker: workerActiveAt(bot)
   });
 }
@@ -18803,7 +18912,7 @@ function AgentsSection() {
   const matched = searchQuery ? visible.filter((bot) => {
     const meta = botRosterMeta(bot, allMeta);
     const hay = [bot.name, displayName(bot, meta), botHandle(bot.name, bot)];
-    return hay.some((field) => field?.toLowerCase().includes(searchQuery));
+    return hay.some((field2) => field2?.toLowerCase().includes(searchQuery));
   }) : visible;
   const shown = searchQuery ? matched : visible.slice(0, AGENTS_ROW_CAP);
   const loading = !data && !error;
@@ -27052,7 +27161,9 @@ function ApprovalsPanel({ bot, name }) {
   const a = b.activity;
   const items = (0, sdk_compat_exports.useValue)(host.state.attentionItems);
   const sessionId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
-  const mine = sessionId ? items.filter((item) => item.sessionId === sessionId) : [];
+  const gate = useLiveGate(sessionId, b.roster.needsInput);
+  const listed = sessionId ? items.filter((item) => item.sessionId === sessionId) : [];
+  const mine = listed.length || !gate ? listed : [gate];
   return /* @__PURE__ */ jsxs54("div", { className: "grid gap-3 px-3 pb-3 pt-1", children: [
     mine.length ? /* @__PURE__ */ jsx56("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs54("li", { className: "flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2", children: [
       /* @__PURE__ */ jsx56(
@@ -27078,6 +27189,10 @@ function ApprovalsPanel({ bot, name }) {
     ] }) : null,
     !bot.remoteSource && /* @__PURE__ */ jsx56(AskRulesCard, { name, profile: bot.name })
   ] });
+}
+function useLiveGate(sessionId, title) {
+  const turn = (0, sdk_compat_exports.useValue)($liveTurns)[sessionId ?? ""];
+  return turn?.phase === "approval" && sessionId ? { detail: turn.command, id: turn.promptId || `gate:${sessionId}`, kind: "approval", sessionId, title } : null;
 }
 function AutopilotChips({
   name,
@@ -27132,7 +27247,9 @@ function MissionRail() {
   const tab = (0, sdk_compat_exports.useValue)($railTab);
   const attention = (0, sdk_compat_exports.useValue)(host.state.attentionItems);
   const focusedSessionId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
-  const approvalCount = focusedSessionId ? attention.filter((item) => item.sessionId === focusedSessionId).length : 0;
+  const liveGate = useLiveGate(focusedSessionId, "");
+  const listedApprovals = focusedSessionId ? attention.filter((item) => item.sessionId === focusedSessionId).length : 0;
+  const approvalCount = listedApprovals || (liveGate ? 1 : 0);
   const createTarget = owner ? routineCreateTarget(createOwner, bot) : null;
   const [preset, setPreset] = useState36(null);
   const openCreate = (seed = null) => {
@@ -33184,6 +33301,7 @@ var plugin_default = {
         }
       }
     });
+    wireLiveTurns((dispose) => ctx.onDispose?.(dispose));
     if (wireInstantAck((dispose) => ctx.onDispose?.(dispose))) {
       ctx.register({
         id: "instant-ack-middleware",
