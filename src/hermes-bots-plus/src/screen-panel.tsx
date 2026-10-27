@@ -125,9 +125,9 @@ const DEFAULT_FRAME_HEIGHT = 170
 let frameHeight = DEFAULT_FRAME_HEIGHT
 
 const CHIP_CLASS: Record<PortalTone, string> = {
-  live: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
-  human: 'bg-red-500/15 text-red-600 dark:text-red-400',
-  other: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  live: 'hbp-bg-ok-15 hbp-fg-ok',
+  human: 'hbp-bg-danger-15 hbp-fg-danger',
+  other: 'hbp-bg-warn-15 hbp-fg-warn',
   off: 'bg-muted text-muted-foreground',
   missing: 'bg-muted text-muted-foreground',
   unsupported: 'bg-muted text-muted-foreground',
@@ -304,7 +304,7 @@ function ComputerPanelContent({ bot, meta }: { bot: RosterRow; meta?: BotMeta | 
           <div className="relative bg-black" style={{ height }}>
             <button
               aria-label={`${t.screen.portalTitle}: ${caption || chip}`}
-              className={`absolute inset-0 block size-full overflow-hidden text-left ${tone === 'human' ? 'ring-2 ring-inset ring-red-500/80' : tone === 'other' ? 'ring-2 ring-inset ring-amber-500/70' : ''}`}
+              className={`absolute inset-0 block size-full overflow-hidden text-left ${tone === 'human' ? 'ring-2 ring-inset hbp-ring-danger-80' : tone === 'other' ? 'ring-2 ring-inset hbp-ring-warn-70' : ''}`}
               onClick={() => openBotScreen(bot, meta ?? null)}
               ref={boxRef}
               type="button"

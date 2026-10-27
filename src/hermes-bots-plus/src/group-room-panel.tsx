@@ -224,7 +224,7 @@ export function GroupRoomPanel(props: GroupRoomPanelProps) {
           >
             {entry.label}
             {entry.badge ? (
-              <span className="rounded-full bg-amber-500/20 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+              <span className="rounded-full hbp-bg-warn-20 px-1.5 text-[0.625rem] font-semibold tabular-nums hbp-fg-warn">
                 {entry.badge}
               </span>
             ) : null}

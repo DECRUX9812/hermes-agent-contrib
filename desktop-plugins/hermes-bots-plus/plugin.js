@@ -1150,8 +1150,9 @@ var init_i18n = __esm({
         openUnreachableTitle: "Hermes couldn\u2019t reach the computer this bot runs on",
         openUnreachableMessage: "Check it is online and try again.",
         openChatFailedTitle: (botName) => `Could not open ${botName}\u2019s chat`,
-        openChatFailedMessage: "Try again.",
+        openChatFailedMessage: "Something went wrong while opening it.",
         openGateways: "Open Gateways",
+        openRetry: "Try again",
         chatEmpty: "Say something to get started.",
         kickoff: "Hey, tell me about yourself!",
         notifications: "Notifications",
@@ -2014,6 +2015,7 @@ var init_i18n = __esm({
         openChatFailedTitle: (botName) => `${botName} \u306E\u30C1\u30E3\u30C3\u30C8\u3092\u958B\u3051\u307E\u305B\u3093\u3067\u3057\u305F`,
         openChatFailedMessage: "\u3082\u3046\u4E00\u5EA6\u304A\u8A66\u3057\u304F\u3060\u3055\u3044\u3002",
         openGateways: "\u30B2\u30FC\u30C8\u30A6\u30A7\u30A4\u3092\u958B\u304F",
+        openRetry: "\u518D\u8A66\u884C",
         chatEmpty: "\u4F55\u304B\u66F8\u3044\u3066\u59CB\u3081\u307E\u3057\u3087\u3046\u3002",
         kickoff: "\u3053\u3093\u306B\u3061\u306F\u3001\u81EA\u5DF1\u7D39\u4ECB\u3092\u3057\u3066\u304F\u3060\u3055\u3044\uFF01",
         notifications: "\u901A\u77E5",
@@ -2870,6 +2872,7 @@ var init_i18n = __esm({
         openChatFailedTitle: (botName) => `\u65E0\u6CD5\u6253\u5F00 ${botName} \u7684\u804A\u5929`,
         openChatFailedMessage: "\u8BF7\u91CD\u8BD5\u3002",
         openGateways: "\u6253\u5F00\u7F51\u5173",
+        openRetry: "\u91CD\u8BD5",
         chatEmpty: "\u8BF4\u70B9\u4EC0\u4E48\u5F00\u59CB\u5427\u3002",
         kickoff: "\u4F60\u597D\uFF0C\u4ECB\u7ECD\u4E00\u4E0B\u4F60\u81EA\u5DF1\u5427\uFF01",
         notifications: "\u901A\u77E5",
@@ -3726,6 +3729,7 @@ var init_i18n = __esm({
         openChatFailedTitle: (botName) => `\u7121\u6CD5\u958B\u555F ${botName} \u7684\u804A\u5929`,
         openChatFailedMessage: "\u8ACB\u518D\u8A66\u4E00\u6B21\u3002",
         openGateways: "\u958B\u555F\u9598\u9053",
+        openRetry: "\u91CD\u8A66",
         chatEmpty: "\u8AAA\u9EDE\u4EC0\u9EBC\u958B\u59CB\u5427\u3002",
         kickoff: "\u4F60\u597D\uFF0C\u4ECB\u7D39\u4E00\u4E0B\u4F60\u81EA\u5DF1\u5427\uFF01",
         notifications: "\u901A\u77E5",
@@ -4707,13 +4711,13 @@ function isCanonicalBotChatHistory(history) {
 }
 function botModeGatewayNeedsUpdate(error) {
   const message = String(error?.message || error || "");
-  return /(?:method not found|no handler for|unknown method|unsupported rpc)/i.test(message);
+  return /(?:method not found|no handler for|unknown method|unsupported rpc|out of sync|extra inputs are not permitted)/i.test(message);
 }
 function errorDetail(error) {
   const text2 = String(error?.message || error || "").trim();
   return text2 || void 0;
 }
-function notifyBotOpenFailure(error, bot, step, botName) {
+function notifyBotOpenFailure(error, bot, step, botName, retry) {
   const b = botsText().bot;
   const action = { label: b.openGateways, onClick: () => host.navigate(GATEWAY_SETTINGS_PATH) };
   const detail = errorDetail(error);
@@ -4743,7 +4747,7 @@ function notifyBotOpenFailure(error, bot, step, botName) {
     title: b.openChatFailedTitle(botName || bot.name),
     message: b.openChatFailedMessage,
     ...detail ? { detail } : {},
-    action
+    action: retry ? { label: b.openRetry, onClick: retry } : action
   });
 }
 async function findExistingCanonicalChat(owner) {
@@ -6289,6 +6293,9 @@ var require_novnc = __commonJS({
 
 // src/plugin.tsx
 init_sdk_compat();
+
+// plugin-utilities:css
+var css_default = '@layer utilities{.-left-\\[9999px\\]{left:-9999px}.aspect-\\[1200\\/630\\]{aspect-ratio:1200/630}.size-\\[18px\\]{width:18px;height:18px}.size-\\[34px\\]{width:34px;height:34px}.h-\\[min\\(40rem\\,calc\\(100vh-4rem\\)\\)\\]{height:min(40rem,100vh - 4rem)}.h-\\[min\\(46rem\\,88vh\\)\\]{height:min(46rem,88vh)}.max-h-\\[88vh\\]{max-height:88vh}.max-w-\\[11rem\\]{max-width:11rem}.max-w-\\[85\\%\\]{max-width:85%}.max-w-\\[min\\(14rem\\,100\\%\\)\\]{max-width:min(14rem,100%)}.max-w-\\[min\\(64rem\\,94vw\\)\\]{max-width:min(64rem,94vw)}.max-w-\\[min\\(68rem\\,calc\\(100vw-2rem\\)\\)\\]{max-width:min(68rem,100vw - 2rem)}.grid-cols-\\[minmax\\(13rem\\,18rem\\)_1fr\\]{grid-template-columns:minmax(13rem,18rem) 1fr}.grid-cols-\\[repeat\\(auto-fill\\,minmax\\(9\\.5rem\\,1fr\\)\\)\\]{grid-template-columns:repeat(auto-fill,minmax(9.5rem,1fr))}.rounded-\\[22\\%\\]{border-radius:22%}.border-\\(--dt-composer-ring\\)\\/20{border-color:var(--dt-composer-ring)}@supports (color:color-mix(in lab, red, red)){.border-\\(--dt-composer-ring\\)\\/20{border-color:color-mix(in oklab, var(--dt-composer-ring) 20%, transparent)}}.border-\\(--dt-composer-ring\\)\\/25{border-color:var(--dt-composer-ring)}@supports (color:color-mix(in lab, red, red)){.border-\\(--dt-composer-ring\\)\\/25{border-color:color-mix(in oklab, var(--dt-composer-ring) 25%, transparent)}}.border-\\(--dt-user-bubble-border\\){border-color:var(--dt-user-bubble-border)}.border-\\(--ui-accent\\)\\/20{border-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.border-\\(--ui-accent\\)\\/20{border-color:color-mix(in oklab, var(--ui-accent) 20%, transparent)}}.border-\\(--ui-accent\\)\\/25{border-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.border-\\(--ui-accent\\)\\/25{border-color:color-mix(in oklab, var(--ui-accent) 25%, transparent)}}.border-\\(--ui-accent\\)\\/30{border-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.border-\\(--ui-accent\\)\\/30{border-color:color-mix(in oklab, var(--ui-accent) 30%, transparent)}}.border-l-\\(--ui-accent\\){border-left-color:var(--ui-accent)}.bg-\\(--chrome-action-hover\\)\\/60{background-color:var(--chrome-action-hover)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--chrome-action-hover\\)\\/60{background-color:color-mix(in oklab, var(--chrome-action-hover) 60%, transparent)}}.bg-\\(--speaker-color\\){background-color:var(--speaker-color)}.bg-\\(--ui-accent\\)\\/6{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-accent\\)\\/6{background-color:color-mix(in oklab, var(--ui-accent) 6%, transparent)}}.bg-\\(--ui-accent\\)\\/8{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-accent\\)\\/8{background-color:color-mix(in oklab, var(--ui-accent) 8%, transparent)}}.bg-\\(--ui-accent\\)\\/12{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-accent\\)\\/12{background-color:color-mix(in oklab, var(--ui-accent) 12%, transparent)}}.bg-\\(--ui-accent\\)\\/18{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-accent\\)\\/18{background-color:color-mix(in oklab, var(--ui-accent) 18%, transparent)}}.bg-\\(--ui-bg-card\\,transparent\\){background-color:var(--ui-bg-card,transparent)}.bg-\\(--ui-bg-secondary\\)\\/40{background-color:var(--ui-bg-secondary)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-bg-secondary\\)\\/40{background-color:color-mix(in oklab, var(--ui-bg-secondary) 40%, transparent)}}.bg-\\(--ui-control-background\\){background-color:var(--ui-control-background)}.bg-\\(--ui-danger\\,\\#e5484d\\){background-color:var(--ui-danger,#e5484d)}.bg-\\(--ui-green\\)\\/12{background-color:var(--ui-green)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-green\\)\\/12{background-color:color-mix(in oklab, var(--ui-green) 12%, transparent)}}.bg-\\(--ui-green\\)\\/15{background-color:var(--ui-green)}@supports (color:color-mix(in lab, red, red)){.bg-\\(--ui-green\\)\\/15{background-color:color-mix(in oklab, var(--ui-green) 15%, transparent)}}.bg-\\(--ui-inline-code-background\\){background-color:var(--ui-inline-code-background)}.bg-\\(--ui-surface-secondary\\){background-color:var(--ui-surface-secondary)}.bg-\\(--ui-warning\\,\\#f5a524\\){background-color:var(--ui-warning,#f5a524)}.text-\\[0\\.55rem\\]{font-size:.55rem}.text-\\[1\\.0625rem\\]{font-size:1.0625rem}.text-\\(--speaker-color\\){color:var(--speaker-color)}.shadow-\\(--shadow-nous\\){--tw-shadow:var(--shadow-nous);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.shadow-\\[0_1px_0_rgba\\(0\\,0\\,0\\,0\\.04\\)\\,0_12px_32px_-12px_rgba\\(0\\,0\\,0\\,0\\.25\\)\\]{--tw-shadow:0 1px 0 var(--tw-shadow-color,#0000000a), 0 12px 32px -12px var(--tw-shadow-color,#00000040);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.group-hover\\/triage\\:border-\\(--ui-stroke-primary\\):is(:where(.group\\/triage):hover *){border-color:var(--ui-stroke-primary)}.placeholder\\:text-\\(--ui-text-quaternary\\)::placeholder{color:var(--ui-text-quaternary)}.before\\:left-\\[1\\.375rem\\]:before{content:var(--tw-content);left:1.375rem}.before\\:bg-\\(--ui-stroke-secondary\\):before,.after\\:bg-\\(--ui-stroke-secondary\\):after{content:var(--tw-content);background-color:var(--ui-stroke-secondary)}.focus-within\\:border-\\(--ui-accent\\):focus-within{border-color:var(--ui-accent)}.hover\\:bg-\\(--ui-accent\\)\\/90:hover{background-color:var(--ui-accent)}@supports (color:color-mix(in lab, red, red)){.hover\\:bg-\\(--ui-accent\\)\\/90:hover{background-color:color-mix(in oklab, var(--ui-accent) 90%, transparent)}}.focus-visible\\:ring-\\(--ui-accent\\):focus-visible{--tw-ring-color:var(--ui-accent)}.data-\\[active\\=true\\]\\:bg-\\(--ui-row-active-background\\)[data-active=true]{background-color:var(--ui-row-active-background)}.data-\\[picked\\=true\\]\\:border-\\(--ui-accent\\)[data-picked=true]{border-color:var(--ui-accent)}.data-\\[picked\\=true\\]\\:ring-1[data-picked=true]{--tw-ring-shadow:var(--tw-ring-inset,) 0 0 0 calc(1px + var(--tw-ring-offset-width)) var(--tw-ring-color,currentcolor);box-shadow:var(--tw-inset-shadow), var(--tw-inset-ring-shadow), var(--tw-ring-offset-shadow), var(--tw-ring-shadow), var(--tw-shadow)}.data-\\[picked\\=true\\]\\:ring-\\(--ui-accent\\)[data-picked=true]{--tw-ring-color:var(--ui-accent)}@media (min-width:48rem){.md\\:grid-cols-\\[11rem_minmax\\(0\\,1fr\\)_17rem\\]{grid-template-columns:11rem minmax(0,1fr) 17rem}.md\\:border-\\(--ui-stroke-tertiary\\){border-color:var(--ui-stroke-tertiary)}}@container (min-width:32rem){.\\@lg\\:grid-cols-\\[minmax\\(0\\,2fr\\)_minmax\\(0\\,1fr\\)\\]{grid-template-columns:minmax(0,2fr) minmax(0,1fr)}}.\\[\\&_\\.codicon\\]\\:text-\\[0\\.75rem\\] .codicon{font-size:.75rem}}@property --tw-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-shadow-color{syntax:"*";inherits:false}@property --tw-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-inset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-shadow-color{syntax:"*";inherits:false}@property --tw-inset-shadow-alpha{syntax:"<percentage>";inherits:false;initial-value:100%}@property --tw-ring-color{syntax:"*";inherits:false}@property --tw-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-inset-ring-color{syntax:"*";inherits:false}@property --tw-inset-ring-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-ring-inset{syntax:"*";inherits:false}@property --tw-ring-offset-width{syntax:"<length>";inherits:false;initial-value:0}@property --tw-ring-offset-color{syntax:"*";inherits:false;initial-value:#fff}@property --tw-ring-offset-shadow{syntax:"*";inherits:false;initial-value:0 0 #0000}@property --tw-content{syntax:"*";inherits:false;initial-value:""}@layer properties{@supports (((-webkit-hyphens:none)) and (not (margin-trim:inline))) or ((-moz-orient:inline) and (not (color:rgb(from red r g b)))){*,:before,:after,::backdrop{--tw-shadow:0 0 #0000;--tw-shadow-color:initial;--tw-shadow-alpha:100%;--tw-inset-shadow:0 0 #0000;--tw-inset-shadow-color:initial;--tw-inset-shadow-alpha:100%;--tw-ring-color:initial;--tw-ring-shadow:0 0 #0000;--tw-inset-ring-color:initial;--tw-inset-ring-shadow:0 0 #0000;--tw-ring-inset:initial;--tw-ring-offset-width:0px;--tw-ring-offset-color:#fff;--tw-ring-offset-shadow:0 0 #0000;--tw-content:""}}}';
 
 // src/agents-section.tsx
 init_sdk_compat();
@@ -12721,8 +12728,8 @@ import { useState as useState6 } from "react";
 import { jsx as jsx10, jsxs as jsxs9 } from "react/jsx-runtime";
 var COLUMNS = ["needs", "waiting", "working", "answered"];
 var DOT = {
-  answered: "bg-emerald-500/70",
-  needs: "bg-amber-500",
+  answered: "hbp-bg-ok-70",
+  needs: "hbp-bg-warn",
   waiting: "bg-(--ui-text-quaternary)",
   working: "bg-(--ui-accent)"
 };
@@ -12745,7 +12752,7 @@ function GroupRoomBoard({ escalations, handoffs, items, members, nameOf, onOpen 
   const tiles = [
     {
       label: c.needsYou,
-      tone: "border-amber-500/40 bg-amber-500/8 text-amber-700 dark:text-amber-300",
+      tone: "hbp-bd-warn-40 hbp-bg-warn-8 hbp-fg-warn",
       value: visible.filter((i) => columnOf(i, escalated) === "needs").length
     },
     {
@@ -12760,7 +12767,7 @@ function GroupRoomBoard({ escalations, handoffs, items, members, nameOf, onOpen 
     },
     {
       label: c.deliveredToday,
-      tone: "border-emerald-500/30 bg-emerald-500/6 text-emerald-700 dark:text-emerald-300",
+      tone: "hbp-bd-ok-30 hbp-bg-ok-6 hbp-fg-ok",
       value: handoffs.filter((h) => h.status === "delivered" && h.at >= startOfDay).length
     }
   ];
@@ -13314,9 +13321,9 @@ function setRosterSortMode(mode) {
 // src/group-room-cards.tsx
 import { Fragment as Fragment3, jsx as jsx11, jsxs as jsxs10 } from "react/jsx-runtime";
 var STATUS_TONE = {
-  accepted: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
-  declined: "bg-red-500/12 text-red-700 dark:text-red-300",
-  delivered: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  accepted: "hbp-bg-ok-12 hbp-fg-ok",
+  declined: "hbp-bg-danger-12 hbp-fg-danger",
+  delivered: "hbp-bg-ok-15 hbp-fg-ok",
   open: "bg-(--ui-bg-tertiary) text-(--ui-text-secondary)",
   working: "bg-(--ui-accent)/12 text-(--ui-accent)"
 };
@@ -13329,7 +13336,7 @@ function Field({ label, children }) {
 function DueClock({ at, minutes }) {
   const b = useBots();
   const left = Math.round((at + minutes * 6e4 - Date.now()) / 6e4);
-  return left >= 0 ? /* @__PURE__ */ jsx11("span", { children: b.group.handoff.due(left) }) : /* @__PURE__ */ jsx11("span", { className: "font-semibold text-red-600 dark:text-red-300", children: b.group.handoff.overdue(-left) });
+  return left >= 0 ? /* @__PURE__ */ jsx11("span", { children: b.group.handoff.due(left) }) : /* @__PURE__ */ jsx11("span", { className: "font-semibold hbp-fg-danger", children: b.group.handoff.overdue(-left) });
 }
 function HandoffCard({ handoff, nameOf }) {
   const b = useBots();
@@ -13392,14 +13399,14 @@ function EscalationCard({
     {
       "aria-label": e.title,
       className: (0, sdk_compat_exports.cn)(
-        "flex flex-col gap-2 rounded-xl border border-amber-500/40 bg-amber-500/8 px-3 py-2.5",
+        "flex flex-col gap-2 rounded-xl border hbp-bd-warn-40 hbp-bg-warn-8 px-3 py-2.5",
         !compact && "ml-11"
       ),
       "data-testid": "group-escalation-card",
       children: [
         /* @__PURE__ */ jsxs10("div", { className: "flex flex-wrap items-center gap-2", children: [
-          /* @__PURE__ */ jsx11(sdk_compat_exports.Codicon, { className: "text-amber-600 dark:text-amber-300", name: "warning" }),
-          /* @__PURE__ */ jsx11("span", { className: "text-[0.75rem] font-semibold text-amber-700 dark:text-amber-300", children: e.title }),
+          /* @__PURE__ */ jsx11(sdk_compat_exports.Codicon, { className: "hbp-fg-warn", name: "warning" }),
+          /* @__PURE__ */ jsx11("span", { className: "text-[0.75rem] font-semibold hbp-fg-warn", children: e.title }),
           /* @__PURE__ */ jsx11("span", { className: "text-[0.6875rem] text-(--ui-text-tertiary)", children: escalation.kind === "loop" ? e.loop(nameOf(handoff.from), nameOf(handoff.to)) : e.stalled(nameOf(handoff.from), nameOf(handoff.to)) })
         ] }),
         /* @__PURE__ */ jsx11(
@@ -13479,8 +13486,8 @@ function VoteCard({
   const top = counts.size ? Math.max(...counts.values()) : 0;
   const TONE3 = {
     majority: "bg-(--ui-accent)/12 text-(--ui-accent)",
-    split: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
-    unanimous: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+    split: "hbp-bg-warn-15 hbp-fg-warn",
+    unanimous: "hbp-bg-ok-15 hbp-fg-ok",
     waiting: "bg-(--ui-bg-tertiary) text-(--ui-text-secondary)"
   };
   return /* @__PURE__ */ jsxs10(
@@ -13516,7 +13523,7 @@ function VoteCard({
                     "aria-hidden": true,
                     className: (0, sdk_compat_exports.cn)(
                       "h-full absolute inset-y-0 left-0 transition-[width]",
-                      isCalled ? "bg-emerald-500/35" : "bg-(--ui-accent)/18"
+                      isCalled ? "hbp-bg-ok-35" : "bg-(--ui-accent)/18"
                     ),
                     style: { width: `${width}%` }
                   }
@@ -13527,7 +13534,7 @@ function VoteCard({
                     {
                       className: (0, sdk_compat_exports.cn)(
                         "min-w-0 truncate text-[0.75rem]",
-                        isCalled ? "font-semibold text-emerald-700 dark:text-emerald-300" : "text-foreground"
+                        isCalled ? "font-semibold hbp-fg-ok" : "text-foreground"
                       ),
                       children: option
                     }
@@ -13541,7 +13548,7 @@ function VoteCard({
         ] }),
         /* @__PURE__ */ jsxs10("div", { className: "flex flex-wrap gap-x-3 px-3 pb-2 text-[0.625rem] text-(--ui-text-quaternary)", children: [
           /* @__PURE__ */ jsx11("span", { children: (0, sdk_compat_exports.relativeTime)(vote.at) }),
-          vote.decided ? /* @__PURE__ */ jsx11("span", { className: "font-semibold text-emerald-700 dark:text-emerald-300", "data-testid": "group-vote-decided", children: v.decided(vote.decided) }) : /* @__PURE__ */ jsxs10(Fragment3, { children: [
+          vote.decided ? /* @__PURE__ */ jsx11("span", { className: "font-semibold hbp-fg-ok", "data-testid": "group-vote-decided", children: v.decided(vote.decided) }) : /* @__PURE__ */ jsxs10(Fragment3, { children: [
             vote.missing.length ? /* @__PURE__ */ jsx11("span", { children: v.missing(vote.missing.map(nameOf).join(", ")) }) : null,
             /* @__PURE__ */ jsx11("span", { children: v.callHint })
           ] })
@@ -13662,12 +13669,12 @@ function RecapCard({
     "section",
     {
       "aria-label": r.title,
-      className: "ml-11 flex flex-col gap-1.5 rounded-xl border border-violet-500/25 bg-violet-500/5 px-3 py-2",
+      className: "ml-11 flex flex-col gap-1.5 rounded-xl border hbp-bd-accent-25 hbp-bg-accent-5 px-3 py-2",
       "data-testid": "group-recap-card",
       children: [
         /* @__PURE__ */ jsxs11("div", { className: "flex items-center gap-2", children: [
-          /* @__PURE__ */ jsx12(sdk_compat_exports.Codicon, { className: "text-violet-600 dark:text-violet-300", name: "sparkle" }),
-          /* @__PURE__ */ jsx12("span", { className: "text-[0.75rem] font-semibold text-violet-700 dark:text-violet-300", children: r.title }),
+          /* @__PURE__ */ jsx12(sdk_compat_exports.Codicon, { className: "hbp-fg-accent", name: "sparkle" }),
+          /* @__PURE__ */ jsx12("span", { className: "text-[0.75rem] font-semibold hbp-fg-accent", children: r.title }),
           /* @__PURE__ */ jsxs11(
             sdk_compat_exports.Button,
             {
@@ -13727,7 +13734,7 @@ function CatchUpCard({ catchUp, missed, nameOf, onDismiss, onOpen }) {
                   "aria-hidden": true,
                   className: (0, sdk_compat_exports.cn)(
                     "mt-1.5 size-2 shrink-0 rounded-full",
-                    line.escalated || line.question ? "bg-amber-500" : line.working.length ? "bg-(--ui-accent)" : "bg-emerald-500/70"
+                    line.escalated || line.question ? "hbp-bg-warn" : line.working.length ? "bg-(--ui-accent)" : "hbp-bg-ok-70"
                   )
                 }
               ),
@@ -13938,12 +13945,12 @@ function RoomDecisions({
     clarifies.map((entry) => /* @__PURE__ */ jsxs12(
       "button",
       {
-        className: "flex cursor-pointer flex-col gap-0.5 rounded-xl border border-violet-500/30 bg-violet-500/6 px-3 py-2 text-left",
+        className: "flex cursor-pointer flex-col gap-0.5 rounded-xl border hbp-bd-accent-30 hbp-bg-accent-6 px-3 py-2 text-left",
         "data-testid": "group-decision-question",
         onClick: () => onOpen(entry.thread || "legacy"),
         type: "button",
         children: [
-          /* @__PURE__ */ jsx13("span", { className: "text-[0.6875rem] font-semibold text-violet-700 dark:text-violet-300", children: b.group.decisionQuestion(memberName(entry.memberKey)) }),
+          /* @__PURE__ */ jsx13("span", { className: "text-[0.6875rem] font-semibold hbp-fg-accent", children: b.group.decisionQuestion(memberName(entry.memberKey)) }),
           /* @__PURE__ */ jsx13("span", { className: "text-[0.75rem] text-(--ui-text-secondary)", children: b.group.openThread })
         ]
       },
@@ -14122,9 +14129,9 @@ async function addLearning(teamId, text2, by = "you") {
 // src/group-room-focus.tsx
 import { jsx as jsx14, jsxs as jsxs13 } from "react/jsx-runtime";
 var TONE = {
-  answered: "bg-emerald-500/12 text-emerald-700 dark:text-emerald-300",
+  answered: "hbp-bg-ok-12 hbp-fg-ok",
   open: "bg-(--ui-bg-tertiary) text-(--ui-text-secondary)",
-  waiting: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  waiting: "hbp-bg-warn-15 hbp-fg-warn",
   working: "bg-(--ui-accent)/12 text-(--ui-accent)"
 };
 function GroupThreadHeader({ item, nameOf, onBack, onStop, owner, teamId }) {
@@ -14164,7 +14171,7 @@ function GroupThreadHeader({ item, nameOf, onBack, onStop, owner, teamId }) {
             /* @__PURE__ */ jsx14("span", { className: "tabular-nums text-(--ui-text-quaternary)", children: b.group.workCount(item.count) })
           ] })
         ] }),
-        onStop && item.status === "working" ? /* @__PURE__ */ jsxs13(sdk_compat_exports.Button, { className: "shrink-0 text-red-700 dark:text-red-300", onClick: onStop, size: "sm", variant: "outline", children: [
+        onStop && item.status === "working" ? /* @__PURE__ */ jsxs13(sdk_compat_exports.Button, { className: "shrink-0 hbp-fg-danger", onClick: onStop, size: "sm", variant: "outline", children: [
           /* @__PURE__ */ jsx14(sdk_compat_exports.Codicon, { name: "debug-stop" }),
           b.group.stopWork
         ] }) : null,
@@ -14329,7 +14336,7 @@ function GroupRoomHeader({
         ]
       }
     ) : null,
-    members.length > 0 && availableMembers < members.length ? /* @__PURE__ */ jsx15("span", { "aria-label": availabilityLabel, className: "shrink-0 text-[0.625rem] text-amber-600 dark:text-amber-300", children: availabilityLabel }) : null,
+    members.length > 0 && availableMembers < members.length ? /* @__PURE__ */ jsx15("span", { "aria-label": availabilityLabel, className: "shrink-0 text-[0.625rem] hbp-fg-warn", children: availabilityLabel }) : null,
     /* @__PURE__ */ jsx15(
       "div",
       {
@@ -14775,8 +14782,8 @@ init_routing();
 import { jsx as jsx18, jsxs as jsxs17 } from "react/jsx-runtime";
 var BUSY = /* @__PURE__ */ new Set(["background", "delegated", "group", "routine", "stalled", "working"]);
 var TONE2 = {
-  "needs-input": "text-amber-700 dark:text-amber-300",
-  stalled: "text-amber-700 dark:text-amber-300",
+  "needs-input": "hbp-fg-warn",
+  stalled: "hbp-fg-warn",
   working: "text-(--ui-accent)",
   group: "text-(--ui-accent)",
   routine: "text-(--ui-accent)",
@@ -14788,10 +14795,10 @@ function rosterRowFor(member, roster) {
   return (roster || []).find((row) => groupMemberKey(row) === key) || member;
 }
 var BUDGET_TONE = {
-  exhausted: "text-red-600 dark:text-red-300",
+  exhausted: "hbp-fg-danger",
   ok: "text-(--ui-text-quaternary)",
   paused: "text-(--ui-text-quaternary)",
-  warn: "text-amber-700 dark:text-amber-300"
+  warn: "hbp-fg-warn"
 };
 var usd = (value) => `$${value.toFixed(2)}`;
 function SquadMember({ allMeta, budget, isLead, member, onMention, roomTurn, row }) {
@@ -14846,7 +14853,7 @@ function SquadMember({ allMeta, budget, isLead, member, onMention, roomTurn, row
         /* @__PURE__ */ jsxs17("span", { className: "flex min-w-0 flex-1 flex-col", children: [
           /* @__PURE__ */ jsxs17("span", { className: "flex min-w-0 items-center gap-1", children: [
             /* @__PURE__ */ jsx18("span", { className: "truncate text-[0.75rem] font-semibold text-foreground", children: name }),
-            isLead ? /* @__PURE__ */ jsx18("span", { "aria-label": b.group.roomLead, className: "shrink-0 text-[0.625rem] text-amber-500", children: "\u2605" }) : null
+            isLead ? /* @__PURE__ */ jsx18("span", { "aria-label": b.group.roomLead, className: "shrink-0 text-[0.625rem] hbp-fg-warn", children: "\u2605" }) : null
           ] }),
           role ? /* @__PURE__ */ jsx18("span", { className: "truncate text-[0.625rem] text-(--ui-text-tertiary)", children: role }) : null,
           /* @__PURE__ */ jsx18(
@@ -15909,7 +15916,7 @@ function GroupRoomPanel(props) {
             type: "button",
             children: [
               entry.label,
-              entry.badge ? /* @__PURE__ */ jsx22("span", { className: "rounded-full bg-amber-500/20 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300", children: entry.badge }) : null
+              entry.badge ? /* @__PURE__ */ jsx22("span", { className: "rounded-full hbp-bg-warn-20 px-1.5 text-[0.625rem] font-semibold tabular-nums hbp-fg-warn", children: entry.badge }) : null
             ]
           },
           entry.id
@@ -15934,9 +15941,9 @@ init_routing();
 import { jsx as jsx23, jsxs as jsxs22 } from "react/jsx-runtime";
 var SECTIONS = ["waiting", "working", "open", "answered"];
 var GLYPH = {
-  answered: "bg-emerald-500/70",
+  answered: "hbp-bg-ok-70",
   open: "bg-(--ui-text-quaternary)",
-  waiting: "bg-amber-500",
+  waiting: "hbp-bg-warn",
   working: "bg-(--ui-accent)"
 };
 function Faces({
@@ -16073,7 +16080,7 @@ function GroupThreadRail({
             {
               className: (0, sdk_compat_exports.cn)(
                 "flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-left text-[0.75rem] font-semibold transition-colors",
-                desk.needsYou ? "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300" : "border-(--ui-stroke-secondary) text-(--ui-text-tertiary)"
+                desk.needsYou ? "hbp-bd-warn-40 hbp-bg-warn-10 hbp-fg-warn" : "border-(--ui-stroke-secondary) text-(--ui-text-tertiary)"
               ),
               onClick: desk.onNeedsYou,
               type: "button",
@@ -16082,7 +16089,7 @@ function GroupThreadRail({
                   "span",
                   {
                     "aria-hidden": true,
-                    className: (0, sdk_compat_exports.cn)("size-2 rounded-full", desk.needsYou ? "bg-amber-500" : "bg-(--ui-text-quaternary)")
+                    className: (0, sdk_compat_exports.cn)("size-2 rounded-full", desk.needsYou ? "hbp-bg-warn" : "bg-(--ui-text-quaternary)")
                   }
                 ),
                 /* @__PURE__ */ jsx23("span", { className: "flex-1", children: b.group.deskNeedsYou }),
@@ -16205,7 +16212,7 @@ function GroupThreadRail({
                 {
                   className: (0, sdk_compat_exports.cn)(
                     "m-0 flex items-center gap-1.5 px-2 pb-1 text-[0.625rem] font-semibold uppercase tracking-wide",
-                    status === "waiting" ? "text-amber-700 dark:text-amber-300" : "text-(--ui-text-quaternary)"
+                    status === "waiting" ? "hbp-fg-warn" : "text-(--ui-text-quaternary)"
                   ),
                   children: [
                     b.group.workStatus[status],
@@ -17479,7 +17486,7 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
                 "span",
                 {
                   "aria-label": b.group.roomLead,
-                  className: "text-[0.625rem] leading-none text-amber-500",
+                  className: "text-[0.625rem] leading-none hbp-fg-warn",
                   "data-testid": "group-speaker-lead",
                   children: "\u2605"
                 }
@@ -18134,7 +18141,7 @@ async function openRosterBot(bot) {
     if (generation === getBotOpenGeneration()) {
       $openBotChat.set(null);
       restorePreviousGroup();
-      notifyBotOpenFailure(error, bot, "open", displayName(bot, meta));
+      notifyBotOpenFailure(error, bot, "open", displayName(bot, meta), () => void openRosterBot(bot));
     }
     settlePendingBotOpen(generation);
     return false;
@@ -18353,7 +18360,7 @@ function RosterSectionHeader({
         ] }),
         /* @__PURE__ */ jsx25("span", { "aria-hidden": true, className: "min-w-0 flex-1" }),
         /* @__PURE__ */ jsx25("span", { className: "shrink-0 font-normal tabular-nums text-(--ui-text-tertiary)", children: count }),
-        status && !status.available ? /* @__PURE__ */ jsx25(sdk_compat_exports.Codicon, { "aria-hidden": true, className: "shrink-0 text-amber-600 dark:text-amber-300", name: "debug-disconnect" }) : null
+        status && !status.available ? /* @__PURE__ */ jsx25(sdk_compat_exports.Codicon, { "aria-hidden": true, className: "shrink-0 hbp-fg-warn", name: "debug-disconnect" }) : null
       ]
     }
   );
@@ -18613,7 +18620,7 @@ function AgentsSection() {
           children: [
             /* @__PURE__ */ jsx26(SidebarPanelLabel, { children: t.common.bots }),
             visible.length > 0 && /* @__PURE__ */ jsx26(SidebarSectionMeta, { children: visible.length }),
-            !open && Object.keys(attentionByKey).length > 0 && /* @__PURE__ */ jsx26("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full bg-amber-500" }),
+            !open && Object.keys(attentionByKey).length > 0 && /* @__PURE__ */ jsx26("span", { "aria-hidden": "true", className: "size-1.5 shrink-0 rounded-full hbp-bg-warn" }),
             /* @__PURE__ */ jsx26(
               sdk_compat_exports.DisclosureCaret,
               {
@@ -18763,7 +18770,7 @@ function AgentRow({ bot }) {
               sdk_compat_exports.Codicon,
               {
                 "aria-label": b.roster.needsAttention,
-                className: "shrink-0 text-[0.6875rem] text-amber-600 dark:text-amber-300",
+                className: "shrink-0 text-[0.6875rem] hbp-fg-warn",
                 name: "warning"
               }
             ) }) : null,
@@ -21052,7 +21059,7 @@ import { jsx as jsx30, jsxs as jsxs29 } from "react/jsx-runtime";
 function eventGlyphClass(status) {
   switch (status) {
     case "attention":
-      return "text-amber-600 dark:text-amber-300";
+      return "hbp-fg-warn";
     case "failed":
       return "text-destructive";
     case "running":
@@ -22076,7 +22083,7 @@ function ScreenInstallCard({ bot, status, onInstalled }) {
       log.join("\n"),
       /* @__PURE__ */ jsx36("div", { ref: logEnd })
     ] }) : null,
-    error ? /* @__PURE__ */ jsx36("div", { className: "text-xs text-red-500", children: error }) : null,
+    error ? /* @__PURE__ */ jsx36("div", { className: "text-xs hbp-fg-danger", children: error }) : null,
     /* @__PURE__ */ jsx36("div", { className: "text-xs text-muted-foreground", children: t.screen.installHint })
   ] }) });
 }
@@ -22416,7 +22423,7 @@ function BotScreenPane({ bot }) {
         ] }),
         /* @__PURE__ */ jsx37(sdk_compat_exports.Button, { disabled: busy, onClick: () => void decideImageSwitch(false), size: "sm", variant: "ghost", children: t.screen.imageSwitchKeep })
       ] }),
-      error ? /* @__PURE__ */ jsx37("div", { className: "text-xs text-red-500", children: error }) : null
+      error ? /* @__PURE__ */ jsx37("div", { className: "text-xs hbp-fg-danger", children: error }) : null
     ] }) });
   }
   if (status && !status.running) {
@@ -22427,7 +22434,7 @@ function BotScreenPane({ bot }) {
         busy ? /* @__PURE__ */ jsx37(sdk_compat_exports.GlyphSpinner, {}) : /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "play" }),
         t.screen.start
       ] }),
-      error ? /* @__PURE__ */ jsx37("div", { className: "text-xs text-red-500", children: error }) : null
+      error ? /* @__PURE__ */ jsx37("div", { className: "text-xs hbp-fg-danger", children: error }) : null
     ] }) });
   }
   const humanOther = lease?.holder === "human" && !iHold;
@@ -22451,7 +22458,7 @@ function BotScreenPane({ bot }) {
         /* @__PURE__ */ jsxs36(
           "span",
           {
-            className: "max-w-[40%] truncate rounded bg-amber-500/15 px-2 py-0.5 text-amber-600 dark:text-amber-400",
+            className: "max-w-[40%] truncate rounded hbp-bg-warn-15 px-2 py-0.5 hbp-fg-warn",
             title: lease.reason,
             children: [
               /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "bell" }),
@@ -22461,7 +22468,7 @@ function BotScreenPane({ bot }) {
           }
         )
       ) : null,
-      iHold ? /* @__PURE__ */ jsx37("span", { className: "rounded bg-red-500/15 px-2 py-0.5 font-medium text-red-600 dark:text-red-400", children: t.screen.youControl }) : humanOther ? /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t.screen.otherControls }) : /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t.screen.agentControls }),
+      iHold ? /* @__PURE__ */ jsx37("span", { className: "rounded hbp-bg-danger-15 px-2 py-0.5 font-medium hbp-fg-danger", children: t.screen.youControl }) : humanOther ? /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t.screen.otherControls }) : /* @__PURE__ */ jsx37("span", { className: "rounded bg-muted px-2 py-0.5 text-muted-foreground", children: t.screen.agentControls }),
       iHold ? /* @__PURE__ */ jsxs36(sdk_compat_exports.Button, { disabled: busy, onClick: () => void handBack(), size: "sm", variant: "secondary", children: [
         /* @__PURE__ */ jsx37(sdk_compat_exports.Codicon, { name: "debug-continue" }),
         " ",
@@ -22493,7 +22500,7 @@ function BotScreenPane({ bot }) {
     /* @__PURE__ */ jsxs36(
       "div",
       {
-        className: iHold ? "relative min-h-0 grow bg-black ring-2 ring-inset ring-red-500/70" : "relative min-h-0 grow bg-black",
+        className: iHold ? "relative min-h-0 grow bg-black ring-2 ring-inset hbp-ring-danger-70" : "relative min-h-0 grow bg-black",
         children: [
           /* @__PURE__ */ jsx37("div", { className: "absolute inset-0", "data-remote-screen": "", "data-terminal": "", ref: canvasHost }),
           conn === "attaching" ? /* @__PURE__ */ jsxs36("div", { className: "pointer-events-none absolute inset-0 flex items-center justify-center text-xs text-white/70", children: [
@@ -23213,7 +23220,7 @@ function runStatusGlyph(status) {
 function runStatusClass(status) {
   switch (status) {
     case "attention":
-      return "text-amber-600 dark:text-amber-300";
+      return "hbp-fg-warn";
     case "failed":
       return "text-destructive";
     case "running":
@@ -24880,9 +24887,9 @@ var TONE_ICON = {
   unknown: "device-desktop"
 };
 var TONE_DOT = {
-  live: "bg-emerald-500",
-  human: "bg-red-500",
-  other: "bg-amber-500",
+  live: "hbp-bg-ok",
+  human: "hbp-bg-danger",
+  other: "hbp-bg-warn",
   off: "bg-(--ui-text-quaternary)",
   missing: "bg-(--ui-text-quaternary)",
   unsupported: "bg-(--ui-text-quaternary)",
@@ -25066,9 +25073,9 @@ var MAX_FRAME_HEIGHT = 480;
 var DEFAULT_FRAME_HEIGHT = 170;
 var frameHeight = DEFAULT_FRAME_HEIGHT;
 var CHIP_CLASS = {
-  live: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-  human: "bg-red-500/15 text-red-600 dark:text-red-400",
-  other: "bg-amber-500/15 text-amber-600 dark:text-amber-400",
+  live: "hbp-bg-ok-15 hbp-fg-ok",
+  human: "hbp-bg-danger-15 hbp-fg-danger",
+  other: "hbp-bg-warn-15 hbp-fg-warn",
   off: "bg-muted text-muted-foreground",
   missing: "bg-muted text-muted-foreground",
   unsupported: "bg-muted text-muted-foreground",
@@ -25214,7 +25221,7 @@ function ComputerPanelContent({ bot, meta }) {
               "button",
               {
                 "aria-label": `${t.screen.portalTitle}: ${caption || chip}`,
-                className: `absolute inset-0 block size-full overflow-hidden text-left ${tone === "human" ? "ring-2 ring-inset ring-red-500/80" : tone === "other" ? "ring-2 ring-inset ring-amber-500/70" : ""}`,
+                className: `absolute inset-0 block size-full overflow-hidden text-left ${tone === "human" ? "ring-2 ring-inset hbp-ring-danger-80" : tone === "other" ? "ring-2 ring-inset hbp-ring-warn-70" : ""}`,
                 onClick: () => openBotScreen(bot, meta ?? null),
                 ref: boxRef,
                 type: "button",
@@ -26323,7 +26330,7 @@ function NextRow({
     /* @__PURE__ */ jsx54(
       sdk_compat_exports.Codicon,
       {
-        className: (0, sdk_compat_exports.cn)("mt-0.5 shrink-0", warn ? "text-amber-600 dark:text-amber-300" : "text-(--ui-text-quaternary)"),
+        className: (0, sdk_compat_exports.cn)("mt-0.5 shrink-0", warn ? "hbp-fg-warn" : "text-(--ui-text-quaternary)"),
         name: warn ? "warning" : icon,
         size: "0.85rem"
       }
@@ -26335,7 +26342,7 @@ function NextRow({
         {
           className: (0, sdk_compat_exports.cn)(
             "truncate text-[0.6875rem]",
-            warn ? "text-amber-700 dark:text-amber-300" : "text-(--ui-text-tertiary)"
+            warn ? "hbp-fg-warn" : "text-(--ui-text-tertiary)"
           ),
           children: detail
         }
@@ -26589,7 +26596,7 @@ function BotHero2({
           {
             className: (0, sdk_compat_exports.cn)(
               "mt-1 flex max-w-full items-start gap-1.5 text-xs leading-relaxed",
-              tone === "waiting" ? "text-amber-700 dark:text-amber-300" : "text-(--ui-text-tertiary)"
+              tone === "waiting" ? "hbp-fg-warn" : "text-(--ui-text-tertiary)"
             ),
             "data-testid": "rail-live-line",
             "data-tone": tone,
@@ -26640,11 +26647,11 @@ function ApprovalsPanel({ bot, name }) {
   const sessionId = (0, sdk_compat_exports.useValue)(host.state.focusedSessionId);
   const mine = sessionId ? items.filter((item) => item.sessionId === sessionId) : [];
   return /* @__PURE__ */ jsxs53("div", { className: "grid gap-3 px-3 pb-3 pt-1", children: [
-    mine.length ? /* @__PURE__ */ jsx55("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs53("li", { className: "flex gap-2.5 rounded-xl bg-amber-500/8 px-2.5 py-2", children: [
+    mine.length ? /* @__PURE__ */ jsx55("ul", { className: "grid gap-1.5", "data-testid": "rail-approvals", children: mine.map((item) => /* @__PURE__ */ jsxs53("li", { className: "flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2", children: [
       /* @__PURE__ */ jsx55(
         sdk_compat_exports.Codicon,
         {
-          className: "mt-0.5 shrink-0 text-amber-700 dark:text-amber-300",
+          className: "mt-0.5 shrink-0 hbp-fg-warn",
           name: ATTENTION_ICONS[item.kind] ?? "bell",
           size: "0.95rem"
         }
@@ -27415,7 +27422,7 @@ function CardAttention({ count, reason }) {
     "span",
     {
       "aria-label": b.roster.needsAttention,
-      className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums text-amber-600 dark:text-amber-300",
+      className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums hbp-fg-warn",
       children: [
         /* @__PURE__ */ jsx57(sdk_compat_exports.Codicon, { name: "warning" }),
         count
@@ -27538,7 +27545,7 @@ function BotCard({
                     {
                       className: (0, sdk_compat_exports.cn)(
                         "min-w-0 line-clamp-2 text-xs leading-relaxed text-(--ui-text-tertiary) flex items-center gap-1.5",
-                        liveTone === "amber" && "text-amber-600 dark:text-amber-300",
+                        liveTone === "amber" && "hbp-fg-warn",
                         !liveText && fromBot && "italic"
                       ),
                       children: [
@@ -27729,7 +27736,7 @@ function BotRow({
                 "aria-label": healthLabel,
                 className: (0, sdk_compat_exports.cn)(
                   "flex shrink-0 items-center text-[0.6875rem]",
-                  health.kind === "unreachable" ? "text-destructive" : "text-amber-600 dark:text-amber-300"
+                  health.kind === "unreachable" ? "text-destructive" : "hbp-fg-warn"
                 ),
                 children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { name: health.kind === "unreachable" ? "debug-disconnect" : "warning" })
               }
@@ -27742,7 +27749,7 @@ function BotRow({
                   "span",
                   {
                     "aria-label": attention.reason ? `${b.roster.needsAttention}: ${botAttentionHint(attention.reason)}` : b.roster.attentionItems(attention.count),
-                    className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums text-amber-600 dark:text-amber-300",
+                    className: "flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums hbp-fg-warn",
                     onClick: (event) => {
                       event.stopPropagation();
                       open();
@@ -27770,7 +27777,7 @@ function BotRow({
               {
                 className: (0, sdk_compat_exports.cn)(
                   "min-w-0 truncate flex items-center gap-1.5",
-                  liveTone === "amber" && "text-amber-600 dark:text-amber-300",
+                  liveTone === "amber" && "hbp-fg-warn",
                   liveTone === "live" && "text-(--ui-text-secondary)",
                   !liveText && fromBot && "italic"
                 ),
@@ -27872,7 +27879,7 @@ function GroupRow({ active, group, members, needsYou, onOpen, onDisband, onNewSe
             "span",
             {
               "aria-label": availabilityLabel,
-              className: "absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] text-amber-600 ring-1 ring-(--ui-stroke-tertiary) dark:text-amber-300",
+              className: "absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] hbp-fg-warn ring-1 ring-(--ui-stroke-tertiary) hbp-fg-warn",
               children: /* @__PURE__ */ jsx59(sdk_compat_exports.Codicon, { name: "debug-disconnect" })
             }
           ) }) : null
@@ -28151,7 +28158,7 @@ function BroadcastStatusGlyph({ status }) {
   if (status === "error") {
     return /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { className: "text-destructive", name: "error" });
   }
-  return /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { "aria-label": b.broadcast.title, className: "text-green-600 dark:text-green-400", name: "check" });
+  return /* @__PURE__ */ jsx60(sdk_compat_exports.Codicon, { "aria-label": b.broadcast.title, className: "hbp-fg-ok", name: "check" });
 }
 function BroadcastResultCard({ entry }) {
   const b = useBots();
@@ -31088,7 +31095,7 @@ function renderRosterToolbar({
                   /* @__PURE__ */ jsx71(
                     GatewayKindGlyph,
                     {
-                      className: (0, sdk_compat_exports.cn)("mr-1.5", !status.available && "text-amber-600 dark:text-amber-300"),
+                      className: (0, sdk_compat_exports.cn)("mr-1.5", !status.available && "hbp-fg-warn"),
                       kind: option.kind
                     }
                   ),
@@ -31199,7 +31206,7 @@ function FleetJobRow({ bot, job }) {
       {
         className: (0, sdk_compat_exports.cn)(
           "shrink-0 text-[0.65rem] tabular-nums",
-          overdue ? "text-amber-600 dark:text-amber-300" : "text-(--ui-text-quaternary)"
+          overdue ? "hbp-fg-warn" : "text-(--ui-text-quaternary)"
         ),
         children: [
           overdue ? `${b.calendar.overdue} \xB7 ` : "",
@@ -31267,7 +31274,7 @@ function RoutinesCalendarDialog({
           /* @__PURE__ */ jsx72(sdk_compat_exports.DialogDescription, { children: b.calendar.desc })
         ] }),
         /* @__PURE__ */ jsxs70("div", { className: "flex max-h-[60vh] min-h-0 flex-col gap-2 overflow-y-auto", children: [
-          partial ? /* @__PURE__ */ jsx72("div", { className: "rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[0.6875rem] text-amber-700 dark:text-amber-300", children: b.calendar.loadFailed }) : null,
+          partial ? /* @__PURE__ */ jsx72("div", { className: "rounded-md border hbp-bd-warn-40 hbp-bg-warn-10 px-2.5 py-1.5 text-[0.6875rem] hbp-fg-warn", children: b.calendar.loadFailed }) : null,
           loading ? /* @__PURE__ */ jsxs70("div", { className: "flex items-center gap-1.5 px-1 py-3 text-[0.75rem] text-(--ui-text-tertiary)", children: [
             /* @__PURE__ */ jsx72(sdk_compat_exports.Codicon, { name: "loading", spinning: true }),
             b.calendar.title
@@ -31458,9 +31465,9 @@ function TriageStrip({
   return /* @__PURE__ */ jsxs71("section", { className: "mb-1 px-2", "data-testid": "bot-triage-strip", children: [
     /* @__PURE__ */ jsxs71("div", { className: "flex items-center justify-between px-1 pt-1 pb-1.5", children: [
       /* @__PURE__ */ jsx73("span", { className: "ui-section-label", children: b.triage.title }),
-      /* @__PURE__ */ jsx73("span", { className: "rounded-full bg-amber-500/15 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300", children: items.length })
+      /* @__PURE__ */ jsx73("span", { className: "rounded-full hbp-bg-warn-15 px-1.5 text-[0.625rem] font-semibold tabular-nums hbp-fg-warn", children: items.length })
     ] }),
-    /* @__PURE__ */ jsx73("div", { className: "grid gap-0.5 rounded-lg bg-amber-500/[0.06] p-1", children: items.map((item) => {
+    /* @__PURE__ */ jsx73("div", { className: "grid gap-0.5 rounded-lg hbp-bg-warn-6 p-1", children: items.map((item) => {
       const meta = botRosterMeta(item.bot, allMeta);
       const { shape, color, image } = botAppearance(item.bot.name, meta);
       const name = displayName(item.bot, meta);
@@ -31476,7 +31483,7 @@ function TriageStrip({
           onClick: () => onOpen(item.bot),
           type: "button",
           children: [
-            /* @__PURE__ */ jsx73("span", { className: "shrink-0 rounded-md ring-1 ring-amber-500/50", children: /* @__PURE__ */ jsx73(
+            /* @__PURE__ */ jsx73("span", { className: "shrink-0 rounded-md ring-1 hbp-ring-warn-50", children: /* @__PURE__ */ jsx73(
               BotFace,
               {
                 color: avatarColor(color, item.bot.name),
@@ -31491,7 +31498,7 @@ function TriageStrip({
                 /* @__PURE__ */ jsx73(
                   sdk_compat_exports.Codicon,
                   {
-                    className: "shrink-0 text-amber-600 dark:text-amber-300",
+                    className: "shrink-0 hbp-fg-warn",
                     name: TRIAGE_GLYPHS[item.kind],
                     size: "0.7rem"
                   }
@@ -32136,6 +32143,47 @@ async function sweepBotProfileSessions(nowSeconds = Date.now() / 1e3) {
 
 // src/plugin.tsx
 init_shared();
+
+// src/tones.ts
+var TONES = {
+  warn: "var(--color-warning, var(--ui-yellow))",
+  ok: "var(--color-success, var(--ui-green))",
+  danger: "var(--color-danger, var(--ui-red))",
+  accent: "var(--ui-accent)"
+};
+var STEPS = [5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 50, 70, 80];
+var mix = (color, pct) => `color-mix(in srgb, ${color} ${pct}%, transparent)`;
+function toneStyleSheet() {
+  const rules = [];
+  for (const [tone, color] of Object.entries(TONES)) {
+    rules.push(`.hbp-fg-${tone}{color:${color}}`, `.hbp-bg-${tone}{background-color:${color}}`);
+    for (const pct of STEPS) {
+      rules.push(
+        `.hbp-bg-${tone}-${pct}{background-color:${mix(color, pct)}}`,
+        `.hbp-bd-${tone}-${pct}{border-color:${mix(color, pct)}}`,
+        `.hbp-ring-${tone}-${pct}{--tw-ring-color:${mix(color, pct)}}`
+      );
+    }
+  }
+  return `@layer utilities{${rules.join("")}}`;
+}
+var STYLE_ID = "hermes-bots-plus-styles";
+function mountPluginStyles(utilities = "") {
+  if (typeof document === "undefined") {
+    return () => {
+    };
+  }
+  let el = document.getElementById(STYLE_ID);
+  if (!el) {
+    el = document.createElement("style");
+    el.id = STYLE_ID;
+    document.head.appendChild(el);
+  }
+  el.textContent = toneStyleSheet() + utilities;
+  return () => el?.remove();
+}
+
+// src/plugin.tsx
 import { Fragment as Fragment17, jsx as jsx75 } from "react/jsx-runtime";
 function RailTabTitle() {
   return /* @__PURE__ */ jsx75(Fragment17, { children: useBots().rail.title });
@@ -32147,6 +32195,7 @@ var plugin_default = {
   replaces: ["hermes-bots"],
   register(ctx) {
     setPluginCtx(ctx);
+    const unmountStyles = mountPluginStyles(css_default);
     loadBotSections();
     const disposeLocales = ctx.i18n.register(BOTS_LOCALES);
     const disposeTeamLocales = ctx.i18n.register(TEAM_LOCALES);
@@ -32158,6 +32207,7 @@ var plugin_default = {
     startBotRelay();
     const stopScreenAutoRaise = startScreenAutoRaise();
     if (typeof ctx.onDispose === "function") {
+      ctx.onDispose(unmountStyles);
       ctx.onDispose(disposeLocales);
       ctx.onDispose(disposeTeamLocales);
       ctx.onDispose(disposeHireLocales);

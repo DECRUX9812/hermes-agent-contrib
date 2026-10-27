@@ -54,7 +54,7 @@ function FleetJobRow({ bot, job }: FleetRoutine) {
         <span
           className={cn(
             'shrink-0 text-[0.65rem] tabular-nums',
-            overdue ? 'text-amber-600 dark:text-amber-300' : 'text-(--ui-text-quaternary)'
+            overdue ? 'hbp-fg-warn' : 'text-(--ui-text-quaternary)'
           )}
         >
           {overdue ? `${b.calendar.overdue} · ` : ''}
@@ -139,7 +139,7 @@ export function RoutinesCalendarDialog({
         </DialogHeader>
         <div className="flex max-h-[60vh] min-h-0 flex-col gap-2 overflow-y-auto">
           {partial ? (
-            <div className="rounded-md border border-amber-500/40 bg-amber-500/10 px-2.5 py-1.5 text-[0.6875rem] text-amber-700 dark:text-amber-300">
+            <div className="rounded-md border hbp-bd-warn-40 hbp-bg-warn-10 px-2.5 py-1.5 text-[0.6875rem] hbp-fg-warn">
               {b.calendar.loadFailed}
             </div>
           ) : null}

@@ -157,11 +157,11 @@ export function TriageStrip({
     <section className="mb-1 px-2" data-testid="bot-triage-strip">
       <div className="flex items-center justify-between px-1 pt-1 pb-1.5">
         <span className="ui-section-label">{b.triage.title}</span>
-        <span className="rounded-full bg-amber-500/15 px-1.5 text-[0.625rem] font-semibold tabular-nums text-amber-700 dark:text-amber-300">
+        <span className="rounded-full hbp-bg-warn-15 px-1.5 text-[0.625rem] font-semibold tabular-nums hbp-fg-warn">
           {items.length}
         </span>
       </div>
-      <div className="grid gap-0.5 rounded-lg bg-amber-500/[0.06] p-1">
+      <div className="grid gap-0.5 rounded-lg hbp-bg-warn-6 p-1">
         {items.map(item => {
           const meta = botRosterMeta(item.bot, allMeta)
           const { shape, color, image } = botAppearance(item.bot.name, meta)
@@ -179,7 +179,7 @@ export function TriageStrip({
               onClick={() => onOpen(item.bot)}
               type="button"
             >
-              <span className="shrink-0 rounded-md ring-1 ring-amber-500/50">
+              <span className="shrink-0 rounded-md ring-1 hbp-ring-warn-50">
                 <BotFace
                   color={avatarColor(color, item.bot.name)}
                   image={image}
@@ -191,7 +191,7 @@ export function TriageStrip({
               <span className="min-w-0 flex-1">
                 <span className="flex min-w-0 items-center gap-1 text-xs font-medium text-foreground">
                   <Codicon
-                    className="shrink-0 text-amber-600 dark:text-amber-300"
+                    className="shrink-0 hbp-fg-warn"
                     name={TRIAGE_GLYPHS[item.kind]}
                     size="0.7rem"
                   />

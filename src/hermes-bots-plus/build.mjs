@@ -1,9 +1,11 @@
 // Bundles the fork's Bot Mode 2.0 source into one desktop-plugin plugin.js.
 // Usage: node build.mjs <path-to-esbuild-package-dir>
-import { readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { createRequire } from 'node:module'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { pluginUtilitiesCss } from './utilities.mjs'
 
 const here = dirname(fileURLToPath(import.meta.url))
 const esbuildDir = process.argv[2]
@@ -19,6 +21,15 @@ const compat = resolve(here, 'sdk-compat.ts')
 const outfile = resolve(here, '../../desktop-plugins/hermes-bots-plus/plugin.js')
 const HOST = new Set(['@hermes/plugin-sdk', 'react', 'react/jsx-runtime'])
 
+// Plugin-only arbitrary utilities (see utilities.mjs), filtered against the
+// host stylesheet named by HOST_CSS_DIR (default: the overlay's webapp dist).
+const hostCssDir = process.env.HOST_CSS_DIR || resolve(homedir(), 'Code/hermes-overlay-core/apps/desktop/dist-webapp/assets')
+const hostCss = existsSync(hostCssDir)
+  ? readdirSync(hostCssDir).filter(f => f.endsWith('.css')).map(f => readFileSync(resolve(hostCssDir, f), 'utf8')).join('')
+  : ''
+const utilities = await pluginUtilitiesCss({ require, srcDir: resolve(here, 'src'), hostCss })
+const utilitiesCss = require('@tailwindcss/node').optimize?.(utilities.css, { minify: true })?.code ?? utilities.css
+
 const hostImports = {
   name: 'host-imports',
   setup(build) {
@@ -26,6 +37,11 @@ const hostImports = {
       args.importer === compat ? { external: true, path: args.path } : { path: compat }
     )
     build.onResolve({ filter: /^react(\/jsx-runtime)?$/ }, args => ({ external: true, path: args.path }))
+    build.onResolve({ filter: /^virtual:plugin-utilities$/ }, () => ({ namespace: 'plugin-utilities', path: 'css' }))
+    build.onLoad({ filter: /.*/, namespace: 'plugin-utilities' }, () => ({
+      contents: `export default ${JSON.stringify(utilitiesCss)}`,
+      loader: 'js'
+    }))
     build.onResolve({ filter: /^nanostores$/ }, () => ({ path: require.resolve('nanostores') }))
     // The VNC screen viewer is an app dependency, not a plugin one; the pane
     // reports the import failure instead of bundling a VNC client.
@@ -64,4 +80,4 @@ if (leaked.length) {
   process.exit(1)
 }
 
-console.log(`built ${outfile} (${(bundle.length / 1024).toFixed(0)} KiB)`)
+console.log(`built ${outfile} (${(bundle.length / 1024).toFixed(0)} KiB; ${utilities.missing.length} plugin-only utilities, host css ${hostCss ? 'found' : 'MISSING'})`)

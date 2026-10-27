@@ -18,9 +18,9 @@ import { useBots } from './i18n'
 import { mutateTeam } from './team'
 
 const TONE: Record<RoomWorkStatus, string> = {
-  answered: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300',
+  answered: 'hbp-bg-ok-12 hbp-fg-ok',
   open: 'bg-(--ui-bg-tertiary) text-(--ui-text-secondary)',
-  waiting: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+  waiting: 'hbp-bg-warn-15 hbp-fg-warn',
   working: 'bg-(--ui-accent)/12 text-(--ui-accent)'
 }
 
@@ -82,7 +82,7 @@ export function GroupThreadHeader({ item, nameOf, onBack, onStop, owner, teamId 
         </div>
       </div>
       {onStop && item.status === 'working' ? (
-        <Button className="shrink-0 text-red-700 dark:text-red-300" onClick={onStop} size="sm" variant="outline">
+        <Button className="shrink-0 hbp-fg-danger" onClick={onStop} size="sm" variant="outline">
           <Codicon name="debug-stop" />
           {b.group.stopWork}
         </Button>

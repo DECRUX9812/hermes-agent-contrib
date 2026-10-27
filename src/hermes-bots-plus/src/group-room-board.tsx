@@ -18,8 +18,8 @@ type Column = 'answered' | 'needs' | 'waiting' | 'working'
 const COLUMNS: readonly Column[] = ['needs', 'waiting', 'working', 'answered']
 
 const DOT: Record<Column, string> = {
-  answered: 'bg-emerald-500/70',
-  needs: 'bg-amber-500',
+  answered: 'hbp-bg-ok-70',
+  needs: 'hbp-bg-warn',
   waiting: 'bg-(--ui-text-quaternary)',
   working: 'bg-(--ui-accent)'
 }
@@ -57,7 +57,7 @@ export function GroupRoomBoard({ escalations, handoffs, items, members, nameOf, 
   const tiles = [
     {
       label: c.needsYou,
-      tone: 'border-amber-500/40 bg-amber-500/8 text-amber-700 dark:text-amber-300',
+      tone: 'hbp-bd-warn-40 hbp-bg-warn-8 hbp-fg-warn',
       value: visible.filter(i => columnOf(i, escalated) === 'needs').length
     },
     {
@@ -72,7 +72,7 @@ export function GroupRoomBoard({ escalations, handoffs, items, members, nameOf, 
     },
     {
       label: c.deliveredToday,
-      tone: 'border-emerald-500/30 bg-emerald-500/6 text-emerald-700 dark:text-emerald-300',
+      tone: 'hbp-bd-ok-30 hbp-bg-ok-6 hbp-fg-ok',
       value: handoffs.filter(h => h.status === 'delivered' && h.at >= startOfDay).length
     }
   ]

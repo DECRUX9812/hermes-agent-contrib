@@ -1,0 +1,64 @@
+/** Status tones for Bot Mode, painted from the host theme's status tokens.
+ *
+ *  Bot Mode used raw Tailwind palette classes (amber/emerald/red/violet with
+ *  `dark:` twins). Those ignored the active theme and only rendered when the
+ *  host stylesheet happened to contain the exact class. These helpers resolve
+ *  every tone from the theme (`--color-warning|success|danger`, `--ui-accent`)
+ *  so a theme or dark mode switch repaints them; `color-mix` gives the soft
+ *  fills/borders/rings at the same alpha steps the old classes used.
+ *
+ *  Classes: `hbp-fg-<tone>`, `hbp-bg-<tone>[-<pct>]`, `hbp-bd-<tone>-<pct>`,
+ *  `hbp-ring-<tone>-<pct>` (sets the ring colour; pair with a host `ring-*`
+ *  width class). They live in `@layer utilities` so host state variants
+ *  (`hover:`, `focus-visible:`) still win, as they did over the old classes. */
+
+const TONES: Record<string, string> = {
+  warn: 'var(--color-warning, var(--ui-yellow))',
+  ok: 'var(--color-success, var(--ui-green))',
+  danger: 'var(--color-danger, var(--ui-red))',
+  accent: 'var(--ui-accent)'
+}
+
+const STEPS = [5, 6, 8, 10, 12, 15, 20, 25, 30, 35, 40, 50, 70, 80]
+
+const mix = (color: string, pct: number) => `color-mix(in srgb, ${color} ${pct}%, transparent)`
+
+export function toneStyleSheet(): string {
+  const rules: string[] = []
+
+  for (const [tone, color] of Object.entries(TONES)) {
+    rules.push(`.hbp-fg-${tone}{color:${color}}`, `.hbp-bg-${tone}{background-color:${color}}`)
+
+    for (const pct of STEPS) {
+      rules.push(
+        `.hbp-bg-${tone}-${pct}{background-color:${mix(color, pct)}}`,
+        `.hbp-bd-${tone}-${pct}{border-color:${mix(color, pct)}}`,
+        `.hbp-ring-${tone}-${pct}{--tw-ring-color:${mix(color, pct)}}`
+      )
+    }
+  }
+
+  return `@layer utilities{${rules.join('')}}`
+}
+
+const STYLE_ID = 'hermes-bots-plus-styles'
+
+/** Mount the tone sheet plus the build's plugin-only utilities (build.mjs →
+ *  `virtual:plugin-utilities`) once; returns the disposer for plugin unload. */
+export function mountPluginStyles(utilities = ''): () => void {
+  if (typeof document === 'undefined') {
+    return () => {}
+  }
+
+  let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null
+
+  if (!el) {
+    el = document.createElement('style')
+    el.id = STYLE_ID
+    document.head.appendChild(el)
+  }
+
+  el.textContent = toneStyleSheet() + utilities
+
+  return () => el?.remove()
+}

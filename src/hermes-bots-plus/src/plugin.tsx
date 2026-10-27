@@ -34,6 +34,7 @@ import {
   TRANSCRIPT_DIRECTIVE_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
+import pluginUtilities from 'virtual:plugin-utilities'
 import type {
   ChatEmptyProps,
   ChatHeaderSlotContribution,
@@ -128,6 +129,7 @@ import { SHARE_LOCALES } from './share-i18n'
 import { bumpBotOpenGeneration, getBotOpenGeneration, ID, setPluginCtx } from './shared'
 import { TEAM_LOCALES } from './team-i18n'
 import { TeamPage } from './team-page'
+import { mountPluginStyles } from './tones'
 import type { GroupChat, RosterRow } from './types'
 import { loadBotSections } from './user-sections'
 
@@ -168,6 +170,8 @@ export default {
   replaces: ['hermes-bots'],
   register(ctx: PluginContext) {
     setPluginCtx(ctx)
+    // Theme-token status tones + plugin-only utilities (see tones.ts).
+    const unmountStyles = mountPluginStyles(pluginUtilities)
     // The user's own roster sections. Read once at register; every mutation
     // writes through.
     loadBotSections()
@@ -187,6 +191,7 @@ export default {
     // Disabling the plugin (or a hot reload) must actually stop the clock —
     // before this, the rAF loop + 1Hz document scan ran until app restart.
     if (typeof ctx.onDispose === 'function') {
+      ctx.onDispose(unmountStyles)
       ctx.onDispose(disposeLocales)
       ctx.onDispose(disposeTeamLocales)
       ctx.onDispose(disposeHireLocales)

@@ -168,7 +168,7 @@ export function GroupRoomHeader({
       {/* The face pile already says how many; the label only speaks up when
           a member can't answer right now. */}
       {members.length > 0 && availableMembers < members.length ? (
-        <span aria-label={availabilityLabel} className="shrink-0 text-[0.625rem] text-amber-600 dark:text-amber-300">
+        <span aria-label={availabilityLabel} className="shrink-0 text-[0.625rem] hbp-fg-warn">
           {availabilityLabel}
         </span>
       ) : null}

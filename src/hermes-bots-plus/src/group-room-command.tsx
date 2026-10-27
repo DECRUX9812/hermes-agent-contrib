@@ -90,13 +90,13 @@ export function RoomDecisions({
       ))}
       {clarifies.map(entry => (
         <button
-          className="flex cursor-pointer flex-col gap-0.5 rounded-xl border border-violet-500/30 bg-violet-500/6 px-3 py-2 text-left"
+          className="flex cursor-pointer flex-col gap-0.5 rounded-xl border hbp-bd-accent-30 hbp-bg-accent-6 px-3 py-2 text-left"
           data-testid="group-decision-question"
           key={`${entry.thread || 'legacy'}:${entry.memberKey}:${entry.requestId}`}
           onClick={() => onOpen(entry.thread || 'legacy')}
           type="button"
         >
-          <span className="text-[0.6875rem] font-semibold text-violet-700 dark:text-violet-300">
+          <span className="text-[0.6875rem] font-semibold hbp-fg-accent">
             {b.group.decisionQuestion(memberName(entry.memberKey))}
           </span>
           <span className="text-[0.75rem] text-(--ui-text-secondary)">{b.group.openThread}</span>

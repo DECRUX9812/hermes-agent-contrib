@@ -1457,7 +1457,7 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                 <Tip label={b.group.roomLead}>
                   <span
                     aria-label={b.group.roomLead}
-                    className="text-[0.625rem] leading-none text-amber-500"
+                    className="text-[0.625rem] leading-none hbp-fg-warn"
                     data-testid="group-speaker-lead"
                   >
                     ★

@@ -156,7 +156,7 @@ function BotHero({
           <p
             className={cn(
               'mt-1 flex max-w-full items-start gap-1.5 text-xs leading-relaxed',
-              tone === 'waiting' ? 'text-amber-700 dark:text-amber-300' : 'text-(--ui-text-tertiary)'
+              tone === 'waiting' ? 'hbp-fg-warn' : 'text-(--ui-text-tertiary)'
             )}
             data-testid="rail-live-line"
             data-tone={tone}
@@ -229,9 +229,9 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
       {mine.length ? (
         <ul className="grid gap-1.5" data-testid="rail-approvals">
           {mine.map(item => (
-            <li className="flex gap-2.5 rounded-xl bg-amber-500/8 px-2.5 py-2" key={item.id}>
+            <li className="flex gap-2.5 rounded-xl hbp-bg-warn-8 px-2.5 py-2" key={item.id}>
               <Codicon
-                className="mt-0.5 shrink-0 text-amber-700 dark:text-amber-300"
+                className="mt-0.5 shrink-0 hbp-fg-warn"
                 name={ATTENTION_ICONS[item.kind] ?? 'bell'}
                 size="0.95rem"
               />

@@ -29,8 +29,8 @@ import type { BotMeta, GroupMember, RosterRow } from './types'
 const BUSY: ReadonlySet<BotLiveKind> = new Set(['background', 'delegated', 'group', 'routine', 'stalled', 'working'])
 
 const TONE: Partial<Record<BotLiveKind, string>> = {
-  'needs-input': 'text-amber-700 dark:text-amber-300',
-  stalled: 'text-amber-700 dark:text-amber-300',
+  'needs-input': 'hbp-fg-warn',
+  stalled: 'hbp-fg-warn',
   working: 'text-(--ui-accent)',
   group: 'text-(--ui-accent)',
   routine: 'text-(--ui-accent)',
@@ -64,10 +64,10 @@ export interface SeatBudget {
 }
 
 const BUDGET_TONE: Record<SeatBudget['tone'], string> = {
-  exhausted: 'text-red-600 dark:text-red-300',
+  exhausted: 'hbp-fg-danger',
   ok: 'text-(--ui-text-quaternary)',
   paused: 'text-(--ui-text-quaternary)',
-  warn: 'text-amber-700 dark:text-amber-300'
+  warn: 'hbp-fg-warn'
 }
 
 const usd = (value: number) => `$${value.toFixed(2)}`
@@ -122,7 +122,7 @@ function SquadMember({ allMeta, budget, isLead, member, onMention, roomTurn, row
           <span className="flex min-w-0 items-center gap-1">
             <span className="truncate text-[0.75rem] font-semibold text-foreground">{name}</span>
             {isLead ? (
-              <span aria-label={b.group.roomLead} className="shrink-0 text-[0.625rem] text-amber-500">
+              <span aria-label={b.group.roomLead} className="shrink-0 text-[0.625rem] hbp-fg-warn">
                 ★
               </span>
             ) : null}

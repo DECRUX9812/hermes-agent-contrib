@@ -23,9 +23,9 @@ import type { BotMeta, GroupMember } from './types'
 const SECTIONS: readonly RoomWorkStatus[] = ['waiting', 'working', 'open', 'answered']
 
 const GLYPH: Record<RoomWorkStatus, string> = {
-  answered: 'bg-emerald-500/70',
+  answered: 'hbp-bg-ok-70',
   open: 'bg-(--ui-text-quaternary)',
-  waiting: 'bg-amber-500',
+  waiting: 'hbp-bg-warn',
   working: 'bg-(--ui-accent)'
 }
 
@@ -205,7 +205,7 @@ export function GroupThreadRail({
           className={cn(
             'flex min-h-9 w-full cursor-pointer items-center gap-2 rounded-lg border px-2.5 text-left text-[0.75rem] font-semibold transition-colors',
             desk.needsYou
-              ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300'
+              ? 'hbp-bd-warn-40 hbp-bg-warn-10 hbp-fg-warn'
               : 'border-(--ui-stroke-secondary) text-(--ui-text-tertiary)'
           )}
           onClick={desk.onNeedsYou}
@@ -213,7 +213,7 @@ export function GroupThreadRail({
         >
           <span
             aria-hidden
-            className={cn('size-2 rounded-full', desk.needsYou ? 'bg-amber-500' : 'bg-(--ui-text-quaternary)')}
+            className={cn('size-2 rounded-full', desk.needsYou ? 'hbp-bg-warn' : 'bg-(--ui-text-quaternary)')}
           />
           <span className="flex-1">{b.group.deskNeedsYou}</span>
           <span className="font-mono tabular-nums">{desk.needsYou}</span>
@@ -323,7 +323,7 @@ export function GroupThreadRail({
               <h3
                 className={cn(
                   'm-0 flex items-center gap-1.5 px-2 pb-1 text-[0.625rem] font-semibold uppercase tracking-wide',
-                  status === 'waiting' ? 'text-amber-700 dark:text-amber-300' : 'text-(--ui-text-quaternary)'
+                  status === 'waiting' ? 'hbp-fg-warn' : 'text-(--ui-text-quaternary)'
                 )}
               >
                 {b.group.workStatus[status]}

@@ -345,7 +345,7 @@ export function BotRow({
                 aria-label={healthLabel}
                 className={cn(
                   'flex shrink-0 items-center text-[0.6875rem]',
-                  health.kind === 'unreachable' ? 'text-destructive' : 'text-amber-600 dark:text-amber-300'
+                  health.kind === 'unreachable' ? 'text-destructive' : 'hbp-fg-warn'
                 )}
               >
                 <Codicon name={health.kind === 'unreachable' ? 'debug-disconnect' : 'warning'} />
@@ -362,7 +362,7 @@ export function BotRow({
                     ? `${b.roster.needsAttention}: ${botAttentionHint(attention.reason)}`
                     : b.roster.attentionItems(attention.count)
                 }
-                className="flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums text-amber-600 dark:text-amber-300"
+                className="flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums hbp-fg-warn"
                 onClick={event => {
                   event.stopPropagation()
                   open()
@@ -400,7 +400,7 @@ export function BotRow({
               <span
                 className={cn(
                   'min-w-0 truncate flex items-center gap-1.5',
-                  liveTone === 'amber' && 'text-amber-600 dark:text-amber-300',
+                  liveTone === 'amber' && 'hbp-fg-warn',
                   liveTone === 'live' && 'text-(--ui-text-secondary)',
                   !liveText && fromBot && 'italic'
                 )}
@@ -530,7 +530,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
           <Tip label={availabilityLabel}>
             <span
               aria-label={availabilityLabel}
-              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] text-amber-600 ring-1 ring-(--ui-stroke-tertiary) dark:text-amber-300"
+              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] hbp-fg-warn ring-1 ring-(--ui-stroke-tertiary) hbp-fg-warn"
             >
               <Codicon name="debug-disconnect" />
             </span>

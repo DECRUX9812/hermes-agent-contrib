@@ -152,12 +152,12 @@ export function RecapCard({
   return (
     <section
       aria-label={r.title}
-      className="ml-11 flex flex-col gap-1.5 rounded-xl border border-violet-500/25 bg-violet-500/5 px-3 py-2"
+      className="ml-11 flex flex-col gap-1.5 rounded-xl border hbp-bd-accent-25 hbp-bg-accent-5 px-3 py-2"
       data-testid="group-recap-card"
     >
       <div className="flex items-center gap-2">
-        <Codicon className="text-violet-600 dark:text-violet-300" name="sparkle" />
-        <span className="text-[0.75rem] font-semibold text-violet-700 dark:text-violet-300">{r.title}</span>
+        <Codicon className="hbp-fg-accent" name="sparkle" />
+        <span className="text-[0.75rem] font-semibold hbp-fg-accent">{r.title}</span>
         <Button
           className="ml-auto h-6 px-2 text-[0.6875rem]"
           disabled={busy || !entries.length}
@@ -225,10 +225,10 @@ export function CatchUpCard({ catchUp, missed, nameOf, onDismiss, onOpen }: Catc
                 className={cn(
                   'mt-1.5 size-2 shrink-0 rounded-full',
                   line.escalated || line.question
-                    ? 'bg-amber-500'
+                    ? 'hbp-bg-warn'
                     : line.working.length
                       ? 'bg-(--ui-accent)'
-                      : 'bg-emerald-500/70'
+                      : 'hbp-bg-ok-70'
                 )}
               />
               <span className="flex min-w-0 flex-col">

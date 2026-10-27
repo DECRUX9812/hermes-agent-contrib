@@ -19,9 +19,9 @@ import { liveTool } from './live-status'
 import type { GroupMember } from './types'
 
 const STATUS_TONE: Record<HandoffStatus, string> = {
-  accepted: 'bg-emerald-500/12 text-emerald-700 dark:text-emerald-300',
-  declined: 'bg-red-500/12 text-red-700 dark:text-red-300',
-  delivered: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+  accepted: 'hbp-bg-ok-12 hbp-fg-ok',
+  declined: 'hbp-bg-danger-12 hbp-fg-danger',
+  delivered: 'hbp-bg-ok-15 hbp-fg-ok',
   open: 'bg-(--ui-bg-tertiary) text-(--ui-text-secondary)',
   working: 'bg-(--ui-accent)/12 text-(--ui-accent)'
 }
@@ -44,7 +44,7 @@ function DueClock({ at, minutes }: { at: number; minutes: number }) {
   return left >= 0 ? (
     <span>{b.group.handoff.due(left)}</span>
   ) : (
-    <span className="font-semibold text-red-600 dark:text-red-300">{b.group.handoff.overdue(-left)}</span>
+    <span className="font-semibold hbp-fg-danger">{b.group.handoff.overdue(-left)}</span>
   )
 }
 
@@ -119,14 +119,14 @@ export function EscalationCard({
     <section
       aria-label={e.title}
       className={cn(
-        'flex flex-col gap-2 rounded-xl border border-amber-500/40 bg-amber-500/8 px-3 py-2.5',
+        'flex flex-col gap-2 rounded-xl border hbp-bd-warn-40 hbp-bg-warn-8 px-3 py-2.5',
         !compact && 'ml-11'
       )}
       data-testid="group-escalation-card"
     >
       <div className="flex flex-wrap items-center gap-2">
-        <Codicon className="text-amber-600 dark:text-amber-300" name="warning" />
-        <span className="text-[0.75rem] font-semibold text-amber-700 dark:text-amber-300">{e.title}</span>
+        <Codicon className="hbp-fg-warn" name="warning" />
+        <span className="text-[0.75rem] font-semibold hbp-fg-warn">{e.title}</span>
         <span className="text-[0.6875rem] text-(--ui-text-tertiary)">
           {escalation.kind === 'loop'
             ? e.loop(nameOf(handoff.from), nameOf(handoff.to))
@@ -252,8 +252,8 @@ export function VoteCard({
 
   const TONE = {
     majority: 'bg-(--ui-accent)/12 text-(--ui-accent)',
-    split: 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
-    unanimous: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300',
+    split: 'hbp-bg-warn-15 hbp-fg-warn',
+    unanimous: 'hbp-bg-ok-15 hbp-fg-ok',
     waiting: 'bg-(--ui-bg-tertiary) text-(--ui-text-secondary)'
   } as const
 
@@ -292,7 +292,7 @@ export function VoteCard({
                   aria-hidden
                   className={cn(
                     'h-full absolute inset-y-0 left-0 transition-[width]',
-                    isCalled ? 'bg-emerald-500/35' : 'bg-(--ui-accent)/18'
+                    isCalled ? 'hbp-bg-ok-35' : 'bg-(--ui-accent)/18'
                   )}
                   style={{ width: `${width}%` }}
                 />
@@ -300,7 +300,7 @@ export function VoteCard({
                   <span
                     className={cn(
                       'min-w-0 truncate text-[0.75rem]',
-                      isCalled ? 'font-semibold text-emerald-700 dark:text-emerald-300' : 'text-foreground'
+                      isCalled ? 'font-semibold hbp-fg-ok' : 'text-foreground'
                     )}
                   >
                     {option}
@@ -326,7 +326,7 @@ export function VoteCard({
       <div className="flex flex-wrap gap-x-3 px-3 pb-2 text-[0.625rem] text-(--ui-text-quaternary)">
         <span>{relativeTime(vote.at)}</span>
         {vote.decided ? (
-          <span className="font-semibold text-emerald-700 dark:text-emerald-300" data-testid="group-vote-decided">
+          <span className="font-semibold hbp-fg-ok" data-testid="group-vote-decided">
             {v.decided(vote.decided)}
           </span>
         ) : (

@@ -447,7 +447,7 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
               {t.screen.imageSwitchKeep}
             </Button>
           </div>
-          {error ? <div className="text-xs text-red-500">{error}</div> : null}
+          {error ? <div className="text-xs hbp-fg-danger">{error}</div> : null}
         </div>
       </div>
     )
@@ -463,7 +463,7 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
             {busy ? <GlyphSpinner /> : <Codicon name="play" />}
             {t.screen.start}
           </Button>
-          {error ? <div className="text-xs text-red-500">{error}</div> : null}
+          {error ? <div className="text-xs hbp-fg-danger">{error}</div> : null}
         </div>
       </div>
     )
@@ -492,14 +492,14 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
         {lease?.holder === 'human' && lease.reason ? (
           // Why control was taken stays readable while the human acts.
           <span
-            className="max-w-[40%] truncate rounded bg-amber-500/15 px-2 py-0.5 text-amber-600 dark:text-amber-400"
+            className="max-w-[40%] truncate rounded hbp-bg-warn-15 px-2 py-0.5 hbp-fg-warn"
             title={lease.reason}
           >
             <Codicon name="bell" /> {lease.reason}
           </span>
         ) : null}
         {iHold ? (
-          <span className="rounded bg-red-500/15 px-2 py-0.5 font-medium text-red-600 dark:text-red-400">
+          <span className="rounded hbp-bg-danger-15 px-2 py-0.5 font-medium hbp-fg-danger">
             {t.screen.youControl}
           </span>
         ) : humanOther ? (
@@ -542,7 +542,7 @@ export function BotScreenPane({ bot }: { bot: RosterRow }) {
       </div>
       <div
         className={
-          iHold ? 'relative min-h-0 grow bg-black ring-2 ring-inset ring-red-500/70' : 'relative min-h-0 grow bg-black'
+          iHold ? 'relative min-h-0 grow bg-black ring-2 ring-inset hbp-ring-danger-70' : 'relative min-h-0 grow bg-black'
         }
       >
         {/* data-terminal: the same keyboard-ownership marker the terminal pane uses, so the app's

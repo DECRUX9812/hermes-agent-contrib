@@ -15,7 +15,7 @@ export function CardAttention({ count, reason }: { count: number; reason?: null 
     <Tip label={reason ? botAttentionHint(reason) : b.roster.attentionItems(count)}>
       <span
         aria-label={b.roster.needsAttention}
-        className="flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums text-amber-600 dark:text-amber-300"
+        className="flex shrink-0 items-center gap-0.5 text-[0.6875rem] font-medium tabular-nums hbp-fg-warn"
       >
         <Codicon name="warning" />
         {count}
