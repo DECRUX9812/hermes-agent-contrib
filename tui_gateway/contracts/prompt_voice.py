@@ -80,6 +80,8 @@ class PromptSubmitResult(Result):
     # RT-37: the gateway's durable ledger held work for this session, so the prompt was admitted into
     # the OWNER's FIFO (``status: queued``) and runs there after the current turn; nothing runs here.
     admission_id: str | None = None
+    # Canonical receipt destination the desktop client checks (``ref.session_id`` == the sent id).
+    ref: dict[str, JsonValue] | None = None
     forwarded: bool | None = None
 
 

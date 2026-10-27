@@ -5,6 +5,7 @@ method_ctx.bind_module), so they reference server.py globals bare.
 """
 
 import contextlib
+import uuid
 
 from .method_ctx import HandlerRegistry, bind_module
 
@@ -813,8 +814,7 @@ def _lock_in_submit_turn(
 from gateway.session_surface import SURFACES as _CLIENT_SURFACES
 
 
-@method("prompt.submit")
-def _(rid, params: dict) -> dict:
+def _prompt_submit(rid, params: dict) -> dict:
     from hermes_cli.input_sanitize import sanitize_user_prompt_text
     sid = params.get("session_id", "")
     raw_text = params.get("text", "")
@@ -964,6 +964,28 @@ def _(rid, params: dict) -> dict:
     session["_run_thread"] = run_thread
     run_thread.start()
     return _ok(rid, {"status": "streaming", **survivor_fields})
+
+
+def _with_admission_receipt(resp, params: dict):
+    """The desktop's canonical client reads every prompt.submit answer as an admission receipt: it
+    refuses one without ``ref.session_id`` (echoing the sent id) and a string ``admission_id``. Stamp
+    both on admitted results; errors and the voice-stop reply pass through unchanged. The admission
+    id is the ledger's when there is one, else the client's own ``submission_id``."""
+    result = resp.get("result") if isinstance(resp, dict) else None
+    if not isinstance(result, dict) or result.get("voice_stopped") or "status" not in result:
+        return resp
+    sid = params.get("session_id")
+    if isinstance(sid, str) and sid and not isinstance(result.get("ref"), dict):
+        result["ref"] = {"profile_id": params.get("profile") or "default", "session_id": sid}
+    if not isinstance(result.get("admission_id"), str):
+        own = params.get("submission_id")
+        result["admission_id"] = own if isinstance(own, str) and own else f"tui-{uuid.uuid4().hex}"
+    return resp
+
+
+@method("prompt.submit")
+def _(rid, params: dict) -> dict:
+    return _with_admission_receipt(_prompt_submit(rid, params), params)
 
 
 @method("clipboard.paste")

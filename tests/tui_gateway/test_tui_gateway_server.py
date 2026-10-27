@@ -284,7 +284,10 @@ def test_prompt_submit_dispatches_to_compute_host_when_turn_isolation_enabled(mo
                 "params": {"session_id": "iso-sid", "text": "hello"},
             }
         )
-        assert resp["result"] == {"status": "streaming", "turn_isolation": True}
+        result = dict(resp["result"])
+        assert result.pop("ref") == {"profile_id": "default", "session_id": "iso-sid"}
+        assert isinstance(result.pop("admission_id"), str)  # canonical receipt stamp
+        assert result == {"status": "streaming", "turn_isolation": True}
         assert fake_supervisor.frames[0]["type"] == "turn.start"
         assert fake_supervisor.frames[0]["sid"] == "iso-sid"
         assert fake_supervisor.frames[0]["text"] == "hello"
@@ -407,11 +410,11 @@ def test_prompt_submit_fails_open_inline_when_compute_host_dispatch_breaks(monke
     finally:
         server._sessions.pop("iso-fallback", None)
 
-    assert resp == {
-        "jsonrpc": "2.0",
-        "id": "fallback-turn",
-        "result": {"status": "streaming"},
-    }
+    result = resp.pop("result")
+    assert resp == {"jsonrpc": "2.0", "id": "fallback-turn"}
+    assert result.pop("ref") == {"profile_id": "default", "session_id": "iso-fallback"}
+    assert isinstance(result.pop("admission_id"), str)  # canonical receipt stamp
+    assert result == {"status": "streaming"}
     assert inline_calls == [("fallback-turn", "iso-fallback", "hello")]
     assert session.get("_compute_host_active") is not True
 

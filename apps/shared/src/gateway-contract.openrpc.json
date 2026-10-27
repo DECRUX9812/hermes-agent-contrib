@@ -32227,6 +32227,19 @@
             "default": null,
             "title": "Admission Id"
           },
+          "ref": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "default": null,
+            "title": "Ref"
+          },
           "forwarded": {
             "anyOf": [
               {
