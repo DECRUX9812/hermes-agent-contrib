@@ -3773,6 +3773,14 @@ catalog: CatalogTranslations
       fallbackTitle: string
       annotate: string
       annotateOn: string
+      annotateTools: string
+      annotatePicker: string
+      annotateDraw: string
+      annotateArrow: string
+      annotateBox: string
+      annotateEllipse: string
+      annotateUndo: string
+      annotateClear: string
       annotateNeedPage: string
       annotateFailed: string
       commenting: string
