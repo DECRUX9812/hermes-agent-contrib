@@ -32,7 +32,11 @@ import type { PullRequestBucket } from './pull-requests'
 import type { SessionStatusBucket } from './session-dot-state'
 
 export const SIDEBAR_DEFAULT_WIDTH = 237
-export const SIDEBAR_MAX_WIDTH = 360
+/** Draggable floor — well under the default, so the rail can actually be made
+ *  narrow (the file tree has always allowed this; the sessions rail used its
+ *  own default as the floor, so the sash refused to move left at all). */
+export const SIDEBAR_MIN_WIDTH = 176
+export const SIDEBAR_MAX_WIDTH = 420
 // Open at the same width as the sessions sidebar so the two rails match, but
 // allow shrinking well below that (~30% under the old 14rem floor) for users who
 // want a narrow tree.
@@ -551,7 +555,7 @@ export function restoreWorktree(id: string): void {
 }
 
 export function setSidebarWidth(width: number) {
-  const bounded = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_DEFAULT_WIDTH, width))
+  const bounded = Math.min(SIDEBAR_MAX_WIDTH, Math.max(SIDEBAR_MIN_WIDTH, width))
   setPaneWidthOverride(CHAT_SIDEBAR_PANE_ID, bounded)
 }
 

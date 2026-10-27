@@ -7,6 +7,8 @@ import { requestFreshSession } from '@/store/profile'
 import { $activeSessionId, $selectedStoredSessionId } from '@/store/session'
 import { closeSessionTile, nextSessionTileForWorkspace } from '@/store/session-states'
 
+import { requestComposerFocus } from './composer/focus'
+
 /**
  * Close the MAIN tab. The workspace pane itself can't leave the tree, so
  * "closing" it means emptying it, and what fills the hole depends on what's
@@ -27,6 +29,13 @@ import { closeSessionTile, nextSessionTileForWorkspace } from '@/store/session-s
  * `loadSessionIntoWorkspace` carries the app's route-based "load this session
  * into main"; omitting it disables the promotion half.
  */
+/** Closing a tab is a "keep going" gesture, not an exit: put the caret where
+ *  the next thing gets typed. Without this, ⌘W dropped focus to <body> and the
+ *  user had to Tab-crawl back through the window chrome before typing again. */
+function focusWhereWorkContinues() {
+  requestComposerFocus('active')
+}
+
 export function closeWorkspaceTab(loadSessionIntoWorkspace?: (storedSessionId: string) => void): boolean {
   // Order matters — close the tile FIRST so the selection homes to the
   // workspace instead of re-fronting the tile.
@@ -36,6 +45,7 @@ export function closeWorkspaceTab(loadSessionIntoWorkspace?: (storedSessionId: s
     if (next) {
       closeSessionTile(next)
       loadSessionIntoWorkspace(next)
+      focusWhereWorkContinues()
 
       return true
     }
@@ -46,6 +56,7 @@ export function closeWorkspaceTab(loadSessionIntoWorkspace?: (storedSessionId: s
   }
 
   requestFreshSession()
+  focusWhereWorkContinues()
 
   return true
 }
@@ -82,12 +93,16 @@ export function closeActiveTab(loadSessionIntoWorkspace?: (storedSessionId: stri
   // A closeable tab in the focused chat zone (a session tile that's the active
   // tab) closes outright; the uncloseable workspace tab falls through.
   if (closeFocusedSessionTab()) {
+    focusWhereWorkContinues()
+
     return true
   }
 
   // A tool panel zone hosts no chat strip, so the chat rung skips it — but its
   // tabs close like any other. Without this ⌘W was dead over terminal / logs.
   if (closeFocusedToolTab()) {
+    focusWhereWorkContinues()
+
     return true
   }
 
