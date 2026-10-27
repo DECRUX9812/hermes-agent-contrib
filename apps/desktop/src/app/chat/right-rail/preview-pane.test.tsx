@@ -755,7 +755,7 @@ describe('PreviewPane console state', () => {
     const webview = rendered.container.querySelector('webview') as HTMLElement & Record<string, unknown>
     const notAttached = new Error('The WebView must be attached to the DOM and the dom-ready event emitted')
 
-    const loadURL = vi.fn((_url: string) => {
+    const loadURL = vi.fn<(_url: string) => Promise<void>>(() => {
       throw notAttached
     })
 
