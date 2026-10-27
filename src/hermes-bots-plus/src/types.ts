@@ -331,6 +331,7 @@ export type GroupActivityKind =
   | 'replied'
   | 'safety'
   | 'settled'
+  | 'steered'
   | 'stopped'
   | 'timed-out'
   | 'working'

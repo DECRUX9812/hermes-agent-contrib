@@ -257,6 +257,10 @@ export type BotsMessages = {
     hideActivity: string
     stop: string
     stopHint: string
+    steer: string
+    steerHint: (member: string) => string
+    queueHint: string
+    steerFallback: string
     allHeldStatus: (count: number) => string
     heldMembersStatus: (members: string) => string
     holdReleaseHint: string

@@ -411,6 +411,10 @@ type BotsMessages = {
     hideActivity: string
     stop: string
     stopHint: string
+    steer: string
+    steerHint: (member: string) => string
+    queueHint: string
+    steerFallback: string
     allHeldStatus: (count: number) => string
     heldMembersStatus: (members: string) => string
     holdReleaseHint: string
@@ -1304,6 +1308,10 @@ const en: BotsMessages = {
     hideActivity: 'Hide room activity',
     stop: 'Stop',
     stopHint: 'Stop this run — interrupts the member on turn and holds the rest',
+    steer: 'Steer',
+    steerHint: member => `Steer ${member} now — adds this to the turn it is running, without interrupting`,
+    queueHint: 'Queue — sends when the current turn finishes',
+    steerFallback: 'Nobody was mid-turn any more — sent it as a normal message',
     allHeldStatus: count => `All ${count} bots are paused`,
     heldMembersStatus: members => `Paused: ${members}`,
     holdReleaseHint: 'Mention a paused bot or send @all resume to release them.',
@@ -2205,6 +2213,10 @@ const ja: BotsMessages = {
     hideActivity: '部屋のアクティビティを隠す',
     stop: '停止',
     stopHint: 'この実行を停止 — ターン中のメンバーを中断し、残りを保留します',
+    steer: '誘導',
+    steerHint: member => `${member} を今すぐ誘導 — 実行中のターンを中断せずに追加します`,
+    queueHint: 'キューに追加 — 現在のターンが終わると送信します',
+    steerFallback: 'ターンが終わっていたため、通常のメッセージとして送信しました',
     allHeldStatus: count => `すべてのボット（${count}体）が一時停止中`,
     heldMembersStatus: members => `一時停止中: ${members}`,
     holdReleaseHint: '一時停止中のボットにメンションするか、@all resume を送信して再開します。',
@@ -3089,6 +3101,10 @@ const zh: BotsMessages = {
     hideActivity: '隐藏房间活动',
     stop: '停止',
     stopHint: '停止本次运行 — 中断当前回合的成员，并暂停其余成员',
+    steer: '引导',
+    steerHint: member => `立即引导 ${member} — 不中断，把这段话加入它正在进行的回合`,
+    queueHint: '排队 — 当前回合结束后发送',
+    steerFallback: '回合已结束 — 已作为普通消息发送',
     allHeldStatus: count => `全部 ${count} 个机器人已暂停`,
     heldMembersStatus: members => `已暂停：${members}`,
     holdReleaseHint: '提及已暂停的机器人，或发送 @all resume 以恢复它们。',
@@ -3967,6 +3983,10 @@ const zhHant: BotsMessages = {
     hideActivity: '隱藏房間活動',
     stop: '停止',
     stopHint: '停止本次執行 — 中斷目前回合的成員，並暫停其餘成員',
+    steer: '引導',
+    steerHint: member => `立即引導 ${member} — 不中斷，把這段話加入它正在進行的回合`,
+    queueHint: '排隊 — 目前回合結束後傳送',
+    steerFallback: '回合已結束 — 已作為一般訊息傳送',
     allHeldStatus: count => `全部 ${count} 個機器人已暫停`,
     heldMembersStatus: members => `已暫停：${members}`,
     holdReleaseHint: '提及已暫停的機器人，或傳送 @all resume 以恢復它們。',

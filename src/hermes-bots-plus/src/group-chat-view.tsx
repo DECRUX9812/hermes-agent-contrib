@@ -112,6 +112,7 @@ import { useRoomUnread } from './group-room-unseen'
 import { deriveRoomVotes, roomVotesAt } from './group-room-votes'
 import { roomLiveWork, roomWorkItems } from './group-room-work'
 import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-rounds'
+import { groupSteerTarget, steerGroupTurn } from './group-steer'
 import { localMemberProfiles, resolveRoomListener, ROOM_LISTENER_EVERYONE, teamLeadMember } from './group-team'
 import { renameGroupClarify } from './group-turns'
 import { $groupVisitAnchor, markGroupOpened } from './group-unread'
@@ -1076,6 +1077,41 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
     }
   }
 
+  // Steer = Bot Chat's other busy verb: hand the words to the member on
+  // turn mid-turn (session.steer). Plain Send keeps queueing behind the drive.
+  const [steering, setSteering] = useState(false)
+  const steerTarget = room.running ? groupSteerTarget(group) : null
+
+  const steerDraft = async (thread: null | string) => {
+    const text = (thread ? replyDrafts[thread] || '' : draft).trim()
+
+    if (!text || steering) {
+      return
+    }
+
+    setSteering(true)
+
+    try {
+      if (await steerGroupTurn(group, text)) {
+        if (thread) {
+          setReplyDrafts(prev => ({ ...prev, [thread]: '' }))
+        } else {
+          setDraft('')
+        }
+      } else {
+        host.notify({ kind: 'info', message: b.group.steerFallback })
+
+        if (thread) {
+          submitReply(thread)
+        } else {
+          submit()
+        }
+      }
+    } finally {
+      setSteering(false)
+    }
+  }
+
   const submitReply = (thread: string) => {
     const text = (replyDrafts[thread] || '').trim()
     const images = imagesFor(thread)
@@ -1805,7 +1841,24 @@ export function GroupChatWorkspace({ group, members, onBack, visible = true }: G
                   value={replyThread ? replyDrafts[replyThread] || '' : draft}
                 />
                 {attachButton(replyThread)}
-                <Tip label={replyThread ? b.group.reply : b.group.newThread}>
+                {steerTarget ? (
+                  <Tip label={b.group.steerHint(steerTarget.member.name || b.group.steer)}>
+                    <Button
+                      aria-label={b.group.steer}
+                      className="shrink-0 text-(--ui-accent)"
+                      data-slot="group-steer"
+                      disabled={steering || !(replyThread ? replyDrafts[replyThread] || '' : draft).trim()}
+                      onClick={() => void steerDraft(replyThread)}
+                      size="xs"
+                      type="button"
+                      variant="ghost"
+                    >
+                      <Codicon name="debug-step-into" />
+                      {b.group.steer}
+                    </Button>
+                  </Tip>
+                ) : null}
+                <Tip label={room.running ? b.group.queueHint : replyThread ? b.group.reply : b.group.newThread}>
                   <Button
                     aria-label={replyThread ? b.group.reply : b.group.newThread}
                     className={GROUP_SEND_BTN}

@@ -161,7 +161,9 @@ export function groupActivityLabel(event: GroupActivityEntry, group?: null | str
     return `${who} couldn't start — too many bots running`
   }
 
-  return `${who} ${base}${reason ? ` — ${reason}` : ''}`
+  const said = kind === 'steered' ? String(event?.preview || '').trim() : ''
+
+  return `${who} ${base}${reason ? ` — ${reason}` : ''}${said ? ` — “${said}”` : ''}`
 }
 
 const GROUP_ACTIVITY_LABELS: Record<GroupActivityKind, string> = {
@@ -177,7 +179,8 @@ const GROUP_ACTIVITY_LABELS: Record<GroupActivityKind, string> = {
   safety: 'safety brake stopped a runaway turn',
   delivered: 'delivered a late reply',
   held: 'is held (stopped by you) — @mention it or say resume to release',
-  stopped: 'stopped the room — remaining turns are held until resumed'
+  stopped: 'stopped the room — remaining turns are held until resumed',
+  steered: 'steered the bot on turn'
 }
 
 /** Which drive-budget axis ran out, when the drive named one — the feed can
@@ -201,7 +204,8 @@ export const GROUP_ACTIVITY_GLYPHS: Record<GroupActivityKind, string> = {
   safety: 'debug-stop',
   delivered: 'mail-read',
   held: 'debug-pause',
-  stopped: 'debug-stop'
+  stopped: 'debug-stop',
+  steered: 'debug-step-into'
 }
 
 /** Text tone for an activity row: quiet for pass/cancel/settle, accent for
@@ -211,7 +215,7 @@ export function groupActivityTone(kind: GroupActivityKind) {
     return 'text-destructive'
   }
 
-  if (kind === 'working' || kind === 'replied' || kind === 'delivered') {
+  if (kind === 'working' || kind === 'replied' || kind === 'delivered' || kind === 'steered') {
     return 'text-(--ui-accent)'
   }
 

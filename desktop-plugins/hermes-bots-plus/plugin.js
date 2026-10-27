@@ -1209,6 +1209,10 @@ var init_i18n = __esm({
         hideActivity: "Hide room activity",
         stop: "Stop",
         stopHint: "Stop this run \u2014 interrupts the member on turn and holds the rest",
+        steer: "Steer",
+        steerHint: (member) => `Steer ${member} now \u2014 adds this to the turn it is running, without interrupting`,
+        queueHint: "Queue \u2014 sends when the current turn finishes",
+        steerFallback: "Nobody was mid-turn any more \u2014 sent it as a normal message",
         allHeldStatus: (count) => `All ${count} bots are paused`,
         heldMembersStatus: (members) => `Paused: ${members}`,
         holdReleaseHint: "Mention a paused bot or send @all resume to release them.",
@@ -2086,6 +2090,10 @@ var init_i18n = __esm({
         hideActivity: "\u90E8\u5C4B\u306E\u30A2\u30AF\u30C6\u30A3\u30D3\u30C6\u30A3\u3092\u96A0\u3059",
         stop: "\u505C\u6B62",
         stopHint: "\u3053\u306E\u5B9F\u884C\u3092\u505C\u6B62 \u2014 \u30BF\u30FC\u30F3\u4E2D\u306E\u30E1\u30F3\u30D0\u30FC\u3092\u4E2D\u65AD\u3057\u3001\u6B8B\u308A\u3092\u4FDD\u7559\u3057\u307E\u3059",
+        steer: "\u8A98\u5C0E",
+        steerHint: (member) => `${member} \u3092\u4ECA\u3059\u3050\u8A98\u5C0E \u2014 \u5B9F\u884C\u4E2D\u306E\u30BF\u30FC\u30F3\u3092\u4E2D\u65AD\u305B\u305A\u306B\u8FFD\u52A0\u3057\u307E\u3059`,
+        queueHint: "\u30AD\u30E5\u30FC\u306B\u8FFD\u52A0 \u2014 \u73FE\u5728\u306E\u30BF\u30FC\u30F3\u304C\u7D42\u308F\u308B\u3068\u9001\u4FE1\u3057\u307E\u3059",
+        steerFallback: "\u30BF\u30FC\u30F3\u304C\u7D42\u308F\u3063\u3066\u3044\u305F\u305F\u3081\u3001\u901A\u5E38\u306E\u30E1\u30C3\u30BB\u30FC\u30B8\u3068\u3057\u3066\u9001\u4FE1\u3057\u307E\u3057\u305F",
         allHeldStatus: (count) => `\u3059\u3079\u3066\u306E\u30DC\u30C3\u30C8\uFF08${count}\u4F53\uFF09\u304C\u4E00\u6642\u505C\u6B62\u4E2D`,
         heldMembersStatus: (members) => `\u4E00\u6642\u505C\u6B62\u4E2D: ${members}`,
         holdReleaseHint: "\u4E00\u6642\u505C\u6B62\u4E2D\u306E\u30DC\u30C3\u30C8\u306B\u30E1\u30F3\u30B7\u30E7\u30F3\u3059\u308B\u304B\u3001@all resume \u3092\u9001\u4FE1\u3057\u3066\u518D\u958B\u3057\u307E\u3059\u3002",
@@ -2957,6 +2965,10 @@ var init_i18n = __esm({
         hideActivity: "\u9690\u85CF\u623F\u95F4\u6D3B\u52A8",
         stop: "\u505C\u6B62",
         stopHint: "\u505C\u6B62\u672C\u6B21\u8FD0\u884C \u2014 \u4E2D\u65AD\u5F53\u524D\u56DE\u5408\u7684\u6210\u5458\uFF0C\u5E76\u6682\u505C\u5176\u4F59\u6210\u5458",
+        steer: "\u5F15\u5BFC",
+        steerHint: (member) => `\u7ACB\u5373\u5F15\u5BFC ${member} \u2014 \u4E0D\u4E2D\u65AD\uFF0C\u628A\u8FD9\u6BB5\u8BDD\u52A0\u5165\u5B83\u6B63\u5728\u8FDB\u884C\u7684\u56DE\u5408`,
+        queueHint: "\u6392\u961F \u2014 \u5F53\u524D\u56DE\u5408\u7ED3\u675F\u540E\u53D1\u9001",
+        steerFallback: "\u56DE\u5408\u5DF2\u7ED3\u675F \u2014 \u5DF2\u4F5C\u4E3A\u666E\u901A\u6D88\u606F\u53D1\u9001",
         allHeldStatus: (count) => `\u5168\u90E8 ${count} \u4E2A\u673A\u5668\u4EBA\u5DF2\u6682\u505C`,
         heldMembersStatus: (members) => `\u5DF2\u6682\u505C\uFF1A${members}`,
         holdReleaseHint: "\u63D0\u53CA\u5DF2\u6682\u505C\u7684\u673A\u5668\u4EBA\uFF0C\u6216\u53D1\u9001 @all resume \u4EE5\u6062\u590D\u5B83\u4EEC\u3002",
@@ -3828,6 +3840,10 @@ var init_i18n = __esm({
         hideActivity: "\u96B1\u85CF\u623F\u9593\u6D3B\u52D5",
         stop: "\u505C\u6B62",
         stopHint: "\u505C\u6B62\u672C\u6B21\u57F7\u884C \u2014 \u4E2D\u65B7\u76EE\u524D\u56DE\u5408\u7684\u6210\u54E1\uFF0C\u4E26\u66AB\u505C\u5176\u9918\u6210\u54E1",
+        steer: "\u5F15\u5C0E",
+        steerHint: (member) => `\u7ACB\u5373\u5F15\u5C0E ${member} \u2014 \u4E0D\u4E2D\u65B7\uFF0C\u628A\u9019\u6BB5\u8A71\u52A0\u5165\u5B83\u6B63\u5728\u9032\u884C\u7684\u56DE\u5408`,
+        queueHint: "\u6392\u968A \u2014 \u76EE\u524D\u56DE\u5408\u7D50\u675F\u5F8C\u50B3\u9001",
+        steerFallback: "\u56DE\u5408\u5DF2\u7D50\u675F \u2014 \u5DF2\u4F5C\u70BA\u4E00\u822C\u8A0A\u606F\u50B3\u9001",
         allHeldStatus: (count) => `\u5168\u90E8 ${count} \u500B\u6A5F\u5668\u4EBA\u5DF2\u66AB\u505C`,
         heldMembersStatus: (members) => `\u5DF2\u66AB\u505C\uFF1A${members}`,
         holdReleaseHint: "\u63D0\u53CA\u5DF2\u66AB\u505C\u7684\u6A5F\u5668\u4EBA\uFF0C\u6216\u50B3\u9001 @all resume \u4EE5\u6062\u5FA9\u5B83\u5011\u3002",
@@ -9696,7 +9712,8 @@ function groupActivityLabel(event, group) {
   if (kind === "failed" && reason === GROUP_SLOT_WAIT_REASON) {
     return `${who} couldn't start \u2014 too many bots running`;
   }
-  return `${who} ${base}${reason ? ` \u2014 ${reason}` : ""}`;
+  const said = kind === "steered" ? String(event?.preview || "").trim() : "";
+  return `${who} ${base}${reason ? ` \u2014 ${reason}` : ""}${said ? ` \u2014 \u201C${said}\u201D` : ""}`;
 }
 var GROUP_ACTIVITY_LABELS = {
   queued: "sent a message",
@@ -9711,7 +9728,8 @@ var GROUP_ACTIVITY_LABELS = {
   safety: "safety brake stopped a runaway turn",
   delivered: "delivered a late reply",
   held: "is held (stopped by you) \u2014 @mention it or say resume to release",
-  stopped: "stopped the room \u2014 remaining turns are held until resumed"
+  stopped: "stopped the room \u2014 remaining turns are held until resumed",
+  steered: "steered the bot on turn"
 };
 var GROUP_ACTIVITY_AXIS_LABELS = {
   continuations: "mention follow-up",
@@ -9731,13 +9749,14 @@ var GROUP_ACTIVITY_GLYPHS = {
   safety: "debug-stop",
   delivered: "mail-read",
   held: "debug-pause",
-  stopped: "debug-stop"
+  stopped: "debug-stop",
+  steered: "debug-step-into"
 };
 function groupActivityTone(kind) {
   if (kind === "failed" || kind === "timed-out") {
     return "text-destructive";
   }
-  if (kind === "working" || kind === "replied" || kind === "delivered") {
+  if (kind === "working" || kind === "replied" || kind === "delivered" || kind === "steered") {
     return "text-(--ui-accent)";
   }
   return "text-(--ui-text-tertiary)";
@@ -16624,6 +16643,49 @@ function roomWorkItems(log, {
   return items.sort((a, b) => STATUS_RANK[a.status] - STATUS_RANK[b.status] || b.lastAt - a.lastAt);
 }
 
+// src/group-steer.ts
+init_routing();
+function groupSteerTarget(group) {
+  const room = $groupChats.get()[group];
+  const member = room?.running ? room.turn : null;
+  if (!member) {
+    return null;
+  }
+  const working = currentGroupActivity(group).filter((event) => event.kind === "working").at(-1);
+  const thread = working?.thread || null;
+  const sessions = room?.sessions || {};
+  const key = groupMemberKey(member);
+  const sessionId = sessions[groupSessionKey(thread || "legacy", member)] || (hasThreadScopedGroupSession(sessions, key) ? null : sessions[key]);
+  return typeof sessionId === "string" && sessionId ? { member, sessionId, thread } : null;
+}
+async function steerGroupTurn(group, text2) {
+  const trimmed2 = text2.trim();
+  const target = trimmed2 ? groupSteerTarget(group) : null;
+  if (!target) {
+    return null;
+  }
+  let status = "";
+  try {
+    const result = await requestForBot(target.member, "session.steer", {
+      session_id: target.sessionId,
+      text: trimmed2
+    });
+    status = String(result?.status || "");
+  } catch {
+    return null;
+  }
+  if (status !== "queued") {
+    return null;
+  }
+  recordGroupActivity(group, {
+    kind: "steered",
+    member: "You",
+    preview: trimmed2,
+    thread: target.thread
+  });
+  return target;
+}
+
 // src/group-chat-view.tsx
 init_i18n();
 init_labels();
@@ -17299,6 +17361,33 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
       }
     }
   };
+  const [steering, setSteering] = useState17(false);
+  const steerTarget = room.running ? groupSteerTarget(group) : null;
+  const steerDraft = async (thread) => {
+    const text2 = (thread ? replyDrafts[thread] || "" : draft).trim();
+    if (!text2 || steering) {
+      return;
+    }
+    setSteering(true);
+    try {
+      if (await steerGroupTurn(group, text2)) {
+        if (thread) {
+          setReplyDrafts((prev) => ({ ...prev, [thread]: "" }));
+        } else {
+          setDraft("");
+        }
+      } else {
+        host.notify({ kind: "info", message: b.group.steerFallback });
+        if (thread) {
+          submitReply(thread);
+        } else {
+          submit();
+        }
+      }
+    } finally {
+      setSteering(false);
+    }
+  };
   const submitReply = (thread) => {
     const text2 = (replyDrafts[thread] || "").trim();
     const images = imagesFor(thread);
@@ -17894,7 +17983,24 @@ function GroupChatWorkspace({ group, members, onBack, visible = true }) {
                         }
                       ),
                       attachButton(replyThread),
-                      /* @__PURE__ */ jsx24(sdk_compat_exports.Tip, { label: replyThread ? b.group.reply : b.group.newThread, children: /* @__PURE__ */ jsx24(
+                      steerTarget ? /* @__PURE__ */ jsx24(sdk_compat_exports.Tip, { label: b.group.steerHint(steerTarget.member.name || b.group.steer), children: /* @__PURE__ */ jsxs23(
+                        sdk_compat_exports.Button,
+                        {
+                          "aria-label": b.group.steer,
+                          className: "shrink-0 text-(--ui-accent)",
+                          "data-slot": "group-steer",
+                          disabled: steering || !(replyThread ? replyDrafts[replyThread] || "" : draft).trim(),
+                          onClick: () => void steerDraft(replyThread),
+                          size: "xs",
+                          type: "button",
+                          variant: "ghost",
+                          children: [
+                            /* @__PURE__ */ jsx24(sdk_compat_exports.Codicon, { name: "debug-step-into" }),
+                            b.group.steer
+                          ]
+                        }
+                      ) }) : null,
+                      /* @__PURE__ */ jsx24(sdk_compat_exports.Tip, { label: room.running ? b.group.queueHint : replyThread ? b.group.reply : b.group.newThread, children: /* @__PURE__ */ jsx24(
                         sdk_compat_exports.Button,
                         {
                           "aria-label": replyThread ? b.group.reply : b.group.newThread,
