@@ -887,6 +887,9 @@ type BotsMessages = {
     approvalsEmpty: string
     approvalsBody: string
     openInbox: string
+    /** The Approvals tab's list of settled requests from the journal. */
+    approvalsRecent: string
+    approvalOutcome: (status: string, choice: null | string) => string
     rules: string
     /** The Activity tab as a board: Now / Next / Done. */
     work: {
@@ -1807,6 +1810,15 @@ const en: BotsMessages = {
     approvalsEmpty: 'Nothing is waiting on you',
     approvalsBody: 'Approvals, questions and secrets this bot asks for land here.',
     openInbox: 'Open inbox',
+    approvalsRecent: 'Recent decisions',
+    approvalOutcome: (status, choice) =>
+      status === 'allowed'
+        ? choice === 'always'
+          ? 'Always allowed'
+          : choice === 'session'
+            ? 'Allowed for this session'
+            : 'Allowed'
+        : ({ denied: 'Denied', expired: 'Expired', withdrawn: 'Withdrawn' } as Record<string, string>)[status] || status,
     rules: 'Ask rules',
     work: {
       now: 'Now',
@@ -2735,6 +2747,15 @@ const ja: BotsMessages = {
     approvalsEmpty: '対応待ちはありません',
     approvalsBody: 'このボットが求める承認、質問、シークレットはここに届きます。',
     openInbox: '受信箱を開く',
+    approvalsRecent: '最近の判断',
+    approvalOutcome: (status, choice) =>
+      status === 'allowed'
+        ? choice === 'always'
+          ? '常に許可'
+          : choice === 'session'
+            ? 'このセッションで許可'
+            : '許可'
+        : ({ denied: '拒否', expired: '期限切れ', withdrawn: '取り下げ' } as Record<string, string>)[status] || status,
     rules: '確認ルール',
     work: {
       now: '今',
@@ -3617,6 +3638,15 @@ const zh: BotsMessages = {
     approvalsEmpty: '没有等你处理的事项',
     approvalsBody: '这个机器人请求的审批、问题和密钥会显示在这里。',
     openInbox: '打开收件箱',
+    approvalsRecent: '最近的决定',
+    approvalOutcome: (status, choice) =>
+      status === 'allowed'
+        ? choice === 'always'
+          ? '始终允许'
+          : choice === 'session'
+            ? '本次会话允许'
+            : '已允许'
+        : ({ denied: '已拒绝', expired: '已过期', withdrawn: '已撤回' } as Record<string, string>)[status] || status,
     rules: '询问规则',
     work: {
       now: '现在',
@@ -4499,6 +4529,15 @@ const zhHant: BotsMessages = {
     approvalsEmpty: '沒有等你處理的事項',
     approvalsBody: '這個機器人請求的審核、問題和密鑰會顯示在這裡。',
     openInbox: '開啟收件匣',
+    approvalsRecent: '最近的決定',
+    approvalOutcome: (status, choice) =>
+      status === 'allowed'
+        ? choice === 'always'
+          ? '一律允許'
+          : choice === 'session'
+            ? '本次工作階段允許'
+            : '已允許'
+        : ({ denied: '已拒絕', expired: '已過期', withdrawn: '已撤回' } as Record<string, string>)[status] || status,
     rules: '詢問規則',
     work: {
       now: '現在',

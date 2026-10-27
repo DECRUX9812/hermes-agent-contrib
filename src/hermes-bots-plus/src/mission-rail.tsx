@@ -55,6 +55,8 @@ import { botRole, displayName } from './labels'
 import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
 import { $liveTurns } from './rail-live'
 import { $railCollapsed, $railTab, type RailSectionId, setRailSectionCollapsed, setRailTab } from './rail-state'
+import { withoutJournalled } from './rail-approvals-model'
+import { JournalApprovals, useJournalRows } from './rail-approvals'
 import { RailTabs } from './rail-tabs'
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
@@ -231,12 +233,17 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
   const a = b.activity
   const items = useValue(host.state.attentionItems)
   const sessionId = useValue(host.state.focusedSessionId)
+  const storedSessionId = String(useValue(host.state.focusedStoredSessionId) ?? '')
   const gate = useLiveGate(sessionId, b.roster.needsInput)
-  const listed = sessionId ? items.filter(item => item.sessionId === sessionId) : []
-  const mine = listed.length || !gate ? listed : [gate]
+  const journal = useJournalRows(bot.remoteSource ? '' : storedSessionId).data ?? null
+  const listed = withoutJournalled(sessionId ? items.filter(item => item.sessionId === sessionId) : [], journal)
+  const live = listed.length || !gate || journal?.some(row => row.request_id === gate.id) ? listed : [gate]
+  // A waiting journal row is the same prompt under the plugin's id: show it once, as the card.
+  const mine = journal?.some(row => row.status === 'pending') ? live.filter(item => item.kind !== 'approval') : live
 
   return (
     <div className="grid gap-3 px-3 pb-3 pt-1">
+      {journal?.length ? <JournalApprovals rows={journal} storedSessionId={storedSessionId} /> : null}
       {mine.length ? (
         <ul className="grid gap-1.5" data-testid="rail-approvals">
           {mine.map(item => (
@@ -257,7 +264,7 @@ function ApprovalsPanel({ bot, name }: { bot: RosterRow; name: string }) {
             </li>
           ))}
         </ul>
-      ) : (
+      ) : journal?.length ? null : (
         <div className="grid gap-1 px-1 py-4 text-center">
           <Codicon className="mx-auto text-(--ui-text-quaternary)" name="shield" size="1.2rem" />
           <div className="text-[0.8125rem] font-medium text-(--ui-text-secondary)">{a.approvalsEmpty}</div>
