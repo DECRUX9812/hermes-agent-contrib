@@ -1,0 +1,8 @@
+[Unit]
+Description=Hermes overlay rebase drill (throwaway; never pushes, never touches live checkouts)
+
+[Service]
+Type=oneshot
+Nice=19
+IOSchedulingClass=idle
+ExecStart=%h/Code/drill/rebase-drill.sh
