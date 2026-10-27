@@ -70,13 +70,9 @@ describe('useMessageStream agent-init error surfacing (#63078)', () => {
     expect(state.busy).toBe(false)
     expect(state.awaitingResponse).toBe(false)
 
-    // A global toast also fired (turn-ending errors are easy to miss inline).
-    // The server already sends plain, actionable copy for an agent-init
-    // failure, so it IS the toast message — not demoted to a detail line
-    // under a generic gloss.
-    const toast = $notifications.get().find(n => n.kind === 'error' && n.message.includes('was not sent'))
-    expect(toast).toBeDefined()
-    expect(toast!.detail).toBeUndefined()
+    // No toast on top: this is the thread in view, and its inline error card
+    // already says it. The turn-error toast is for background sessions only.
+    expect($notifications.get().filter(n => n.kind === 'error')).toHaveLength(0)
   })
   it('merges the terminal error frame into the card the agent-init error event already painted', async () => {
     mountStream()
