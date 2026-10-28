@@ -4213,3 +4213,11 @@ img[src*='filler-bg'] {
 [data-tree-group='grp-main'] [data-slot='aui_thread-viewport'] {
   background-color: var(--ui-bg-primary);
 }
+
+/* Segments are words, not elastic columns. The label is what must not clip;
+   the pill may stay flexible. */
+[data-tree-group='grp-sessions'] [data-slot='pane-tab'][data-segmented] span {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: nowrap;
+}
