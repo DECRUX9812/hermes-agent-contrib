@@ -397,38 +397,28 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         <Slot area="titleBar.center" />
       </div>
 
-      {visiblePaneTools.length > 0 && (
-        <div
-          aria-label={t.shell.appControls}
-          className={cn(
-            titlebarToolClusterClass,
-            'top-[calc(var(--titlebar-controls-top)+var(--right-rail-top-inset,0px))] right-[calc(var(--titlebar-tools-right)+var(--shell-preview-toolbar-gap,0))]'
-          )}
-        >
-          {visiblePaneTools.map(tool => (
-            <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
-          ))}
-        </div>
-      )}
-
       <div
         aria-label={t.shell.appControls}
         className={cn(titlebarToolClusterClass, 'right-(--titlebar-tools-right) top-(--titlebar-controls-top)')}
         data-titlebar-cluster="right"
       >
-        {/* Separates the window's tools from the tab strip's own "+" — without
-            it the strip and the cluster read as one long row of loose glyphs. */}
-        <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
+        {/* Plugin-contributed tools lead the cluster: they are the surfaces a
+            plugin put on the band, and they stay on the band — only the fixed
+            view-rearrangers fold into More. */}
+        {visiblePaneTools.map(tool => (
+          <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
+        ))}
+        {visiblePaneTools.length > 0 && (visibleSystemToolsRight.length > 0 || rightOverflowTools.length > 0) && (
+          <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
+        )}
         {visibleSystemToolsRight.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
         {/* App actions (settings, layout) and pane toggles are different mental
             models: one changes the app, the other changes what you are looking
-            at. Without this rule the whole right side reads as one undifferentiated
-            row of loose glyphs. */}
-        {rightOverflowTools.length > 0 && (
-          <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
-        )}
+            at. One rule between them is enough — the ellipsis reads as a menu
+            without a second line. */}
+        {rightOverflowTools.length > 0 && <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />}
         <TitlebarOverflowMenu label={t.titlebar.moreActions} tools={rightOverflowTools} />
         <Slot area="titleBar.right" />
       </div>

@@ -49,7 +49,7 @@ const TAB_SELECTED =
 // Segmented control (a sidebar's mode switcher): a small inset pill on a
 // recessed track. Same primitive, quieter voice — so a view switcher never
 // reads as a second row of document tabs beside the real ones.
-const SEGMENT = 'h-5.5 min-w-0 flex-1 justify-center rounded-(--chrome-radius-segment) px-2 text-(--chrome-text-switcher) font-medium'
+const SEGMENT = 'h-5.5 min-w-fit flex-1 justify-center rounded-(--chrome-radius-segment) px-2 text-(--chrome-text-switcher) font-medium'
 const SEGMENT_ACTIVE = 'bg-(--ui-bg-elevated) text-(--ui-text-primary) shadow-[var(--shadow-xs)]'
 const SEGMENT_IDLE = 'text-(--ui-text-secondary) hover:text-(--ui-text-primary)'
 
