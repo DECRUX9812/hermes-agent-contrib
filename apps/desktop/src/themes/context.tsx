@@ -99,8 +99,34 @@ const promoteUnanimousLegacy = (record: string, legacy: string): void => {
 }
 
 const profilePref = <T extends string>(record: string, legacy: string, normalize: (v: string | null) => T) => {
+  /** "default" IS the legacy global slot, so a record entry for it is stale. */
+  const dropDefaultEntry = (): void => {
+    const map = storedStringRecord(record)
+
+    if (!('default' in map)) {
+      return
+    }
+
+    const next = { ...map }
+    delete next['default']
+    persistStringRecord(record, next)
+  }
+
   const stored = (profile: string): string | null => {
     promoteUnanimousLegacy(record, legacy)
+
+    // "default" is the legacy global slot, not a profile that owns a record
+    // entry. A stray entry under that name (an older build wrote one) shadows
+    // every later pick forever: the settings pane writes the global key, this
+    // read prefers the record, and the appearance reverts on each reload.
+    // Read the global, and heal the record on the way past.
+    if (profile === 'default') {
+      const shadow = storedStringRecord(record)['default']
+
+      dropDefaultEntry()
+
+      return shadow ?? storedString(legacy)
+    }
 
     return storedStringRecord(record)[profile] ?? storedString(legacy)
   }
@@ -112,6 +138,7 @@ const profilePref = <T extends string>(record: string, legacy: string, normalize
     assign: (profile: string, value: T): void => {
       if (profile === 'default') {
         persistString(legacy, value)
+        dropDefaultEntry()
       } else {
         persistStringRecord(record, { ...storedStringRecord(record), [profile]: value })
         persistString(legacy, value)
