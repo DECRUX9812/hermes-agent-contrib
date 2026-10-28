@@ -284,12 +284,6 @@ function SidebarSessionRowImpl({
   // this row: only rows whose own fraction changes repaint on todo events.
   const todoProgress = useStoreSelector($todoProgressBySession, progress => (card ? progress[session.id] : undefined))
 
-  // Quiet lead: an inline row paints no dot while the session is idle. Idle is
-  // the overwhelmingly common state, and one mark per row turned the left
-  // margin into a column of confetti; the dot keeps its job as a STATUS light
-  // (running, blocked, unread, background), which is the only time it speaks.
-  const showLeadDot = card || (dotState !== 'idle' && dotState !== 'draft')
-
   // An archived session has no live status to paint, so the archive glyph takes
   // the lead slot the dot would occupy instead of adding a column of its own.
   const lead = session.archived ? (
@@ -503,22 +497,26 @@ function SidebarSessionRowImpl({
           {(() => {
             const leadNode = reorderable ? (
               <SidebarRowGrab ariaLabel={handleLabel} dragging={dragging} dragHandleProps={dragHandleProps}>
-                {lead ??
-                  (showLeadDot ? (
-                    <SessionStatusDot
-                      branchStem={branchStem}
-                      className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
-                      session={session}
-                      storedSessionId={session.id}
-                    />
-                  ) : null)}
+                {lead ?? (
+                  <SessionStatusDot
+                    branchStem={branchStem}
+                    className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
+                    quietWhenIdle={!card}
+                    session={session}
+                    storedSessionId={session.id}
+                  />
+                )}
               </SidebarRowGrab>
             ) : (
               <SidebarRowLead className="overflow-hidden">
-                {lead ??
-                  (showLeadDot ? (
-                    <SessionStatusDot branchStem={branchStem} session={session} storedSessionId={session.id} />
-                  ) : null)}
+                {lead ?? (
+                  <SessionStatusDot
+                    branchStem={branchStem}
+                    quietWhenIdle={!card}
+                    session={session}
+                    storedSessionId={session.id}
+                  />
+                )}
               </SidebarRowLead>
             )
 

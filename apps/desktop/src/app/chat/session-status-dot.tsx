@@ -111,6 +111,11 @@ export interface SessionStatusDotProps {
   /** Applied to the OUTER wrapper (stem + dot) — e.g. hover-fade on the
    *  reorder handle. */
   className?: string
+  /** Sidebar rows: an idle session keeps its slot but paints nothing. Idle is
+   *  the common state, and a mark on every row turned the left margin into a
+   *  column of confetti — while removing the element would shift every idle
+   *  title left of the running one. Invisible, not absent. */
+  quietWhenIdle?: boolean
 }
 
 /**
@@ -122,7 +127,13 @@ export interface SessionStatusDotProps {
  * An idle session shows its project color; the active states own the dot with
  * their semantic color so an attention cue is never masked by the tint.
  */
-export function SessionStatusDot({ storedSessionId, session, branchStem, className }: SessionStatusDotProps) {
+export function SessionStatusDot({
+  storedSessionId,
+  session,
+  branchStem,
+  className,
+  quietWhenIdle = false
+}: SessionStatusDotProps) {
   const { t } = useI18n()
   const r = t.sidebar.row
 
@@ -149,8 +160,13 @@ export function SessionStatusDot({ storedSessionId, session, branchStem, classNa
       {dotState === 'idle' ? (
         // Rendered even with no color to paint: an empty dot of the same size
         // keeps every row's title on one left edge, so a session finishing
-        // can't shift the list under the pointer.
-        <span aria-hidden="true" className={variant.className} style={color ? { backgroundColor: color } : undefined} />
+        // can't shift the list under the pointer. `quietWhenIdle` keeps the
+        // geometry and drops the paint.
+        <span
+          aria-hidden="true"
+          className={cn(variant.className, quietWhenIdle && 'opacity-0')}
+          style={color && !quietWhenIdle ? { backgroundColor: color } : undefined}
+        />
       ) : (
         <span
           aria-label={variant.ariaLabel?.(r)}
