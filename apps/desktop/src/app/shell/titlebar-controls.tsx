@@ -399,6 +399,13 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         {visibleSystemTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
+        {/* App actions (settings, layout) and pane toggles are different mental
+            models: one changes the app, the other changes what you are looking
+            at. Without this rule the whole right side reads as one undifferentiated
+            row of loose glyphs. */}
+        {visibleSystemTools.length > 0 && visibleRightFixedTools.length > 0 && (
+          <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
+        )}
         {visibleRightFixedTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
