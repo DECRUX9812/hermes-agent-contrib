@@ -1,5 +1,10 @@
 import { hermesApi } from '@/api/client'
-import type { HermesReadDirResult, HermesReadFileErrorResult } from '@/global'
+import type {
+  HermesApiRequest,
+  HermesReadDirResult,
+  HermesReadFileErrorResult,
+  HermesReadFileTextResult,
+} from '@/global'
 
 // The browser-hosted Desktop's desktop-plugin door.
 //
@@ -42,6 +47,7 @@ async function fetchDesktopPluginsRoot(): Promise<string> {
     return root || ''
   } catch (err) {
     console.error('[browser-plugins] hermesApi /api/desktop-plugins/root failed:', err)
+
     // No route / offline backend — degrade to "no disk plugins" exactly like a
     // shell without the capability, rather than throwing inside the scan.
     return ''
@@ -294,4 +300,49 @@ export function installBrowserDesktopPluginCapability(): boolean {
 
 function trimSlash(path: string): string {
   return path.replace(/\/+$/, '')
+}
+
+// ---------------------------------------------------------------------------
+// Bridge-composition form (upstream `browser-desktop-bridge.ts`): the newer
+// renderer wants a factory it can compose, not a window patch. Kept alongside
+// installBrowserDesktopPluginCapability above so both call sites resolve; the
+// install() path still runs last in main.tsx and therefore still wins at runtime.
+// ---------------------------------------------------------------------------
+type DesktopPluginsBridge = Pick<
+  Window['hermesDesktop'],
+  'desktopPluginsRoot' | 'readDir' | 'readFileText' | 'readPluginSource'
+>
+
+interface BrowserDesktopPluginsOptions {
+  api: <T>(request: HermesApiRequest) => Promise<T>
+  /** The page's /api/fs readers, kept for every path outside the plugins folder. */
+  files: Pick<Window['hermesDesktop'], 'readDir' | 'readFileText'>
+}
+
+/** The runtime loader's disk door, answered by the server that serves this page: its app-level
+ *  desktop-plugins folder (hermes_cli/web_routers/desktop_plugins.py). /api/fs is the wrong
+ *  reader there: it follows the profile's SSH workspace and truncates at the preview cap. */
+export function createBrowserDesktopPluginsBridge({ api, files }: BrowserDesktopPluginsOptions): DesktopPluginsBridge {
+  let root: null | string = null
+
+  const get = <T>(route: string, path: string) =>
+    api<T>({ path: `/api/desktop-plugins/${route}?${new URLSearchParams({ path })}` })
+
+  // The server resolves the folder and builds every path it returns from it, so a path is inside
+  // exactly when it starts with the root and a separator. The loader asks for the root first.
+  const inside = (path: string) =>
+    root !== null && (path === root || path.startsWith(`${root}/`) || path.startsWith(`${root}\\`))
+
+  const readFile = (path: string) => get<HermesReadFileTextResult>('read', path)
+
+  return {
+    desktopPluginsRoot: async () => {
+      root = (await api<{ root: string }>({ path: '/api/desktop-plugins/root' })).root
+
+      return root
+    },
+    readDir: path => (inside(path) ? get('list', path) : files.readDir(path)),
+    readFileText: path => (inside(path) ? readFile(path) : files.readFileText(path)),
+    readPluginSource: readFile
+  }
 }
