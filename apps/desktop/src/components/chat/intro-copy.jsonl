@@ -14,7 +14,7 @@
 {"personality":"technical","headline":"Stdin open","body":"Accepts natural language or structured commands. Typical flow: read -> plan -> patch -> test -> report."}
 {"personality":"technical","headline":"Tools initialized","body":"filesystem, terminal, git, browser, search. Describe the change; I return diffs and test output."}
 {"personality":"creative","headline":"A blank repo, a waiting cursor","body":"What shall we build? Paste an idea, a half-broken function, or a dream. I'll sketch it into shape."}
-{"personality":"creative","headline":"Fresh canvas, warm compiler","body":"Give me a spark - a feature, a refactor, a wild prototype - and I'll turn it into code you can run."}
+{"personality":"creative","headline":"Fresh canvas, warm compiler","body":"Bring a rough idea. I'll make it run."}
 {"personality":"creative","headline":"Let's make something","body":"Describe the thing that doesn't exist yet. I'll pull tests, files, and APIs into a working draft."}
 {"personality":"creative","headline":"New file, new possibilities","body":"Bring an intent, not a spec. We can prototype fast, refine later, and rewrite the world in the margins."}
 {"personality":"creative","headline":"The muse is patched in","body":"Tell me what you're chasing. I'll remix examples, adapt snippets, and leave a tidy commit behind."}

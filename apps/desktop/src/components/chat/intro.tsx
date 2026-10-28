@@ -8,7 +8,6 @@ import { $freeTierSignInOpen } from '@/store/free-tier'
 import { openFreeTierSignIn } from '@/store/free-tier-sign-in'
 
 import introCopyJsonl from './intro-copy.jsonl?raw'
-import { Wordmark } from './wordmark'
 
 type IntroCopy = {
   headline: string
@@ -186,7 +185,19 @@ export function Intro({ personality, seed }: IntroProps) {
       data-slot="aui_intro"
     >
       <div className="w-full min-w-0">
-        <Wordmark className="mb-1" text={WORDMARK} />
+        {/* A masthead, not a splash. The fitted lettering filled the whole
+            column, which reads as a hero banner; a fixed measure at ~2rem reads
+            like the top of a document, and leaves the composer as the loudest
+            thing on screen. */}
+        <p
+          aria-label={WORDMARK}
+          className="wordmark mx-auto mb-4 text-[clamp(1.5rem,2.6vw,2.125rem)]"
+          style={{ color: 'var(--ui-accent)' }}
+        >
+          {WORDMARK}
+        </p>
+
+        <div aria-hidden className="mx-auto mb-4 h-px w-10 bg-(--ui-border-subtle)" />
 
         <p className="m-0 text-center leading-normal tracking-tight">{body}</p>
       </div>
