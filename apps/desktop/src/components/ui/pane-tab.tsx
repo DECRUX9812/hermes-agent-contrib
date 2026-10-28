@@ -22,7 +22,7 @@ const TAB =
 // Full height of the padded row: the strip's own vertical padding is the gap.
 // h-7 + self-center, not h-full: a stretched tab inside a padded rail sat flush
 // against the band's top edge and lost its top radii (0px above, 5px below).
-const TAB_HORIZONTAL = 'h-7 min-w-0 max-w-64 self-center rounded-md px-3 text-[12px] font-medium'
+const TAB_HORIZONTAL = 'h-6.5 min-w-0 max-w-56 self-center rounded-md px-2.5 text-[12px] font-medium'
 
 // Room for the close chip at the right edge — a floor, so a short label pays
 // nothing and a long one ellipsizes before it reaches the chip.
@@ -35,7 +35,7 @@ const TAB_VERTICAL =
 // the card merges into (a preview rail merges it into the editor surface); the
 // default is the raised surface, so selection never reads as "same as the bar".
 const TAB_ACTIVE =
-  'text-(--ui-text-primary) [--tab-bg:var(--pane-tab-active-bg,var(--ui-bg-elevated))] bg-(--tab-bg) border border-(--ui-border-subtle) shadow-xs'
+  'text-(--ui-text-primary) [--tab-bg:color-mix(in_srgb,var(--ui-text-primary)_6%,transparent)] bg-(--tab-bg) border-0 shadow-none'
 
 // Idle: no surface at all — the bar reads as one piece until a tab is picked.
 const TAB_IDLE =
@@ -51,7 +51,7 @@ const TAB_SELECTED =
 // Segmented control (a sidebar's mode switcher): a small inset pill on a
 // recessed track. Same primitive, quieter voice — so a view switcher never
 // reads as a second row of document tabs beside the real ones.
-const SEGMENT = 'h-5.5 min-w-fit flex-1 justify-center rounded-(--chrome-radius-segment) px-1.5 text-(--chrome-text-switcher) font-medium'
+const SEGMENT = 'h-6 min-w-0 flex-1 justify-center rounded-[6px] px-1.5 text-[12px] font-medium'
 const SEGMENT_ACTIVE = 'bg-(--ui-bg-elevated) text-(--ui-text-primary) shadow-[var(--shadow-xs)]'
 const SEGMENT_IDLE = 'text-(--ui-text-secondary) hover:text-(--ui-text-primary)'
 
@@ -106,6 +106,9 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
 ) {
   // Vertical rails only. Horizontal tabs draw no bottom border — the strip owns
   // that rule, and a per-tab border stacked a second translucent line over it.
+  if (vertical && segmented) {
+    return null
+  }
   const edge = vertical ? (side === 'right' ? 'border-l' : 'border-r') : undefined
   const middle = middleClickHandlers(onClose)
 
@@ -275,7 +278,7 @@ export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(
       // and the breathing room, so every strip (window tabs, panel headers,
       // preview rail) has the same rhythm without re-deriving it.
       className={cn(
-        'group/pane-header relative flex min-w-0 shrink-0 select-none items-stretch gap-0.5 bg-(--ui-sidebar-surface-background)',
+        'group/pane-header relative flex min-w-0 shrink-0 select-none items-stretch gap-0.5 bg-transparent',
         // Window strips are a rail: a hair darker than the surfaces around them,
         // so the selected tab reads as raised, plus a hairline that closes the
         // band. Panel strips keep their own surface — a darkened header inside a
@@ -296,8 +299,10 @@ export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(
           'flex min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
           // Neutral ink wash, not `--ui-bg-secondary`: that token carries the accent
         // tint, which reads as a blue capsule dropped into a warm sidebar.
+        // min-h keeps the track from collapsing to its padding: as a flex item
+        // with basis 0 it had no height, and the segments overflowed the header.
         segmented &&
-          'items-center gap-0.5 rounded-(--chrome-radius-tab) bg-[color-mix(in_srgb,var(--ui-text-primary)_6%,transparent)] p-0.5'
+          'min-h-7 w-full items-center gap-0.5 rounded-lg bg-[color-mix(in_srgb,var(--ui-text-primary)_6%,transparent)] p-0.5'
         )}
         ref={listRef}
         role="tablist"

@@ -4160,3 +4160,56 @@ img[src*='filler-bg'] {
 [data-hermes-mode='dark'] [data-slot='sidebar-panel-label'] {
   color: rgb(255 255 255 / 0.45);
 }
+
+/* An open navigation column is never narrower than a real column. At 120px the
+   mode switcher clipped to "C|" and every row truncated to three characters. */
+[data-tree-group='grp-sessions'] {
+  min-width: 240px;
+}
+
+/* Collapsed zones are a 28px rail; the rail is a restore affordance, not a
+   place to draw a sideways mode switcher. */
+[data-tree-group] [data-slot='pane-tab'][data-segmented][data-vertical] {
+  display: none;
+}
+
+/* The navigation column's header carries two rows — the window toggle and the
+   full-width mode switcher — so it is taller than the tab bar beside it, and
+   the column body pads to whatever that height is. */
+[data-tree-group='grp-sessions'] {
+  --sidebar-header-height: 36px;
+}
+
+[data-tree-group='grp-sessions'] [data-panel-header] {
+  height: var(--sidebar-header-height) !important;
+}
+
+/* The mode switcher is the sidebar's own tab strip. It spans the column and
+   sits on its own row under the window toggle, so it can never be squeezed
+   into "C|" by the titlebar cluster beside it. */
+[data-tree-group='grp-sessions'] [data-panel-header] > [aria-hidden='true'] {
+  display: none;
+}
+
+/* Gutter for the window toggle, which is a fixed cluster at the window corner. */
+[data-tree-group='grp-sessions'] [data-segmented] {
+  padding-left: 34px;
+}
+
+/* Headers are the plane they sit on. The panel header painted the sidebar's
+   surface, which drew a 36px band across the top of the canvas and a second
+   edge under it. */
+[data-panel-header] {
+  background-color: transparent;
+}
+
+/* The chat surface is the canvas, not the window chrome. */
+[data-tree-group='grp-main'] [data-chat-surface] {
+  background-color: var(--ui-bg-primary);
+}
+
+/* The transcript viewport is canvas, not window chrome: it inherited the chrome
+   fill, which read as a darker band under the header. */
+[data-tree-group='grp-main'] [data-slot='aui_thread-viewport'] {
+  background-color: var(--ui-bg-primary);
+}
