@@ -864,12 +864,10 @@ class PluginsManageResult(Result):
     agent_name: str | None = None
     desktop_name: str | None = None
     insecure: bool | None = None
-    # ``install_desktop`` → the folder it published on the host that serves this client (``plugin_name``,
-    # ``path``, the cloned ``sha``) and whether that folder is the desktop half of a package
-    # (``paired_with_agent``); ``remove_desktop`` → the same ``plugin_name``/``path`` gone, with
-    # ``unpaired_from`` naming the package whose half it was.
+    # ``install_desktop`` → the desktop-only folder it published on the host that serves this client
+    # (``plugin_name``, ``path``, the cloned ``sha``); ``remove_desktop`` → the same ``plugin_name``/
+    # ``path`` gone, with ``unpaired_from`` naming the package whose half it was.
     path: str | None = None
-    paired_with_agent: bool | None = None
     unpaired_from: str | None = None
 
 

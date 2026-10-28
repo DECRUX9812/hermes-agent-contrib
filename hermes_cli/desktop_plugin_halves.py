@@ -96,6 +96,21 @@ def _write_marker(folder: Path, marker: dict) -> None:
     (folder / PACKAGE_MARKER).write_text(json.dumps(marker, indent=2) + "\n", encoding="utf-8")
 
 
+def _strip_marker(folder: Path) -> None:
+    """Remove whatever the copied tree carries at the marker's name (file, link or folder). A marker
+    records *this* root's provenance; a repository made from an installed plugin folder still has one,
+    and reconcile would read it as this folder's own — pruning the fresh copy because that source is
+    gone, or pairing it with another package and refusing its removal."""
+    marker = folder / PACKAGE_MARKER
+    try:
+        if marker.is_symlink() or marker.is_file():
+            marker.unlink()
+        elif marker.is_dir():
+            shutil.rmtree(marker, ignore_errors=True)
+    except OSError:
+        pass
+
+
 def _same_file(a: Path, b: Path) -> bool:
     """Same bytes on both paths. A comparison that cannot be made is never a match."""
     try:
@@ -114,6 +129,7 @@ def _publish(source_dir: Path, target: Path, marker: dict | None) -> None:
     staged = staging / target.name
     try:
         shutil.copytree(source_dir, staged, symlinks=True)
+        _strip_marker(staged)
         if marker is not None:
             _write_marker(staged, marker)
         if target.is_symlink():

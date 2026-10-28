@@ -28373,18 +28373,6 @@
             "default": null,
             "title": "Path"
           },
-          "paired_with_agent": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "default": null,
-            "title": "Paired With Agent"
-          },
           "unpaired_from": {
             "anyOf": [
               {

@@ -52,11 +52,17 @@ export function skipsDesktopHalf(request: PluginInstallRequest, probe: ProbeResu
   return installComponents(request, probe, true).desktop && !installComponents(request, probe).desktop
 }
 
-/** A unified package installed into a local backend carries its own desktop half; the app copies that half
- *  out of the package folder. Only a remote backend (whose plugins/ folder this machine cannot read) or a
- *  desktop-only repo needs a separate desktop clone. */
-export function desktopHalfFromPackage(components: InstallComponents, remote: boolean): boolean {
-  return components.agent && !remote
+/** A unified package carries its own desktop half, and the host copies it out of the package folder.
+ *  That holds for a local backend and for a browser-hosted tab alike: the browser's "remote" connection
+ *  still lives on one machine with the folder its loader reads, and the server copies the half on every
+ *  root read. Only a native app looking at a different machine has to clone the half for itself, and only
+ *  a desktop-only repository has no package to copy from. */
+export function desktopHalfFromPackage(
+  components: InstallComponents,
+  remote: boolean,
+  browserHosted = isBrowserHostedDesktop()
+): boolean {
+  return components.agent && (!remote || browserHosted)
 }
 
 export interface InstallPlan {
@@ -141,30 +147,57 @@ async function installAgentHalf(plan: InstallPlan, deps: InstallDeps, report: Re
   return result
 }
 
-async function cloneDesktopHalf(plan: InstallPlan, copy: InstallModalCopy, report: Report, deps: InstallDeps): Promise<void> {
+async function cloneDesktopHalf(
+  plan: InstallPlan,
+  copy: InstallModalCopy,
+  report: Report,
+  deps: InstallDeps
+): Promise<boolean> {
   // Native Desktop clones it in Electron; a browser-hosted tab asks the host that serves it, and the
   // plugin lands in the folder this Webapp already loads.
   const installFn = window.hermesDesktop?.installDesktopPlugin
 
-  const result: { error?: string; ok: boolean; pluginName?: string; unsupported?: boolean } = installFn
+  const result: {
+    error?: string
+    ok: boolean
+    pluginName?: string
+    timedOut?: boolean
+    unsupported?: boolean
+  } = installFn
     ? await installFn({ identifier: plan.request.repo, force: plan.force })
     : await installDesktopPluginHalf(deps.requestGateway, {
         identifier: plan.request.repo,
         catalogName: plan.request.catalogName,
         force: plan.force,
+        // The commit the dialog is showing: installed exactly, so review and install cannot differ.
+        ref: plan.probe.sha,
         profile: plan.profile
       })
 
-  if (!result.ok) {
-    // A backend older than this build has no place to put the half: say what this environment can do,
-    // which is what an install without Electron always said.
-    report.errors.push(result.unsupported ? copy.desktopUnavailable : result.error || copy.desktopFailed)
+  if (result.timedOut) {
+    // The host is still cloning; the install may yet land, so nothing else starts.
+    return true
+  }
 
-    return
+  if (!result.ok) {
+    if (result.unsupported) {
+      // A backend older than this build has no place to put the half. Say what this environment can
+      // do — the sentence an install without Electron always showed — and finish quietly rather than
+      // offering a Retry that could never succeed.
+      notify({ kind: 'warning', message: copy.desktopUnavailable })
+
+      return false
+    }
+
+    report.errors.push(result.error || copy.desktopFailed)
+
+    return false
   }
 
   report.successes.push(copy.desktopSuccess(result.pluginName ?? plan.request.repo))
   await discoverRuntimePlugins()
+
+  return false
 }
 
 async function installDesktopHalf(
@@ -173,7 +206,7 @@ async function installDesktopHalf(
   deps: InstallDeps,
   report: Report,
   agentResult?: AgentPluginInstallResult
-): Promise<void> {
+): Promise<boolean> {
   if (desktopHalfFromPackage(components, plan.remote)) {
     // The desktop half ships inside the package folder: materialise it from there (one source of truth,
     // follows updates/uninstall) whether or not the agent install succeeded. A package already on disk
@@ -188,14 +221,16 @@ async function installDesktopHalf(
     if (touched.length > 0) {
       await discoverRuntimePlugins()
     }
-  } else {
-    await cloneDesktopHalf(plan, deps.copy, report, deps)
+  } else if (await cloneDesktopHalf(plan, deps.copy, report, deps)) {
+    return true
   }
 
   // The desktop half of a unified package lands opt-in; an install that enabled the agent half turns it on too.
   if (agentResult?.enabled && agentResult.pluginName) {
     await enablePackageDesktopHalf(agentResult.pluginName)
   }
+
+  return false
 }
 
 /** Install every half `installComponents` picks, then refresh the inventory. A client timeout on the agent
@@ -217,7 +252,14 @@ export async function runPluginInstall(plan: InstallPlan, deps: InstallDeps): Pr
   }
 
   if (components.desktop) {
-    await installDesktopHalf(plan, components, deps, report, agentResult)
+    const desktopTimedOut = await installDesktopHalf(plan, components, deps, report, agentResult)
+
+    if (desktopTimedOut) {
+      // The backend is still cloning: say so instead of claiming a failure that may not be one.
+      void loadAgentPlugins(deps.requestGateway, plan.profile)
+
+      return { status: 'uncertain' }
+    }
   }
 
   await loadAgentPlugins(deps.requestGateway, plan.profile)

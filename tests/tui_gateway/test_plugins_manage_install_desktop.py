@@ -36,23 +36,23 @@ def test_install_desktop_lands_the_folder_the_webapp_serves(tmp_path, monkeypatc
 
     assert result["ok"] is True
     assert result["plugin_name"] == "gizmo"
-    assert result["paired_with_agent"] is False
     folder = home / "desktop-plugins" / "gizmo"
     assert (folder / "plugin.js").is_file()
     assert not (folder / ".hermes-package.json").exists()
 
 
-def test_a_package_installs_its_desktop_half_under_the_agent_name(tmp_path, monkeypatch):
+def test_a_package_is_refused_and_told_to_install_as_a_package(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     monkeypatch.setenv("HERMES_HOME", str(home))
     repo = _repo(tmp_path / "pkg", {"plugin.yaml": "name: pkg\n", "__init__.py": "",
                                     "desktop/plugin.js": "export default {}\n"})
 
-    result = _manage(action="install_desktop", identifier=repo.as_uri())["result"]
+    response = _manage(action="install_desktop", identifier=repo.as_uri())
 
-    assert (result["plugin_name"], result["paired_with_agent"]) == ("pkg", True)
-    assert (home / "desktop-plugins" / "pkg" / ".hermes-package.json").is_file()
+    assert response["error"]["code"] == 5026
+    assert "install it as a package" in response["error"]["message"]
+    assert not (home / "desktop-plugins" / "pkg").exists()
 
 
 def test_a_second_install_is_an_rpc_error_until_force(tmp_path, monkeypatch):

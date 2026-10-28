@@ -210,7 +210,7 @@ describe('Plugin install in the browser-hosted app with a backend that installs 
 
   it('installs a desktop-only package on the host through the backend', async () => {
     desktopBackend({ ok: true, agent: false, desktop: true, desktop_name: 'ui', warnings: [] },
-      { ok: true, plugin_name: 'ui', paired_with_agent: false })
+      { ok: true, plugin_name: 'ui' })
 
     renderModal()
     act(() => openPluginInstallRequest({ repo: 'https://github.com/example/ui' }))
@@ -231,9 +231,9 @@ describe('Plugin install in the browser-hosted app with a backend that installs 
     await waitFor(() => expect($pluginInstallRequest.get()).toBeNull())
   })
 
-  it('installs both halves of a mixed package', async () => {
+  it('lets a package take the reconcile path instead of cloning its half a second time', async () => {
     desktopBackend({ ok: true, agent: true, agent_name: 'pkg', desktop: true, desktop_name: 'pkg', warnings: [] },
-      { ok: true, plugin_name: 'pkg', paired_with_agent: true },
+      { ok: true, plugin_name: 'pkg' },
       { ok: true, plugin_name: 'pkg', enabled: true })
 
     renderModal()
@@ -243,8 +243,10 @@ describe('Plugin install in the browser-hosted app with a backend that installs 
     fireEvent.click(installButton()!)
 
     await waitFor(() => expect(callsFor('install')).toHaveLength(1))
-    await waitFor(() => expect(callsFor('install_desktop')).toHaveLength(1))
-    await waitFor(() => expect($notifications.get().some(n => n.message === 'Desktop plugin pkg installed')).toBe(true))
+    // The host copies the half out of the package it just installed; a clone here would race that
+    // copy and answer "already exists" after a successful install.
+    expect(callsFor('install_desktop')).toHaveLength(0)
+    await waitFor(() => expect($notifications.get().some(n => n.message.includes('pkg'))).toBe(true))
     expect($notifications.get().some(n => n.message === DESKTOP_UNAVAILABLE)).toBe(false)
   })
 
@@ -271,7 +273,14 @@ describe('Plugin install in the browser-hosted app with a backend that installs 
     await waitFor(() => expect(installButton()?.disabled).toBe(false))
     fireEvent.click(installButton()!)
 
-    await waitFor(() => expect(screen.findByText(DESKTOP_UNAVAILABLE)).toBeTruthy())
+    // A build older than this one has no place to put the half: it says so once, as a warning, and
+    // finishes — no failure, no Retry that could never succeed.
+    await waitFor(() => expect(callsFor('install_desktop')).toHaveLength(1))
+    await waitFor(() =>
+      expect($notifications.get().some(n => n.kind === 'warning' && n.message === DESKTOP_UNAVAILABLE)).toBe(true)
+    )
+    await waitFor(() => expect($pluginInstallRequest.get()).toBeNull())
+    expect(screen.queryByRole('button', { name: 'Retry' })).toBeNull()
     expect(callsFor('install')).toHaveLength(0)
   })
 })

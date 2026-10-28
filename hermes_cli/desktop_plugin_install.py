@@ -1,12 +1,16 @@
-"""Install a desktop plugin from Git onto the host that serves the Webapp.
+"""Install a desktop-only plugin from Git onto the host that serves the Webapp.
 
 Native Desktop clones one in Electron (``apps/desktop/electron/desktop-plugin-install.ts``,
 ``installDesktopPluginFromGit``). A browser-hosted tab has no disk of its own, so until now the install
 dialog could only *read* a repository through the gateway (``plugins_cmd_inspect``) and then had
-nothing to install with: a desktop-only package answered "nothing to install here", and the desktop
-half of a mixed one was reported skipped. This is the missing half of the trip — the same inspection,
-held to the commit it read, the same folder name and package-marker rules as Electron, published
-atomically into the app-level root that ``/api/desktop-plugins`` serves.
+nothing to install with: a desktop-only repository answered "nothing to install here". This is that
+missing step — the same inspection, held to the commit it read, the same folder-name rules as
+Electron, published atomically into the app-level root that ``/api/desktop-plugins`` serves.
+
+Scope: **desktop-only repositories**. A repository that also ships an agent half is a package, and a
+package's desktop half already reaches this folder — the host copies it out of the installed package
+on every root read (``desktop_plugin_halves.reconcile_desktop_halves``). Cloning it here as well would
+race that copy, so this installer refuses a package by name and says which install puts it down.
 
 The install is a clone, a staged copy and a rename: no code is imported or run here. The plugin loads
 the way any other installed plugin does, on the next scan of ``desktop-plugins/``.
@@ -14,7 +18,9 @@ the way any other installed plugin does, on the next scan of ``desktop-plugins/`
 
 from __future__ import annotations
 
+import os
 import shutil
+import stat
 import tempfile
 from pathlib import Path
 from typing import Any, Optional
@@ -23,6 +29,10 @@ from hermes_cli import desktop_plugin_halves as halves
 from hermes_constants import get_default_hermes_root
 
 DESKTOP_PLUGINS_DIR = "desktop-plugins"
+
+#: Windows refuses these as folder names whatever the extension, and treats ``D:work`` as a path.
+_RESERVED_NAMES = frozenset({"con", "prn", "aux", "nul"} |
+                            {f"com{i}" for i in range(1, 10)} | {f"lpt{i}" for i in range(1, 10)})
 
 
 def desktop_plugins_root() -> Path:
@@ -45,18 +55,33 @@ def _failure(error: str) -> dict[str, Any]:
 
 
 def _checked_name(name: Optional[str]) -> str:
-    """*name* when it can be one folder under the root, else raise: the name comes from a repository
-    (a subdirectory's last segment, a manifest's ``name``) and must never reach a path unresolved. A
-    leading dot is refused too — the root's staging folders use that prefix."""
+    """*name* when it can be exactly one direct child of the root, else raise.
+
+    The name comes from a repository (a subdirectory's last segment, a manifest's ``name``), so it is
+    never trusted: no separators, no traversal, no control characters, no leading dot (the root's
+    staging folders use that prefix), no ``:`` — on Windows ``root / 'D:work'`` is a path on drive D,
+    not a child of the root — and nothing Windows reserves for a device.
+    """
     candidate = (name or "").strip()
+    reserved = candidate.split(".")[0].strip().lower() in _RESERVED_NAMES
     if (not candidate or candidate in (".", "..") or candidate.startswith(".")
-            or "/" in candidate or "\\" in candidate or "\0" in candidate
-            or any(ord(char) < 32 for char in candidate) or len(candidate) > 128):
+            or "/" in candidate or "\\" in candidate or ":" in candidate or "\0" in candidate
+            or any(ord(char) < 32 for char in candidate) or len(candidate) > 128 or reserved):
         raise _pc().PluginOperationError(
-            f"Cannot install a desktop plugin under the folder name '{name}': "
-            "it must be a plain folder name, not a path."
+            f"Cannot install a desktop plugin under the folder name '{name}': it must be a plain "
+            "folder name, not a path or a device name."
         )
     return candidate
+
+
+def _child(root: Path, folder: str) -> Path:
+    """``root/folder``, refusing anything that does not resolve to a direct child of *root*."""
+    target = root / folder
+    if target.parent != root:
+        raise _pc().PluginOperationError(
+            f"Cannot use the folder name '{folder}': it does not resolve under {root}."
+        )
+    return target
 
 
 def _source(identifier: str, catalog_name: Optional[str]) -> tuple[str, Optional[str], str, Optional[str]]:
@@ -78,16 +103,28 @@ def _source(identifier: str, catalog_name: Optional[str]) -> tuple[str, Optional
     return git_url, subdir, resolved, revision
 
 
-def install_desktop_plugin(identifier: str, *, catalog_name: Optional[str] = None,
-                           force: bool = False) -> dict[str, Any]:
-    """Clone a repository's desktop half into ``desktop-plugins/<name>`` on this host.
+def _regular_entry(folder: Path) -> bool:
+    """Whether ``plugin.js`` in *folder* is a regular file.
 
-    Returns ``{ok, plugin_name, path, sha, paired_with_agent, warnings}``, or ``ok: False`` with
-    ``error``. The clone is held to the commit the inspection read, so a repository that moves after
-    review cannot install a tree nobody looked at. A package carrying both halves lands under its
-    *agent* name with the package marker Electron writes, so the Plugins page pairs the two rows; a
-    desktop-only repository keeps its Git-derived folder name and carries no marker (it would claim
-    another package's agent half).
+    A link would install and then never load: ``/api/desktop-plugins/read`` refuses a linked entry by
+    design, so the browser loader would see nothing. Electron publishes a copy; here an entry that is
+    a link is refused before anything is written.
+    """
+    try:
+        return stat.S_ISREG(os.lstat(folder / "plugin.js").st_mode)
+    except OSError:
+        return False
+
+
+def install_desktop_plugin(identifier: str, *, catalog_name: Optional[str] = None,
+                           force: bool = False, ref: Optional[str] = None) -> dict[str, Any]:
+    """Clone a desktop-only repository into ``desktop-plugins/<name>`` on this host.
+
+    Returns ``{ok, plugin_name, path, sha, warnings}``, or ``ok: False`` with ``error``.
+
+    *ref* is the commit the dialog showed, so the install lands exactly the tree that was reviewed;
+    without it the inspection's own answer is used (the catalog pin, or the commit that check read —
+    which a cached answer can name from up to ten minutes earlier).
     """
     from hermes_cli.plugins_cmd_inspect import forget_inspection, inspect_plugin_source
 
@@ -100,65 +137,68 @@ def install_desktop_plugin(identifier: str, *, catalog_name: Optional[str] = Non
         return _failure(probe.get("error") or "Could not read this plugin repository.")
     if not probe.get("desktop"):
         return _failure("This package ships no desktop plugin to install here.")
+    if probe.get("agent"):
+        return _failure(
+            "This repository also ships an agent half: install it as a package and the host copies "
+            "its desktop half across. install_desktop is for desktop-only plugins."
+        )
 
-    agent_name = probe.get("agent_name") if probe.get("agent") else None
+    expected = (ref or "").strip().lower() or None
     try:
-        package_name = _checked_name(agent_name) if agent_name else None
-        folder = package_name or _checked_name(probe.get("desktop_name"))
+        folder = _checked_name(probe.get("desktop_name"))
         git_url, subdir, _resolved, revision = _source(identifier, catalog_name)
+        root = desktop_plugins_root()
+        target = _child(root, folder)
     except _pc().PluginOperationError as exc:
         return _failure(str(exc))
 
-    root = desktop_plugins_root()
-    target = root / folder
     try:
         with tempfile.TemporaryDirectory(prefix="hermes-plugin-install-") as tmp:
             clone = Path(tmp) / "plugin"
-            # The commit the inspection named, when it named one: the install must be the tree that
-            # was reviewed, not whatever the branch moved to since.
-            sha = _pc()._clone_plugin_repo(clone, git_url, probe.get("sha") or revision, subdir)
+            sha = _pc()._clone_plugin_repo(
+                clone, git_url, expected or probe.get("sha") or revision, subdir)
+            if expected and sha and sha.lower() != expected:
+                return _failure(
+                    f"The repository no longer answers commit {expected[:12]}; inspect it again "
+                    "before installing."
+                )
             plugin_root = _pc()._resolve_subdir_within(clone, subdir) if subdir else clone
             source_dir = _desktop_tree(plugin_root)
 
             if source_dir is None:
                 return _failure("No desktop plugin.js found in this repository.")
-
-            # A package's half keeps the marker Electron writes (the Plugins page pairs it to the
-            # agent row); a standalone plugin carries none.
-            marker = None
-            if package_name:
-                marker = {
-                    "package": package_name,
-                    "repo": git_url,
-                    "source": str(target),
-                    "sourceMtimeMs": halves.mtime_ms((source_dir / "plugin.js").stat()),
-                }
+            if not _regular_entry(source_dir):
+                return _failure(
+                    "This plugin's plugin.js is a link, not a file. The Webapp serves only a regular "
+                    "entry file, so it would install and never load."
+                )
 
             # Under the root's writer lock: the exists check and the publish must not interleave with
-            # a reconcile pass copying the same package's folder.
+            # a reconcile pass copying a folder under the same name. No marker is passed, and
+            # `_publish` strips any the repository shipped: a standalone plugin carries none.
             with halves.ROOT_WRITER:
                 if target.is_symlink() or target.exists():
                     if not force:
                         return _failure(
                             f"Desktop plugin '{folder}' already exists. Enable force reinstall to replace it."
                         )
-                halves.publish_desktop_tree(source_dir, target, marker)
+                halves.publish_desktop_tree(source_dir, target, None)
     except _pc().PluginOperationError as exc:
         return _failure(str(exc))
     except OSError as exc:
         return _failure(f"Could not install the desktop plugin: {exc}")
 
     return {"ok": True, "plugin_name": folder, "path": str(target), "sha": sha,
-            "paired_with_agent": bool(package_name), "warnings": list(probe.get("warnings") or [])}
+            "warnings": list(probe.get("warnings") or [])}
 
 
 def _desktop_tree(plugin_root: Path) -> Optional[Path]:
     """The folder that is the desktop plugin: the repository root when ``plugin.js`` sits there, else
-    its ``desktop/`` subfolder — Electron's ``findDesktopEntry`` search, narrowed to those two."""
-    if (plugin_root / "plugin.js").is_file():
-        return plugin_root
-    if (plugin_root / "desktop" / "plugin.js").is_file():
-        return plugin_root / "desktop"
+    its ``desktop/`` subfolder — Electron's ``findDesktopEntry`` search, narrowed to those two. A
+    symlinked entry is returned too, so the caller can refuse it with a reason worth reading."""
+    for candidate in (plugin_root, plugin_root / "desktop"):
+        if (candidate / "plugin.js").is_file() or (candidate / "plugin.js").is_symlink():
+            return candidate
     return None
 
 
@@ -171,9 +211,9 @@ def remove_desktop_plugin(name: str, *, force: bool = False) -> dict[str, Any]:
     """
     try:
         folder = _checked_name(name)
+        target = _child(desktop_plugins_root(), folder)
     except _pc().PluginOperationError as exc:
         return _failure(str(exc))
-    target = desktop_plugins_root() / folder
     if target.is_symlink():
         return _failure(
             f"'{folder}' is linked from somewhere else on this host; remove that link where it lives."

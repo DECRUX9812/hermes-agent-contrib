@@ -53,7 +53,6 @@ def test_desktop_only_repo_lands_under_its_own_name_without_a_marker(tmp_path, h
 
     assert result["ok"] is True, result
     assert result["plugin_name"] == "gizmo"
-    assert result["paired_with_agent"] is False
     folder = _root(home) / "gizmo"
     assert (folder / "plugin.js").read_text(encoding="utf-8").startswith("export default")
     assert (folder / "panel.js").is_file()
@@ -61,23 +60,15 @@ def test_desktop_only_repo_lands_under_its_own_name_without_a_marker(tmp_path, h
     assert not (folder / ".hermes-package.json").exists()
 
 
-def test_package_lands_its_desktop_half_under_the_agent_name_with_a_marker(tmp_path, home):
+def test_a_package_is_refused_and_pointed_at_the_package_install(tmp_path, home):
     repo = _repo(tmp_path / "pkg", {"plugin.yaml": "name: pkg\nversion: 1.0.0\n", "__init__.py": "",
                                     "desktop/plugin.js": "export default { id: 'pkg' }\n"})
 
     result = install.install_desktop_plugin(repo.as_uri())
 
-    assert result["ok"] is True, result
-    assert (result["plugin_name"], result["paired_with_agent"]) == ("pkg", True)
-    folder = _root(home) / "pkg"
-    assert (folder / "plugin.js").is_file()
-    # Only the desktop half is copied: the agent payload stays in the repository.
-    assert not (folder / "plugin.yaml").exists()
-    marker = json.loads((folder / ".hermes-package.json").read_text(encoding="utf-8"))
-    assert marker["package"] == "pkg"
-    assert marker["repo"] == repo.as_uri()
-    assert marker["source"] == str(folder)
-    assert marker["sourceMtimeMs"] > 0
+    assert result["ok"] is False
+    assert "install it as a package" in result["error"]
+    assert not (_root(home) / "pkg").exists()
 
 
 def test_a_second_install_refuses_until_force_replaces_it(tmp_path, home):
@@ -149,19 +140,23 @@ def test_remove_takes_a_standalone_plugin_away(tmp_path, home):
 
 
 def test_remove_refuses_a_packages_own_half_until_forced(tmp_path, home):
-    repo = _repo(tmp_path / "pkg", {"plugin.yaml": "name: pkg\n", "__init__.py": "",
-                                    "desktop/plugin.js": "export default {}\n"})
-    assert install.install_desktop_plugin(repo.as_uri())["ok"] is True
+    # Written the way reconcile writes it: the installer no longer publishes package halves.
+    folder = _root(home) / "pkg"
+    folder.mkdir(parents=True)
+    (folder / "plugin.js").write_text("export default {}\n", encoding="utf-8")
+    (folder / ".hermes-package.json").write_text(json.dumps(
+        {"package": "pkg", "source": str(tmp_path / "plugins" / "pkg" / "desktop"), "sourceMtimeMs": 1}),
+        encoding="utf-8")
 
     refused = install.remove_desktop_plugin("pkg")
     assert refused["ok"] is False
     assert "uninstall that plugin instead" in refused["error"]
-    assert (_root(home) / "pkg" / "plugin.js").is_file()
+    assert (folder / "plugin.js").is_file()
 
     forced = install.remove_desktop_plugin("pkg", force=True)
     assert forced["ok"] is True
     assert forced["unpaired_from"] == "pkg"
-    assert not (_root(home) / "pkg").exists()
+    assert not folder.exists()
 
 
 def test_remove_leaves_a_linked_plugin_alone(tmp_path, home):
@@ -182,3 +177,85 @@ def test_remove_of_something_not_installed_says_so(tmp_path, home):
 
     assert result["ok"] is False
     assert "No desktop plugin named 'ghost'" in result["error"]
+
+
+def test_a_repositorys_own_package_marker_is_stripped(tmp_path, home):
+    # F1: a repo made from an installed plugin folder still carries .hermes-package.json. Copying it
+    # would let the next reconcile prune this fresh install (its source is gone) or pair it with
+    # another package and refuse its removal. Electron strips it; so do we.
+    stale = json.dumps({"package": "old-pkg", "source": str(tmp_path / "gone"), "sourceMtimeMs": 1})
+    repo = _repo(tmp_path / "gizmo", {"plugin.js": "export default {}\n", ".hermes-package.json": stale})
+
+    result = install.install_desktop_plugin(repo.as_uri())
+
+    assert result["ok"] is True, result
+    folder = _root(home) / "gizmo"
+    assert not (folder / ".hermes-package.json").exists()
+
+    from hermes_cli.desktop_plugin_halves import reconcile_desktop_halves
+    reconcile_desktop_halves(home, _root(home))
+    assert (folder / "plugin.js").is_file(), "reconcile must not prune a standalone install"
+    assert install.remove_desktop_plugin("gizmo")["ok"] is True
+
+
+def test_a_drive_qualified_name_is_refused(tmp_path, home, monkeypatch):
+    # F3: on Windows `root / 'D:work'` is a path on drive D, not a child of the root.
+    from hermes_cli import plugins_cmd_inspect
+    monkeypatch.setattr(plugins_cmd_inspect, "inspect_plugin_source", lambda *a, **k: {
+        "ok": True, "agent": False, "desktop": True, "agent_name": None, "desktop_name": "D:work",
+        "sha": None, "warnings": [], "insecure": False})
+
+    result = install.install_desktop_plugin("https://github.com/x/y.git")
+
+    assert result["ok"] is False
+    assert "folder name" in result["error"]
+
+
+def test_a_device_name_is_refused(tmp_path, home, monkeypatch):
+    from hermes_cli import plugins_cmd_inspect
+    monkeypatch.setattr(plugins_cmd_inspect, "inspect_plugin_source", lambda *a, **k: {
+        "ok": True, "agent": False, "desktop": True, "agent_name": None, "desktop_name": "CON",
+        "sha": None, "warnings": [], "insecure": False})
+
+    assert install.install_desktop_plugin("https://github.com/x/y.git")["ok"] is False
+
+
+def test_the_dialog_commit_is_the_one_installed(tmp_path, home):
+    # P3: the inspection answer is cached for ten minutes; the dialog sends the sha it showed, so the
+    # install lands that tree even after the repository moves on.
+    repo = _repo(tmp_path / "gizmo", {"plugin.js": "export default { v: 1 }\n"})
+    reviewed = _git(repo, "rev-parse", "HEAD")
+    (repo / "plugin.js").write_text("export default { v: 2 }\n", encoding="utf-8")
+    _git(repo, "-c", "user.email=t@example.invalid", "-c", "user.name=t", "commit", "-qam", "moved on")
+
+    result = install.install_desktop_plugin(repo.as_uri(), ref=reviewed)
+
+    assert result["ok"] is True, result
+    assert result["sha"] == reviewed
+    assert "v: 1" in (_root(home) / "gizmo" / "plugin.js").read_text(encoding="utf-8")
+
+
+def test_a_commit_the_repository_cannot_answer_is_refused(tmp_path, home):
+    repo = _repo(tmp_path / "gizmo", {"plugin.js": "export default {}\n"})
+
+    result = install.install_desktop_plugin(repo.as_uri(), ref="0" * 40)
+
+    assert result["ok"] is False
+    assert not (_root(home) / "gizmo").exists()
+
+
+def test_a_linked_entry_file_is_refused(tmp_path, home):
+    # P3: /api/desktop-plugins/read refuses a linked entry, so it would install and never load.
+    repo = tmp_path / "linked"
+    (repo / "dist").mkdir(parents=True)
+    (repo / "dist" / "plugin.js").write_text("export default {}\n", encoding="utf-8")
+    (repo / "plugin.js").symlink_to("dist/plugin.js")
+    _git(repo, "init", "-q", "-b", "main")
+    _git(repo, "add", "-A")
+    _git(repo, "-c", "user.email=t@example.invalid", "-c", "user.name=t", "commit", "-q", "-m", "c")
+
+    result = install.install_desktop_plugin(repo.as_uri())
+
+    assert result["ok"] is False
+    assert "link" in result["error"]
+    assert not (_root(home) / "linked").exists()

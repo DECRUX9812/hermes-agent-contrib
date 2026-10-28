@@ -4442,7 +4442,6 @@ export interface PluginsManageResult {
   desktop_name?: string | null
   insecure?: boolean | null
   path?: string | null
-  paired_with_agent?: boolean | null
   unpaired_from?: string | null
 }
 /** ``methods_tools._plugin_rows`` + ``plugins_cmd_catalog.catalog_row_fields`` provenance. */

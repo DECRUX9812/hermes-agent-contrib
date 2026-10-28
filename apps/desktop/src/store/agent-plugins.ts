@@ -450,11 +450,20 @@ export async function inspectAgentPlugin(
  *  already loads. Never rejects. */
 export async function installDesktopPluginHalf(
   request: GatewayRequest,
-  opts: { identifier: string; catalogName?: string; force?: boolean; profile?: string | null }
+  opts: {
+    identifier: string
+    catalogName?: string
+    force?: boolean
+    /** The commit the dialog showed: the backend installs exactly that tree, not a later tip. */
+    ref?: string
+    profile?: string | null
+  }
 ): Promise<{
   ok: boolean
-  pairedWithAgent?: boolean
   pluginName?: string
+  /** The wait ran out while the host was still cloning: the install may yet land, so nothing else
+   *  should start — the same rule the agent half follows. */
+  timedOut?: boolean
   /** The backend predates the action: no retry changes that (a build older than this one). */
   unsupported?: boolean
   warnings: string[]
@@ -464,7 +473,6 @@ export async function installDesktopPluginHalf(
     const result = await request<{
       ok?: boolean
       plugin_name?: string
-      paired_with_agent?: boolean
       warnings?: string[]
       error?: string
     }>(
@@ -474,7 +482,8 @@ export async function installDesktopPluginHalf(
           action: 'install_desktop',
           identifier: opts.identifier,
           force: Boolean(opts.force),
-          ...(opts.catalogName ? { catalog_name: opts.catalogName } : {})
+          ...(opts.catalogName ? { catalog_name: opts.catalogName } : {}),
+          ...(opts.ref ? { ref: opts.ref } : {})
         },
         opts.profile
       ),
@@ -488,15 +497,20 @@ export async function installDesktopPluginHalf(
     return {
       ok: true,
       pluginName: result.plugin_name,
-      pairedWithAgent: Boolean(result.paired_with_agent),
       warnings: result.warnings ?? []
     }
   } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+
     return {
       ok: false,
+      // The host clone is allowed to outlive this wait (`plugins.clone_timeout_seconds`, 300s by
+      // default): a timeout here means "unknown", not "failed", and a retry must not start a second
+      // clone beside the one still running.
+      timedOut: /^request timed out after \d+s: plugins\.manage$/.test(message),
       unsupported: e instanceof JsonRpcGatewayError && INSTALL_DESKTOP_UNSUPPORTED_CODES.has(e.code ?? 0),
       warnings: [],
-      error: e instanceof Error ? e.message : String(e)
+      error: message
     }
   }
 }
