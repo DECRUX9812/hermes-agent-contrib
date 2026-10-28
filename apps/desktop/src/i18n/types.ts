@@ -557,6 +557,7 @@ catalog: CatalogTranslations
     muteHaptics: string
     unmuteHaptics: string
     openSettings: string
+    moreActions: string
     openStarmap: string
     enterHud: string
     exitHud: string

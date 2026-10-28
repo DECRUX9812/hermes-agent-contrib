@@ -11,6 +11,7 @@ import { $narrowViewport } from '@/components/pane-shell/tree/store'
 import { resetLayoutTree } from '@/components/pane-shell/tree/store'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
 import { Slot } from '@/contrib/react/slot'
 import { useContributions } from '@/contrib/react/use-contributions'
@@ -356,13 +357,29 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
     )
   }
 
+  const visibleSystemTools = systemTools.filter(visibleTool)
+  const inlineSystemTools = visibleSystemTools.filter(tool => tool.id !== 'hud')
+
   const visibleLeftTools = (
-    appActionsSide === 'left' ? [sidebarTool, ...systemTools, ...leftTools] : [sidebarTool, ...leftTools]
+    appActionsSide === 'left'
+      ? [sidebarTool, ...inlineSystemTools, ...leftTools]
+      : [sidebarTool, ...leftTools]
   ).filter(visibleTool)
 
-  const visibleSystemTools = appActionsSide === 'right' ? systemTools.filter(visibleTool) : []
+  const visibleSystemToolsRight = appActionsSide === 'right' ? inlineSystemTools : []
   const visiblePaneTools = tools.filter(visibleTool)
   const visibleRightFixedTools = [flipTool, rightSidebarTool].filter(visibleTool)
+
+  // Two icons change the app; the rest rearrange the view. Keep the first two on
+  // the band and fold the rest behind one glyph, so the cluster reads with a
+  // hierarchy instead of as a row of equals. The fold follows the same side the
+  // app actions do, or HUD would vanish when they move left.
+  const hudTools = visibleSystemTools.filter(tool => tool.id === 'hud')
+  const leftOverflowTools: TitlebarTool[] = appActionsSide === 'left' ? hudTools : []
+  const rightOverflowTools: TitlebarTool[] = [
+    ...(appActionsSide === 'right' ? hudTools : []),
+    ...visibleRightFixedTools
+  ]
 
   return (
     <>
@@ -370,6 +387,12 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         {visibleLeftTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
+        {leftOverflowTools.length > 0 && (
+          <>
+            <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
+            <TitlebarOverflowMenu label={t.titlebar.moreActions} tools={leftOverflowTools} />
+          </>
+        )}
         <Slot area="titleBar.left" />
         <Slot area="titleBar.center" />
       </div>
@@ -396,22 +419,59 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         {/* Separates the window's tools from the tab strip's own "+" — without
             it the strip and the cluster read as one long row of loose glyphs. */}
         <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
-        {visibleSystemTools.map(tool => (
+        {visibleSystemToolsRight.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
         {/* App actions (settings, layout) and pane toggles are different mental
             models: one changes the app, the other changes what you are looking
             at. Without this rule the whole right side reads as one undifferentiated
             row of loose glyphs. */}
-        {visibleSystemTools.length > 0 && visibleRightFixedTools.length > 0 && (
+        {rightOverflowTools.length > 0 && (
           <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
         )}
-        {visibleRightFixedTools.map(tool => (
-          <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
-        ))}
+        <TitlebarOverflowMenu label={t.titlebar.moreActions} tools={rightOverflowTools} />
         <Slot area="titleBar.right" />
       </div>
     </>
+  )
+}
+
+/**
+ * Rare titlebar actions, folded behind one glyph.
+ *
+ * A row of five equal-weight icons is the thing that makes a chrome band read
+ * as "generated": settings, layout, swap-sides, right-sidebar and HUD all look
+ * equally important, so none of them does. The two that change the app stay on
+ * the band; the three that rearrange the view live here, one click deeper.
+ * Plugin-contributed tools never come through this path — a plugin's own
+ * surface stays visible.
+ */
+function TitlebarOverflowMenu({ label, tools }: { label: string; tools: readonly TitlebarTool[] }) {
+  if (tools.length === 0) {
+    return null
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          aria-label={label}
+          className={cn(titlebarButtonClass, 'bg-transparent')}
+          size="icon-titlebar"
+          variant="ghost"
+        >
+          <TitlebarIcon name="ellipsis" />
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-44">
+        {tools.map(tool => (
+          <DropdownMenuItem key={tool.id} onSelect={() => tool.onSelect?.()}>
+            <span className="inline-flex size-4 items-center justify-center text-muted-foreground">{tool.icon}</span>
+            {tool.title ?? tool.label}
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 

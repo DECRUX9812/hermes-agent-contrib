@@ -291,7 +291,7 @@ describe('titlebar app-action cluster', () => {
     }
   })
 
-  it('moves settings, layout, and HUD to the left when the appearance setting says left', () => {
+  it('moves settings and layout to the left, and folds HUD into that side’s overflow', () => {
     setTitlebarAppActionsSide('left')
     renderControls('/')
 
@@ -300,7 +300,9 @@ describe('titlebar app-action cluster', () => {
 
     expect(within(left).getByLabelText('Open settings')).toBeTruthy()
     expect(within(left).getByLabelText('Layout editor')).toBeTruthy()
-    expect(within(left).getByLabelText('HUD mode')).toBeTruthy()
+    // HUD is no longer a peer of settings: when it is available it rides the
+    // overflow on whichever side the app actions live, never as a bare glyph.
+    expect(within(left).queryByLabelText('HUD mode')).toBeNull()
     expect(within(right).queryByLabelText('Open settings')).toBeNull()
   })
 
@@ -311,10 +313,12 @@ describe('titlebar app-action cluster', () => {
     expect(screen.queryByLabelText('HUD mode')).toBeNull()
     expect(screen.getByLabelText('Open settings')).toBeTruthy()
 
-    // Each side assembles its own cluster, so the move must keep the filter.
+    // Each side assembles its own cluster, so the move must keep the filter —
+    // and with HUD gone the left side has nothing to fold, so no overflow.
     act(() => setTitlebarAppActionsSide('left'))
     expect(screen.queryByLabelText('HUD mode')).toBeNull()
     expect(within(screen.getByLabelText('Window controls')).getByLabelText('Open settings')).toBeTruthy()
     expect(screen.getByLabelText('Layout editor')).toBeTruthy()
+    expect(within(screen.getByLabelText('Window controls')).queryByLabelText('More window actions')).toBeNull()
   })
 })
