@@ -408,17 +408,14 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
         {visiblePaneTools.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
+        {/* One rule for the whole cluster: it separates the plugin's surface
+            from the app's own actions. The ellipsis needs no second line. */}
         {visiblePaneTools.length > 0 && (visibleSystemToolsRight.length > 0 || rightOverflowTools.length > 0) && (
           <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />
         )}
         {visibleSystemToolsRight.map(tool => (
           <TitlebarToolButton key={tool.id} navigate={navigate} tool={tool} />
         ))}
-        {/* App actions (settings, layout) and pane toggles are different mental
-            models: one changes the app, the other changes what you are looking
-            at. One rule between them is enough — the ellipsis reads as a menu
-            without a second line. */}
-        {rightOverflowTools.length > 0 && <span aria-hidden className="mx-1 h-3.5 w-px shrink-0 bg-(--ui-stroke-quaternary)" />}
         <TitlebarOverflowMenu label={t.titlebar.moreActions} tools={rightOverflowTools} />
         <Slot area="titleBar.right" />
       </div>

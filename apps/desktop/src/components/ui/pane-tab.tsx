@@ -20,7 +20,9 @@ const TAB =
   'group/tab relative flex shrink-0 items-center select-none rounded-(--chrome-radius-tab) [-webkit-app-region:no-drag] transition-[background-color,color,box-shadow] duration-100 ease-out'
 
 // Full height of the padded row: the strip's own vertical padding is the gap.
-const TAB_HORIZONTAL = 'h-full min-w-0 max-w-52 text-xs font-medium'
+// h-7 + self-center, not h-full: a stretched tab inside a padded rail sat flush
+// against the band's top edge and lost its top radii (0px above, 5px below).
+const TAB_HORIZONTAL = 'h-7 min-w-0 max-w-64 self-center text-xs font-medium'
 
 // Room for the close chip at the right edge — a floor, so a short label pays
 // nothing and a long one ellipsizes before it reaches the chip.
