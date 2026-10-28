@@ -69,6 +69,30 @@ export function directiveFrameHeight(raw: string | undefined): number | null {
   return Math.min(MAX_HEIGHT, Math.max(MIN_HEIGHT, parsed))
 }
 
+/** Bounds for `refresh`: a card may poll itself, but never faster than a human
+ *  can read (500ms) and never forever-busy (30s). */
+export const MIN_REFRESH_MS = 500
+export const MAX_REFRESH_MS = 30_000
+
+/** `::preview{file="card.html" refresh="2000"}` — re-read the file every N ms
+ *  while the message is settled. This is what makes a card LIVE: an agent (or
+ *  a `genui_update` call) rewrites the file and the frame already on screen
+ *  becomes the new state, with no new message and no scroll. Absent/0 keeps
+ *  the old read-once behaviour. */
+export function directiveRefreshInterval(raw: string | undefined): number {
+  if (!raw) {
+    return 0
+  }
+
+  const parsed = Number(raw)
+
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return 0
+  }
+
+  return Math.min(MAX_REFRESH_MS, Math.max(MIN_REFRESH_MS, Math.round(parsed)))
+}
+
 const SIZE_MESSAGE_TYPE = 'hermes-inline-preview-size'
 const INTENT_MESSAGE_TYPE = 'hermes-inline-preview-intent'
 const INTENT_ACK_MESSAGE_TYPE = 'hermes-inline-preview-intent-ack'
@@ -354,17 +378,20 @@ export function InlinePreviewDirective({
     return file ? <PreviewAttachment target={file} /> : null
   }
 
-  return <InlineHtmlFrame file={file} initialHeight={directiveFrameHeight(attrs.height)} streaming={streaming} />
+  return <InlineHtmlFrame file={file} initialHeight={directiveFrameHeight(attrs.height)} refreshMs={directiveRefreshInterval(attrs.refresh)} streaming={streaming} />
 }
 
 function InlineHtmlFrame({
   file,
   initialHeight,
+  refreshMs,
   streaming
 }: {
   file: string
   /** `height` attribute — the starting height only; measurement overrides. */
   initialHeight: number | null
+  /** `refresh` attribute in ms — 0 means read once (the historical default). */
+  refreshMs: number
   streaming: boolean
 }) {
   const cwd = useStore(useSessionView().$cwd)
@@ -423,6 +450,49 @@ function InlineHtmlFrame({
       alive = false
     }
   }, [path, streaming])
+
+  // LIVE FRAMES. With `refresh`, the file is the state: whoever rewrites it —
+  // genui_update, a script, the agent mid-turn — repaints this frame in place.
+  // Same rules as the first read (settled turn, no binary, keep the last good
+  // frame on error), plus: never overlap reads, and stop while the document is
+  // hidden so a backgrounded chat cannot poll the filesystem forever.
+  useEffect(() => {
+    if (!path || streaming || refreshMs <= 0) {
+      return
+    }
+
+    let alive = true
+    let reading = false
+
+    const tick = () => {
+      if (reading || (typeof document !== 'undefined' && document.hidden)) {
+        return
+      }
+
+      reading = true
+
+      void Promise.resolve(readDesktopFileText(path))
+        .then(result => {
+          if (!alive || !result || isReadFileErrorResult(result) || result.binary || !result.text) {
+            return
+          }
+
+          setFailed(false)
+          setDoc(previous => (previous === result.text ? previous : result.text))
+        })
+        .catch(() => undefined)
+        .finally(() => {
+          reading = false
+        })
+    }
+
+    const interval = window.setInterval(tick, refreshMs)
+
+    return () => {
+      alive = false
+      window.clearInterval(interval)
+    }
+  }, [path, streaming, refreshMs])
 
   useEffect(() => {
     // Human-speed gate on widget intents. A closure local, not state: it's

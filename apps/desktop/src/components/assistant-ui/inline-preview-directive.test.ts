@@ -3,12 +3,15 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   collectThemeBridge,
   directiveFrameHeight,
+  directiveRefreshInterval,
   evaluateIntent,
   frameSizeFromMessage,
   INTENT_THROTTLE_MS,
   intentAckMessage,
   intentScript,
   MAX_INTENT_LENGTH,
+  MAX_REFRESH_MS,
+  MIN_REFRESH_MS,
   themePrelude,
   withInlineChrome
 } from './inline-preview-directive'
@@ -25,6 +28,22 @@ describe('directiveFrameHeight', () => {
     expect(directiveFrameHeight('50')).toBe(120)
     expect(directiveFrameHeight('480')).toBe(480)
     expect(directiveFrameHeight('99999')).toBe(1200)
+  })
+})
+
+describe('directiveRefreshInterval', () => {
+  it('is 0 (read once) when absent, zero, or unparseable', () => {
+    expect(directiveRefreshInterval(undefined)).toBe(0)
+    expect(directiveRefreshInterval('')).toBe(0)
+    expect(directiveRefreshInterval('0')).toBe(0)
+    expect(directiveRefreshInterval('-500')).toBe(0)
+    expect(directiveRefreshInterval('soon')).toBe(0)
+  })
+
+  it('clamps a model-authored interval into the human band', () => {
+    expect(directiveRefreshInterval('1')).toBe(MIN_REFRESH_MS)
+    expect(directiveRefreshInterval('2000')).toBe(2000)
+    expect(directiveRefreshInterval('99999999')).toBe(MAX_REFRESH_MS)
   })
 })
 
