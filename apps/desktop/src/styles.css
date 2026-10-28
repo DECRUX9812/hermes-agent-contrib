@@ -4001,3 +4001,29 @@ html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
 [data-pane-hidden] * {
   visibility: inherit !important;
 }
+
+/* ---------------------------------------------------------------------------
+   Graphite: neutral surfaces.
+
+   The stock fill mix (16% accent into every primary surface, 11% into
+   secondary) exists so a saturated brand colour has somewhere to live. On a
+   neutral palette that same mix paints a coloured wash over every row, which
+   is exactly the "generated dashboard" tell the theme is meant to avoid. Cut
+   the fills to a whisper and let the rust show up only where it means
+   something: focus rings, the primary button, selection.
+   ------------------------------------------------------------------------- */
+[data-hermes-theme='graphite'] {
+  --theme-fill-primary-accent-mix: 4%;
+  --theme-fill-secondary-accent-mix: 3%;
+  --theme-fill-tertiary-accent-mix: 2%;
+  --theme-fill-quaternary-accent-mix: 2%;
+  --theme-fill-quinary-accent-mix: 1%;
+  --theme-stroke-primary-accent-mix: 18%;
+  --theme-stroke-secondary-accent-mix: 12%;
+  --theme-stroke-tertiary-accent-mix: 8%;
+  --theme-stroke-quaternary-accent-mix: 5%;
+  --theme-row-hover-accent-mix: 3%;
+  --theme-row-active-accent-mix: 6%;
+  --theme-control-hover-accent-mix: 4%;
+  --theme-control-active-accent-mix: 6%;
+}

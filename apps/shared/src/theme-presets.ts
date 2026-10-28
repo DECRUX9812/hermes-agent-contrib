@@ -549,6 +549,80 @@ export const THEME_PRESET_PALETTES = {
       userBubble: '#1e2a38',
       userBubbleBorder: '#2e4060'
     }
+  },
+
+  /**
+   * Graphite — the anti-slop preset. Every generated UI reaches for the same
+   * three crutches: a cream page, an indigo accent, and Inter. Graphite drops
+   * all three. The page is a cool neutral grey with no warmth to mistake for
+   * "tasteful"; the only saturated colour in the system is a rust that reads
+   * as a decision rather than a default; and the type stack never names Inter,
+   * so it resolves to the platform's real UI face instead of a webfont that
+   * looks identical on every product on earth.
+   *
+   * Contrast, measured against the surfaces it actually sits on:
+   *   foreground #16181a on #f4f5f6 ......... 16.1:1
+   *   mutedForeground #5b6167 on #eceef0 ..... 6.4:1  (AA body)
+   *   primary #8a2f1d on #ffffff ............. 8.3:1  (AA body)
+   *   dark foreground #e9eaec on #131416 .... 15.0:1
+   *   dark mutedForeground #a2a8ae on #212427  6.6:1
+   *   dark primary #e07a5f on #131416 ........ 6.4:1
+   */
+  graphite: {
+    colors: {
+      background: '#f4f5f6',
+      foreground: '#16181a',
+      card: '#ffffff',
+      cardForeground: '#16181a',
+      muted: '#eceef0',
+      mutedForeground: '#5b6167',
+      popover: '#ffffff',
+      popoverForeground: '#16181a',
+      primary: '#8a2f1d',
+      primaryForeground: '#ffffff',
+      secondary: '#e8eaec',
+      secondaryForeground: '#26292c',
+      accent: '#e6e9ec',
+      accentForeground: '#1b1e21',
+      border: '#dcdfe3',
+      input: '#c9ced3',
+      ring: '#8a2f1d',
+      midground: '#8a2f1d',
+      composerRing: '#8a2f1d',
+      destructive: '#b3261e',
+      destructiveForeground: '#ffffff',
+      sidebarBackground: '#eef0f2',
+      sidebarBorder: '#dcdfe3',
+      userBubble: '#eef0f2',
+      userBubbleBorder: '#dcdfe3'
+    },
+    darkColors: {
+      background: '#131416',
+      foreground: '#e9eaec',
+      card: '#191b1d',
+      cardForeground: '#e9eaec',
+      muted: '#212427',
+      mutedForeground: '#a2a8ae',
+      popover: '#212427',
+      popoverForeground: '#e9eaec',
+      primary: '#e07a5f',
+      primaryForeground: '#131416',
+      secondary: '#24282b',
+      secondaryForeground: '#e9eaec',
+      accent: '#262b2f',
+      accentForeground: '#e9eaec',
+      border: '#2b3034',
+      input: '#3a4045',
+      ring: '#e07a5f',
+      midground: '#e07a5f',
+      composerRing: '#e07a5f',
+      destructive: '#ef8079',
+      destructiveForeground: '#131416',
+      sidebarBackground: '#17191b',
+      sidebarBorder: '#2b3034',
+      userBubble: '#1d2023',
+      userBubbleBorder: '#2b3034'
+    }
   }
 } satisfies Record<string, ThemePresetPalette>
 

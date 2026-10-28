@@ -441,6 +441,24 @@ export const slateTheme: DesktopTheme = {
   }
 }
 
+/**
+ * Graphite — the deliberate-neutral preset: no cream page, no indigo accent,
+ * no Inter. Rust is the only saturated colour in the system, so it reads as a
+ * choice instead of a default. Palette + measured contrast live in
+ * `@hermes/shared` (`THEME_PRESET_PALETTES.graphite`); the type stack here is
+ * the Inter-free system stack, which resolves to the platform's real UI face.
+ */
+export const graphiteTheme: DesktopTheme = {
+  name: 'graphite',
+  label: 'Graphite',
+  description: 'Cool neutral grey, one rust accent — nothing borrowed',
+  ...THEME_PRESET_PALETTES.graphite,
+  typography: {
+    fontSans: SYSTEM_SANS,
+    fontMono: `"JetBrains Mono", ${SYSTEM_MONO}`
+  }
+}
+
 export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   nous: nousTheme,
   github: githubTheme,
@@ -453,7 +471,8 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   ember: emberTheme,
   mono: monoTheme,
   slate: slateTheme,
-  cyberpunk: cyberpunkTheme
+  cyberpunk: cyberpunkTheme,
+  graphite: graphiteTheme
 }
 
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)
