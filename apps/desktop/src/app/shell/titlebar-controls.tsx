@@ -443,12 +443,11 @@ function TitlebarOverflowMenu({ label, tools }: { label: string; tools: readonly
       <DropdownMenuTrigger asChild>
         <Button
           aria-label={label}
-          className={cn(titlebarButtonClass, 'w-auto gap-1 bg-transparent px-1.5')}
+          className={cn(titlebarButtonClass, 'bg-transparent')}
           size="icon-titlebar"
           variant="ghost"
         >
-          <span className="text-[11px] leading-none">More</span>
-          <TitlebarIcon name="chevron-down" size={11} />
+          <TitlebarIcon name="ellipsis" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="min-w-44">

@@ -440,7 +440,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  'peer/menu-button flex w-full items-center gap-2 overflow-hidden rounded-md p-2 text-left text-sm ring-sidebar-ring outline-hidden transition-[width,height,padding] group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! hover:bg-sidebar-accent hover:text-sidebar-accent-foreground focus-visible:bg-sidebar-accent focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 active:bg-sidebar-accent active:text-sidebar-accent-foreground disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-sidebar-accent data-[active=true]:font-medium data-[active=true]:text-sidebar-accent-foreground data-[state=open]:hover:bg-sidebar-accent data-[state=open]:hover:text-sidebar-accent-foreground [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+  'peer/menu-button flex w-full items-center gap-2.5 overflow-hidden rounded-md px-2.5 text-left text-[13px] font-normal ring-sidebar-ring outline-hidden transition-colors group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! bg-transparent text-(--ui-text-secondary) hover:bg-black/[0.04] hover:text-(--ui-text-primary) focus-visible:bg-black/[0.05] focus-visible:text-(--ui-text-primary) focus-visible:ring-2 active:bg-black/[0.06] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-black/[0.07] data-[active=true]:font-medium data-[active=true]:text-(--ui-text-primary) dark:hover:bg-white/[0.05] dark:focus-visible:bg-white/[0.06] dark:active:bg-white/[0.07] dark:data-[active=true]:bg-white/[0.08] [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
   {
     variants: {
       variant: {
@@ -449,9 +449,9 @@ const sidebarMenuButtonVariants = cva(
           'bg-background shadow-[0_0_0_0.0625rem_hsl(var(--sidebar-border))] hover:bg-sidebar-accent hover:text-sidebar-accent-foreground hover:shadow-[0_0_0_0.0625rem_hsl(var(--sidebar-accent))]'
       },
       size: {
-        default: 'h-8 text-sm',
+        default: 'h-8',
         sm: 'h-7 text-xs',
-        lg: 'h-12 text-sm group-data-[collapsible=icon]:p-0!'
+        lg: 'h-12 group-data-[collapsible=icon]:p-0!'
       }
     },
     defaultVariants: {

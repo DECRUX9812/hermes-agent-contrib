@@ -4039,3 +4039,58 @@ html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
   --theme-control-hover-accent-mix: 4%;
   --theme-control-active-accent-mix: 6%;
 }
+
+/* ---------------------------------------------------------------------------
+   Graphite surfaces: three distinct planes, not one flat wash.
+
+   chrome  #ebebed — the window band (titlebar, tab rail, right cluster)
+   sidebar #f3f3f5 — the navigation column
+   canvas  #f8f8f9 — the chat surface
+
+   Without the three values the band and the canvas resolve to the same colour
+   and the top of the app has no edge.
+   ------------------------------------------------------------------------- */
+[data-hermes-theme='graphite'] {
+  --ui-bg-chrome: #ebebed;
+  --ui-bg-sidebar: #f3f3f5;
+  --ui-bg-primary: #f8f8f9;
+  --ui-sidebar-surface-background: #f3f3f5;
+}
+
+[data-hermes-theme='graphite'][data-hermes-mode='dark'] {
+  --ui-bg-chrome: #141416;
+  --ui-bg-sidebar: #18181b;
+  --ui-bg-primary: #111113;
+  --ui-sidebar-surface-background: #18181b;
+}
+
+/* The navigation column is its own plane, one step off the canvas. */
+[data-sidebar='sidebar'] {
+  background-color: var(--ui-bg-sidebar);
+}
+
+/* The two zone groups are the app's planes: the navigation column and the
+   chat canvas. They used to inherit the chrome fill, which is why the band and
+   the canvas resolved to the same colour and the top had no edge. */
+[data-tree-group='grp-sessions'] {
+  background-color: var(--ui-bg-sidebar);
+}
+
+[data-tree-group='grp-main'] {
+  background-color: var(--ui-bg-primary);
+}
+
+/* The chat surface's decorative filler image is a watermark, not content: on a
+   large display it reads as a smudge behind the transcript. Kill it. */
+img[src*='filler-bg'] {
+  display: none !important;
+}
+
+/* Syntax tokens carry their own background in some Shiki themes; inside a diff
+   that paints a yellow bar behind each string and stops mid-line. Row tint
+   belongs to the row (--ui-diff-*), never to a token. */
+[data-slot='diff-lines'] span[style*='background'],
+[data-slot='diff-lines'] span[style*='background-color'],
+[data-slot='aui_assistant-message-content'] pre span[style*='background'] {
+  background-color: transparent !important;
+}

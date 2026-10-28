@@ -73,11 +73,11 @@ export function titlebarToolsRightCss(
 // shared <Button size="icon-titlebar"> (used polymorphically via asChild) —
 // Button is the single source of button styling.
 export const titlebarButtonClass =
-  'rounded-(--chrome-radius-control) text-muted-foreground/85 hover:bg-(--ui-control-hover-background) hover:text-foreground'
+  'size-7 rounded-md text-(--ui-text-secondary) hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06] transition-colors'
 
 /** Shared flex shell for left/right/pane titlebar tool rows — no gap; 24px buttons abut. */
 export const titlebarToolClusterClass =
-  'fixed z-70 flex flex-row items-center pointer-events-auto select-none [-webkit-app-region:no-drag]'
+  'fixed z-70 flex flex-row items-center gap-1 pointer-events-auto select-none [-webkit-app-region:no-drag]'
 
 /** Width reserved for N abutting titlebar tool buttons. */
 export function titlebarToolsWidthCss(toolCount: number): string {

@@ -22,7 +22,7 @@ const TAB =
 // Full height of the padded row: the strip's own vertical padding is the gap.
 // h-7 + self-center, not h-full: a stretched tab inside a padded rail sat flush
 // against the band's top edge and lost its top radii (0px above, 5px below).
-const TAB_HORIZONTAL = 'h-7 min-w-0 max-w-64 self-center text-xs font-medium'
+const TAB_HORIZONTAL = 'h-7 min-w-0 max-w-64 self-center rounded-md px-3 text-[12px] font-medium'
 
 // Room for the close chip at the right edge — a floor, so a short label pays
 // nothing and a long one ellipsizes before it reaches the chip.
@@ -35,11 +35,11 @@ const TAB_VERTICAL =
 // the card merges into (a preview rail merges it into the editor surface); the
 // default is the raised surface, so selection never reads as "same as the bar".
 const TAB_ACTIVE =
-  'text-(--ui-text-primary) [--tab-bg:var(--pane-tab-active-bg,var(--ui-bg-elevated))] bg-(--tab-bg) shadow-[var(--shadow-sm),0_0_0_1px_var(--ui-stroke-tertiary)]'
+  'text-(--ui-text-primary) [--tab-bg:var(--pane-tab-active-bg,var(--ui-bg-elevated))] bg-(--tab-bg) border border-(--ui-border-subtle) shadow-xs'
 
 // Idle: no surface at all — the bar reads as one piece until a tab is picked.
 const TAB_IDLE =
-  'text-(--ui-text-tertiary) [--tab-bg:var(--pane-tab-strip-bg,var(--ui-sidebar-surface-background))] hover:bg-(--ui-control-hover-background) hover:text-(--ui-text-secondary)'
+  'text-(--ui-text-secondary) [--tab-bg:transparent] hover:bg-black/[0.04] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]'
 
 
 // A tab riding a multi-tab selection: an accent wash over whatever surface the
@@ -281,7 +281,7 @@ export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(
         // band. Panel strips keep their own surface — a darkened header inside a
         // pane would read as a second toolbar.
         titlebar
-          ? 'h-full flex-1 bg-(--pane-tab-strip-bg,var(--ui-sidebar-surface-background)) px-1.5 py-0.75 shadow-[inset_0_-1px_0_var(--ui-stroke-quaternary)] [-webkit-app-region:drag]'
+          ? 'h-full flex-1 bg-transparent px-2 py-1 [-webkit-app-region:drag]'
           : 'h-7 px-1 py-0.5 [-webkit-app-region:no-drag]',
         segmented && 'items-center px-2',
         className
