@@ -4094,3 +4094,69 @@ img[src*='filler-bg'] {
 [data-slot='aui_assistant-message-content'] pre span[style*='background'] {
   background-color: transparent !important;
 }
+
+/* Two vertical planes, full height, no top stripe.
+   The window is the sidebar column and the canvas column; each runs from y=0
+   to the bottom edge, and the only seam is the sidebar's right border. */
+[data-hermes-theme='graphite'] {
+  --ui-bg-sidebar: #f3f3f4;
+  --ui-bg-primary: #f9f9fa;
+  --ui-sidebar-surface-background: #f3f3f4;
+}
+
+[data-hermes-theme='graphite'][data-hermes-mode='dark'] {
+  --ui-bg-sidebar: #161618;
+  --ui-bg-primary: #111113;
+  --ui-sidebar-surface-background: #161618;
+}
+
+[data-tree-group='grp-sessions'] {
+  background-color: var(--ui-bg-sidebar);
+  border-right: 1px solid rgb(0 0 0 / 0.06);
+}
+
+[data-hermes-mode='dark'] [data-tree-group='grp-sessions'] {
+  border-right-color: rgb(255 255 255 / 0.06);
+}
+
+[data-tree-group='grp-main'] {
+  background-color: var(--ui-bg-primary);
+}
+
+/* User prompts scroll in the document flow. Sticky made the bubble park over
+   the transcript and clip whatever scrolled beneath it. */
+[data-slot='aui_user-message-root'] {
+  position: static !important;
+  top: auto !important;
+}
+
+/* The canvas header is the canvas: same fill, one hairline across the full
+   column width. The tab rail is narrower than the column, so the rule is drawn
+   on the plane itself rather than on the rail. */
+[data-tree-group='grp-main'] {
+  position: relative;
+}
+
+[data-tree-group='grp-main']::before {
+  content: '';
+  position: absolute;
+  inset-inline: 0;
+  top: 35px;
+  height: 1px;
+  background: rgb(0 0 0 / 0.10);
+  pointer-events: none;
+  z-index: 20;
+}
+
+[data-hermes-mode='dark'] [data-tree-group='grp-main']::before {
+  background: rgb(255 255 255 / 0.06);
+}
+
+/* Section labels are structure, not emphasis: 55% ink, no accent, no caps. */
+[data-slot='sidebar-panel-label'] {
+  color: rgb(0 0 0 / 0.45);
+}
+
+[data-hermes-mode='dark'] [data-slot='sidebar-panel-label'] {
+  color: rgb(255 255 255 / 0.45);
+}

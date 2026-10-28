@@ -1252,23 +1252,11 @@ export function ContribWiring({ children }: { children: ReactNode }) {
             the clusters are `fixed`, so without this they'd float over the
             surface as orphaned buttons. */}
         {!isHudWindow() && !isBrowserWindow() && (
-          <>
-            {/* One continuous chrome surface. Without it the window band is
-                whatever happens to be underneath each cluster — a white corner
-                here, a grey box there — and the top of the app reads as four
-                mismatched islands. */}
-            <div
-              aria-hidden
-              className="pointer-events-none fixed inset-x-0 top-0 z-60 border-b border-(--ui-border-subtle) bg-(--ui-bg-chrome) [-webkit-app-region:drag]"
-              data-titlebar-band=""
-              style={{ height: 'var(--titlebar-height, 36px)' }}
-            />
-            <TitlebarControls
-              leftTools={leftTitlebarTools}
-              onOpenSettings={() => navigate(SETTINGS_ROUTE)}
-              tools={rightTitlebarTools}
-            />
-          </>
+          <TitlebarControls
+            leftTools={leftTitlebarTools}
+            onOpenSettings={() => navigate(SETTINGS_ROUTE)}
+            tools={rightTitlebarTools}
+          />
         )}
         {!isHudWindow() && customWindowControls && (
           <WslgWindowControls
