@@ -21,6 +21,10 @@ type IntroCopyRecord = IntroCopy & {
 export type IntroProps = {
   personality?: string
   seed?: number
+  /** Draw the starter-prompt slot under the subtitle (default). An empty chat
+   *  renders it under the composer instead, so the column reads
+   *  masthead → composer → starters. */
+  withStarters?: boolean
 }
 
 const NEUTRAL_PERSONALITIES = new Set(['', 'default', 'none', 'neutral'])
@@ -165,7 +169,7 @@ function resolveCopy(personality?: string, seed?: number): IntroCopy {
  *  order: starter prompts, first-run cards. Contents set their own `pointer-events-auto`. */
 export const CHAT_INTRO_AREA = 'chat.intro'
 
-export function Intro({ personality, seed }: IntroProps) {
+export function Intro({ personality, seed, withStarters = true }: IntroProps) {
   // One stable line per personality (audit M13); `seed` still lets a caller vary it.
   const mountSeed = 0
   const { t } = useI18n()
@@ -181,26 +185,20 @@ export function Intro({ personality, seed }: IntroProps) {
 
   return (
     <div
-      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 py-6 text-center text-muted-foreground sm:px-6 lg:px-8"
+      className="pointer-events-none flex w-full min-w-0 flex-col items-center justify-center px-0.5 text-center"
       data-slot="aui_intro"
     >
-      <div className="w-full min-w-0">
-        {/* A masthead, not a splash. The fitted lettering filled the whole
-            column, which reads as a hero banner; a fixed measure at ~2rem reads
-            like the top of a document, and leaves the composer as the loudest
-            thing on screen. */}
-        <p
-          aria-label={WORDMARK}
-          className="wordmark mx-auto mb-4 text-[clamp(1.5rem,2.6vw,2.125rem)]"
-          style={{ color: 'var(--ui-accent)' }}
-        >
-          {WORDMARK}
-        </p>
+      {/* The masthead is a title, not a splash: one line of display type over a
+          one-line promise, then straight into the composer. */}
+      <h1
+        aria-label={WORDMARK}
+        className="wordmark m-0 mb-1.5 text-[22px] font-semibold tracking-tight"
+        style={{ color: 'var(--ui-accent)' }}
+      >
+        {WORDMARK}
+      </h1>
 
-        <div aria-hidden className="mx-auto mb-4 h-px w-10 bg-(--ui-border-subtle)" />
-
-        <p className="m-0 text-center leading-normal tracking-tight">{body}</p>
-      </div>
+      <p className="m-0 max-w-[34rem] text-[14px] leading-normal text-(--ui-text-secondary)">{body}</p>
 
       {canConnectPortal && (
         <div className="pointer-events-auto mt-3 inline-flex items-center justify-center">
@@ -215,10 +213,15 @@ export function Intro({ personality, seed }: IntroProps) {
         </div>
       )}
 
-      {/* Holds the starter row open while plugins load, so the intro does not jump when they land. */}
-      <div className="min-h-9 w-full">
-        <Slot area={CHAT_INTRO_AREA} />
-      </div>
+      {/* Starter prompts normally hang under the intro. On an empty chat the
+          composer sits between the two, so that surface renders them under the
+          composer instead (`withStarters={false}`) and keeps one column:
+          masthead, composer, starters. */}
+      {withStarters && (
+        <div className="mt-3 min-h-9 w-full" data-slot="intro-starters">
+          <Slot area={CHAT_INTRO_AREA} />
+        </div>
+      )}
     </div>
   )
 }

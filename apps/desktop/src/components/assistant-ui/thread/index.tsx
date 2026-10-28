@@ -196,7 +196,10 @@ export const Thread = memo(function Thread({
   ) : null
 
   const emptyPlaceholder = emptyBody ? (
-    <div className="flex min-h-0 w-full flex-col items-center justify-center pt-[var(--composer-measured-height)]">
+    <div
+      className="flex min-h-0 w-full flex-col items-center justify-center pt-[var(--composer-measured-height)]"
+      data-slot="intro-frame"
+    >
       {emptyBody}
     </div>
   ) : undefined

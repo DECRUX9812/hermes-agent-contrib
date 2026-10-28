@@ -720,9 +720,13 @@ export function TreeGroup({
             />
           ) : sidebarGroup && headerVisible ? (
             <SidebarModePortal>
-              {/* Quiet rows, not a segmented pill: the modes read as sidebar
-                  sections, and each row is a full-width target. */}
-              <div className="space-y-0.5 px-2 pb-1" data-slot="sidebar-mode-list">
+              {/* A segmented track, not a list of rows: the modes are two
+                  states of one column, so they read as one control — 6px
+                  corners, a quiet track, and a raised active pill. */}
+              <div
+                className="grid h-7 grid-cols-2 gap-0.5 rounded-lg bg-black/[0.06] p-0.5 dark:bg-white/[0.06]"
+                data-slot="sidebar-mode-list"
+              >
                 {shown
                   .filter(paneId => paneChrome(paneFor(paneId))?.placement === 'left')
                   .map(paneId => {
@@ -730,17 +734,17 @@ export function TreeGroup({
 
                     return (
                       <button
+                        aria-pressed={isActive}
                         className={cn(
-                          'flex h-[30px] w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] transition-colors',
+                          'inline-flex h-6 min-w-0 items-center justify-center rounded-[6px] px-2 text-[12px] leading-none transition-colors',
                           isActive
-                            ? 'bg-black/[0.06] font-medium text-(--ui-text-primary) dark:bg-white/[0.08]'
-                            : 'text-(--ui-text-secondary) hover:bg-black/[0.04] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.05]'
+                            ? 'bg-white font-medium text-(--ui-text-primary) shadow-2xs dark:bg-zinc-800'
+                            : 'text-(--ui-text-secondary) hover:text-(--ui-text-primary)'
                         )}
                         key={paneId}
                         onClick={() => activateTreePane(node.id, paneId)}
                         type="button"
                       >
-                        <Codicon className="shrink-0" name={isActive ? 'circle-filled' : 'circle-outline'} size="0.625rem" />
                         <span className="min-w-0 truncate">{tabLabel(paneId)}</span>
                       </button>
                     )

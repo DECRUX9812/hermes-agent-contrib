@@ -494,11 +494,10 @@
     --dt-spacing-mul: 1;
 
     --radius: 0.75rem;
-    /* Effective value everywhere: the chat backdrop used to force 0.2 onto the
-       root element at runtime (an ungated leva slider default), so this 0.6
-       only ever applied to the windows that don't mount the backdrop. Pinned
-       to the value the app actually renders at. */
-    --radius-scalar: 0.2;
+    /* Modern control radii: rounded-md ≈ 6px, rounded-lg = 8px,
+       rounded-2xl = 16px. The previous 0.2 scalar rendered rounded-md at 2px,
+       which is why every control read as a sharp-cornered spreadsheet cell. */
+    --radius-scalar: 0.667;
 
     /* Space under last message vs overlay composer — driven by the measured composer DOCK height (see
        composer/index.tsx), which covers the micro-action strip, the status stack, the composer, and the
@@ -506,7 +505,8 @@
        This is the default; each chat surface re-declares the calc against its own measurement (see below). */
     --thread-last-message-clearance: calc(var(--composer-measured-height) + 2rem);
 
-    --composer-shell-pad-block-end: 0.625rem;
+    /* 16px of air under a docked composer (pb-4), not 10. */
+    --composer-shell-pad-block-end: 1rem;
     --message-text-indent: 0.75rem;
     --conversation-text-base-size: 0.8125rem;
     --conversation-tool-base-size: 0.6875rem;
@@ -855,8 +855,10 @@
    native Desktop keeps its compact rhythm on a coarse pointer too. */
 @media (hover: none), (pointer: coarse) {
   html[data-hermes-desktop-host='browser'] {
-    --composer-control-size: 2.75rem;
-    --composer-control-primary-size: 2.75rem;
+    /* 28/32px, not 44: the composer is a 56px bar, and a 44px circle inside it
+       reads as a button that overflows its own card. */
+    --composer-control-size: 1.75rem;
+    --composer-control-primary-size: 2rem;
     --composer-voice-menu-size: var(--composer-control-size);
   }
 
@@ -1996,10 +1998,9 @@ body.guest-pointer-lock :is(webview, iframe) {
   max-width: var(--composer-width);
 }
 
-[data-slot='aui_intro'] p:last-child {
+[data-slot='aui_intro'] p {
   max-width: 34rem;
   margin-inline: auto;
-  color: var(--ui-text-tertiary);
   font-size: 0.875rem;
   line-height: 1.45;
 }
@@ -2071,7 +2072,116 @@ body.guest-pointer-lock :is(webview, iframe) {
    that padding so the visible surface keeps its exact width/position. */
 [data-slot='composer-dock'] {
   width: calc(min(var(--composer-width), calc(100% - 2rem)) + 10px);
-  padding-bottom: var(--composer-shell-pad-block-end);
+}
+
+/* 16px of air under a docked composer (pb-4). A literal, not the token, and
+   one step more specific: the theme layer re-declares the dock's padding at
+   10px from a stylesheet it injects after this one. */
+[data-slot='composer-dock']:not([data-popped-out]) {
+  padding-bottom: 1rem;
+}
+
+/* ── Empty chat: one centred column ────────────────────────────────────────
+   Masthead, composer and starter prompts are ONE object, centred in the
+   canvas, the way a fresh chat is laid out in Claude/Cursor. Without this the
+   masthead floats in the middle of the surface while the composer sits in its
+   own dock at the very bottom of the window.
+
+   The three children already exist in the flow in the right order — the intro
+   (inside the thread), the dock, then the starter row — so the empty state
+   only has to stop the dock from being an absolute overlay and let the thread
+   shrink to its content. No measurements, no magic offsets. */
+/* The surface is already a column: centre its children and let the transcript
+   area shrink to the intro, so the dock lands directly under the masthead. */
+[data-chat-surface][data-empty-state] {
+  justify-content: center;
+}
+
+[data-empty-state] [data-slot='composer-bounds'] {
+  flex: 0 0 auto;
+  max-width: 100%;
+  overflow: visible;
+}
+
+[data-empty-state] [data-slot='thread'] {
+  flex: 0 0 auto;
+  height: auto;
+}
+
+[data-empty-state] [data-slot='aui_thread-viewport'] {
+  height: auto;
+  overflow: visible;
+}
+
+[data-empty-state] [data-slot='aui_thread-content'] {
+  height: auto;
+  min-height: 0;
+  padding-block: 0;
+}
+
+/* The intro already sits under the composer's width; the frame's top padding
+   exists to clear a docked composer, which is no longer below it. */
+[data-empty-state] [data-slot='intro-frame'] {
+  padding-top: 0;
+}
+
+[data-empty-state] [data-slot='composer-dock'] {
+  position: static;
+  inset: auto;
+  max-width: 100%;
+  margin-inline: auto;
+  padding-bottom: 0;
+  /* Tailwind v4's -translate-x-1/2 sets the `translate` property, not
+     `transform` — reset both or the dock keeps its half-width offset. */
+  transform: none;
+  translate: none;
+}
+
+[data-empty-state] [data-slot='intro-starters'] {
+  width: min(var(--composer-width), calc(100% - 2rem));
+  margin-top: 0.75rem;
+}
+
+/* Starter prompts: quiet pills under the composer, not naked text floating in
+   the void. The row itself is contributed (intro_starters); this owns only how
+   the empty state presents it, so the plugin keeps its markup and its order. */
+[data-slot='intro-starters'] [data-slot='intro_starters'] {
+  margin-top: 0;
+  gap: 0.375rem;
+}
+
+[data-slot='intro-starters'] [data-slot='intro_starters'] > :is(button, a) {
+  height: 1.75rem;
+  padding-inline: 0.75rem;
+  border: 1px solid rgb(0 0 0 / 0.07);
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.6);
+  color: var(--ui-text-secondary);
+  font-size: 12px;
+  gap: 0.375rem;
+  transition: background-color 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+}
+
+[data-slot='intro-starters'] [data-slot='intro_starters'] > :is(button, a):hover {
+  border-color: rgb(0 0 0 / 0.12);
+  background: #fff;
+  color: var(--ui-text-primary);
+}
+
+.dark [data-slot='intro-starters'] [data-slot='intro_starters'] > :is(button, a) {
+  border-color: rgb(255 255 255 / 0.09);
+  background: rgb(255 255 255 / 0.04);
+}
+
+.dark [data-slot='intro-starters'] [data-slot='intro_starters'] > :is(button, a):hover {
+  border-color: rgb(255 255 255 / 0.16);
+  background: rgb(255 255 255 / 0.08);
+}
+
+/* An empty chat's composer is the centre of the frame: 16px corners, a hairline
+   ring, and a soft lift rather than a recessed grey tray. */
+[data-empty-state] [data-slot='composer-surface'] {
+  border-radius: 1rem;
 }
 
 [data-slot='composer-root'] {

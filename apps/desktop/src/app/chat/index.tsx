@@ -10,6 +10,7 @@ import { sessionShouldHaveTranscript } from '@/app/session/hooks/use-session-act
 import { Thread } from '@/components/assistant-ui/thread'
 import { TranscriptWindowProvider } from '@/components/assistant-ui/thread/transcript-window'
 import { Backdrop } from '@/components/Backdrop'
+import { CHAT_INTRO_AREA } from '@/components/chat/intro'
 import { COMPOSER_HEART_CONFIG, HeartField } from '@/components/chat/vibe-hearts'
 import { useSetupChatView } from '@/components/onboarding/first-run/assembly'
 import { $introHoldsThread } from '@/components/onboarding/first-run/intro'
@@ -18,6 +19,7 @@ import { usePaneGroup, usePaneVisible } from '@/components/pane-shell/pane-visib
 import { $hoveredTreeGroup, $sessionTileDragging, $sessionTileEdgeHover } from '@/components/pane-shell/tree/store'
 import { PromptOverlays } from '@/components/prompt-overlays'
 import { TitleMenuTrigger } from '@/components/ui/title-menu-trigger'
+import { Slot } from '@/contrib/react/slot'
 import { type HermesGateway, type ResolvedOwner } from '@/hermes'
 import { useI18n } from '@/i18n'
 import type { ChatMessage } from '@/lib/chat-messages'
@@ -753,6 +755,7 @@ const ChatViewContent = memo(function ChatViewContent({
       data-chat-unfocused={surfaceFocused || surfaceHovered ? undefined : ''}
       data-composer-surface-id={composerSurfaceId}
       data-composer-target={composerScope.target}
+      data-empty-state={showIntro ? '' : undefined}
       data-guide-arrived={isPrimary && guideStarted ? '' : undefined}
       data-session-anchor={sessionAnchor}
       data-setup-chat={setupChat ? '' : undefined}
@@ -793,7 +796,7 @@ const ChatViewContent = memo(function ChatViewContent({
             clampToComposer={showChatBar}
             cwd={currentCwd}
             gateway={gateway}
-            intro={showIntro ? { personality: introPersonality, seed: introSeed } : undefined}
+            intro={showIntro ? { personality: introPersonality, seed: introSeed, withStarters: false } : undefined}
             loading={threadLoading}
             onBranchInNewChat={onBranchInNewChat}
             onCancel={haltRun}
@@ -863,6 +866,14 @@ const ChatViewContent = memo(function ChatViewContent({
               />
             </Suspense>
           </FloatingComposerSurface>
+        )}
+        {/* Empty chat: the starter prompts hang under the composer, so the
+            column reads masthead -> composer -> starters as ONE centred unit
+            instead of a headline stranded in a void. */}
+        {showIntro && isPrimary && (
+          <div className="mx-auto w-full shrink-0 px-6 text-center" data-slot="intro-starters">
+            <Slot area={CHAT_INTRO_AREA} />
+          </div>
         )}
       </ChatRuntimeBoundary>
     </div>

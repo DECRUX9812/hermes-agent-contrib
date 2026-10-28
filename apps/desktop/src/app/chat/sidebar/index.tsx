@@ -6,9 +6,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useNavigate } from 'react-router'
 
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
-import { SETTINGS_ROUTE } from '@/app/routes'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
-import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
@@ -1593,10 +1591,14 @@ export function ChatSidebar({
       data-tour="sessions-sidebar"
     >
       <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
-        {/* Top row: the window toggle is the fixed cluster at the window's
-            corner, so this row reserves space for it and keeps the quiet
-            actions on the right. */}
-        <div className="flex h-11 shrink-0 items-center justify-end gap-0.5 px-2.5 pl-10" data-slot="sidebar-header">
+        {/* One clean row: the Chats|Bots switcher on the left, the quiet
+            actions on the right. The mode switcher used to sit in its own row
+            below this one, which left an empty band above it and a 35px gap
+            before the first nav row. */}
+        <div className="flex h-11 shrink-0 items-center justify-between gap-2 px-1" data-slot="sidebar-header">
+          {/* The zone portals its mode switcher in here: it owns the pane list
+              and the activation, this column owns the geometry. */}
+          <div className="min-w-0 shrink-0" data-slot="sidebar-mode-slot" />
           <button
             aria-label={s.searchAria}
             className="inline-flex size-6 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
@@ -1623,10 +1625,9 @@ export function ChatSidebar({
           </button>
         </div>
 
-        {/* The zone portals its mode switcher in here: it owns the pane list
-            and the activation, this column owns the geometry. */}
-        <div data-slot="sidebar-mode-slot" />
-        <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--sidebar-header-height,var(--titlebar-height))+0.375rem)]">
+        {/* The zone portals its mode switcher into the header row above; this
+            group starts right under it, 8px of air and nothing else. */}
+        <SidebarGroup className="shrink-0 p-0 pb-2 pt-2">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
               {navItems.map(item => {
@@ -1808,7 +1809,10 @@ export function ChatSidebar({
               />
             )}
 
-            {!trimmedQuery && (
+            {/* Pinned is a real section only when something is pinned. An
+                empty one was 50px of "Shift-click a chat to pin" instructions
+                sitting above a list that already has its own empty state. */}
+            {!trimmedQuery && pinnedSessions.length > 0 && (
               <SidebarSessionsSection
                 activeSessionId={activeSidebarSessionId}
                 // Inbox style rides whichever view is active — pinned rows
@@ -2108,40 +2112,20 @@ export function ChatSidebar({
 
         {!showSessionSections && <SidebarBlankState onNewProject={openProjectCreate} />}
 
-        {/* Off, the statusbar's profile dropdown (beside the gateway switcher)
-            takes over — the rail is a duplicate door for bot-only setups. */}
-        {profileRailVisible && (
-          <div className="shrink-0 px-0.5 pb-1 pt-0.5">
-            <ProfileRail />
-          </div>
-        )}
-        {/* Quiet footer: the workspace you are in, and the two doors that used
-            to sit in the window's top-right corner. */}
+        {/* One quiet footer row. The "All profiles  ⚙  ⊞" bar that used to
+            stack on top of this one is gone: Settings and Layout live in the
+            window's top-right titlebar, so each renders exactly once. */}
         <div
-          className="mt-auto flex h-10 shrink-0 items-center justify-between gap-2 border-t border-black/[0.05] px-2.5 dark:border-white/[0.05]"
+          className="mt-auto flex h-9 shrink-0 items-center justify-between gap-2 border-t border-black/[0.06] px-1.5 text-[12px] dark:border-white/[0.06]"
           data-slot="sidebar-footer"
         >
-          <span className="min-w-0 truncate text-[11px] font-medium text-(--ui-text-muted)">
-            {showAllProfiles ? 'All profiles' : (messagingProfile?.display_name ?? messagingProfile?.name ?? profileScope)}
-          </span>
-          <div className="flex shrink-0 items-center gap-0.5">
-            <button
-              aria-label="Settings"
-              className="inline-flex size-7 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
-              onClick={() => navigate(SETTINGS_ROUTE)}
-              type="button"
-            >
-              <Codicon name="settings-gear" size="0.875rem" />
-            </button>
-            <button
-              aria-label="Layout"
-              className="inline-flex size-7 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
-              onClick={() => toggleLayoutEditMode()}
-              type="button"
-            >
-              <Codicon name="layout" size="0.875rem" />
-            </button>
-          </div>
+          {profileRailVisible ? (
+            <ProfileRail />
+          ) : (
+            <span className="min-w-0 truncate px-1 text-[11px] font-medium text-(--ui-text-muted)">
+              {showAllProfiles ? 'All profiles' : (messagingProfile ?? profileScope)}
+            </span>
+          )}
         </div>
       </SidebarContent>
       <ProjectDialog />

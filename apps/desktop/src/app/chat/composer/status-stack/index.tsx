@@ -8,7 +8,6 @@ import { useSessionView } from '@/app/chat/session-view'
 import { AGENTS_ROUTE } from '@/app/routes'
 import type { SubmitTextOptions } from '@/app/session/hooks/use-prompt-actions/utils'
 import { BillingBanner } from '@/components/billing-banner'
-import { composerDockCard } from '@/components/chat/composer-dock'
 import { StatusSection } from '@/components/chat/status-section'
 import { FreeTierNoticeStrip, useFreeTierNoticeOwner } from '@/components/free-tier/notice-strip'
 import { usePaneVisible } from '@/components/pane-shell/pane-visibility'
@@ -365,19 +364,16 @@ export function ComposerStatusStack({ onSubmit, queue, sessionId }: ComposerStat
       data-slot="composer-status-stack"
       onPointerDownCapture={() => blurComposerInput()}
     >
-      {/* The card paints the shared --composer-fill (rest / scrolled / focused
-          all match the composer surface by construction); on scroll we only
-          ghost the CONTENT — element opacity on the card would kill the blur.
-          Rounded top, square bottom; the bottom border is TRANSPARENT — the
-          composer surface's visible top border (which sits at a higher z) is the
-          single shared seam, so the two read as one fused capsule. */}
+      {/* No slab: this stack used to paint --composer-fill in a rounded-top
+          card behind the status rows, which read as a grey trench wedged
+          between the transcript and the composer. The rows are the content;
+          the surface behind them is the canvas. */}
       {sections.length > 0 && (
         <div
           className={cn(
-            composerDockCard('top'),
             // Inset (mx-2) so the stack reads slightly narrower than the composer
             // surface below it — the original look.
-            'mx-2 flex min-h-0 max-h-[inherit] shrink flex-col overflow-hidden rounded-b-none border-b border-b-transparent'
+            'mx-2 flex min-h-0 max-h-[inherit] shrink flex-col overflow-hidden'
           )}
         >
           <div className="min-h-0 overflow-y-auto overscroll-y-contain" data-slot="status-stack-scroll">

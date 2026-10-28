@@ -31,8 +31,7 @@ import { normalizeProfileKey } from '@/store/profile'
 import { $projects } from '@/store/projects'
 import { $pullRequestsByBranch, sessionPrKey } from '@/store/pull-requests'
 import { sessionPinId } from '@/store/session'
-import { $sessionDotStateById, hasLiveTurn, showsRunningArc } from '@/store/session-dot-state'
-import { $sessionListDensity } from '@/store/session-list-density'
+import { $sessionDotStateById, hasLiveTurn } from '@/store/session-dot-state'
 import { $openStoredSessionIds } from '@/store/session-states'
 import { sessionCostUsd } from '@/store/sidebar-archive'
 import { $todoProgressBySession } from '@/store/todos'
@@ -151,7 +150,6 @@ function SidebarSessionRowImpl({
   const r = t.sidebar.row
   const { cancelPrewarm, notePointerMove, startPrewarm } = useProfilePrewarm(session.profile)
   const title = sessionTitle(session)
-  const density = useStore($sessionListDensity)
   const fmt = t.sidebar
 
   const details = sessionRowDetails(session, {
@@ -286,6 +284,12 @@ function SidebarSessionRowImpl({
   // this row: only rows whose own fraction changes repaint on todo events.
   const todoProgress = useStoreSelector($todoProgressBySession, progress => (card ? progress[session.id] : undefined))
 
+  // Quiet lead: an inline row paints no dot while the session is idle. Idle is
+  // the overwhelmingly common state, and one mark per row turned the left
+  // margin into a column of confetti; the dot keeps its job as a STATUS light
+  // (running, blocked, unread, background), which is the only time it speaks.
+  const showLeadDot = card || (dotState !== 'idle' && dotState !== 'draft')
+
   // An archived session has no live status to paint, so the archive glyph takes
   // the lead slot the dot would occupy instead of adding a column of its own.
   const lead = session.archived ? (
@@ -374,10 +378,10 @@ function SidebarSessionRowImpl({
         className={cn(
           'group row-hover relative',
           card && SIDEBAR_ROW_CARD_MIN_H,
-          // Density-aware minimum heights for the inline (non-card) row: the
-          // metadata / preview lines below need the extra rows (#68119).
-          !card && density !== 'compact' && 'min-h-[2.75rem]',
-          !card && density === 'detailed' && 'min-h-[3.875rem]',
+          // The inline row is one line: title, trailing figures, done. The
+          // metadata/preview lines it used to stack made every chat two rows
+          // tall in a list read at a glance.
+          !card && 'h-[1.875rem]',
           isSelected && 'bg-(--ui-row-active-background)',
           // Open in another pane: the SAME band, just weaker. Its own mixed
           // token rather than row opacity — dimming the whole row would take
@@ -430,7 +434,6 @@ function SidebarSessionRowImpl({
         style={style}
         {...rest}
       >
-        {showsRunningArc(dotState) && <span aria-hidden="true" className="arc-border arc-row" />}
         {/* #38072 finding 3: the row's body is a DIV, not a button — the
             reorder grabber (dnd-kit role="button" + tabIndex, kept for
             keyboard reorder, #83617) and the ⋯ trigger must be SIBLINGS of
@@ -500,18 +503,22 @@ function SidebarSessionRowImpl({
           {(() => {
             const leadNode = reorderable ? (
               <SidebarRowGrab ariaLabel={handleLabel} dragging={dragging} dragHandleProps={dragHandleProps}>
-                {lead ?? (
-                  <SessionStatusDot
-                    branchStem={branchStem}
-                    className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
-                    session={session}
-                    storedSessionId={session.id}
-                  />
-                )}
+                {lead ??
+                  (showLeadDot ? (
+                    <SessionStatusDot
+                      branchStem={branchStem}
+                      className="transition-opacity group-hover/handle:opacity-0 group-focus-within/handle:opacity-0"
+                      session={session}
+                      storedSessionId={session.id}
+                    />
+                  ) : null)}
               </SidebarRowGrab>
             ) : (
               <SidebarRowLead className="overflow-hidden">
-                {lead ?? <SessionStatusDot branchStem={branchStem} session={session} storedSessionId={session.id} />}
+                {lead ??
+                  (showLeadDot ? (
+                    <SessionStatusDot branchStem={branchStem} session={session} storedSessionId={session.id} />
+                  ) : null)}
               </SidebarRowLead>
             )
 
@@ -570,29 +577,6 @@ function SidebarSessionRowImpl({
                         </SidebarRowLabel>
                       </OverflowTip>
                     </RowButton>
-                    {/* Session-list density (#68119): comfortable adds one
-                        deterministic metadata line; detailed adds the initial
-                        request preview. Compact keeps today's one-line row. */}
-                    {density !== 'compact' && details.metadata && (
-                      <span
-                        className={cn(
-                          'mt-0.5 block truncate text-[0.625rem] text-(--ui-text-tertiary)',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                      >
-                        {details.metadata}
-                      </span>
-                    )}
-                    {density === 'detailed' && details.preview && (
-                      <span
-                        className={cn(
-                          'mt-1 block truncate text-[0.625rem] text-(--ui-text-quaternary)',
-                          SIDEBAR_TRUNCATED_LEADING
-                        )}
-                      >
-                        {details.preview}
-                      </span>
-                    )}
                   </span>
                   <SessionRowSlot area={SESSION_ROW_AREAS.trailing} sessionId={sessionPinId(session)} />
                 </>

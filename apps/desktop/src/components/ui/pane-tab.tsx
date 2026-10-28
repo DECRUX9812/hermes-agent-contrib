@@ -22,7 +22,7 @@ const TAB =
 // Full height of the padded row: the strip's own vertical padding is the gap.
 // h-7 + self-center, not h-full: a stretched tab inside a padded rail sat flush
 // against the band's top edge and lost its top radii (0px above, 5px below).
-const TAB_HORIZONTAL = 'h-6.5 min-w-0 max-w-56 self-center rounded-md px-2.5 text-[12px] font-medium'
+const TAB_HORIZONTAL = 'h-7 min-w-0 max-w-56 self-center rounded-md px-2.5 text-[12px] font-medium'
 
 // Room for the close chip at the right edge — a floor, so a short label pays
 // nothing and a long one ellipsizes before it reaches the chip.
