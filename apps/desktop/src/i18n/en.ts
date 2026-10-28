@@ -3185,7 +3185,7 @@ export const en: Translations = {
     noMatch: query => `No sessions match “${query}”.`,
     results: 'Results',
     pinned: 'Pinned',
-    sessions: 'Sessions',
+    sessions: 'Chats',
     terminal: 'Terminal',
     files: 'Files',
     review: 'Review',
