@@ -12,7 +12,11 @@ export function RemoteDisplayBanner() {
     void window.hermesDesktop?.getRemoteDisplayReason?.().then(reason => {
       if (reason) {
         notify({
-          durationMs: 0,
+          // Ten seconds, not forever: the fact that this host is software
+          // rendering does not change while the app is open, so a permanent
+          // floating card over the composer is a standing artifact rather than
+          // a notice. Long enough to read, gone before it becomes furniture.
+          durationMs: 10_000,
           kind: 'info',
           message: translateNow('remoteDisplayBanner.message', reason),
           placement: 'default'

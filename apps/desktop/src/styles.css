@@ -2009,11 +2009,14 @@ body.guest-pointer-lock :is(webview, iframe) {
    something a class-merge or a missed scan can quietly drop, leaving the
    wordmark rendered in body text. */
 .wordmark {
-  font-family: 'Collapse', var(--font-sans);
-  font-weight: 700;
-  line-height: 0.9;
+  /* The oversized lettering is the one moment the app speaks in its own voice,
+     so it is set tight and quiet rather than decorative: a stencil face at
+     wide tracking reads as costume jewellery on a tool you sit in all day. */
+  font-family: var(--font-sans);
+  font-weight: 600;
+  line-height: 1;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: -0.02em;
 }
 
 .fit-text > [aria-hidden] {
