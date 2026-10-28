@@ -21,6 +21,7 @@ from __future__ import annotations
 import os
 import shutil
 import stat
+import sys
 import tempfile
 from pathlib import Path
 from typing import Any, Optional
@@ -101,6 +102,26 @@ def _source(identifier: str, catalog_name: Optional[str]) -> tuple[str, Optional
     from hermes_cli.plugins_cmd_catalog import raise_if_removed
     raise_if_removed(resolved, git_url, *((catalog_name,) if catalog_name else ()))
     return git_url, subdir, resolved, revision
+
+
+def _rmtree(path: Path) -> None:
+    """``shutil.rmtree`` that survives Windows' read-only bits.
+
+    A git clone writes ``.git/objects`` read-only, and ``rmtree`` raises ``PermissionError`` on those
+    on Windows — so a cloned plugin would install and then refuse to be removed. Retry each failing
+    entry once with the write bit set.
+    """
+    def _retry(func, target, _exc):  # onerror/onexc share this shape
+        try:
+            os.chmod(target, stat.S_IWRITE | stat.S_IREAD)
+            func(target)
+        except OSError:
+            pass
+
+    if sys.version_info >= (3, 12):
+        shutil.rmtree(path, onexc=_retry)
+    else:
+        shutil.rmtree(path, onerror=_retry)  # deprecated, but the only spelling before 3.12
 
 
 def _regular_entry(folder: Path) -> bool:
@@ -228,7 +249,7 @@ def remove_desktop_plugin(name: str, *, force: bool = False) -> dict[str, Any]:
                 f"'{folder}' is the desktop half of an agent plugin — uninstall that plugin instead."
             )
         try:
-            shutil.rmtree(target)
+            _rmtree(target)
         except OSError as exc:
             return _failure(f"Could not remove the desktop plugin: {exc}")
 
