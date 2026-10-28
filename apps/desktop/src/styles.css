@@ -2178,10 +2178,23 @@ body.guest-pointer-lock :is(webview, iframe) {
   background: rgb(255 255 255 / 0.08);
 }
 
-/* An empty chat's composer is the centre of the frame: 16px corners, a hairline
-   ring, and a soft lift rather than a recessed grey tray. */
+/* An empty chat's composer is the centre of the frame: 16px corners, a neutral
+   hairline, and a soft lift rather than a recessed grey tray. */
 [data-empty-state] [data-slot='composer-surface'] {
+  border-color: rgb(0 0 0 / 0.1);
   border-radius: 1rem;
+}
+
+.dark [data-empty-state] [data-slot='composer-surface'] {
+  border-color: rgb(255 255 255 / 0.1);
+}
+
+/* The dock's top fade exists so a transcript can dissolve into a composer that
+   covers it. In an empty chat there is nothing above the composer to fade, so
+   all it painted was a faint grey shelf hanging over the card. */
+[data-empty-state] [data-slot='composer-dock']::before {
+  background: none;
+  content: none;
 }
 
 [data-slot='composer-root'] {
