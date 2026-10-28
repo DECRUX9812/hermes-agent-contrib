@@ -282,13 +282,18 @@ async def desktop_plugins_root():
 
 
 @router.get("/api/desktop-plugins/list")
-async def desktop_plugins_list(name: Optional[str] = None):
+async def desktop_plugins_list(name: Optional[str] = None, path: Optional[str] = None):
     """Entries directly under the root, or of one plugin folder when ``name`` is given.
 
     ``name`` omitted -> the root listing (``scanDiskPlugins``' first readDir).
     ``name`` given   -> that folder's entries (``resolveDiskPluginEntry``' walk,
                        which also looks for the ``.hermes-package.json`` marker).
     """
+    # The newer bridge (`browser-desktop-bridge.ts`) asks by absolute path; the
+    # install() path asks by folder name. One route, two shapes.
+    if path is not None:
+        return await asyncio.to_thread(_path_list, path)
+
     if name is None:
         root = _desktop_plugins_root()
 
@@ -314,3 +319,87 @@ async def desktop_plugins_source(name: str, file: str = ENTRY_FILE):
     text, size = await asyncio.to_thread(_read_entry_source, target)
 
     return {"name": target.name, "path": str(target), "byteSize": size, "text": text}
+
+
+# ---------------------------------------------------------------------------
+# Path-based door, for the newer bridge composition
+# (`apps/desktop/src/lib/browser-desktop-bridge.ts` -> `createBrowserDesktopPluginsBridge`).
+# It hands over an absolute path and expects `{entries}` / `{text, byteSize}` back, so these
+# helpers speak that shape while enforcing the same containment as the name-based routes
+# above: the path must sit at most two segments under the root, and a linked folder may be
+# followed but never a linked entry file.
+# ---------------------------------------------------------------------------
+
+_PATH_READABLE_FILES = frozenset({"plugin.js", ".hermes-package.json"})
+_PATH_SOURCE_MAX_BYTES = 16 * 1024 * 1024
+_PATH_OPEN_FLAGS = (
+    os.O_RDONLY
+    | getattr(os, "O_NOFOLLOW", 0)
+    | getattr(os, "O_NONBLOCK", 0)
+    | getattr(os, "O_BINARY", 0)
+)
+
+
+def _path_plugins_root() -> Path:
+    root = _desktop_plugins_root()
+    root.mkdir(parents=True, exist_ok=True)
+    return root.resolve()
+
+
+def _inside_root(raw: str) -> tuple[Path, tuple[str, ...]]:
+    root = _path_plugins_root()
+    try:
+        parts = Path(raw).relative_to(root).parts
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Not a desktop plugin path") from None
+    if len(parts) > 2 or ".." in parts:
+        raise HTTPException(status_code=404, detail="Not a desktop plugin path")
+    return root.joinpath(*parts), parts
+
+
+def _path_list(raw: str) -> dict:
+    target, parts = _inside_root(raw)
+    if len(parts) > 1 or not target.is_dir():
+        raise HTTPException(status_code=404, detail="Not a desktop plugin folder")
+    entries = [
+        {"name": child.name, "path": str(target / child.name), "isDirectory": child.is_dir()}
+        for child in sorted(target.iterdir(), key=lambda child: child.name)
+    ]
+    return {"entries": entries}
+
+
+def _path_read(raw: str) -> dict:
+    from hermes_cli.web_routers.files import _is_sensitive_path
+
+    target, parts = _inside_root(raw)
+    not_found = HTTPException(status_code=404, detail="Not a desktop plugin file")
+    if len(parts) != 2 or parts[1] not in _PATH_READABLE_FILES:
+        raise not_found
+    try:
+        entry = target.parent.resolve(strict=True) / parts[1]
+        if _is_sensitive_path(entry) or not stat.S_ISREG(os.lstat(entry).st_mode):
+            raise not_found
+        fd = os.open(entry, _PATH_OPEN_FLAGS)
+    except OSError:
+        raise not_found from None
+    with os.fdopen(fd, "rb") as handle:
+        st = os.fstat(handle.fileno())
+        try:
+            here = os.lstat(entry)
+            unchanged = entry.resolve(strict=True) == entry
+        except OSError:
+            raise not_found from None
+        if not (unchanged and stat.S_ISREG(st.st_mode) and (st.st_dev, st.st_ino) == (here.st_dev, here.st_ino)):
+            raise not_found
+        if st.st_size > _PATH_SOURCE_MAX_BYTES:
+            raise HTTPException(status_code=413, detail="Plugin source exceeds 16 MiB")
+        data = handle.read(_PATH_SOURCE_MAX_BYTES + 1)
+    if len(data) > _PATH_SOURCE_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Plugin source exceeds 16 MiB")
+    text = data.decode("utf-8-sig", errors="replace")
+    return {"byteSize": st.st_size, "path": str(target), "text": text, "truncated": False}
+
+
+@router.get("/api/desktop-plugins/read")
+async def read_desktop_plugin_file(path: str) -> dict:
+    return await asyncio.to_thread(_path_read, path)
