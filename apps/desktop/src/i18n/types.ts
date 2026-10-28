@@ -3275,6 +3275,8 @@ catalog: CatalogTranslations
     versionDetailsTitle: string
     versionDetailsBody: string
     versionDetailsVersion: string
+    versionDetailsClient: string
+    versionDetailsBackend: string
     versionDetailsCommit: string
     versionDetailsBuildOrigin: string
     versionDetailsDistribution: string
