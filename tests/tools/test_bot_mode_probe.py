@@ -176,6 +176,42 @@ def test_fingerprint_changes_on_each_capability_axis(tmp_path):
     assert bot_mode_probe.capability_fingerprint(home) != after_soul
 
 
+def test_protocol_force_refresh_rebuilds_the_live_teammate_roster(tmp_path):
+    home = tmp_path / ".hermes"
+    home.mkdir()
+    _make_bot_profile(home, "researcher", managed=True)
+
+    first = bot_mode_probe.get_bot_mode_protocol_section(home)
+    assert "@researcher" in first
+    assert "@coder" not in first
+
+    _make_bot_profile(home, "coder", managed=True)
+    # Ordinary reads remain byte-stable for the prompt cache.
+    assert bot_mode_probe.get_bot_mode_protocol_section(home) == first
+
+    refreshed = bot_mode_probe.get_bot_mode_protocol_section(home, force_refresh=True)
+    assert "@researcher" in refreshed
+    assert "@coder" in refreshed
+
+
+def test_protocol_keeps_roster_and_receive_rules_without_duplicating_the_tool_schema(tmp_path):
+    from tools.bot_mode_dm import message_agent_tool_schema
+
+    home = tmp_path / ".hermes"
+    home.mkdir()
+    _make_bot_profile(home, "researcher", managed=True)
+
+    section = bot_mode_probe.get_bot_mode_protocol_section(home)
+    tool_description = message_agent_tool_schema()["function"]["description"]
+
+    assert "@researcher" in section
+    assert 'When YOU receive a "Message from' in section
+    assert "FIRE-AND-FORGET" in tool_description
+    assert "COMPOSE the message yourself" in tool_description
+    assert "FIRE-AND-FORGET" not in section
+    assert "Never paste the user's words verbatim" not in section
+
+
 def test_stored_prompt_staleness(tmp_path):
     home = tmp_path / ".hermes"
     home.mkdir()

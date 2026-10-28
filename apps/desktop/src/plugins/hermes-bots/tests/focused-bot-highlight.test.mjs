@@ -61,14 +61,13 @@ test('BotRow keys the highlight off the focused profile, not the socket home', (
   assert.match(row, /const isActive = botRowOwnsWorkspace\([\s\S]*?focusedOwner,[\s\S]*?selectedRosterKey/)
 })
 
-test('BotRow keeps turn-busy (work mood) a socket fact', () => {
+test('BotRow keeps turn-busy tied to the canonical session, not socket or focus state', () => {
   const rowStart = source.indexOf('function BotRow(')
   const row = source.slice(rowStart, rowStart + 5000)
 
-  // Only the gateway-home profile can actually be mid-turn: the mood must NOT
-  // switch to the focus-keyed identity.
-  assert.match(row, /const isGatewayHome = !bot\.remoteSource && bot\.name === activeProfile/)
-  assert.match(row, /const botMood = workerActive \|\| \(isGatewayHome && gatewayState === 'busy'\) \? 'work' : 'idle'/)
+  assert.match(row, /const turnBusy = botSessionBusy\(bot, busyBySession\)/)
+  assert.match(row, /const botMood = turnBusy \|\| workerActive \? 'work' : 'idle'/)
+  assert.doesNotMatch(row, /gatewayState === 'busy'/)
 })
 
 test('RoutinesPane scopes the Cronjobs tile to the focused chat owner', () => {

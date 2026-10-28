@@ -66,6 +66,7 @@ import {
   setActiveProfile,
   setShowAllProfiles
 } from '@/store/profile'
+import { $awaitingInputSessionIds } from '@/store/prompts'
 import {
   $activeSessionId,
   $connection,
@@ -511,6 +512,9 @@ export const host = {
     activeSessionId: readonlyAtom<null | string>($activeSessionId),
     /** True from send until the first assistant payload on the focused chat. */
     awaitingResponse: readonlyAtom<boolean>($focusedAwaitingResponse),
+    /** Runtime session ids blocked on clarification, approval, sudo, or a
+     * secret prompt. Contains ids only — prompt content never crosses the SDK. */
+    awaitingInputSessionIds: readonlyAtom<string[]>($awaitingInputSessionIds),
     /**
      * True while the focused chat is working after a send. Covers the wait
      * for the first token and the stream that follows. Follows tile focus —
