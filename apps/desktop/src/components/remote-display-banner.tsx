@@ -19,7 +19,10 @@ export function RemoteDisplayBanner() {
           durationMs: 10_000,
           kind: 'info',
           message: translateNow('remoteDisplayBanner.message', reason),
-          placement: 'default'
+          // Bottom-right, not the default centre column: the default placement
+          // lands on top of the composer's own controls, which reads as a
+          // z-index bug rather than a notice.
+          placement: 'bottom-right'
         })
       }
     })
