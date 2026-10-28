@@ -58,10 +58,10 @@ def _derived_version(
     return base_version
 
 
-def _run_git(repo_dir: Path, *args: str) -> str | None:
+def _run_git(repo_dir: Path, *args: str, timeout: float = 3) -> str | None:
     try:
         result = subprocess.run(
-            ["git", *args], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=3, cwd=str(repo_dir),
+            ["git", *args], capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=timeout, cwd=str(repo_dir),
             check=False,
         )
     except (OSError, subprocess.SubprocessError):
@@ -237,7 +237,12 @@ def _git_version_info(repo_dir: Path, *, include_untracked: bool = False) -> Ver
     except (OSError, subprocess.SubprocessError):
         dirty = False
 
-    tags = _run_git(repo_dir, "tag", "--merged", "HEAD", "--list", "v[0-9]*")
+    # `tag --merged` walks the whole tag history: ~2s on a large checkout, and
+    # past the 3s default whenever the boot is competing for CPU. A timeout here
+    # leaves `releases` empty, which falls through to the CalVer release and
+    # reports a much older version — a gateway booted under load called a 0.22.5
+    # tree 0.21.5, and every plugin gated on `requires_hermes` refused to load.
+    tags = _run_git(repo_dir, "tag", "--merged", "HEAD", "--list", "v[0-9]*", timeout=30)
     releases = [
         tag[1:]
         for tag in (tags or "").splitlines()
