@@ -292,7 +292,10 @@ export const PaneTabStrip = React.forwardRef<HTMLDivElement, PaneTabStripProps>(
       <div
         className={cn(
           'flex min-w-0 flex-1 overflow-x-auto overflow-y-hidden overscroll-x-contain [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
-          segmented && 'items-center gap-0.5 rounded-(--chrome-radius-tab) bg-(--ui-bg-secondary) p-0.5'
+          // Neutral ink wash, not `--ui-bg-secondary`: that token carries the accent
+        // tint, which reads as a blue capsule dropped into a warm sidebar.
+        segmented &&
+          'items-center gap-0.5 rounded-(--chrome-radius-tab) bg-[color-mix(in_srgb,var(--ui-text-primary)_6%,transparent)] p-0.5'
         )}
         ref={listRef}
         role="tablist"

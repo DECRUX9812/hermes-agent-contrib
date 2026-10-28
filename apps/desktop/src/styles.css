@@ -1808,14 +1808,6 @@ body.guest-pointer-lock :is(webview, iframe) {
   --pane-tab-strip-bg: color-mix(in srgb, var(--ui-text-primary) 4%, var(--ui-sidebar-surface-background));
 }
 
-/* Window-strip tabs share the row: equal widths up to a readable ceiling, so a
-   handful of open sessions looks deliberate instead of ragged. Panel strips
-   keep their content width — this only applies to a titlebar strip. */
-[data-titlebar] > [role='tablist'] > [data-slot='pane-tab'] {
-  flex: 1 1 0%;
-  max-width: 18rem;
-}
-
 /* The tab's close chip is a real flex child (see PaneTab), so the label
    ellipsizes before it and no hover mask is needed. */
 
