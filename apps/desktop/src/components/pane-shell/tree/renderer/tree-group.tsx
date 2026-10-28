@@ -21,6 +21,7 @@ import {
   useRef,
   useState
 } from 'react'
+import { createPortal } from 'react-dom'
 
 import { ShellMenuItems } from '@/app/context-menu/shell-menu-items'
 import { TITLEBAR_DRAG_HANDLE_WIDTH } from '@/app/shell/titlebar'
@@ -37,6 +38,7 @@ import {
   PaneTabLabel,
   PaneTabStrip
 } from '@/components/ui/pane-tab'
+import { SegmentedControl } from '@/components/ui/segmented-control'
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
@@ -716,6 +718,19 @@ export function TreeGroup({
               node={node}
               tabs={shown.map(id => ({ id, label: tabLabel(id), title: tabText(id) }))}
             />
+          ) : sidebarGroup && headerVisible ? (
+            <SidebarModePortal>
+              <SegmentedControl
+                className="w-full"
+                onChange={paneId => activateTreePane(node.id, paneId)}
+                // Only the left-column modes: a tool docked in this zone (a
+                // terminal, say) is not a mode and must not become a segment.
+                options={shown
+                  .filter(paneId => paneChrome(paneFor(paneId))?.placement === 'left')
+                  .map(paneId => ({ id: paneId, label: tabLabel(paneId) }))}
+                value={activeId}
+              />
+            </SidebarModePortal>
           ) : headerVisible ? (
             <ZoneMenu {...zoneMenu}>
               <PaneTabStrip
@@ -736,7 +751,6 @@ export function TreeGroup({
                   }
                 }}
                 ref={stripRef}
-                segmented={sidebarGroup}
                 style={{ cursor: 'grab', WebkitAppRegion: dragging ? 'no-drag' : undefined } as CSSProperties}
                 titlebar={tabsInTitlebar}
                 trailing={
@@ -851,8 +865,7 @@ export function TreeGroup({
                         }
                       }}
                       role="tab"
-                      segmented={sidebarGroup}
-                      selected={isSelected}
+                            selected={isSelected}
                       style={{ cursor: 'grab' }}
                     >
                       {chrome.tabLead ? (
@@ -1094,6 +1107,22 @@ const REGION: Record<DropPosition, CSSProperties> = {
   left: { bottom: REGION_PAD, left: REGION_PAD, right: '50%', top: REGION_PAD },
   right: { bottom: REGION_PAD, left: '50%', right: REGION_PAD, top: REGION_PAD },
   top: { bottom: '50%', left: REGION_PAD, right: REGION_PAD, top: REGION_PAD }
+}
+
+/**
+ * The sidebar's mode switcher lives in the sidebar BODY, not in its 36px
+ * header: as a tab strip it shared the row with the window toggle and clipped
+ * to "Ch..." whenever the column narrowed. The zone renders it and portals it
+ * into the body slot, so it keeps the zone's own pane list and activation.
+ */
+function SidebarModePortal({ children }: { children: ReactNode }) {
+  const [target, setTarget] = useState<HTMLElement | null>(null)
+
+  useEffect(() => {
+    setTarget(document.querySelector<HTMLElement>('[data-slot="sidebar-mode-slot"]'))
+  }, [])
+
+  return target ? createPortal(children, target) : null
 }
 
 /**

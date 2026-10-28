@@ -3,10 +3,12 @@ import { sortableKeyboardCoordinates } from '@dnd-kit/sortable'
 import { useStore } from '@nanostores/react'
 import type * as React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useLocation } from 'react-router'
+import { useLocation, useNavigate } from 'react-router'
 
 import { PlatformAvatar } from '@/app/messaging/platform-icon'
+import { SETTINGS_ROUTE } from '@/app/routes'
 import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
+import { toggleLayoutEditMode } from '@/components/pane-shell/edit-mode'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
@@ -510,6 +512,7 @@ export function ChatSidebar({
   const sessionProfilesTruncated = useStore($sessionProfilesTruncated)
   const unreadCount = useStore($unreadFinishedSessionIds).length
   const profiles = useStore($profiles)
+  const navigate = useNavigate()
   const profileScope = useStore($profileScope)
   const activeConnectionId = useStore($activeConnectionId)
 
@@ -1590,6 +1593,9 @@ export function ChatSidebar({
       data-tour="sessions-sidebar"
     >
       <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
+        {/* The zone portals its mode switcher in here: it owns the pane list
+            and the activation, this column owns the geometry. */}
+        <div className="mt-1.5 mb-2" data-slot="sidebar-mode-slot" />
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--sidebar-header-height,var(--titlebar-height))+0.375rem)]">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
@@ -2091,6 +2097,34 @@ export function ChatSidebar({
             <ProfileRail />
           </div>
         )}
+        {/* Quiet footer: the workspace you are in, and the two doors that used
+            to sit in the window's top-right corner. */}
+        <div
+          className="mt-auto flex h-10 shrink-0 items-center justify-between gap-2 border-t border-black/[0.05] px-2.5 dark:border-white/[0.05]"
+          data-slot="sidebar-footer"
+        >
+          <span className="min-w-0 truncate text-[11px] font-medium text-(--ui-text-muted)">
+            {showAllProfiles ? 'All profiles' : (messagingProfile?.display_name ?? messagingProfile?.name ?? profileScope)}
+          </span>
+          <div className="flex shrink-0 items-center gap-0.5">
+            <button
+              aria-label="Settings"
+              className="inline-flex size-7 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
+              onClick={() => navigate(SETTINGS_ROUTE)}
+              type="button"
+            >
+              <Codicon name="settings-gear" size="0.875rem" />
+            </button>
+            <button
+              aria-label="Layout"
+              className="inline-flex size-7 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
+              onClick={() => toggleLayoutEditMode()}
+              type="button"
+            >
+              <Codicon name="layout" size="0.875rem" />
+            </button>
+          </div>
+        </div>
       </SidebarContent>
       <ProjectDialog />
       {/* One mount for the whole app. The header of WorktreeDialog tells why. */}

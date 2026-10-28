@@ -4137,15 +4137,9 @@ img[src*='filler-bg'] {
   position: relative;
 }
 
+/* Zero-chrome: the canvas header is the canvas — no rule across the top. */
 [data-tree-group='grp-main']::before {
-  content: '';
-  position: absolute;
-  inset-inline: 0;
-  top: 35px;
-  height: 1px;
-  background: rgb(0 0 0 / 0.10);
-  pointer-events: none;
-  z-index: 20;
+  content: none;
 }
 
 [data-hermes-mode='dark'] [data-tree-group='grp-main']::before {
@@ -4169,10 +4163,6 @@ img[src*='filler-bg'] {
 
 /* Collapsed zones are a 28px rail; the rail is a restore affordance, not a
    place to draw a sideways mode switcher. */
-[data-tree-group] [data-slot='pane-tab'][data-segmented][data-vertical] {
-  display: none;
-}
-
 /* The navigation column's header carries two rows — the window toggle and the
    full-width mode switcher — so it is taller than the tab bar beside it, and
    the column body pads to whatever that height is. */
@@ -4192,10 +4182,6 @@ img[src*='filler-bg'] {
 }
 
 /* Gutter for the window toggle, which is a fixed cluster at the window corner. */
-[data-tree-group='grp-sessions'] [data-segmented] {
-  padding-left: 34px;
-}
-
 /* Headers are the plane they sit on. The panel header painted the sidebar's
    surface, which drew a 36px band across the top of the canvas and a second
    edge under it. */
@@ -4220,4 +4206,9 @@ img[src*='filler-bg'] {
   overflow: visible;
   text-overflow: clip;
   white-space: nowrap;
+}
+
+/* The transcript and composer sit in one centred column. */
+[data-hermes-theme='graphite'] {
+  --composer-width: 760px;
 }
