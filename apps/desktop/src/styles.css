@@ -2192,9 +2192,11 @@ body.guest-pointer-lock :is(webview, iframe) {
 /* The dock's top fade exists so a transcript can dissolve into a composer that
    covers it. In an empty chat there is nothing above the composer to fade, so
    all it painted was a faint grey shelf hanging over the card. */
+/* !important is load-bearing: the dock fade comes from the theme layer, which
+   outranks this file regardless of selector specificity. */
 [data-empty-state] [data-slot='composer-dock']::before {
-  background: none;
-  content: none;
+  background: none !important;
+  content: none !important;
 }
 
 [data-slot='composer-root'] {
