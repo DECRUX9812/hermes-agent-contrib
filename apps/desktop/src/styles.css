@@ -4072,14 +4072,6 @@ html[data-hermes-desktop-host='browser'] [data-slot='sidebar-container'] {
 /* The two zone groups are the app's planes: the navigation column and the
    chat canvas. They used to inherit the chrome fill, which is why the band and
    the canvas resolved to the same colour and the top had no edge. */
-[data-tree-group='grp-sessions'] {
-  background-color: var(--ui-bg-sidebar);
-}
-
-[data-tree-group='grp-main'] {
-  background-color: var(--ui-bg-primary);
-}
-
 /* The chat surface's decorative filler image is a watermark, not content: on a
    large display it reads as a smudge behind the transcript. Kill it. */
 img[src*='filler-bg'] {
@@ -4099,8 +4091,8 @@ img[src*='filler-bg'] {
    The window is the sidebar column and the canvas column; each runs from y=0
    to the bottom edge, and the only seam is the sidebar's right border. */
 [data-hermes-theme='graphite'] {
-  --ui-bg-sidebar: #f3f3f4;
-  --ui-bg-primary: #f9f9fa;
+  --ui-bg-sidebar: #f3f3f2;
+  --ui-bg-primary: #fafaf9;
   --ui-sidebar-surface-background: #f3f3f4;
 }
 
@@ -4110,20 +4102,7 @@ img[src*='filler-bg'] {
   --ui-sidebar-surface-background: #161618;
 }
 
-[data-tree-group='grp-sessions'] {
-  background-color: var(--ui-bg-sidebar);
-  border-right: 1px solid rgb(0 0 0 / 0.06);
-}
-
-[data-hermes-mode='dark'] [data-tree-group='grp-sessions'] {
-  border-right-color: rgb(255 255 255 / 0.06);
-}
-
-[data-tree-group='grp-main'] {
-  background-color: var(--ui-bg-primary);
-}
-
-/* User prompts scroll in the document flow. Sticky made the bubble park over
+[data-hermes-mode='dark'] /* User prompts scroll in the document flow. Sticky made the bubble park over
    the transcript and clip whatever scrolled beneath it. */
 [data-slot='aui_user-message-root'] {
   position: static !important;
@@ -4133,20 +4112,8 @@ img[src*='filler-bg'] {
 /* The canvas header is the canvas: same fill, one hairline across the full
    column width. The tab rail is narrower than the column, so the rule is drawn
    on the plane itself rather than on the rail. */
-[data-tree-group='grp-main'] {
-  position: relative;
-}
-
 /* Zero-chrome: the canvas header is the canvas — no rule across the top. */
-[data-tree-group='grp-main']::before {
-  content: none;
-}
-
-[data-hermes-mode='dark'] [data-tree-group='grp-main']::before {
-  background: rgb(255 255 255 / 0.06);
-}
-
-/* Section labels are structure, not emphasis: 55% ink, no accent, no caps. */
+[data-hermes-mode='dark'] /* Section labels are structure, not emphasis: 55% ink, no accent, no caps. */
 [data-slot='sidebar-panel-label'] {
   color: rgb(0 0 0 / 0.45);
 }
@@ -4157,30 +4124,14 @@ img[src*='filler-bg'] {
 
 /* An open navigation column is never narrower than a real column. At 120px the
    mode switcher clipped to "C|" and every row truncated to three characters. */
-[data-tree-group='grp-sessions'] {
-  min-width: 240px;
-}
-
 /* Collapsed zones are a 28px rail; the rail is a restore affordance, not a
    place to draw a sideways mode switcher. */
 /* The navigation column's header carries two rows — the window toggle and the
    full-width mode switcher — so it is taller than the tab bar beside it, and
    the column body pads to whatever that height is. */
-[data-tree-group='grp-sessions'] {
-  --sidebar-header-height: 36px;
-}
-
-[data-tree-group='grp-sessions'] [data-panel-header] {
-  height: var(--sidebar-header-height) !important;
-}
-
 /* The mode switcher is the sidebar's own tab strip. It spans the column and
    sits on its own row under the window toggle, so it can never be squeezed
    into "C|" by the titlebar cluster beside it. */
-[data-tree-group='grp-sessions'] [data-panel-header] > [aria-hidden='true'] {
-  display: none;
-}
-
 /* Gutter for the window toggle, which is a fixed cluster at the window corner. */
 /* Headers are the plane they sit on. The panel header painted the sidebar's
    surface, which drew a 36px band across the top of the canvas and a second
@@ -4190,25 +4141,50 @@ img[src*='filler-bg'] {
 }
 
 /* The chat surface is the canvas, not the window chrome. */
-[data-tree-group='grp-main'] [data-chat-surface] {
-  background-color: var(--ui-bg-primary);
-}
-
 /* The transcript viewport is canvas, not window chrome: it inherited the chrome
    fill, which read as a darker band under the header. */
-[data-tree-group='grp-main'] [data-slot='aui_thread-viewport'] {
-  background-color: var(--ui-bg-primary);
-}
-
 /* Segments are words, not elastic columns. The label is what must not clip;
    the pill may stay flexible. */
-[data-tree-group='grp-sessions'] [data-slot='pane-tab'][data-segmented] span {
-  overflow: visible;
-  text-overflow: clip;
-  white-space: nowrap;
-}
-
 /* The transcript and composer sit in one centred column. */
 [data-hermes-theme='graphite'] {
   --composer-width: 760px;
+}
+
+/* The window's own ground is the canvas, not the chrome. Any transparent
+   header, gutter or gap then reads as paper instead of a grey bar. */
+body,
+[data-slot='sidebar-wrapper'] {
+  background-color: var(--ui-bg-primary);
+}
+
+/* ---------------------------------------------------------------------------
+   Two planes.
+
+   Group ids are generated per layout, so the planes are keyed on what the
+   panes actually render: the sidebar column contains the sessions sidebar, the
+   canvas column contains the transcript viewport.
+   ------------------------------------------------------------------------- */
+[data-tree-group]:has([data-tour='sessions-sidebar']) {
+  min-width: 240px;
+  border-right: 1px solid rgb(0 0 0 / 0.06);
+  background-color: var(--ui-bg-sidebar);
+}
+
+[data-hermes-mode='dark'] [data-tree-group]:has([data-tour='sessions-sidebar']) {
+  border-right-color: rgb(255 255 255 / 0.06);
+}
+
+[data-tree-group]:has([data-slot='aui_thread-viewport']) {
+  background-color: var(--ui-bg-primary);
+}
+
+/* Zero-chrome: no rule across the top of the canvas. */
+[data-tree-group]:has([data-slot='aui_thread-viewport'])::before {
+  content: none;
+}
+
+[data-slot='aui_thread-viewport'],
+[data-slot='composer-bounds'],
+[data-chat-surface] {
+  background-color: var(--ui-bg-primary);
 }

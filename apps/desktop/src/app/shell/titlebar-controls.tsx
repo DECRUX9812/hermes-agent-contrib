@@ -219,7 +219,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   const sidebarTool: TitlebarTool = {
     ...TITLEBAR_FIXED_TOOLS.sidebar,
     actionId: 'view.toggleSidebar',
-    badge: panesFlipped ? undefined : unreadBadge,
+    badge: undefined,
     icon: <TitlebarIcon name="layout-sidebar-left" />,
     id: 'sidebar',
     expanded: leftEdge.expanded,
@@ -245,7 +245,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   const rightSidebarTool: TitlebarTool = {
     ...TITLEBAR_FIXED_TOOLS['right-sidebar'],
     actionId: 'view.toggleRightSidebar',
-    badge: panesFlipped ? unreadBadge : undefined,
+    badge: undefined,
     icon: <TitlebarIcon name="layout-sidebar-right" />,
     id: 'right-sidebar',
     expanded: rightEdge.expanded,
@@ -376,6 +376,7 @@ export function TitlebarControls({ leftTools = [], tools = [], onOpenSettings }:
   // app actions do, or HUD would vanish when they move left.
   const hudTools = visibleSystemTools.filter(tool => tool.id === 'hud')
   const leftOverflowTools: TitlebarTool[] = appActionsSide === 'left' ? hudTools : []
+
   const rightOverflowTools: TitlebarTool[] = [
     ...(appActionsSide === 'right' ? hudTools : []),
     ...visibleRightFixedTools

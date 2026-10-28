@@ -14,7 +14,6 @@ import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from '@/components/ui/context-menu'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { KbdGroup } from '@/components/ui/kbd'
-import { SearchField } from '@/components/ui/search-field'
 import {
   Sidebar,
   SidebarContent,
@@ -32,6 +31,7 @@ import { comboTokens } from '@/lib/keybinds/combo'
 import { sessionMatchesSearch } from '@/lib/session-search'
 import { normalizeSessionSource, sessionSourceLabel } from '@/lib/session-source'
 import { cn } from '@/lib/utils'
+import { $commandPaletteOpen } from '@/store/command-palette'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $activeConnectionId } from '@/store/connections'
 import { $cronJobs } from '@/store/cron'
@@ -1593,9 +1593,39 @@ export function ChatSidebar({
       data-tour="sessions-sidebar"
     >
       <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
+        {/* Top row: the window toggle is the fixed cluster at the window's
+            corner, so this row reserves space for it and keeps the quiet
+            actions on the right. */}
+        <div className="flex h-11 shrink-0 items-center justify-end gap-0.5 px-2.5 pl-10" data-slot="sidebar-header">
+          <button
+            aria-label={s.searchAria}
+            className="inline-flex size-6 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
+            onClick={() => $commandPaletteOpen.set(true)}
+            type="button"
+          >
+            <Codicon name="search" size="0.875rem" />
+          </button>
+          <button
+            aria-label="Back"
+            className="inline-flex size-6 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
+            onClick={() => navigate(-1)}
+            type="button"
+          >
+            <Codicon name="chevron-left" size="0.875rem" />
+          </button>
+          <button
+            aria-label="Forward"
+            className="inline-flex size-6 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
+            onClick={() => navigate(1)}
+            type="button"
+          >
+            <Codicon name="chevron-right" size="0.875rem" />
+          </button>
+        </div>
+
         {/* The zone portals its mode switcher in here: it owns the pane list
             and the activation, this column owns the geometry. */}
-        <div className="mt-1.5 mb-2" data-slot="sidebar-mode-slot" />
+        <div data-slot="sidebar-mode-slot" />
         <SidebarGroup className="shrink-0 p-0 pb-2 pt-[calc(var(--sidebar-header-height,var(--titlebar-height))+0.375rem)]">
           <SidebarGroupContent>
             <SidebarMenu className="gap-px">
@@ -1741,18 +1771,6 @@ export function ChatSidebar({
         </SidebarGroup>
 
         <SidebarStorageCorruptNotice />
-
-        {showSessionSections && (
-          <div className="shrink-0 px-2 pb-1 pt-1">
-            <SearchField
-              aria-label={s.searchAria}
-              inputRef={searchInputRef}
-              onChange={setSearchQuery}
-              placeholder={s.searchPlaceholder}
-              value={searchQuery}
-            />
-          </div>
-        )}
 
         {showSessionSections && (
           <div

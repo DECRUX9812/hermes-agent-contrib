@@ -38,7 +38,6 @@ import {
   PaneTabLabel,
   PaneTabStrip
 } from '@/components/ui/pane-tab'
-import { SegmentedControl } from '@/components/ui/segmented-control'
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { useI18n } from '@/i18n'
@@ -661,7 +660,8 @@ export function TreeGroup({
               role="tablist"
             >
               {shown.map(paneId => {
-                const closeable = closeableTab(paneId)
+                // A lone tab is a title, not a document: no ✕ to clutter it.
+                const closeable = shown.length > 1 ? closeableTab(paneId) : undefined
 
                 return (
                   <PaneTab
@@ -720,16 +720,32 @@ export function TreeGroup({
             />
           ) : sidebarGroup && headerVisible ? (
             <SidebarModePortal>
-              <SegmentedControl
-                className="w-full"
-                onChange={paneId => activateTreePane(node.id, paneId)}
-                // Only the left-column modes: a tool docked in this zone (a
-                // terminal, say) is not a mode and must not become a segment.
-                options={shown
+              {/* Quiet rows, not a segmented pill: the modes read as sidebar
+                  sections, and each row is a full-width target. */}
+              <div className="space-y-0.5 px-2 pb-1" data-slot="sidebar-mode-list">
+                {shown
                   .filter(paneId => paneChrome(paneFor(paneId))?.placement === 'left')
-                  .map(paneId => ({ id: paneId, label: tabLabel(paneId) }))}
-                value={activeId}
-              />
+                  .map(paneId => {
+                    const isActive = paneId === activeId
+
+                    return (
+                      <button
+                        className={cn(
+                          'flex h-[30px] w-full items-center gap-2.5 rounded-md px-2.5 text-left text-[13px] transition-colors',
+                          isActive
+                            ? 'bg-black/[0.06] font-medium text-(--ui-text-primary) dark:bg-white/[0.08]'
+                            : 'text-(--ui-text-secondary) hover:bg-black/[0.04] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.05]'
+                        )}
+                        key={paneId}
+                        onClick={() => activateTreePane(node.id, paneId)}
+                        type="button"
+                      >
+                        <Codicon className="shrink-0" name={isActive ? 'circle-filled' : 'circle-outline'} size="0.625rem" />
+                        <span className="min-w-0 truncate">{tabLabel(paneId)}</span>
+                      </button>
+                    )
+                  })}
+              </div>
             </SidebarModePortal>
           ) : headerVisible ? (
             <ZoneMenu {...zoneMenu}>

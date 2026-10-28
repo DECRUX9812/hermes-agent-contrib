@@ -31,7 +31,7 @@ import { $showAllProfiles, setShowAllProfiles } from './profile'
 import type { PullRequestBucket } from './pull-requests'
 import type { SessionStatusBucket } from './session-dot-state'
 
-export const SIDEBAR_DEFAULT_WIDTH = 237
+export const SIDEBAR_DEFAULT_WIDTH = 250
 /** Draggable floor — well under the default, so the rail can actually be made
  *  narrow (the file tree has always allowed this; the sessions rail used its
  *  own default as the floor, so the sash refused to move left at all). */
