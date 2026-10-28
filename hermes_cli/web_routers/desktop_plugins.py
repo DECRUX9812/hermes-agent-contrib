@@ -1,316 +1,135 @@
-"""Desktop-plugin root + entry-source routes for the browser-hosted surface.
+"""The Webapp's door to this host's desktop plugins (``<root>/desktop-plugins/<name>/plugin.js``).
 
-Electron answers these from ``hermes:fs:desktopPluginsRoot`` /
-``hermes:fs:readPluginSource`` (apps/desktop/electron/fs-ipc.ts:121-129 and
-preload.ts:491). A browser-hosted renderer has no main process, so its
-``window.hermesDesktop`` bridge (apps/desktop/src/lib/browser-desktop-plugins.ts)
-calls the routes here and the EXISTING loader code path —
-``runtime-loader.ts`` ``diskRoots()`` / ``resolveDiskPluginEntry()`` /
-``readPluginSourceText()`` — runs unmodified.
+Native Desktop reads that folder from its own disk (``desktopPluginsRoot`` in Electron's
+``fs-ipc.ts``). The Webapp's renderer runs in a browser whose only disk is this server, so the
+browser bridge asks here instead, and the same runtime loader scans, loads and polls it.
 
-SCOPING (deliberate, and narrower than Electron):
-Electron resolves the root APP-level, never profile-scoped
-(``fs-ipc.ts`` comments: "the root is APP-level, never profile-scoped,
-resolved FRESH each pass"). A webapp process IS one Hermes home — the launch
-profile's home is ``get_hermes_home()`` — so we reproduce the app-level shape
-by resolving the SAME process home, and never accept a caller-supplied home or
-profile. That is the honest browser equivalent: there is no second home for the
-renderer to reach, and honouring ``?profile=`` here would reintroduce exactly
-the profile-scoped drift Electron removed (#66899).
-
-WHAT IS SERVED (deliberately narrow):
-Only the folder LISTING under the root, and ``plugin.js`` source (plus the
-``.hermes-package.json`` marker the loader reads at runtime-loader.ts:594-603)
-for a single-segment folder name directly under the root. No arbitrary path
-parameter, no glob, no nested segments, no traversal surface:
-
-  * ``/api/desktop-plugins/root``            -> ``{"root": "<home>/desktop-plugins"}``
-  * ``/api/desktop-plugins/list?name=<id>``  -> ``{"entries": [...]}``
-  * ``/api/desktop-plugins/source?name=<id>``-> ``{"text": ..., "byteSize": ...}``
-
-A folder NAME is validated as a single path segment (no ``/``, no ``\\``, no
-``.``/``..``, no NUL, no leading dot) and then re-checked by resolving it and
-requiring the resolved parent to be the resolved root — belt and braces, the
-same containment discipline the managed-files routes use
-(``web_routers/files.py:_resolve_managed_path``).
-
-WHY SOURCE AT ALL: a desktop plugin is JavaScript the renderer *evaluates*. Any
-surface that hands the browser plugin source is equivalent in power to handing
-it that code to run — so this cannot be made "safe" by narrowing the file
-allowlist. The mitigation is the AUTH gate (every ``/api`` route on this
-surface already sits behind the dashboard's token/cookie middleware) plus the
-narrow allowlist (one known filename per folder, one folder deep) so the route
-cannot be repurposed into a general file reader for the rest of HERMES_HOME.
-Callers must treat a desktop plugin folder as TRUSTED, executable content: it
-runs with the same privileges as the Desktop renderer itself, which is already
-true of Electron's identical IPC.
-
-16 MiB cap mirrors Electron's ``readPluginSource`` ceiling; the payload is
-returned untruncated, because ``runtime-loader.ts:670-690`` refuses a
-``truncated`` result rather than evaluate a partial module.
+The routes answer only what the loader reads: the root, its plugin folders, and each folder's
+``plugin.js`` and ``.hermes-package.json``. Containment is checked on the path as written, then
+symlinks are followed as Electron's ``readDir`` does, so ``desktop-plugins/foo -> ~/src/foo`` loads
+here too. They never go through ``/api/fs``, which follows the profile's SSH workspace and truncates
+at the preview cap. Like Electron, resolving the root first copies agent+desktop packages' desktop
+halves into it (``desktop_plugin_halves.py``), the one write these routes make. Webapp only
+(``SurfacePolicy.desktop_plugins``; 404 elsewhere).
 """
+
+from __future__ import annotations
 
 import asyncio
 import os
 import stat
 from pathlib import Path
-from typing import Optional
 
 from fastapi import APIRouter, HTTPException
 
-from hermes_cli.web_deps import late
+from hermes_cli.desktop_plugin_halves import reconcile_desktop_halves
+from hermes_constants import get_default_hermes_root
 
 router = APIRouter()
 
-# Late-bound so a test's monkeypatch on the owning module wins at call time.
-get_hermes_home = late("get_hermes_home", "hermes_cli.config")
-
-# Mirrors DESKTOP_PLUGINS_DIR (apps/desktop/electron/desktop-plugins-root.ts:21)
-# and PACKAGE_MARKER (same file, line 23).
 DESKTOP_PLUGINS_DIR = "desktop-plugins"
-PACKAGE_MARKER = ".hermes-package.json"
-ENTRY_FILE = "plugin.js"
-
-# The entry point and the package marker — the two files the LOADER itself
-# reads. They are not the only readable files: a plugin folder may ship more
-# than its entry (a vendored browser bundle, a worker, a data file), and
-# Electron's `readPluginSource` serves any of them. Restricting the browser door
-# to these two made a multi-file plugin read its own assets as EMPTY and fail
-# closed — `computer-viewer` hashes `vendor/novnc-rfb.mjs` and refused to start
-# ("vendored noVNC failed integrity check") although the file was byte-identical
-# to its pinned digest. Reads stay folder-scoped (see _validated_plugin_file):
-# anything outside `<root>/<name>/` is still refused.
-ENTRY_FILES = frozenset({ENTRY_FILE, PACKAGE_MARKER})
-
-# Electron's readPluginSource ceiling (global.d.ts:335-338 documents 16 MiB).
+#: The files the loader reads in a plugin folder: its entry and the unified-package marker.
+_READABLE_FILES = frozenset({"plugin.js", ".hermes-package.json"})
+#: Electron's ``PLUGIN_SOURCE_MAX_BYTES``: a plugin loads whole or not at all, never truncated.
 PLUGIN_SOURCE_MAX_BYTES = 16 * 1024 * 1024
+#: Never follow a final link where the OS can refuse one, and never block on a FIFO.
+_OPEN_FLAGS = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_NONBLOCK", 0) | getattr(os, "O_BINARY", 0)
 
 
-def _desktop_plugins_root() -> Path:
-    """The APP-level desktop-plugin root for THIS server process' home.
+def desktop_plugins_root() -> Path:
+    """App-level, like Electron's: the Hermes root's folder, whichever profile the request names.
+    Created on demand as Electron does, and resolved, so it prefixes every path the routes return."""
+    root = get_default_hermes_root() / DESKTOP_PLUGINS_DIR
+    root.mkdir(parents=True, exist_ok=True)
+    return root.resolve()
 
-    Created on demand, exactly like Electron's ``ensureDir`` in
-    ``desktopPluginsRoot()`` (fs-ipc.ts:121-122), so a fresh install resolves
-    instead of 404-ing. Never profile-scoped and never caller-supplied.
-    """
-    root = Path(get_hermes_home()) / DESKTOP_PLUGINS_DIR
 
+def _inside_root(raw: str) -> tuple[Path, tuple[str, ...]]:
+    """*raw* and its parts below the root, judged as written: no ``..``, at most a folder and a file.
+    Links are not resolved here; a linked plugin folder is followed like native Desktop follows it.
+    The files inside it are not: :func:`_read` refuses a linked entry file, which could name any
+    file on the host, ``.env`` included, past the sensitive-file guard ``/api/fs`` applies."""
+    root = desktop_plugins_root()
     try:
-        root.mkdir(parents=True, exist_ok=True)
+        parts = Path(raw).relative_to(root).parts
+    except ValueError:
+        raise HTTPException(status_code=404, detail="Not a desktop plugin path") from None
+    if len(parts) > 2 or ".." in parts:
+        raise HTTPException(status_code=404, detail="Not a desktop plugin path")
+    return root.joinpath(*parts), parts
+
+
+def _list(raw: str) -> dict:
+    target, parts = _inside_root(raw)
+    if len(parts) > 1 or not target.is_dir():
+        raise HTTPException(status_code=404, detail="Not a desktop plugin folder")
+    entries = [
+        {"name": child.name, "path": str(target / child.name), "isDirectory": child.is_dir()}
+        for child in sorted(target.iterdir(), key=lambda child: child.name)
+    ]
+    return {"entries": entries}
+
+
+def _read(raw: str) -> dict:
+    from hermes_cli.web_routers.files import _is_sensitive_path
+
+    target, parts = _inside_root(raw)
+    not_found = HTTPException(status_code=404, detail="Not a desktop plugin file")
+    if len(parts) != 2 or parts[1] not in _READABLE_FILES:
+        raise not_found
+    # Follow a linked plugin folder, never a linked file in it. The file actually opened must be the
+    # regular file at the entry's real, non-sensitive path, checked again after the open, so swapping
+    # the entry or its folder for a link mid-read fails closed, with or without O_NOFOLLOW.
+    try:
+        entry = target.parent.resolve(strict=True) / parts[1]
+        if _is_sensitive_path(entry) or not stat.S_ISREG(os.lstat(entry).st_mode):
+            raise not_found
+        fd = os.open(entry, _OPEN_FLAGS)
     except OSError:
-        # Best-effort, same posture as Electron's ensureDir: a read-only or
-        # unwritable home still yields a path so the scanner can report it.
-        pass
-
-    return root
-
-
-def _validated_plugin_dir(name: str) -> Path:
-    """Resolve ``<root>/<name>`` for a single-segment folder name.
-
-    The name is validated as ONE path segment, so no traversal or nested path
-    can be expressed by the parameter. 400 for a malformed name, 404 for a
-    folder that is not there.
-
-    The entry itself may be a SYMLINK to a checkout elsewhere: linking a
-    plugin's working copy into ``<root>`` is how a dev plugin is installed
-    (the Electron door reads such a folder unmodified), and the browser door
-    must load the same plugins the desktop app does. The parameter is still one
-    plain segment, so nothing outside the root is addressable *by the caller*,
-    and a plugin folder already executes as this user — following the link
-    grants no privilege the root's owner did not already have. File reads stay
-    scoped to the RESOLVED folder (:func:`_validated_plugin_file`), so a
-    symlinked file inside it still cannot point back out.
-    """
-    candidate = (name or "").strip()
-
-    if (
-        not candidate
-        or candidate in (".", "..")
-        or "/" in candidate
-        or "\\" in candidate
-        or "\0" in candidate
-        or candidate.startswith(".")
-        or Path(candidate).name != candidate
-    ):
-        raise HTTPException(status_code=400, detail="Invalid desktop plugin name")
-
-    root = _desktop_plugins_root()
-
-    try:
-        target = (root / candidate).resolve()
-    except (OSError, RuntimeError) as exc:
-        raise HTTPException(status_code=400, detail="Invalid path") from exc
-
-    if not target.is_dir():
-        raise HTTPException(status_code=404, detail="Desktop plugin not found")
-
-    return target
+        raise not_found from None
+    with os.fdopen(fd, "rb") as handle:
+        st = os.fstat(handle.fileno())
+        try:
+            here = os.lstat(entry)
+            unchanged = entry.resolve(strict=True) == entry
+        except OSError:
+            raise not_found from None
+        if not (unchanged and stat.S_ISREG(st.st_mode) and (st.st_dev, st.st_ino) == (here.st_dev, here.st_ino)):
+            raise not_found
+        if st.st_size > PLUGIN_SOURCE_MAX_BYTES:
+            raise HTTPException(status_code=413, detail="Plugin source exceeds 16 MiB")
+        data = handle.read(PLUGIN_SOURCE_MAX_BYTES + 1)
+    if len(data) > PLUGIN_SOURCE_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="Plugin source exceeds 16 MiB")
+    text = data.decode("utf-8-sig", errors="replace")
+    return {"byteSize": st.st_size, "path": str(target), "text": text, "truncated": False}
 
 
-def _validated_plugin_file(name: str, filename: str) -> Path:
-    """Resolve ``<root>/<name>/<relative file>`` for a file INSIDE that folder.
-
-    ``filename`` may be nested (``vendor/novnc-rfb.mjs``) but every segment must
-    be plain: no absolute path, no ``.``/``..``, no backslash, no NUL. The folder
-    is validated by :func:`_validated_plugin_dir` (one plain segment, resolved
-    parent == resolved root) and containment is re-checked on the RESOLVED file,
-    so a symlink inside the folder cannot point back out of it. A folder-scoped
-    read is the same privilege the renderer already has by evaluating the
-    folder's ``plugin.js``, and is narrower than Electron's door (which reads any
-    path).
-    """
-    directory = _validated_plugin_dir(name)
-    candidate = (filename or "").strip()
-    segments = candidate.split("/")
-
-    if (
-        not candidate
-        or candidate.startswith("/")
-        or "\\" in candidate
-        or "\0" in candidate
-        or any(segment in ("", ".", "..") for segment in segments)
-    ):
-        raise HTTPException(status_code=400, detail="Invalid desktop plugin file")
-
-    try:
-        resolved_dir = directory.resolve()
-        resolved = (directory / candidate).resolve()
-    except (OSError, RuntimeError) as exc:
-        raise HTTPException(status_code=400, detail="Invalid path") from exc
-
-    # Containment re-check AFTER symlink resolution: a symlinked entry pointing
-    # anywhere else in HERMES_HOME must not become a file reader.
-    if resolved != resolved_dir and resolved_dir not in resolved.parents:
-        raise HTTPException(status_code=403, detail="Path outside the desktop plugin folder")
-
-    try:
-        st = resolved.stat()
-    except (FileNotFoundError, NotADirectoryError):
-        raise HTTPException(status_code=404, detail="File not found")
-    except PermissionError:
-        raise HTTPException(status_code=403, detail="File is not readable")
-    except OSError as exc:
-        raise HTTPException(status_code=400, detail=str(exc) or "Invalid path")
-
-    if not stat.S_ISREG(st.st_mode):
-        raise HTTPException(status_code=400, detail="Only regular files can be read")
-
-    return resolved
-
-
-def _list_root_entries(root: Path, display: Optional[Path] = None, *, keep_marker: bool = False) -> list[dict]:
-    """Directory entries directly under the root, sorted for a stable scan.
-
-    Mirrors the shape ``readDir`` returns to the renderer
-    (``HermesReadDirResult``), because ``scanDiskPlugins`` filters
-    ``entries.filter(e => e.isDirectory)`` (runtime-loader.ts:841).
-
-    ``display`` is the folder the reported ``path`` values are built from. A
-    plugin folder is usually a SYMLINK into a checkout, and ``root`` is then the
-    resolved target; reporting resolved paths sends the loader's next read
-    (``plugin.js``) to a path outside ``<root>/`` that the browser door refuses,
-    so every symlinked plugin silently never loads. Paths are therefore always
-    reported under ``<root>/<name>/``. ``keep_marker`` keeps the
-    ``.hermes-package.json`` marker in a folder listing, which the loader's
-    metadata walk looks for (Electron's readDir lists it too).
-    """
-    entries: list[dict] = []
-    shown = display if display is not None else root
-
-    try:
-        with os.scandir(root) as scan:
-            for entry in scan:
-                # Dotfiles are not plugin folders and the loader never wants
-                # them (mirrors Electron's per-folder name validation above).
-                if entry.name.startswith(".") and not (keep_marker and entry.name == PACKAGE_MARKER):
-                    continue
-
-                entries.append({
-                    "name": entry.name,
-                    "path": str(shown / entry.name),
-                    "isDirectory": entry.is_dir(follow_symlinks=True),
-                })
-    except (FileNotFoundError, NotADirectoryError):
-        # No plugins yet — an empty listing, not an error: the loader treats a
-        # missing root as "nothing to load" and polls again.
-        return []
-    except PermissionError:
-        raise HTTPException(status_code=403, detail="Directory is not readable")
-    except OSError as exc:
-        raise HTTPException(status_code=500, detail=f"Could not read directory: {exc}")
-
-    entries.sort(key=lambda item: (not item["isDirectory"], item["name"].lower(), item["name"]))
-
-    return entries
-
-
-def _read_entry_source(path: Path) -> tuple[str, int]:
-    """Read an allowlisted plugin file in FULL. Never truncates."""
-    try:
-        size = path.stat().st_size
-    except OSError as exc:
-        raise HTTPException(status_code=500, detail=f"Could not stat file: {exc}")
-
-    if size > PLUGIN_SOURCE_MAX_BYTES:
-        raise HTTPException(status_code=413, detail="Plugin source too large")
-
-    try:
-        # errors="replace" matches /api/fs/read-text's decode policy; the loader
-        # only needs valid JS, and a stray byte must not 500 the whole scan.
-        return path.read_text(encoding="utf-8-sig", errors="replace"), size
-    except PermissionError:
-        raise HTTPException(status_code=403, detail="File is not readable")
-    except OSError as exc:
-        raise HTTPException(status_code=500, detail=f"Could not read file: {exc}")
+def _root_reconciled() -> str:
+    """The root, after copying unified packages' desktop halves into it: what Electron's
+    ``desktopPluginsRoot`` does before every scan. On a host native Desktop only reaches over SSH,
+    nothing else ever makes that copy."""
+    root = desktop_plugins_root()
+    reconcile_desktop_halves(get_default_hermes_root(), root)
+    return str(root)
 
 
 @router.get("/api/desktop-plugins/root")
-async def desktop_plugins_root():
-    """The absolute desktop-plugin root, resolved fresh on every call.
+async def desktop_plugins_root_route() -> dict:
+    return {"root": await asyncio.to_thread(_root_reconciled)}
 
-    Returns ``{"root": ""}`` (the loader's "no disk plugins" signal) rather
-    than an error when the home cannot host the directory, so a read-only or
-    unusual install degrades to "no plugins" instead of a boot-time failure.
-    """
-    try:
-        root = _desktop_plugins_root()
-    except (OSError, RuntimeError):
-        return {"root": ""}
 
-    return {"root": str(root)}
+@router.post("/api/desktop-plugins/reconcile")
+async def reconcile_desktop_plugins() -> dict:
+    """Electron's ``reconcileDesktopPlugins``: re-run the copy after an install, update or removal."""
+    return {"touched": await asyncio.to_thread(reconcile_desktop_halves, get_default_hermes_root(), desktop_plugins_root())}
 
 
 @router.get("/api/desktop-plugins/list")
-async def desktop_plugins_list(name: Optional[str] = None):
-    """Entries directly under the root, or of one plugin folder when ``name`` is given.
-
-    ``name`` omitted -> the root listing (``scanDiskPlugins``' first readDir).
-    ``name`` given   -> that folder's entries (``resolveDiskPluginEntry``' walk,
-                       which also looks for the ``.hermes-package.json`` marker).
-    """
-    if name is None:
-        root = _desktop_plugins_root()
-
-        return {"entries": await asyncio.to_thread(_list_root_entries, root)}
-
-    directory = _validated_plugin_dir(name)
-    shown = _desktop_plugins_root() / name.strip()
-
-    return {"entries": await asyncio.to_thread(_list_root_entries, directory, shown, keep_marker=True)}
+async def list_desktop_plugins(path: str) -> dict:
+    return await asyncio.to_thread(_list, path)
 
 
-@router.get("/api/desktop-plugins/source")
-async def desktop_plugins_source(name: str, file: str = ENTRY_FILE):
-    """Full, untruncated source of one file inside one plugin folder.
-
-    ``file`` is relative to ``<root>/<name>/`` and may be nested
-    (``vendor/novnc-rfb.mjs``), which is how a plugin loads its own bundled
-    assets. Traversal, absolute paths and symlinks leaving the folder are
-    refused; every file is capped at 16 MiB (Electron's ``readPluginSource``
-    ceiling) and never truncated.
-    """
-    target = _validated_plugin_file(name, file)
-    text, size = await asyncio.to_thread(_read_entry_source, target)
-
-    return {"name": target.name, "path": str(target), "byteSize": size, "text": text}
+@router.get("/api/desktop-plugins/read")
+async def read_desktop_plugin_file(path: str) -> dict:
+    return await asyncio.to_thread(_read, path)
