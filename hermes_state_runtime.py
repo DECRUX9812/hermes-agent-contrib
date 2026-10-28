@@ -52,9 +52,13 @@ def _json(value):
     if not isinstance(value, dict):
         raise RuntimeStoreError('invalid_params')
     try:
-        return json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False)
+        text = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(',', ':'), allow_nan=False)
     except (TypeError, ValueError, UnicodeError) as exc:
         raise RuntimeStoreError('invalid_params') from exc
+    # Model/tool output can carry lone UTF-16 surrogates that sqlite3 refuses to encode, which
+    # fails settlement and every later /discard of the same captured result. The UTF-16 round
+    # trip rejoins valid pairs and replaces only unpaired halves with U+FFFD.
+    return text.encode('utf-16', 'surrogatepass').decode('utf-16', 'replace')
 
 
 def _epoch(conn, epoch):
