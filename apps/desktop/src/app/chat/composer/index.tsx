@@ -1289,7 +1289,7 @@ export function ChatBar({
         <div
           className={cn(
             'group/composer-dock z-30 flex flex-col',
-            poppedOut ? 'fixed max-w-[calc(100vw-1.5rem)]' : 'absolute bottom-0 left-1/2 max-w-full -translate-x-1/2'
+            poppedOut ? 'fixed max-w-[calc(100vw-1.5rem)]' : 'absolute inset-x-0 bottom-0 mx-auto max-w-full'
           )}
           data-popped-out={poppedOut ? '' : undefined}
           data-slot="composer-dock"

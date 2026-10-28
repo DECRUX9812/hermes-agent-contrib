@@ -180,8 +180,13 @@ const renderRow = (session: SessionInfo, extra?: { card?: boolean }) =>
 // The row no longer takes its running state as a prop, so this drives the real
 // store the way the app does. $workingSessionIds is the actual computed here
 // (the mock above only overrides its siblings), which is what makes this cover
-// the wiring rather than the predicate — the arc has gone missing before.
-describe('SidebarSessionRow running arc', () => {
+// the wiring rather than the predicate.
+//
+// The ROW ARC is gone: a rust ring drawn around the whole row read, at a glance,
+// as a stray border around the timestamp, and the status dot already says the
+// session is running. The row must therefore paint its chrome identically for a
+// busy session and a settled one.
+describe('SidebarSessionRow running chrome', () => {
   afterEach(() => {
     clearAllSessionStates()
   })
@@ -194,12 +199,12 @@ describe('SidebarSessionRow running arc', () => {
     expect(arc(container)).toBeNull()
   })
 
-  it('paints the arc while the session is running', () => {
+  it('paints no arc for a running session either', () => {
     publishSessionState('rt1', { ...createClientSessionState('s1'), busy: true })
 
     const { container } = renderRow(makeSession({ title: 'Running' }))
 
-    expect(arc(container)).toBeTruthy()
+    expect(arc(container)).toBeNull()
   })
 })
 
