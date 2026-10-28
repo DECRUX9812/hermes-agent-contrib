@@ -265,6 +265,17 @@ async def prepare_history(authority, ref):
     return target, await asyncio.to_thread(display_rows, authority.db, target)
 
 
+def omitted_history_state(db, target):
+    """``(todo_state, message_count)`` of a resume that omits its transcript: the physical *target*'s stored
+    count and its todo plan. Skips the display-row lineage read; the todo lookup still walks the lineage's
+    todo rows (removed ones included, so an undone plan stays gone)."""
+    from tui_gateway.tool_progress import _todo_state_from_db
+    row = db.get_session(target)
+    if row is None:  # deleted since the attach resolved it
+        raise RuntimeStoreError('not_found')
+    return _todo_state_from_db(db, target), int(row.get('message_count') or 0)
+
+
 def _merge_live_in_stored_order(display, live):
     """The live rows in stored (``row_id``) order, each archived display row placed before the live
     row it preceded in display order.
@@ -386,6 +397,27 @@ def restore_completion_route(runner, session_key):
         return
     with contextlib.suppress(RuntimeStoreError):
         restore_local_session(authority, parsed['chat_id'])
+
+
+def release_handed_off_receipts(db, *, epoch):
+    """Boot heal for #143286: an older build's ``/handoff`` (or a platform ``/resume``) moved a local
+    session onto a messaging lane but kept its local receipt, so every open, pin or rename refused it
+    (``stored identity mismatch``) and its title never resolved. Retire each such receipt, so the row
+    restores from its route like any other platform session, and move the rest of its conversation
+    there with it (``hand_off_conversations``). Only receipts whose CURRENT target a messaging lane
+    now holds: any other refused receipt stays as it is, logged when it is touched."""
+    from gateway.session_route_recovery import _messaging_platform
+    from hermes_state_local import hand_off_conversations, moved_receipts
+    from hermes_state_runtime import _epoch
+
+    def write(conn):
+        _epoch(conn, epoch)
+        moved = {owner: (target, source) for owner, (target, source) in moved_receipts(conn).items()
+                 if _messaging_platform(source) is not None}
+        return hand_off_conversations(conn, moved)
+    for owner, (target, source) in db._execute_write(write).items():
+        logging.getLogger(__name__).info(
+            'Local session %s was handed off to %s (row %s); released its local receipt', owner, source, target)
 
 
 def local_receipt_ids(authority):

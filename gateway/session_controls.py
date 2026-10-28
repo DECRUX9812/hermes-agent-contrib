@@ -110,6 +110,23 @@ def model_only(row):
     return isinstance(metadata, dict) and bool(metadata.get(MODEL_ONLY_DISPLAY_METADATA_KEY))
 
 
+async def _resume_transcript(authority, ref, snapshot, history, omit):
+    """A resume reply's transcript fields. *omit* (``omit_messages``): no rows and ``messages_omitted``, the
+    stored count and the todo plan of the physical target the attach resolved, as the stdio resume answers
+    it; the display-row lineage read is skipped (the todo lookup still walks the lineage's todo rows)."""
+    # Its home module, not tui_gateway.server: importing the stdio sidecar points sys.stdout at stderr.
+    from tui_gateway.tool_progress import _todo_state_from_history
+    if not omit:
+        # The newest todo result in the transcript, the snapshot the session's agent hydrates
+        # from and its ``todo.updated`` frames carried: a viewer attaching shows the plan now.
+        return {'messages': history, 'message_count': len(history), 'todo_state': _todo_state_from_history(history)}
+    from gateway.session_local_recovery import omitted_history_state
+    # A delete committed since the attach is ``not_found``, as one during the attach is.
+    todo_state, count = await asyncio.to_thread(authority.unless_deleted, ref, partial(
+        omitted_history_state, authority.db, snapshot.transcript_target))
+    return {'messages': [], 'messages_omitted': True, 'message_count': count, 'todo_state': todo_state}
+
+
 class AuthorityConnection:
     def __init__(self, authority, transport, identity, *, operator=False):
         self.authority = authority
@@ -166,7 +183,26 @@ class AuthorityConnection:
                     connection = AuthorityConnection(sibling, self.transport, identity, operator=self._operator)
                     self._siblings[sibling.profile_id] = connection
                 return connection
+        if registry is not None and registry.starting(profile) is not None:
+            # Hot-serve is still building it: retryable, not the final verdict for an unserved profile.
+            # A shared socket holds such a frame until the start ends (``awaits_profile_start``); this
+            # answers one whose wait ran out.
+            raise RuntimeStoreError('runtime_draining', field='profile', detail='the profile is still starting')
         raise RuntimeStoreError('profile_mismatch')
+
+    def awaits_profile_start(self, request, held=()):
+        """Whether a shared socket holds *request* off its serial lane: ``(key, started)`` when a
+        host-scoped frame names a profile hot-serve is still building (``started`` is set once the
+        build ends), ``(key, None)`` when it names one of *held*, the starts whose earlier frames the
+        socket still holds, so it queues behind them. None for every other frame."""
+        params = request.get('params') if isinstance(request, dict) else None
+        profile = params.get('profile') if isinstance(params, dict) else None
+        registry = getattr(getattr(self.authority, 'runner', None), 'session_authorities', None)
+        if not (self.host_scoped and isinstance(profile, str) and profile and registry is not None):
+            return None
+        from hermes_cli.profiles import profile_matches_home
+        key = next((key for key in held if profile_matches_home(profile, Path(key))), None)
+        return (key, None) if key is not None else registry.starting(profile)
 
     def handlers(self):
         """Method → handler for every verb ``dispatch`` serves outside the group controls; each
@@ -610,13 +646,18 @@ class AuthorityConnection:
         # reopens it (``reopen_local_session`` in the drain), so opening a finished chat
         # never re-lights DB-derived liveness with no new activity.
         self.authority.authorize(self.actor, ref, 'session:read')
-        if 'session:control' in self.actor.capabilities:
+        mounted = self.authority.sessions[ref.session_id].source
+        # Only a local route has a stored creation policy to refresh; a platform lane's turns read the profile.
+        if 'session:control' in self.actor.capabilities and getattr(mounted, 'platform', None) == Platform.LOCAL:
             # A client attaching (main's `hermes -c` was a new process) re-reads the config-derived settings
             # (CFG-2); a snapshot poll on this attachment does not. Any open still adopts a frozen Bot Chat
             # whose earlier open found it busy (Desktop's warm `session.activate` resumes on one connection).
             from gateway.session_policy_refresh import refresh_resumed_policy
             await refresh_resumed_policy(self.authority, ref, attached=ref.session_id in self.subscriptions)
-        snapshot = await self.authority.attach(self.actor, ref)
+        # ``omit_messages``: the client pages the transcript itself (Desktop over REST), so the attach reads no
+        # compression lineage (a whole-lineage read here made every open of a long chat cost seconds).
+        omit = params.get('omit_messages') is True
+        snapshot = await self.authority.attach(self.actor, ref, history=not omit)
         self.subscriptions[ref.session_id] = snapshot.subscription_id
         self.handed_back.discard(ref.session_id)
         self._spawn_notice(ref)
@@ -630,15 +671,13 @@ class AuthorityConnection:
             info = await snapshot_info(self.authority, snapshot.handle.ref)
         from gateway.session_connections import pending_connection
         from gateway.session_server_requests import open_requests
-        # Its home module, not tui_gateway.server: importing the stdio sidecar points sys.stdout at stderr.
-        from tui_gateway.tool_progress import _todo_state_from_history
         history, display = list(snapshot.history), {}
         if params.get('display_projection'):
             # A micro-compaction merge stays in ``messages`` (an undo target); its originals are what shows.
             display['display_messages'] = display_projection(
                 [row for row in history if not model_only(row)], self.authority.profile_id)
         return {'session_id': ref.session_id, 'stored_session_id': ref.session_id,
-                'messages': history, **display, 'message_count': len(history),
+                **await _resume_transcript(self.authority, ref, snapshot, history, omit), **display,
                 'running': snapshot.handle.execution_state == 'running',
                 'authority_epoch': snapshot.handle.authority_epoch,
                 'replay_epoch': snapshot.replay_epoch, 'last_sequence': snapshot.last_sequence,
@@ -649,10 +688,7 @@ class AuthorityConnection:
                 'pending_connection': pending_connection(self.authority, ref.session_id),
                 # Still-waiting server→client requests: the event ring cannot say "still open".
                 'open_requests': open_requests(self.authority.sessions[snapshot.handle.ref.session_id].event_stream,
-                                               snapshot.handle.ref.session_id),
-                # The newest todo result in the transcript, the snapshot the session's agent hydrates
-                # from and its ``todo.updated`` frames carried: a viewer attaching shows the plan now.
-                'todo_state': _todo_state_from_history(history)}
+                                               snapshot.handle.ref.session_id)}
 
     def _spawn_notice(self, ref):
         """Low-disk auto-prune question for this viewer, off the resume reply's path."""
@@ -855,13 +891,19 @@ class AuthorityConnection:
 
     def _resolve_response(self, frame):
         from gateway.session_server_requests import may_settle, resolve
+        asked = []
 
         def entitled(session_id, events):
-            # The same rule ``clarify.lock`` applies to the same request id (attached + respond).
-            return may_settle(self.authority, self.actor, session_id, events)
+            asked.append(session_id)
+            # The same rule ``clarify.lock`` applies to the same request id (attached + respond). A
+            # response frame names no profile: a host-scoped socket answers a sibling's request as the
+            # sibling connection that attached it.
+            return any(may_settle(connection.authority, connection.actor, session_id, events)
+                       for connection in (self, *self._siblings.values()))
         if not resolve(frame, session_ok=entitled):
             import logging
-            logging.getLogger(__name__).debug('dropping response for unknown server request id=%r', frame.get('id'))
+            what = 'a server request this connection may not settle' if asked else 'unknown server request'
+            logging.getLogger(__name__).debug('dropping response for %s id=%r', what, frame.get('id'))
 
     async def respond(self, ref, params):
         if set(params) != {"session_id", "execution_generation", "prompt_id", "choice"}:

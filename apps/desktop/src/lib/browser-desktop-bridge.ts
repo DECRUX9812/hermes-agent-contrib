@@ -11,7 +11,7 @@ import { createBrowserSettings } from '@/lib/browser-settings'
 import { createBrowserTerminal } from '@/lib/browser-terminal'
 import { browserApi, browserBootstrap, ticketedWebsocketUrl } from '@/lib/browser-transport'
 import { createBrowserUploadsBridge } from '@/lib/browser-uploads'
-import { createBrowserWindowOpener, sessionWindowTarget } from '@/lib/browser-window'
+import { announceWebappWindow, createBrowserWindowOpener, sessionWindowTarget } from '@/lib/browser-window'
 import { createBrowserZoom } from '@/lib/browser-zoom'
 import { failDesktopBoot } from '@/store/boot'
 import { $connection } from '@/store/session'
@@ -42,6 +42,9 @@ export function installBrowserDesktopBridge(): boolean {
     return false
   }
   console.log('[browser-bridge] installing browser desktop bridge with bootstrap:', bootstrap)
+
+  // A gated host's opener waits for this window to say it booted (createBrowserWindowOpener).
+  if (!bootstrap.privateSession) {announceWebappWindow()}
 
   const api = <T>(request: HermesApiRequest) => browserApi<T>(bootstrap, request)
 

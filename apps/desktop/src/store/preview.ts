@@ -1,3 +1,4 @@
+import { randomUuid } from '@hermes/shared'
 import { atom, computed } from 'nanostores'
 
 import { dismissTreePane, isPaneVisible } from '@/components/pane-shell/tree/store'
@@ -792,11 +793,18 @@ export function markBrowserTabPopped(tabId: string, popped: boolean) {
   $poppedBrowserTabIds.set(next)
 }
 
+/** The Browser tab floating over the app (see `browser-float.ts`), if any.
+ *  Like a pop-out, the docked tree hides it so the page isn't in two places;
+ *  docking it again returns it to the tree. Memory-only. */
+export const $floatingBrowserTabId = atom<null | RightRailTabId>(null)
+
 /** The FOCUSED session's tabs that still belong in the docked layout tree —
  *  the layout-tree mirror renders only these (#73890): switching sessions
- *  swaps the drawer, and a popped-out Browser pane stays out. */
-export const $dockedVisiblePreviewTabs = computed([$visiblePreviewTabs, $poppedBrowserTabIds], (tabs, popped) =>
-  popped.size === 0 ? tabs : tabs.filter(tab => !popped.has(tab.id))
+ *  swaps the drawer, and a popped-out or floating Browser pane stays out. */
+export const $dockedVisiblePreviewTabs = computed(
+  [$visiblePreviewTabs, $poppedBrowserTabIds, $floatingBrowserTabId],
+  (tabs, popped, floating) =>
+    popped.size === 0 && !floating ? tabs : tabs.filter(tab => !popped.has(tab.id) && tab.id !== floating)
 )
 
 export const $previewReloadRequest = atom(0)
@@ -853,8 +861,7 @@ const isBrowserTab = (tab: PreviewTab): boolean => tab.target.kind === 'url'
  *  handed out twice, so per-tab state keyed by it (`$browserPages`, the console
  *  buffer) cannot resurface under a later tab if a close ever fails to wipe it. */
 function mintBrowserTabId(): RightRailTabId {
-  const unique =
-    globalThis.crypto?.randomUUID?.() ?? `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}`
+  const unique = randomUuid()
 
   return `url:browser-${unique}`
 }

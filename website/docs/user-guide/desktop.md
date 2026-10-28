@@ -55,9 +55,13 @@ bare URL shows instructions instead of access: run `hermes webapp` again for a n
 Window**, profile windows and session pop-outs hand the sign-in over with their own one-use link. On
 Linux the gateway checks that the browser's connection belongs to your OS user; on Windows the link
 travels only in the browser launcher's command line, which other standard users cannot read. On macOS,
-the BSDs and WSL (where the Windows browser reaches the gateway through WSL's relay) neither holds, so
-the command prints the one-use link for you to open instead of opening a browser; until it is used it
-signs a browser in as you, so keep it private. `hermes webapp --sign-out` signs out every
+the BSDs and illumos neither holds, so the command writes the link into a page only your OS user can
+read (in the gateway home's `webapp` folder) and opens that page: the launcher sees only its path.
+On macOS a browser can open where you don't see it (over SSH, on the Mac's own screen): if none did,
+run `hermes webapp --no-open` for the link. Where it cannot open a browser (`--no-open`, an SSH session
+on the BSDs or illumos) and on WSL (where the Windows browser reaches the gateway through WSL's
+relay), it prints the one-use link for you to open instead; until it
+is used it signs a browser in as you, so keep it private. `hermes webapp --sign-out` signs out every
 tab at once: their open connections close, Bot Desktop viewers included, and each shows the sign-in
 instructions. Behind the sign-in gate (below) it also signs out every browser that signed in with a
 dashboard account; each must sign in again. The account tokens such a login keeps in its cookies work
@@ -75,8 +79,16 @@ requires the same sign-in. `hermes webapp` then opens the Webapp's address, wher
 your dashboard account: `webapp.public_url` when set; on the LAN, the address **Web Access → Start**
 registered Nous sign-in for, while it is still this machine's address and the Webapp's port; else the
 loopback address (a password provider, or sign-in you set up by hand for that address). One-use
-links serve only a Webapp that needs no sign-in. HTTPS is strongly recommended remotely and browsers
-require it for some microphone and clipboard features.
+links serve only a Webapp that needs no sign-in. HTTPS is strongly recommended remotely.
+
+**What plain HTTP loses.** Browsers turn off features that need a secure context on a plain-HTTP
+address other than loopback (`http://localhost` and `http://127.0.0.1` count as secure): the bot
+screen viewer, the microphone (dictation, live voice and the remote wake word), reading the clipboard
+(terminal paste, pasting an image) and system notifications. The bot screen and
+live voice say so instead of opening. `hermes webapp` and `hermes webapp --status` print a note when
+the address a browser opens (`webapp.public_url`, else the LAN address **Start** registered sign-in
+for) is plain HTTP on another host. To keep these features, open the Webapp over
+HTTPS (`webapp.public_url`) or through an SSH tunnel to `127.0.0.1`.
 
 :::warning Treat Webapp access like access to Hermes on the host
 A signed-in Webapp user can run arbitrary commands as the OS account running Hermes, run agent tools,
@@ -113,8 +125,10 @@ your Nous account (Providers → Accounts). It appears only in the native app on
 and only that app can change it: a browser signed in over the network cannot.
 
 - **This network:** devices on the same Wi-Fi open `http://<this computer's address>:<port>`, where the
-  port is `webapp.port` (9120 unless you set another). This is plain HTTP: the connection is not
-  encrypted, so others on the network could read it. Use it only on a network you trust.
+  port is `webapp.port` (9120 unless you set another, or Start chose one for a standalone profile).
+  This is plain HTTP: the connection is not encrypted, so others on the network could read it, and
+  browsers turn off the features listed under **What plain HTTP loses** above. Use it only on a
+  network you trust.
 - **My own URL:** an HTTPS address you already run (Tailscale Serve, a tunnel or a reverse proxy) that
   forwards to `http://127.0.0.1:<port>`. It is saved as `webapp.public_url`. Never forward that port
   from your router directly.
@@ -132,8 +146,10 @@ Web Access changes only the `webapp:` settings and keeps your `webapp.port`. It 
 Its Nous sign-in uses a sign-in client of its own, which the first Start registers with your Nous
 account and keeps in the gateway's home (`webapp/sign-in-registration.json`). Start never reads or
 writes `HERMES_DASHBOARD_OAUTH_CLIENT_ID` in `.env`, so turning Web Access on never changes the
-standalone dashboard's Nous sign-in. A standalone profile with its own gateway needs its own
-`webapp.port` to serve a Webapp beside the default gateway's. `hermes update` rebuilds the Webapp
+standalone dashboard's Nous sign-in. A standalone profile with its own gateway serves its Webapp on a
+port of its own: when its `webapp.port` is unset, the first Start picks the first free port above 9120
+that no other profile uses and saves it as that profile's `webapp.port`, so its address stays the same
+after restarts. A `webapp.port` you set is always kept. `hermes update` rebuilds the Webapp
 whenever a profile has it turned on.
 If that build fails, the gateway reports the Webapp unavailable, and the page says so, until
 `hermes webapp` rebuilds it.
@@ -808,6 +824,10 @@ launcher. PM selects its interpreter and dependency generation. A missing
 bootstrap marker does not force installation when that launcher works.
 
 On Linux, Chromium's own errors go to `HERMES_HOME/logs/desktop-chromium.log`, and a crash of the shell itself leaves a minidump under the app's `Crashpad/` directory (inside Electron's user-data directory, next to `connection.json`). If the window vanishes with `SIGTRAP` in the journal, the `FATAL:` line in that log names the check that fired; attach it to the bug report. Nothing is uploaded.
+
+On Ubuntu 23.10 and later, `kernel.apparmor_restrict_unprivileged_userns=1` blocks Chromium's user-namespace sandbox for any program without an AppArmor profile. `hermes desktop` checks this through the Hermes binary itself and then uses Chromium's setuid `chrome-sandbox` helper (root-owned, mode 4755), which asks for `sudo` again after each rebuild. That helper is the recommended route. If the helper cannot be set up either, Desktop starts with `--no-sandbox` and the launcher prints both commands, the helper first.
+
+`hermes desktop --install-apparmor-profile` is the opt-in alternative that survives rebuilds: it installs a profile under `/etc/apparmor.d/` (sudo required) that grants user namespaces to this app's path. Chrome and VS Code get the same grant, but for root-owned binaries. This app's path is usually in a checkout your account can write, so any program running as you could put its own binary there and get the user namespaces the restriction withholds. For your account, that is about the same as turning the restriction off. The command refuses install paths containing AppArmor pattern characters (`? * [ ] { } ^ " \` and non-printable characters; see apparmor.d(5) "Globbing"). It checks the profile with `apparmor_parser --skip-kernel-load` before writing anything, and removes the file again if loading it fails.
 
 If Python dependencies are damaged, run the installation's `hermes pm repair`.
 Then restart Desktop. Do not delete guessed `venv` paths or PM facts. For
