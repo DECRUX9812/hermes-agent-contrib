@@ -57,7 +57,7 @@ build_and_reload() {
   if curl -sf -o /dev/null --max-time 10 "$LOCAL_URL/" ; then
     echo "Local backend answering on $LOCAL_URL"
   else
-    echo "WARNING: $LOCAL_URL did not answer yet — check: journalctl --user -u $SERVICE -n 40"
+    die "$LOCAL_URL did not answer after restart — deploy NOT live. Check: journalctl --user -u $SERVICE -n 40"
   fi
   echo "Live site: $SITE_URL"
 }
