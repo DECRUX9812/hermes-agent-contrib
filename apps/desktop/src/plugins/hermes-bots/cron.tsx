@@ -448,7 +448,7 @@ export function RoutineDetailDialog({ job, onClose, open }: RoutineDetailDialogP
         </DialogHeader>
         <div className="grid gap-3.5">
           {issue ? (
-            <div className="rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs leading-5 text-(--ui-accent)">
+            <div className="rounded-md border border-(--ui-stroke-tertiary) px-3 py-2 text-xs leading-5 text-(--ui-accent)">
               {issue}
             </div>
           ) : null}
@@ -463,7 +463,7 @@ export function RoutineDetailDialog({ job, onClose, open }: RoutineDetailDialogP
           {instruction
             ? labeled(
                 b.cron.instruction,
-                <div className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs leading-5 text-(--ui-text-secondary)">
+                <div className="max-h-48 overflow-y-auto whitespace-pre-wrap break-words rounded-md border border-(--ui-stroke-tertiary) px-3 py-2 text-xs leading-5 text-(--ui-text-secondary)">
                   {instruction}
                 </div>
               )
@@ -536,19 +536,16 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
 
   return (
     <div
-      // `min-w-0` on the card AND on each line: a grid item's min-width defaults
+      // `min-w-0` on the row AND on each line: a grid item's min-width defaults
       // to `auto`, so a long nowrap title made the row as wide as its text (~530px
       // in the 250px pane) and the pane's overflow clipped the Switch and delete
       // control clean off the right edge, with the title hard-cut instead of
       // ellipsized (#91623). The chain has to be unbroken — one `auto` in it
       // re-pins the whole row.
-      className={cn(
-        'group grid min-w-0 gap-1.5 rounded-lg border border-(--ui-stroke-secondary) p-2.5 transition-colors',
-        'hover:border-(--ui-stroke-primary, var(--ui-stroke-secondary))'
-      )}
+      className="group grid min-w-0 gap-0.5 rounded-md px-1.5 py-1.5 transition-colors hover:bg-(--chrome-action-hover)"
     >
       <div className="flex min-w-0 items-center gap-2">
-        {/* The row's own button, not a click handler on the card: the switch */
+        {/* The row's own button, not a click handler on the row: the switch */
         /* and delete control are siblings, so opening the details can never */
         /* swallow a toggle (and a nested button would be invalid markup). */}
         <RowButton
@@ -574,7 +571,7 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
         <Tip label={t.common.delete}>
           <Button
             aria-label={t.common.delete}
-            className="opacity-0 transition-opacity group-hover:opacity-100"
+            className="opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100"
             disabled={busy}
             onClick={() => act('remove')}
             size="icon-xs"
@@ -584,22 +581,23 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
           </Button>
         </Tip>
       </div>
-      {/* The schedule pill and the next-run label keep their words: when the
+      {/* The schedule and the next-run label keep their words: when the
           pane can't fit both on one line the next-run label wraps to a second
           line instead of being cut to "next in 4" (#89534). */}
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 pl-3.5">
-        <span className="inline-flex shrink-0 items-center gap-1 whitespace-nowrap rounded-full border border-(--ui-stroke-secondary) px-1.5 py-0.5 text-[0.65rem] text-(--ui-text-tertiary)">
-          <Codicon className="text-[0.7rem]" name="calendar" />
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-3.5 text-[0.65rem]">
+        <span className="inline-flex min-w-0 items-center gap-1 whitespace-nowrap text-(--ui-text-tertiary)">
+          <Codicon className="shrink-0 text-[0.7rem]" name="calendar" />
           {scheduleLabel(job.schedule)}
         </span>
-        <span className="ml-auto shrink-0 whitespace-nowrap text-[0.65rem] text-(--ui-text-quaternary)">
+        <span className="ml-auto shrink-0 whitespace-nowrap text-(--ui-text-quaternary)">
           {active && job.next_run_at
             ? `${nextRunOverdueMs(job) === null ? c.next : c.overdueSince} ${relativeTime(new Date(job.next_run_at).getTime())}`
             : c.states.paused}
         </span>
       </div>
       {legacyUnsafe ? (
-        <div className="rounded-md border border-(--ui-stroke-secondary) px-2 py-1.5 text-[0.65rem] leading-4 text-(--ui-accent)">
+        <div className="flex items-center gap-1.5 pl-3.5 pt-0.5 text-[0.65rem] leading-4 text-(--ui-accent)">
+          <Codicon className="shrink-0" name="warning" />
           {b.cron.legacyUnsafe}
         </div>
       ) : null}
@@ -1107,7 +1105,7 @@ export function CreateRoutineDialog({ bot, open, onClose }: CreateRoutineDialogP
             {b.cron.continuity}
           </label>
           {error ? (
-            <div className="rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-accent)">
+            <div className="rounded-md border border-(--ui-stroke-tertiary) px-3 py-2 text-xs text-(--ui-accent)">
               {error}
             </div>
           ) : null}
@@ -1282,7 +1280,7 @@ export function RoutinesPane() {
           </Button>
         </Tip>
       </div>
-      <div className="mx-3 border-t border-(--ui-stroke-secondary)" />
+      <div className="mx-3 border-t border-(--ui-stroke-tertiary)" />
       {staleNotice ? (
         <div className="mx-3 mt-2 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
           {staleNotice}
@@ -1318,7 +1316,7 @@ export function RoutinesPane() {
         />
       ) : (
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div className="grid gap-1.5 px-2.5 py-2">
+          <div className="grid gap-0.5 px-1.5 py-1.5">
             {jobs.map(job => (
               <RoutineRow job={job} key={job.job_id} onOpen={opened => setDetailJobId(opened.job_id)} owner={owner} />
             ))}

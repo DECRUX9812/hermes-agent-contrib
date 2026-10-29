@@ -120,6 +120,17 @@ describe('the pane follows the roster hydrating after mount', () => {
     // The dialog opens naming the resolved owner, not a placeholder.
     expect((await screen.findByRole('dialog')).textContent).toMatch(/research/i)
   })
+
+  it('rows stay flat and the delete affordance reaches keyboard focus', async () => {
+    renderPane()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    const remove = await screen.findByRole('button', { name: 'Delete' })
+    // Keyboard focus must reach the same affordance pointer hover reveals.
+    expect(remove.className).toContain('group-focus-within')
+    // Rows group with whitespace, not card chrome (DESIGN.md: flat over boxed).
+    expect(remove.closest('.group')?.getAttribute('class')).not.toContain('border')
+  })
 })
 
 describe('identity matching stays exact', () => {
