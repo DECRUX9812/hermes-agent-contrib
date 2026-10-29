@@ -281,7 +281,7 @@ describe('useMessageStream status-bar usage scoping', () => {
   it('clears a stale background compression count when session.info omits it', () => {
     sessionStates.set('background-session', {
       ...createClientSessionState(),
-      usage: { ...BASELINE, compressions: 4, context_percent: 55 }
+      usage: { ...BASELINE, cache_hit_pct: 86, compressions: 4, context_percent: 55 }
     })
     mountStream()
 
@@ -296,8 +296,37 @@ describe('useMessageStream status-bar usage scoping', () => {
     const usage = sessionStates.get('background-session')?.usage
     expect($currentUsage.get()).toEqual(BASELINE)
     expect(usage?.compressions).toBeUndefined()
+    expect(usage?.cache_hit_pct).toBeUndefined()
     expect(usage?.context_percent).toBe(55)
     expect(usage?.calls).toBe(3)
+  })
+
+  it('drops volatile status-bar figures a same-session snapshot omits (#146430)', () => {
+    // A re-applied session.info snapshot with a fresh runtime has no cache
+    // reads or latency history yet, so it omits them — merge alone would keep
+    // painting the previous runtime's numbers.
+    $currentUsage.set({ ...BASELINE, avg_tps: 63.3, cache_hit_pct: 86, context_percent: 21 })
+    mountStream()
+
+    act(() =>
+      stream.handleEvent({
+        payload: { usage: { calls: 3, input: 700, output: 60, total: 760 } },
+        session_id: SID,
+        type: 'session.info'
+      })
+    )
+
+    const usage = $currentUsage.get()
+    expect(usage.cache_hit_pct).toBeUndefined()
+    expect(usage.avg_tps).toBeUndefined()
+    expect(usage.compressions).toBeUndefined()
+    // The session's own occupancy reading still merges across re-informs.
+    expect(usage.context_percent).toBe(21)
+    expect(usage.calls).toBe(3)
+    // The status bar renders these as empty cells, never the old session's
+    // numbers.
+    expect(cacheHitLabel(usage)).toBe('')
+    expect(tokensPerSecondLabel(usage)).toBe('')
   })
 
   it('applies message.complete usage from the focused session', () => {

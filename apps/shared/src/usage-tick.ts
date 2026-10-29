@@ -153,3 +153,55 @@ export function mergeUsage<P extends object, N extends { calls?: number; plan_ga
 
   return merged
 }
+
+/** Runtime-derived usage fields an agent's snapshot legitimately omits — the
+ *  Python builders omit absent figures rather than sending zeros (`tui_usage`
+ *  docstring: "Absent figures are omitted, never fabricated as zeros"), and the
+ *  values they do send describe the LIVE runtime (rolling latency/tps history,
+ *  compressor count, cache reads, running subagents). A merge keeps an omitted
+ *  field's stored value, so any session-scoped snapshot — the SAME session's
+ *  `session.info` event with a fresh agent, or a different session's resume —
+ *  must clear them explicitly or a stale figure stays painted (#146430:
+ *  `compressions` already cleared while `cache_hit_pct` / `avg_tps` kept
+ *  showing the conversation you left). `plan_gauge` is window-scoped and stays
+ *  with `mergeUsage`'s own carry/drop. */
+export const SESSION_VOLATILE_USAGE_KEYS = [
+  'active_subagents',
+  'avg_latency_s',
+  'avg_tps',
+  'cache_hit_pct',
+  'compressions',
+  'cost_usd'
+] as const
+
+/** Session-persisted usage fields — the session's own data, still true for a
+ *  new runtime of the SAME session, so same-session snapshots keep merging
+ *  them. Only a session SWITCH clears them: a different conversation's
+ *  occupancy figures must not paint under its header. */
+export const SESSION_CONTEXT_USAGE_KEYS = [
+  'context_estimated',
+  'context_max',
+  'context_percent',
+  'context_source',
+  'context_used'
+] as const
+
+export const SESSION_SCOPED_USAGE_KEYS = [
+  ...SESSION_VOLATILE_USAGE_KEYS,
+  ...SESSION_CONTEXT_USAGE_KEYS
+] as const
+
+/** Spread layer over `mergeUsage` for an authoritative per-session usage
+ *  snapshot (`session.info` events, `session.resume`, `session.usage` replies
+ *  — NOT mid-turn `session.usage` ticks, which are partial by design): each
+ *  key mirrors the snapshot literally — `undefined` when the snapshot omits
+ *  it, clearing the stored value; a `null`/missing snapshot clears every key
+ *  (session-switch preview). Defaults to the full session-scoped set; pass
+ *  `SESSION_VOLATILE_USAGE_KEYS` for a same-session snapshot where the
+ *  persisted context fields legitimately keep their last reading. */
+export function sessionScopedUsageLayer<U extends object>(
+  usage: Partial<U> | null | undefined,
+  keys: readonly string[] = SESSION_SCOPED_USAGE_KEYS
+): Partial<U> {
+  return Object.fromEntries(keys.map(key => [key, usage?.[key as keyof U]])) as Partial<U>
+}

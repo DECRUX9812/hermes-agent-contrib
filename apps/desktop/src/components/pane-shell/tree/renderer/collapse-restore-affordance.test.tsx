@@ -215,4 +215,27 @@ describe('a stacked tool zone collapsed in a row keeps a vertical restore rail',
     expect(tabEl('terminal')?.getAttribute('data-vertical')).toBe('true')
     expect(tabEl('logs')?.getAttribute('data-vertical')).toBe('true')
   })
+
+  it('renders a contributed tabIcon instead of the rotated label', () => {
+    registerPane('terminal2', { placement: 'bottom', tabIcon: () => <i data-testid="rail-icon" /> }, 'Terminal')
+    markCollapsePane('terminal2')
+    registerPaneCloser('terminal2', () => undefined)
+    $layoutTree.set(
+      split('row', [
+        group(['workspace'], { active: 'workspace', id: 'g-main' }),
+        group(['terminal2'], { active: 'terminal2', id: 'g-tools2' })
+      ])
+    )
+    setTreeGroupMinimized('g-tools2', true)
+    render(<LiveTreeGroup index={1} parentAxis="row" />)
+
+    const tab = tabEl('terminal2')
+    expect(tab).toBeTruthy()
+    // The glyph replaces the sideways text entirely — the name moves to the
+    // accessible label and the hover title.
+    expect(tab?.querySelector('[data-testid="rail-icon"]')).toBeTruthy()
+    expect(tab?.textContent).not.toMatch(/terminal/i)
+    expect(tab?.getAttribute('aria-label')).toBe('Terminal')
+    expect(tab?.getAttribute('title')).toBe('Terminal')
+  })
 })

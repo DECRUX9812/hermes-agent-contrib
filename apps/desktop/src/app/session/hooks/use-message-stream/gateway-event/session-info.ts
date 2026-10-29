@@ -1,4 +1,9 @@
-import { mergeUsage, usageFromTick } from '@hermes/shared'
+import {
+  mergeUsage,
+  SESSION_VOLATILE_USAGE_KEYS,
+  sessionScopedUsageLayer,
+  usageFromTick
+} from '@hermes/shared'
 
 import { finalizeInterruptedMessages } from '@/lib/chat-messages'
 import { normalizePersonalityValue } from '@/lib/chat-runtime'
@@ -308,10 +313,13 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
             ...nextState,
             usage: {
               ...mergeUsage({ ...previousUsage }, payload.usage),
+              ...sessionScopedUsageLayer(payload.usage, SESSION_VOLATILE_USAGE_KEYS),
               calls: payload.usage.calls ?? previousUsage?.calls ?? 0,
               // session.info is authoritative: omission means unavailable, not
-              // "reuse the previous runtime's compression count".
-              compressions: payload.usage.compressions,
+              // "reuse the previous runtime's figure". Volatile fields (the
+              // live runtime's compressions, cache-hit, tps, latency, active
+              // subagents, cost) mirror the snapshot above; the persisted
+              // context fields still merge — same session, same occupancy.
               input: payload.usage.input ?? previousUsage?.input ?? 0,
               output: payload.usage.output ?? previousUsage?.output ?? 0,
               total: payload.usage.total ?? previousUsage?.total ?? 0
@@ -508,9 +516,14 @@ export function handleSessionInfoEvent(ctx: GatewayEventContext): boolean {
 
     if (payload?.usage && (!explicitSid || isActiveEvent)) {
       const usage = payload.usage
+      // session.info is an authoritative snapshot: an omitted volatile figure
+      // clears, it never keeps a previous runtime's merged value (#146430).
+      // Context fields stay merged — a fresh agent of the SAME session still
+      // owns its last occupancy reading; a session switch clears them too,
+      // through the stored-session preview path.
       setCurrentUsage(current => ({
         ...mergeUsage(current, usage),
-        compressions: usage.compressions
+        ...sessionScopedUsageLayer(usage, SESSION_VOLATILE_USAGE_KEYS)
       }))
     }
 

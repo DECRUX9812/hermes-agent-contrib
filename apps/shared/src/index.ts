@@ -196,7 +196,15 @@ export {
 } from './translucency'
 
 export { type UpdateDebt, updateDebt, type UpdateDebtReceipt, type UpdateDebtStep } from './update-debt'
-export { mergeUsage, usageFromTick, type UsageTickPayload } from './usage-tick'
+export {
+  mergeUsage,
+  SESSION_CONTEXT_USAGE_KEYS,
+  SESSION_SCOPED_USAGE_KEYS,
+  SESSION_VOLATILE_USAGE_KEYS,
+  sessionScopedUsageLayer,
+  usageFromTick,
+  type UsageTickPayload
+} from './usage-tick'
 export {
   BROWSER_NATIVE_DIAL,
   buildHermesWebSocketUrl,

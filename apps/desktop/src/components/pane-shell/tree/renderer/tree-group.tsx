@@ -662,11 +662,13 @@ export function TreeGroup({
               {shown.map(paneId => {
                 // A lone tab is a title, not a document: no ✕ to clutter it.
                 const closeable = shown.length > 1 ? closeableTab(paneId) : undefined
+                const icon = paneChrome(paneFor(paneId)).tabIcon?.()
 
                 return (
                   <PaneTab
                     // Match the horizontal minimized strip: no tab is "active"
                     // while collapsed (there's no content surface to merge into).
+                    aria-label={tabText(paneId)}
                     aria-selected={paneId === activeId}
                     data-tree-tab={paneId}
                     key={paneId}
@@ -677,9 +679,18 @@ export function TreeGroup({
                     onClose={closeable ? () => closeTab(paneId) : undefined}
                     role="tab"
                     side={railSide}
+                    title={tabText(paneId)}
                     vertical
                   >
-                    <PaneTabLabel>{tabLabel(paneId)}</PaneTabLabel>
+                    {icon ? (
+                      // Out of the rail's vertical writing mode: the glyph
+                      // reads upright, icon-only like an activity bar.
+                      <span className="flex h-8 w-full items-center justify-center [writing-mode:horizontal-tb]">
+                        {icon}
+                      </span>
+                    ) : (
+                      <PaneTabLabel>{tabLabel(paneId)}</PaneTabLabel>
+                    )}
                   </PaneTab>
                 )
               })}

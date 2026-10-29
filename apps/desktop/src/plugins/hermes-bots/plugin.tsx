@@ -17,6 +17,7 @@
 
 import {
   CHAT_EMPTY_AREA,
+  Codicon,
   COMPOSER_AREAS,
   host,
   LocalizedTabTitle,
@@ -473,6 +474,7 @@ export default {
         width: '260px',
         collapsible: true,
         hideOnly: true,
+        tabIcon: () => <Codicon name="robot" size="0.9375rem" />,
         tabTitle: () => <LocalizedTabTitle select={t => t.common.bots} />,
         tabTitleText: () => translateNow('common.bots'),
         dock: {
