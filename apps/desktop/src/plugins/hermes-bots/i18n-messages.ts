@@ -459,4 +459,23 @@ export type BotsMessages = {
     runsRaw: string
     timesTotal: (count: number) => string
   }
+  panel: {
+    title: string
+    tasks: string
+    scheduled: string
+    history: string
+    saved: string
+    now: string
+    today: string
+    yesterday: string
+    workingNow: string
+    offline: string
+    tasksCompleted: (count: number) => string
+    noRuns: string
+    noSaved: string
+    noHistory: string
+    openChat: string
+    updatedNow: string
+  }
+
 }

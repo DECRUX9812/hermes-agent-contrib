@@ -1693,7 +1693,7 @@ export { StatusDot, type StatusTone } from '@/components/status-dot'
 export { Badge } from '@/components/ui/badge'
 export { Button } from '@/components/ui/button'
 export { Checkbox } from '@/components/ui/checkbox'
-export { Codicon } from '@/components/ui/codicon'
+export { Codicon, codiconIcon } from '@/components/ui/codicon'
 /** THE color picker — swatch grid plus a clear row that means "back to the
  *  deterministic color". Feed it `PROFILE_SWATCHES` so a hand-picked color
  *  shares the generated palette's saturation and lightness; a bespoke grid of

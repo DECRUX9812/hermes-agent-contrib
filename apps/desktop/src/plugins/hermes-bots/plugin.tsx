@@ -28,6 +28,7 @@ import {
 import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@hermes/plugin-sdk'
 
 import { startFaceClock, stopFaceClock } from './avatar'
+import { BotContextPanel } from './bot-context-panel'
 import {
   $botChatFocused,
   $botsPaneVisible,
@@ -40,7 +41,7 @@ import {
 } from './bot-state'
 import { isCanonicalChatOnScreen, openBotCanonicalChat } from './canonical-chat'
 import { BotChatEmpty } from './chat-empty'
-import { bindProfileSync, RoutinesPane } from './cron'
+import { bindProfileSync } from './cron'
 import {
   $botMeta,
   $lastRoster,
@@ -520,9 +521,9 @@ export default {
           // arrives as the right edge's vertical tab and takes no width off the
           // chat until the user opens it.
           defaultCollapsed: true,
-          width: '250px'
+          width: '320px'
         },
-        render: () => <RoutinesPane />
+        render: () => <BotContextPanel />
       })
 
       // The pane's ✕ remembers a Close across launches, and nothing else ever

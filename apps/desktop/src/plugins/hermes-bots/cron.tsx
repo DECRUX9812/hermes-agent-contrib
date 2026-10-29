@@ -92,7 +92,7 @@ function routineBot(job: RoutineJob | null | undefined): null | string {
   return match ? match[1].toLowerCase() : null
 }
 
-function routineTitle(job: RoutineJob | null | undefined, c: BotsText['cron']): string {
+export function routineTitle(job: RoutineJob | null | undefined, c: BotsText['cron']): string {
   return (job?.name || '').replace(BOT_TAG_RE, '') || c.untitled
 }
 
@@ -287,7 +287,7 @@ export function routinePrompt(
   )
 }
 
-function scheduleLabel(schedule: string | undefined): string {
+export function scheduleLabel(schedule: string | undefined): string {
   const c = botsText().cron
   const once = /^once in (.+)$/.exec(schedule || '')
 

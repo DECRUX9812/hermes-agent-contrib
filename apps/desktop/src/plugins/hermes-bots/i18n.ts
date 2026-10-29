@@ -479,6 +479,24 @@ const en: BotsMessages = {
     runsInterval: (count, unit) => `Runs every ${count} ${unit}`,
     runsRaw: 'Raw schedule — every Nm/Nh/Nd or 5-field cron',
     timesTotal: count => `, ${count} time(s) total`
+  },
+  panel: {
+    title: 'Bot context',
+    tasks: 'Tasks',
+    scheduled: 'Scheduled',
+    history: 'History',
+    saved: 'Saved',
+    now: 'Now',
+    today: 'Today',
+    yesterday: 'Yesterday',
+    workingNow: 'Active in a group conversation',
+    offline: 'Offline',
+    tasksCompleted: count => (count === 1 ? '1 task completed' : `${count} tasks completed`),
+    noRuns: 'No completed runs yet',
+    noSaved: 'Nothing saved yet',
+    noHistory: 'No recent conversations',
+    openChat: 'Open chat',
+    updatedNow: 'Updated just now'
   }
 }
 
@@ -928,6 +946,24 @@ const ja: BotsMessages = {
     runsInterval: (count, unit) => `${count}${unit}ごとに実行します`,
     runsRaw: '生のスケジュール — Nm/Nh/Nd または5フィールドのcron',
     timesTotal: count => `、合計${count}回`
+  },
+  panel: {
+    title: 'ボットコンテキスト',
+    tasks: 'タスク',
+    scheduled: 'スケジュール',
+    history: '履歴',
+    saved: '保存済み',
+    now: '現在',
+    today: '今日',
+    yesterday: '昨日',
+    workingNow: 'グループ会話で作業中',
+    offline: 'オフライン',
+    tasksCompleted: count => `${count}件完了`,
+    noRuns: '完了した実行はまだありません',
+    noSaved: '保存された項目はまだありません',
+    noHistory: '最近の会話はありません',
+    openChat: 'チャットを開く',
+    updatedNow: 'たった今更新'
   }
 }
 
@@ -1360,6 +1396,24 @@ const zh: BotsMessages = {
     runsInterval: (count, unit) => `每 ${count} ${unit}运行`,
     runsRaw: '原始计划 — every Nm/Nh/Nd 或 5 段 cron',
     timesTotal: count => `，共 ${count} 次`
+  },
+  panel: {
+    title: '机器人上下文',
+    tasks: '任务',
+    scheduled: '定时',
+    history: '历史',
+    saved: '已保存',
+    now: '当前',
+    today: '今天',
+    yesterday: '昨天',
+    workingNow: '正在群组对话中',
+    offline: '离线',
+    tasksCompleted: count => `已完成 ${count} 个任务`,
+    noRuns: '暂无已完成的运行',
+    noSaved: '暂无已保存的内容',
+    noHistory: '暂无最近会话',
+    openChat: '打开聊天',
+    updatedNow: '刚刚更新'
   }
 }
 
@@ -1792,6 +1846,24 @@ const zhHant: BotsMessages = {
     runsInterval: (count, unit) => `每 ${count} ${unit}執行`,
     runsRaw: '原始排程 — every Nm/Nh/Nd 或 5 段 cron',
     timesTotal: count => `，共 ${count} 次`
+  },
+  panel: {
+    title: '機器人上下文',
+    tasks: '任務',
+    scheduled: '定時',
+    history: '歷史',
+    saved: '已儲存',
+    now: '現在',
+    today: '今天',
+    yesterday: '昨天',
+    workingNow: '正在群組對話中',
+    offline: '離線',
+    tasksCompleted: count => `已完成 ${count} 個任務`,
+    noRuns: '尚無已完成的執行',
+    noSaved: '尚無已儲存的內容',
+    noHistory: '尚無最近交談',
+    openChat: '開啟聊天',
+    updatedNow: '剛剛更新'
   }
 }
 
