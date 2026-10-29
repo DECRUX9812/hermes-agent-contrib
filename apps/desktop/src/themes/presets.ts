@@ -22,6 +22,7 @@ import { THEME_PRESET_PALETTES } from '@hermes/shared'
 
 import { skinToDesktopTheme } from './skin'
 import type { DesktopTheme, DesktopThemeTypography } from './types'
+import { paperTheme } from './warm-paper'
 
 // Color-emoji fonts to append to every stack as a last resort. None of the UI
 // text/mono fonts carry emoji glyphs, so without this emoji render as tofu
@@ -472,7 +473,8 @@ export const BUILTIN_THEMES: Record<string, DesktopTheme> = {
   mono: monoTheme,
   slate: slateTheme,
   cyberpunk: cyberpunkTheme,
-  graphite: graphiteTheme
+  graphite: graphiteTheme,
+  'warm-paper': paperTheme
 }
 
 export const BUILTIN_THEME_LIST = Object.values(BUILTIN_THEMES)

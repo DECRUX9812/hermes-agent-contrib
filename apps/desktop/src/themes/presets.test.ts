@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { BUILTIN_THEME_LIST, DEFAULT_TYPOGRAPHY, nousTheme } from './presets'
+import { BUILTIN_THEME_LIST, BUILTIN_THEMES, DEFAULT_SKIN_NAME, DEFAULT_TYPOGRAPHY, nousTheme, RETIRED_SKINS } from './presets'
+
+it('offers Warm Paper without restoring the retired paper preference or changing the default', () => {
+  expect(BUILTIN_THEMES['warm-paper'].name).toBe('warm-paper')
+  expect(RETIRED_SKINS.has('paper')).toBe(true)
+  expect(RETIRED_SKINS.has('warm-paper')).toBe(false)
+  expect(DEFAULT_SKIN_NAME).toBe('graphite')
+})
 
 // #40364: none of the UI text/mono fonts carry emoji glyphs, so every font
 // stack must end with a color-emoji fallback or emoji render as tofu on
