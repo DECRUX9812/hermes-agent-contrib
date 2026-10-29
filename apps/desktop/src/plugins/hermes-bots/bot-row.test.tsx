@@ -20,6 +20,7 @@ import { act, fireEvent, render, screen } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { BotRow } from './bot-row'
+import { $botMeta } from './data'
 import { $groupChats } from './group-chat'
 import { translateBotsIn } from './i18n-test-helper'
 import type { RosterRow } from './types'
@@ -67,6 +68,7 @@ function renderRow(bot: RosterRow) {
 
 beforeEach(() => {
   vi.clearAllMocks()
+  $botMeta.set({})
   ensureBotMetadata.mockResolvedValue({ pinned: true })
   openRosterBot.mockResolvedValue(true)
   // A save reads the bot's server namespace (profiles.list) before writing it.
@@ -95,6 +97,28 @@ describe('group-turn presence', () => {
     expect(moods()).toEqual(['think', 'idle'])
     act(() => $groupChats.set({}))
     expect(moods()).toEqual(['idle', 'idle'])
+  })
+})
+
+describe('indicator density', () => {
+  it('a hidden row carries no per-row eye glyph — the Hidden disclosure already labels it', () => {
+    $botMeta.set({ alpha: { hidden: true } })
+
+    const { container } = render(
+      <BotRow bot={{ name: 'alpha' } as RosterRow} onDelete={noop} onEdit={noop} onGroup={noop} onNewSection={noop} />
+    )
+
+    expect(container.querySelector('.codicon-eye-closed')).toBeNull()
+  })
+
+  it('a pinned row still marks its placement — the pin is the only signal for it', () => {
+    $botMeta.set({ alpha: { pinned: true } })
+
+    const { container } = render(
+      <BotRow bot={{ name: 'alpha' } as RosterRow} onDelete={noop} onEdit={noop} onGroup={noop} onNewSection={noop} />
+    )
+
+    expect(container.querySelector('.codicon-pinned')).toBeTruthy()
   })
 })
 

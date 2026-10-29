@@ -287,11 +287,9 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
                 <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
               </Tip>
             ) : null}
-            {hidden ? (
-              <Tip label={b.roster.hiddenFromRoster}>
-                <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="eye-closed" />
-              </Tip>
-            ) : null}
+            {/* Hidden state needs no per-row glyph: hidden rows only ever list
+                under the pane's own labeled "Hidden" disclosure, and the row's
+                context menu names the Unhide action. */}
             <Tip label={rowTooltip}>
               <span className="min-w-0 truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
             </Tip>

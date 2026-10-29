@@ -91,7 +91,6 @@ export type BotsMessages = {
     showHidden: string
     hideHidden: string
     noHiddenMatch: string
-    hiddenFromRoster: string
     pinned: string
     needsAttention: string
     needsInput: string
