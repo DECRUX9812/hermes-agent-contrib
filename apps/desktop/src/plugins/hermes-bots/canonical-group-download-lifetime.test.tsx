@@ -14,7 +14,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
   const { en } = await import('@/i18n/en')
   const { Textarea } = await import('@/components/ui/textarea')
 
-  return { Textarea, atom: (await import('nanostores')).atom, cn: (await import('@/lib/utils')).cn, MessageTextContent: undefined, relativeTime: () => 'a moment ago', Streamdown: undefined, host: { requestProfile: request }, useI18n: () => ({ locale: 'en', t: en }),
+  return { Textarea, atom: (await import('nanostores')).atom, cn: (await import('@/lib/utils')).cn, DAY: (await import('@/lib/time')).DAY, MessageTextContent: undefined, nominalDayStart: (await import('@/lib/time')).nominalDayStart, relativeTime: () => 'a moment ago', Streamdown: undefined, host: { requestProfile: request }, useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
     Codicon: () => <span />, Tip: ({ children }: { children: ReactNode }) => <>{children}</> }
 })

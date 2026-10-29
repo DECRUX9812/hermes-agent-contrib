@@ -10,13 +10,13 @@ vi.mock('./avatar', () => ({
 vi.mock('@hermes/plugin-sdk', async () => {
   const { Streamdown } = await import('streamdown')
   const { en } = await import('@/i18n/en')
-  const { relativeTime } = await import('@/lib/time')
+  const { DAY, nominalDayStart, relativeTime } = await import('@/lib/time')
 
   // The shell's shared message renderer; media marks whether MEDIA: paths would resolve locally.
   const MessageTextContent = ({ media = true, text }: { media?: boolean; text: string }) =>
     <div data-media={String(media)} data-testid="message-text"><Streamdown>{text}</Streamdown></div>
 
-  return { MessageTextContent, Streamdown, cn: (await import('@/lib/utils')).cn, relativeTime, useI18n: () => ({ locale: 'en', t: en }),
+  return { DAY, MessageTextContent, Streamdown, cn: (await import('@/lib/utils')).cn, nominalDayStart, relativeTime, useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
     Codicon: () => <span />, Tip: ({ children }: { children: ReactNode }) => <>{children}</> }
 })

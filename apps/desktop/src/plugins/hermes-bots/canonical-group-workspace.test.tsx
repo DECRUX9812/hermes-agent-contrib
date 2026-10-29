@@ -24,6 +24,8 @@ vi.mock('@hermes/plugin-sdk', async () => {
     Button: (p: ComponentProps<'button'>) => <button {...p} />,
     Input: (p: ComponentProps<'input'>) => <input {...p} />,
     RowButton: (p: ComponentProps<'button'>) => <button type="button" {...p} />,
+    DAY: (await import('@/lib/time')).DAY,
+    nominalDayStart: (await import('@/lib/time')).nominalDayStart,
     host: { ...gateway.host, requestProfile: request } }
 })
 import { host } from '@hermes/plugin-sdk'

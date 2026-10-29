@@ -1,5 +1,5 @@
 import * as sdk from '@hermes/plugin-sdk'
-import { useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { type CanonicalGroupAttachment, CanonicalGroupAttachments, fetchCanonicalGroupAttachment } from './canonical-group-attachments'
@@ -226,6 +226,31 @@ function NoticeRow({ detail, event, notice, who }: { detail?: string; event: Can
 // Back-to-back same-speaker messages within this window group under one header.
 const GROUP_WINDOW_S = 300
 
+// A dated-log divider: a quiet centered day label between hairlines.
+function DayDivider({ label }: { label: string }) {
+  return <div className="flex items-center gap-2 px-2 pt-2" role="separator">
+    <span aria-hidden="true" className="h-px flex-1 bg-(--ui-bg-quaternary)" />
+    <span className="text-[0.6875rem] font-semibold tracking-wide text-(--ui-text-quaternary)" data-testid="history-day">{label}</span>
+    <span aria-hidden="true" className="h-px flex-1 bg-(--ui-bg-quaternary)" />
+  </div>
+}
+
+// "Today" / "Yesterday" / "Oct 24" — the dated-log divider label.
+function dayLabel(atMs: number, labels: { dayToday: string; dayYesterday: string }): string {
+  const dayKey = sdk.nominalDayStart(atMs)
+  const now = Date.now()
+
+  if (dayKey === sdk.nominalDayStart(now)) {
+    return labels.dayToday
+  }
+
+  if (dayKey === sdk.nominalDayStart(now - sdk.DAY)) {
+    return labels.dayYesterday
+  }
+
+  return new Date(atMs).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+}
+
 export function CanonicalGroupHistory({ binding, events, members = [], disabled = false }: CanonicalGroupHistoryProps) {
   const labels = useCanonicalGroupLabels()
   const roster = new Map(members.map(member => [member.member_id, member]))
@@ -242,6 +267,7 @@ export function CanonicalGroupHistory({ binding, events, members = [], disabled 
 
   let prevSpeakerKey = ''
   let prevSpeakerAt = 0
+  let prevDayKey = 0
 
   return <>{events.map(event => {
     const notice = event.kind === 'room.activity' && event.payload.status === 'bounded'
@@ -251,18 +277,32 @@ export function CanonicalGroupHistory({ binding, events, members = [], disabled 
 
     if (!notice && !isMessage) {return null}
 
+    // A long room reads as a dated log: the first row of each calendar day
+    // opens with a quiet divider, and the new day ends the speaker group so a
+    // continuation never hides its face and name under the divider.
+    const atMs = typeof event.created_at === 'number' ? event.created_at * 1000 : Date.now()
+    const dayKey = sdk.nominalDayStart(atMs)
+    const divider = dayKey !== prevDayKey ? <DayDivider label={dayLabel(atMs, labels)} /> : null
+    prevDayKey = dayKey
+
+    if (divider) {
+      prevSpeakerKey = ''
+      prevSpeakerAt = 0
+    }
+
     if (notice) {
       // A status line is its own beat — the speaker group ends before it.
       prevSpeakerKey = ''
       prevSpeakerAt = 0
       const member = roster.get(event.payload.member_id ?? '')
 
-      return <NoticeRow
+      const row = <NoticeRow
         detail={event.payload.error || event.payload.reason || event.payload.reason_code}
         event={event}
-        key={event.seq}
         notice={notice}
         who={member ? member.display_name || member.handle : undefined} />
+
+      return <Fragment key={event.seq}>{divider}{row}</Fragment>
     }
 
     const speakerKey = eventSpeakerKey(event)
@@ -273,13 +313,14 @@ export function CanonicalGroupHistory({ binding, events, members = [], disabled 
 
     const member = event.actor?.kind === 'member' ? roster.get(event.actor.id ?? '') : roster.get(event.payload.member_id ?? '')
 
-    return <EventRow
+    const row = <EventRow
       author={eventAuthor(event, roster, true)}
       binding={binding}
       continuation={continuation}
       disabled={disabled}
       event={event}
-      key={event.seq}
       member={member} />
+
+    return <Fragment key={event.seq}>{divider}{row}</Fragment>
   })}</>
 }

@@ -13,6 +13,8 @@ vi.mock('@hermes/plugin-sdk', async () => {
   return { PanelEmpty, Textarea, atom: (await import('nanostores')).atom, host: { requestProfile: request }, randomUuid: (await import('@hermes/shared')).randomUuid,
     useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
+    DAY: (await import('@/lib/time')).DAY,
+    nominalDayStart: (await import('@/lib/time')).nominalDayStart,
     cn: (await import('@/lib/utils')).cn,
     relativeTime: () => 'a moment ago',
     MessageTextContent: ({ text }: { text: string }) => <div data-testid="markdown">{text}</div>,
@@ -183,4 +185,43 @@ it('groups back-to-back same-speaker messages and keeps notices to a quiet line'
   expect(notice.textContent).toContain('Turn failed')
   expect(notice.textContent).toContain('boom')
   expect(notice.querySelector('[data-selectable-text]')).toBeTruthy()
+})
+
+it('opens each calendar day with a divider and restarts the speaker group on a new day', async () => {
+  const now = Math.floor(Date.now() / 1000)
+  const day = 86400
+  const oldAt = now - 3 * day
+  request.mockImplementation(async (_route, method) => {
+    if (method === 'groups.state') {
+      return { room: { name: 'Room', members: [
+        { member_id: 'm-a', handle: 'alpha', profile: 'alpha' }
+      ] }, driver_status: {} }
+    }
+
+    if (method === 'groups.log') {
+      return { events: [
+        { seq: 1, room_id: binding.roomId, kind: 'message.member', actor: { kind: 'member', id: 'm-a' }, created_at: oldAt, payload: { text: 'old-one' } },
+        { seq: 2, room_id: binding.roomId, kind: 'message.member', actor: { kind: 'member', id: 'm-a' }, created_at: now - day, payload: { text: 'yesterday-one' } },
+        { seq: 3, room_id: binding.roomId, kind: 'message.member', actor: { kind: 'member', id: 'm-a' }, created_at: now - day + 60, payload: { text: 'yesterday-two' } },
+        { seq: 4, room_id: binding.roomId, kind: 'message.member', actor: { kind: 'member', id: 'm-a' }, created_at: now - 60, payload: { text: 'today-one' } }
+      ] }
+    }
+
+    throw new Error(`Unexpected method ${method}`)
+  })
+  const view = render(<CanonicalGroupWorkspace binding={binding} />)
+  await waitFor(() => expect(screen.getByText('today-one')).toBeTruthy())
+
+  const days = view.container.querySelectorAll('[data-testid="history-day"]')
+  expect([...days].map(div => div.textContent)).toEqual([
+    new Date(oldAt * 1000).toLocaleDateString(undefined, { day: 'numeric', month: 'short' }),
+    'Yesterday',
+    'Today'
+  ])
+  // Same speaker back-to-back within yesterday: one group, continuation bare.
+  const third = view.container.querySelector('[data-seq="3"]')!
+  expect(third.querySelector('strong')).toBeNull()
+  // Same speaker on the new day: the group restarts, so the name opens again.
+  const fourth = view.container.querySelector('[data-seq="4"]')!
+  expect(fourth.querySelector('strong')?.textContent).toBe('alpha')
 })

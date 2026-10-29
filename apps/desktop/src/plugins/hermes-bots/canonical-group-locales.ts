@@ -37,6 +37,8 @@ export interface CanonicalGroupMessages {
   pendingApproval: string
   pendingRetry: string
   pendingDiscard: string
+  dayToday: string
+  dayYesterday: string
 }
 
 export const CANONICAL_GROUP_LOCALES = {
@@ -79,7 +81,9 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: 'Send a message to start the group. Mention members with @.',
     pendingApproval: 'Needs approval',
     pendingRetry: 'Run failed',
-    pendingDiscard: 'Interrupted work'
+    pendingDiscard: 'Interrupted work',
+    dayToday: 'Today',
+    dayYesterday: 'Yesterday'
   },
   ja: {
     roomStopped: 'グループが停止しました',
@@ -120,7 +124,9 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: 'メッセージを送信してグループを開始します。@ でメンバーに言及できます。',
     pendingApproval: '承認が必要です',
     pendingRetry: '実行に失敗しました',
-    pendingDiscard: '中断された作業'
+    pendingDiscard: '中断された作業',
+    dayToday: '今日',
+    dayYesterday: '昨日'
   },
   zh: {
     roomStopped: '群组已停止',
@@ -160,7 +166,9 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: '发送消息开始群组讨论，可用 @ 提及成员。',
     pendingApproval: '需要批准',
     pendingRetry: '运行失败',
-    pendingDiscard: '已中断的工作'
+    pendingDiscard: '已中断的工作',
+    dayToday: '今天',
+    dayYesterday: '昨天'
   },
   'zh-hant': {
     roomStopped: '群組已停止',
@@ -200,7 +208,9 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: '傳送訊息開始群組討論，可用 @ 提及成員。',
     pendingApproval: '需要核准',
     pendingRetry: '執行失敗',
-    pendingDiscard: '已中斷的工作'
+    pendingDiscard: '已中斷的工作',
+    dayToday: '今天',
+    dayYesterday: '昨天'
   },
   ar: {
     roomStopped: 'أُوقفت المجموعة',
@@ -241,7 +251,9 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: 'أرسل رسالة لبدء المجموعة. اذكر الأعضاء بـ @.',
     pendingApproval: 'يتطلب موافقة',
     pendingRetry: 'فشل التنفيذ',
-    pendingDiscard: 'عمل متوقف'
+    pendingDiscard: 'عمل متوقف',
+    dayToday: 'اليوم',
+    dayYesterday: 'أمس'
   },
   ru: {
     roomStopped: 'Группа остановлена',
@@ -285,7 +297,9 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: 'Отправьте сообщение, чтобы начать. Упоминайте участников через @.',
     pendingApproval: 'Требуется разрешение',
     pendingRetry: 'Запуск завершился ошибкой',
-    pendingDiscard: 'Прерванная работа'
+    pendingDiscard: 'Прерванная работа',
+    dayToday: 'Сегодня',
+    dayYesterday: 'Вчера'
   },
   fr: {
     roomStopped: 'Groupe arrêté',
@@ -328,7 +342,9 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: 'Envoyez un message pour lancer le groupe. Mentionnez les membres avec @.',
     pendingApproval: 'Approbation requise',
     pendingRetry: 'Échec de l\'exécution',
-    pendingDiscard: 'Travail interrompu'
+    pendingDiscard: 'Travail interrompu',
+    dayToday: "Aujourd'hui",
+    dayYesterday: 'Hier'
   },
   de: {
     roomStopped: 'Gruppe angehalten',
@@ -372,7 +388,9 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: 'Senden Sie eine Nachricht, um die Gruppe zu starten. Mitglieder mit @ erwähnen.',
     pendingApproval: 'Genehmigung erforderlich',
     pendingRetry: 'Ausführung fehlgeschlagen',
-    pendingDiscard: 'Unterbrochene Arbeit'
+    pendingDiscard: 'Unterbrochene Arbeit',
+    dayToday: 'Heute',
+    dayYesterday: 'Gestern'
   },
   es: {
     roomStopped: 'Grupo detenido',
@@ -415,6 +433,8 @@ export const CANONICAL_GROUP_LOCALES = {
     roomEmptyHint: 'Envía un mensaje para iniciar el grupo. Menciona a los miembros con @.',
     pendingApproval: 'Necesita aprobación',
     pendingRetry: 'La ejecución falló',
-    pendingDiscard: 'Trabajo interrumpido'
+    pendingDiscard: 'Trabajo interrumpido',
+    dayToday: 'Hoy',
+    dayYesterday: 'Ayer'
   }
 } satisfies Record<string, CanonicalGroupMessages>
