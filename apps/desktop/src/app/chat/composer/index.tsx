@@ -64,7 +64,7 @@ import { COMPOSER_AREAS } from './contrib'
 import { ComposerControls } from './controls'
 import { ComposerDirectiveActions } from './directive-actions'
 import { COMPOSER_DROP_ACTIVE_CLASS, COMPOSER_DROP_FADE_CLASS } from './drop-affordance'
-import { markActiveComposer, onComposerAttachImagesRequest } from './focus'
+import { markActiveComposer, onComposerAttachImagesRequest, requestComposerInsert } from './focus'
 import { HelpHint } from './help-hint'
 import { useAtCompletions } from './hooks/use-at-completions'
 import { useCardWaitingSubmit } from './hooks/use-card-waiting-submit'
@@ -74,6 +74,7 @@ import { useComposerDrop } from './hooks/use-composer-drop'
 import { useComposerEscCancel } from './hooks/use-composer-esc-cancel'
 import { useComposerMetrics } from './hooks/use-composer-metrics'
 import { useComposerPlaceholder } from './hooks/use-composer-placeholder'
+import { takesPrediction, useComposerPrediction } from './hooks/use-composer-prediction'
 import { useComposerPopout } from './hooks/use-composer-popout'
 import { useComposerQueue } from './hooks/use-composer-queue'
 import { useComposerScreenshot } from './hooks/use-composer-screenshot'
@@ -467,6 +468,7 @@ export function ChatBar({
   // line per mode: a random pick on every load read as noise, not design.
   const transportPlaceholder = useComposerPlaceholder({ disabled, reconnecting, sessionId })
 
+  const prediction = useComposerPrediction({ busy, disabled, sessionId })
   const placeholder = disabled
     ? transportPlaceholder
     : ((sessionId ? t.composer.followUpPlaceholders[0] : t.composer.newSessionPlaceholders[0]) ?? transportPlaceholder)
@@ -1189,7 +1191,8 @@ export function ChatBar({
           hudNativeDrag && '[-webkit-app-region:no-drag]'
         )}
         contentEditable={!inputDisabled}
-        data-placeholder={placeholder}
+        data-placeholder={prediction || placeholder}
+        data-prediction={prediction ? '' : undefined}
         data-slot={RICH_INPUT_SLOT}
         dir={textDirection}
         onBeforeInput={handleEditorBeforeInput}
@@ -1235,7 +1238,17 @@ export function ChatBar({
         onDrop={handleInputDrop}
         onFocus={() => markActiveComposer(scope.target)}
         onInput={handleEditorInput}
-        onKeyDown={handleEditorKeyDown}
+        onKeyDown={event => {
+          if (takesPrediction(event, { draft: hasText ? 'x' : '', prediction, triggerOpen: Boolean(trigger) })) {
+            event.preventDefault()
+            requestComposerInsert(prediction, { mode: 'inline', target: scope.target })
+            clearComposerPrediction(sessionId)
+
+            return
+          }
+
+          handleEditorKeyDown(event)
+        }}
         onKeyUp={handleEditorKeyUp}
         onMouseUp={refreshTrigger}
         onPaste={handlePaste}

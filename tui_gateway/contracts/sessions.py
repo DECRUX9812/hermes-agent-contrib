@@ -788,3 +788,15 @@ class LlmOneshotResult(Result):
 method("llm.oneshot", params=LlmOneshotParams, result=LlmOneshotResult,
        doc="Stateless one-shot LLM completion (titles, ideas) on the session's or the task backend.")
 
+
+
+class SessionPredictNextParams(ProfileParams):
+    session_id: str
+
+
+class SessionPredictNextResult(Result):
+    text: str
+
+
+method("session.predict_next", params=SessionPredictNextParams, result=SessionPredictNextResult,
+       doc="Ghost-text next-message draft for the composer (opt-in auxiliary model call; '' when off or unsure).")

@@ -723,6 +723,8 @@ DEFAULT_CONFIG = {
     # Each task is independent — main-agent provider_routing and openrouter.min_coding_score
     # do NOT propagate to aux calls by design.
     "auxiliary": {
+        # Composer ghost-text prediction (opt-in; one aux call per settled turn).
+        "composer_prediction": {"enabled": False},
         # Same-provider retries for a transient blip (reset/timeout/5xx/408) on ANY aux call before
         # falling back; clamped [0,6]. Matters for pinned calls (MoA advisors) where provider
         # fallback is not meaningful recovery.

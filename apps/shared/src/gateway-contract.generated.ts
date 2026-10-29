@@ -3689,6 +3689,13 @@ export interface LlmOneshotParams {
 export interface LlmOneshotResult {
   text: string
 }
+export interface SessionPredictNextParams {
+  profile?: string | null
+  session_id: string
+}
+export interface SessionPredictNextResult {
+  text: string
+}
 export interface SystemBatteryParams {
   profile?: string | null
 }
@@ -6428,6 +6435,8 @@ export interface RpcMethods {
   'session.list': { params: SessionListParams; result: SessionListResult }
   /** Most recent human-facing session; errors fold into a null session_id. */
   'session.most_recent': { params: SessionMostRecentParams; result: SessionMostRecentResult }
+  /** Ghost-text next-message draft for the composer (opt-in auxiliary model call; '' when off or unsure). */
+  'session.predict_next': { params: SessionPredictNextParams; result: SessionPredictNextResult }
   /** Redirect the active turn (queued for the next turn while the agent is still building). */
   'session.redirect': { params: SessionCorrectionParams; result: SessionCorrectionResult }
   /** Attach to a stored session: reuse it if live here, else lazy / deferred / cold / eager rebuild. */
@@ -6750,6 +6759,7 @@ export const RPC_METHODS = [
   'session.interrupt',
   'session.list',
   'session.most_recent',
+  'session.predict_next',
   'session.redirect',
   'session.resume',
   'session.save',

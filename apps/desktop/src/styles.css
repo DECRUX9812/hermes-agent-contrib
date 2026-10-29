@@ -4316,3 +4316,25 @@ body,
 [data-chat-surface] {
   background-color: var(--ui-bg-primary);
 }
+
+/* Composer prediction: ghost text in the user's voice wears the key that takes it. */
+[data-slot='composer-rich-input'][data-prediction]:is(:empty, [data-empty])::before {
+  padding-right: 3rem;
+  color: color-mix(in srgb, var(--muted-foreground) 82%, transparent);
+}
+
+[data-slot='composer-rich-input'][data-prediction]:is(:empty, [data-empty])::after {
+  content: 'Tab';
+  position: absolute;
+  top: 50%;
+  right: 0.25rem;
+  transform: translateY(-50%);
+  padding: 0 0.375rem;
+  border: 1px solid var(--ui-stroke-secondary);
+  border-radius: 0.3rem;
+  font-size: 0.625rem;
+  line-height: 1.1rem;
+  color: var(--ui-text-tertiary);
+  pointer-events: none;
+  user-select: none;
+}
