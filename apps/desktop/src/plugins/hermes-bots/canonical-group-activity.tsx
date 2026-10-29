@@ -60,7 +60,7 @@ export function CanonicalGroupWorkingLine({ driver, members = [], labels, phases
 
   if (!working.length && !driver?.working) {return null}
 
-  return <div className="flex items-center gap-1.5 px-2 py-1 text-[0.7rem] italic text-(--ui-text-quaternary)" role="status">
+  return <div className="flex items-center gap-1.5 px-2 py-1 text-[length:var(--conversation-tool-font-size)] italic text-(--ui-text-quaternary)" role="status">
     {/* The line is the live region; the spinner's own status role would nest a second one. */}
     <span aria-hidden="true"><GlyphSpinner className="not-italic" /></span>
     <span>{working.length ? `${labels.memberWorking}: ${working.join(', ')}` : labels.groupWorking}</span>

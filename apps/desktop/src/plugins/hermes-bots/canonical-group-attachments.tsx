@@ -105,15 +105,15 @@ export function CanonicalGroupAttachments({ binding, attachments, onChange, onUp
     finally { if (!signal.aborted) {setBusy(false)} }
   }
 
-  return <div className="flex flex-wrap items-center gap-2">
+  return <div className="flex flex-wrap items-center gap-1.5">
     {!readOnly && <><input hidden onChange={e => { const file = e.target.files?.[0];
 
  if (file) {void upload([file]);} e.currentTarget.value = '' }} ref={input} type="file" />
-    <Button disabled={disabled || busy} onClick={() => input.current?.click()} type="button">{labels.attachFiles}</Button></>}
-    {attachments.map(a => <span className="flex items-center gap-1" key={a.attachment_id ?? a.name}>
-      <span>{a.name}</span><Button disabled={disabled || busy} onClick={() => void download(a)} type="button">{labels.download}</Button>
-      {!readOnly && <Button disabled={disabled || busy} onClick={() => onChange?.(attachments.filter(item => item !== a))} type="button">{labels.removeAttachment}</Button>}
+    <Button disabled={disabled || busy} onClick={() => input.current?.click()} size="sm" type="button" variant="ghost">{labels.attachFiles}</Button></>}
+    {attachments.map(a => <span className="flex items-center gap-1 rounded bg-(--ui-bg-quaternary) px-1.5 py-0.5 text-xs" key={a.attachment_id ?? a.name}>
+      <span className="max-w-40 truncate">{a.name}</span><Button disabled={disabled || busy} onClick={() => void download(a)} size="micro" type="button" variant="text">{labels.download}</Button>
+      {!readOnly && <Button disabled={disabled || busy} onClick={() => onChange?.(attachments.filter(item => item !== a))} size="micro" type="button" variant="text">{labels.removeAttachment}</Button>}
     </span>)}
-    {error && <span role="alert">{labels.uploadFailed}: {error}</span>}
+    {error && <span className="text-(--ui-text-tertiary)" role="alert">{labels.uploadFailed}: {error}</span>}
   </div>
 }

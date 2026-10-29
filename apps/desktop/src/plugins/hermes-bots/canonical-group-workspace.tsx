@@ -1,4 +1,4 @@
-import { Button, host, randomUuid } from '@hermes/plugin-sdk'
+import { Button, host, PanelEmpty, randomUuid } from '@hermes/plugin-sdk'
 import { type ClipboardEvent, type DragEvent, useEffect, useRef, useState } from 'react'
 
 import { type CanonicalDriverActivity, CanonicalGroupWorkingLine, canonicalMemberPhases } from './canonical-group-activity'
@@ -192,31 +192,38 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
   return <section className="flex h-full min-h-0 flex-col gap-3 p-3">
     <CanonicalGroupHeader busy={busy} canStop={!!state?.driver_status} onBack={onBack} onDisband={end} onRename={rename}
       onStop={() => void mutate(() => canonicalGroupRequest(binding, 'groups.stop', { room_id: binding.roomId, cancel_id: randomUuid() }))} phases={phases} room={state?.room} />
-    {readError && <div role="alert">{readError}<Button onClick={() => void refresh().catch(e => setReadError(String(e)))}>{labels.refresh}</Button></div>}
-    {error && <div role="alert">{error}</div>}
-    {state && !state.driver_status && <p>{labels.driverUnavailable}</p>}
-    <div className="min-h-0 flex-1 overflow-auto" role="log">
-      <CanonicalGroupHistory binding={binding} disabled={!visible} events={events} members={state?.room.members} />
+    {readError && <div className="flex items-center gap-2 rounded-md bg-(--ui-bg-quaternary) px-2.5 py-1.5 text-xs text-(--ui-text-secondary)" role="alert">
+      <span className="min-w-0 flex-1">{readError}</span>
+      <Button onClick={() => void refresh().catch(e => setReadError(String(e)))} size="xs" variant="secondary">{labels.refresh}</Button>
+    </div>}
+    {error && <div className="rounded-md bg-(--ui-bg-quaternary) px-2.5 py-1.5 text-xs text-(--ui-text-secondary)" role="alert">{error}</div>}
+    {state && !state.driver_status && <p className="px-1 text-xs text-(--ui-text-tertiary)">{labels.driverUnavailable}</p>}
+    <div className="flex min-h-0 flex-1 flex-col overflow-auto" data-slot="group-chat-transcript" role="log">
+      {state && !events.length
+        ? <PanelEmpty description={labels.roomEmptyHint} icon="comment-discussion" title={labels.roomEmpty} />
+        : <CanonicalGroupHistory binding={binding} disabled={!visible} events={events} members={state?.room.members} />}
       <CanonicalGroupWorkingLine driver={state?.driver_status} labels={labels} members={state?.room.members} phases={phases} />
     </div>
-    {(state?.driver_status?.pending_actions || []).map(action => <div className="flex items-center gap-2" key={`${action.kind}:${action.task_id}:${action.execution_generation}`}>
-      <span>{action.member_id}</span>
-      {action.kind === 'discard' && <Button disabled={busy} onClick={() => setDiscard({ ...action })}>{labels.discard}</Button>}
-      {action.kind === 'retry' && <Button disabled={busy} onClick={() => void act({ ...action })}>{labels.retry}</Button>}
-      {action.kind === 'approval' && <><Button disabled={busy} onClick={() => void act({ ...action }, 'once')}>{labels.allowOnce}</Button><Button disabled={busy} onClick={() => void act({ ...action }, 'deny')}>{labels.deny}</Button></>}
+    {(state?.driver_status?.pending_actions || []).map(action => <div className="flex items-center gap-2 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-quaternary) px-2.5 py-1.5 text-xs" key={`${action.kind}:${action.task_id}:${action.execution_generation}`}>
+      <span className="min-w-0 flex-1 font-medium text-(--ui-text-secondary)">{action.member_id}</span>
+      {action.kind === 'discard' && <Button disabled={busy} onClick={() => setDiscard({ ...action })} size="xs" variant="secondary">{labels.discard}</Button>}
+      {action.kind === 'retry' && <Button disabled={busy} onClick={() => void act({ ...action })} size="xs" variant="secondary">{labels.retry}</Button>}
+      {action.kind === 'approval' && <><Button disabled={busy} onClick={() => void act({ ...action }, 'once')} size="xs" variant="secondary">{labels.allowOnce}</Button><Button disabled={busy} onClick={() => void act({ ...action }, 'deny')} size="xs" variant="ghost">{labels.deny}</Button></>}
     </div>)}
-    {discard && <div aria-label={labels.discardUnknown} role="alertdialog">
-      <p>{labels.discardWarning}</p>
-      <Button disabled={busy} onClick={() => { const exact = discard; setDiscard(null); void act(exact) }}>{labels.confirmDiscard}</Button>
-      <Button onClick={() => setDiscard(null)}>{labels.cancel}</Button>
+    {discard && <div aria-label={labels.discardUnknown} className="grid gap-2 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-quaternary) px-2.5 py-2" role="alertdialog">
+      <p className="text-xs text-(--ui-text-secondary)">{labels.discardWarning}</p>
+      <div className="flex gap-2">
+        <Button disabled={busy} onClick={() => { const exact = discard; setDiscard(null); void act(exact) }} size="sm" variant="destructive">{labels.confirmDiscard}</Button>
+        <Button onClick={() => setDiscard(null)} size="sm" variant="ghost">{labels.cancel}</Button>
+      </div>
     </div>}
-    {restoredPending && <p role="status">{labels.restoredPendingSend}</p>}
-    <form className="flex gap-2" onDragOver={event => { if (event.dataTransfer.types.includes('Files')) {event.preventDefault()} }}
+    {restoredPending && <p className="px-1 text-[0.6875rem] text-(--ui-text-quaternary)" role="status">{labels.restoredPendingSend}</p>}
+    <form className="flex items-end gap-2" onDragOver={event => { if (event.dataTransfer.types.includes('Files')) {event.preventDefault()} }}
       onDrop={event => attachTransfer(event, event.dataTransfer)} onPaste={event => attachTransfer(event, event.clipboardData)} onSubmit={event => { event.preventDefault(); send() }}>
       <CanonicalGroupAttachments attachments={attachments} binding={binding} disabled={composerLocked} onChange={setAttachments} onUploadingChange={setUploading} ref={uploader} />
       <GroupMentionInput aria-label={labels.groupMessage} className="min-w-0 flex-1" disabled={composerLocked} handleFor={member => member.handle}
         members={mentionMembers} onChange={setDraft} onSubmitDraft={send} value={draft} />
-      <Button disabled={!restored || busy || uploading || (!pending && !draft.trim() && !attachments.length) || !state?.driver_status} type="submit">{pending ? labels.retry : labels.send}</Button>
+      <Button disabled={!restored || busy || uploading || (!pending && !draft.trim() && !attachments.length) || !state?.driver_status} size="sm" type="submit">{pending ? labels.retry : labels.send}</Button>
     </form>
   </section>
 }

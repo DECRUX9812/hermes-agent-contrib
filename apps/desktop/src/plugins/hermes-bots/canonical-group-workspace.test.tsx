@@ -48,6 +48,23 @@ it('preserves the unsent draft when only the room display name changes', async (
   expect((screen.getByRole('textbox') as HTMLTextAreaElement).value).toBe('')
 })
 
+it('an empty room paints its empty state inside the scaled transcript, under quiet header chrome', async () => {
+  request.mockImplementation(async (_route, method) => method === 'groups.state'
+    ? { room: { name: 'Room', members: [] }, driver_status: {} } : method === 'groups.log' ? { events: [] } : {})
+  render(<CanonicalGroupWorkspace binding={{ connectionId: 'local', profile: 'team', roomId: 'empty', roomName: 'Room' }} />)
+
+  expect(await screen.findByText('No messages yet')).toBeTruthy()
+  // The transcript joins the chat-text-scale contract like every room surface.
+  expect(screen.getByRole('log').getAttribute('data-slot')).toBe('group-chat-transcript')
+  // Actions read as chrome, not four primary slabs: Stop is the soft action,
+  // Rename is ghost, and Disband — the destructive intent — reads destructive.
+  expect(screen.getByRole('button', { name: 'Stop' }).getAttribute('variant')).toBe('secondary')
+  expect(screen.getByRole('button', { name: 'Rename' }).getAttribute('variant')).toBe('ghost')
+  const disband = screen.getByRole('button', { name: /disband/i })
+  expect(disband.getAttribute('variant')).toBe('ghost')
+  expect(disband.className).toContain('text-destructive')
+})
+
 it('restores a frozen send after remount and retires only its acknowledged exact retry', async () => {
   const binding = { connectionId: 'remote', profile: 'team', roomId: 'restore' }
   const entry = await prepareCanonicalGroupSend(binding, { text: 'Original', attachments: [{ path: '/owner/image.png', mime_type: 'image/png' }] })

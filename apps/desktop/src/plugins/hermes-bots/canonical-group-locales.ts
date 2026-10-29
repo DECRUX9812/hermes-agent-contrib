@@ -32,6 +32,8 @@ export interface CanonicalGroupMessages {
   legacyRoomNotice: string
   startGatewayGroup: string
   checkingDriver: string
+  roomEmpty: string
+  roomEmptyHint: string
 }
 
 export const CANONICAL_GROUP_LOCALES = {
@@ -69,7 +71,9 @@ export const CANONICAL_GROUP_LOCALES = {
     legacyRoomNotice:
       'This is a legacy Desktop room. Start a gateway-owned group with these members; the old history stays here and is not replayed.',
     startGatewayGroup: 'Start gateway group',
-    checkingDriver: 'Checking group driver…'
+    checkingDriver: 'Checking group driver…',
+    roomEmpty: 'No messages yet',
+    roomEmptyHint: 'Send a message to start the group. Mention members with @.'
   },
   ja: {
     roomStopped: 'グループが停止しました',
@@ -105,7 +109,9 @@ export const CANONICAL_GROUP_LOCALES = {
     legacyRoomNotice:
       'これは従来の Desktop ルームです。同じメンバーでゲートウェイ管理のグループを開始してください。以前の履歴はここに残り、再生されません。',
     startGatewayGroup: 'ゲートウェイのグループを開始',
-    checkingDriver: 'グループの実行機能を確認中…'
+    checkingDriver: 'グループの実行機能を確認中…',
+    roomEmpty: 'メッセージはまだありません',
+    roomEmptyHint: 'メッセージを送信してグループを開始します。@ でメンバーに言及できます。'
   },
   zh: {
     roomStopped: '群组已停止',
@@ -140,7 +146,9 @@ export const CANONICAL_GROUP_LOCALES = {
     groupWorking: '群组正在处理…',
     legacyRoomNotice: '这是一个旧版 Desktop 房间。请用这些成员创建由网关管理的群组；旧历史保留在此处，不会重放。',
     startGatewayGroup: '启动网关群组',
-    checkingDriver: '正在检查群组运行程序…'
+    checkingDriver: '正在检查群组运行程序…',
+    roomEmpty: '还没有消息',
+    roomEmptyHint: '发送消息开始群组讨论，可用 @ 提及成员。'
   },
   'zh-hant': {
     roomStopped: '群組已停止',
@@ -175,7 +183,9 @@ export const CANONICAL_GROUP_LOCALES = {
     groupWorking: '群組正在處理…',
     legacyRoomNotice: '這是舊版 Desktop 房間。請以這些成員啟動閘道管理的群組；舊紀錄會保留在此，不會重播。',
     startGatewayGroup: '啟動閘道群組',
-    checkingDriver: '正在檢查群組執行程式…'
+    checkingDriver: '正在檢查群組執行程式…',
+    roomEmpty: '還沒有訊息',
+    roomEmptyHint: '傳送訊息開始群組討論，可用 @ 提及成員。'
   },
   ar: {
     roomStopped: 'أُوقفت المجموعة',
@@ -211,7 +221,9 @@ export const CANONICAL_GROUP_LOCALES = {
     legacyRoomNotice:
       'هذه غرفة Desktop قديمة. ابدأ مجموعة تديرها البوابة بهؤلاء الأعضاء؛ يبقى السجل القديم هنا ولا يُعاد تشغيله.',
     startGatewayGroup: 'بدء مجموعة البوابة',
-    checkingDriver: 'جارٍ فحص مشغّل المجموعة…'
+    checkingDriver: 'جارٍ فحص مشغّل المجموعة…',
+    roomEmpty: 'لا توجد رسائل بعد',
+    roomEmptyHint: 'أرسل رسالة لبدء المجموعة. اذكر الأعضاء بـ @.'
   },
   ru: {
     roomStopped: 'Группа остановлена',
@@ -250,7 +262,9 @@ export const CANONICAL_GROUP_LOCALES = {
     legacyRoomNotice:
       'Это устаревшая комната Desktop. Запустите группу под управлением шлюза с этими участниками; старая история останется здесь и не будет воспроизведена.',
     startGatewayGroup: 'Запустить группу шлюза',
-    checkingDriver: 'Проверка исполнителя группы…'
+    checkingDriver: 'Проверка исполнителя группы…',
+    roomEmpty: 'Сообщений пока нет',
+    roomEmptyHint: 'Отправьте сообщение, чтобы начать. Упоминайте участников через @.'
   },
   fr: {
     roomStopped: 'Groupe arrêté',
@@ -288,7 +302,9 @@ export const CANONICAL_GROUP_LOCALES = {
     legacyRoomNotice:
       "Ceci est un salon Desktop hérité. Lancez un groupe géré par la passerelle avec ces membres ; l'ancien historique reste ici et n'est pas rejoué.",
     startGatewayGroup: 'Démarrer le groupe de passerelle',
-    checkingDriver: 'Vérification du pilote de groupe…'
+    checkingDriver: 'Vérification du pilote de groupe…',
+    roomEmpty: 'Aucun message pour l’instant',
+    roomEmptyHint: 'Envoyez un message pour lancer le groupe. Mentionnez les membres avec @.'
   },
   de: {
     roomStopped: 'Gruppe angehalten',
@@ -327,7 +343,9 @@ export const CANONICAL_GROUP_LOCALES = {
     legacyRoomNotice:
       'Dies ist ein älterer Desktop-Raum. Starten Sie eine gateway-verwaltete Gruppe mit diesen Mitgliedern; der alte Verlauf bleibt hier und wird nicht wiederholt.',
     startGatewayGroup: 'Gateway-Gruppe starten',
-    checkingDriver: 'Gruppentreiber wird geprüft…'
+    checkingDriver: 'Gruppentreiber wird geprüft…',
+    roomEmpty: 'Noch keine Nachrichten',
+    roomEmptyHint: 'Senden Sie eine Nachricht, um die Gruppe zu starten. Mitglieder mit @ erwähnen.'
   },
   es: {
     roomStopped: 'Grupo detenido',
@@ -365,6 +383,8 @@ export const CANONICAL_GROUP_LOCALES = {
     legacyRoomNotice:
       'Esta es una sala heredada de Desktop. Inicia un grupo administrado por la pasarela con estos miembros; el historial antiguo permanece aquí y no se reproduce.',
     startGatewayGroup: 'Iniciar grupo de pasarela',
-    checkingDriver: 'Comprobando el controlador de grupo…'
+    checkingDriver: 'Comprobando el controlador de grupo…',
+    roomEmpty: 'Aún no hay mensajes',
+    roomEmptyHint: 'Envía un mensaje para iniciar el grupo. Menciona a los miembros con @.'
   }
 } satisfies Record<string, CanonicalGroupMessages>
