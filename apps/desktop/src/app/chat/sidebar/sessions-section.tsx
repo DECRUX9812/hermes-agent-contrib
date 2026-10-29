@@ -74,7 +74,12 @@ function SidebarSectionHeader({
   const labelBody = (
     <>
       {icon}
-      <SidebarPanelLabel>{label}</SidebarPanelLabel>
+      {/* Section labels read as captions — the same quiet uppercase family the
+          date dividers inside the list already use, so "Chats" and "Yesterday"
+          speak at one volume instead of competing. */}
+      <SidebarPanelLabel className="text-[10.5px] font-semibold uppercase tracking-[0.08em] text-(--ui-text-quaternary)">
+        {label}
+      </SidebarPanelLabel>
       {meta && <SidebarSectionMeta>{meta}</SidebarSectionMeta>}
     </>
   )

@@ -1591,38 +1591,32 @@ export function ChatSidebar({
       data-tour="sessions-sidebar"
     >
       <SidebarContent className="gap-0 overflow-hidden bg-transparent px-2.5">
-        {/* One clean row: the Chats|Bots switcher on the left, the quiet
-            actions on the right. The mode switcher used to sit in its own row
-            below this one, which left an empty band above it and a 35px gap
-            before the first nav row. */}
-        <div className="flex h-11 shrink-0 items-center justify-between gap-2 px-1" data-slot="sidebar-header">
+        {/* One clean row: the Chats|Bots switcher fills the left, the quiet
+            actions cluster on the right. The mode switcher used to sit in its
+            own row below this one, which left an empty band above it and a
+            35px gap before the first nav row. */}
+        <div className="flex h-11 shrink-0 items-center gap-1 px-1" data-slot="sidebar-header">
           {/* The zone portals its mode switcher in here: it owns the pane list
-              and the activation, this column owns the geometry. */}
-          <div className="min-w-0 shrink-0" data-slot="sidebar-mode-slot" />
-          <button
-            aria-label={s.searchAria}
-            className="inline-flex size-6 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
-            onClick={() => $commandPaletteOpen.set(true)}
-            type="button"
-          >
-            <Codicon name="search" size="0.875rem" />
-          </button>
-          <button
-            aria-label="Back"
-            className="inline-flex size-6 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
-            onClick={() => navigate(-1)}
-            type="button"
-          >
-            <Codicon name="chevron-left" size="0.875rem" />
-          </button>
-          <button
-            aria-label="Forward"
-            className="inline-flex size-6 items-center justify-center rounded-md text-(--ui-text-secondary) transition-colors hover:bg-black/[0.05] hover:text-(--ui-text-primary) dark:hover:bg-white/[0.06]"
-            onClick={() => navigate(1)}
-            type="button"
-          >
-            <Codicon name="chevron-right" size="0.875rem" />
-          </button>
+              and the activation, this column owns the geometry. flex-1 lets
+              the segmented control read as the column's tab bar instead of a
+              corner-hugging pill. */}
+          <div className="min-w-0 flex-1" data-slot="sidebar-mode-slot" />
+          <div className="flex shrink-0 items-center gap-0.5">
+            <Button
+              aria-label={s.searchAria}
+              onClick={() => $commandPaletteOpen.set(true)}
+              size="icon-xs"
+              variant="ghost"
+            >
+              <Codicon name="search" size="0.875rem" />
+            </Button>
+            <Button aria-label="Back" onClick={() => navigate(-1)} size="icon-xs" variant="ghost">
+              <Codicon name="chevron-left" size="0.875rem" />
+            </Button>
+            <Button aria-label="Forward" onClick={() => navigate(1)} size="icon-xs" variant="ghost">
+              <Codicon name="chevron-right" size="0.875rem" />
+            </Button>
+          </div>
         </div>
 
         {/* The zone portals its mode switcher into the header row above; this
@@ -2116,7 +2110,7 @@ export function ChatSidebar({
             stack on top of this one is gone: Settings and Layout live in the
             window's top-right titlebar, so each renders exactly once. */}
         <div
-          className="mt-auto flex h-9 shrink-0 items-center justify-between gap-2 border-t border-black/[0.06] px-1.5 text-[12px] dark:border-white/[0.06]"
+          className="mt-auto flex h-9 shrink-0 items-center justify-between gap-2 border-t border-(--ui-stroke-quaternary) px-1.5 text-[12px]"
           data-slot="sidebar-footer"
         >
           {profileRailVisible ? (

@@ -27,7 +27,7 @@ import { coarseElapsed } from '@/lib/time'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
 import { $sidebarRowMeta } from '@/store/layout'
-import { normalizeProfileKey } from '@/store/profile'
+import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import { $projects } from '@/store/projects'
 import { $pullRequestsByBranch, sessionPrKey } from '@/store/pull-requests'
 import { sessionPinId } from '@/store/session'
@@ -172,6 +172,18 @@ function SidebarSessionRowImpl({
   // The default profile has no mark worth spending a row slot on — a chip on
   // every row that says "the normal one" is noise. Named profiles only.
   const hasProfileTag = normalizeProfileKey(session.profile) !== 'default'
+
+  // The same silence for the profile you're already inside: in the unified
+  // All-profiles list every row on the ACTIVE profile would repeat one
+  // identical chip — a column of "this one is yours". Only foreign sessions
+  // earn the tag; an explicit Show→Profile opt-in (pinnedProfile) still
+  // columns every row on request. A selector: only a row whose own
+  // foreign/home status flips repaints on a gateway swap.
+  const isActiveProfile = useStoreSelector(
+    $activeGatewayProfile,
+    gateway => normalizeProfileKey(session.profile) === normalizeProfileKey(gateway)
+  )
+
   const pinnedProfile = hasProfileTag && rowMeta.includes('profile')
   // The branch's PR, if the row was asked to show one. A selector, not a plain
   // useStore: a repo's PRs land as a single map write, and only the rows on
@@ -203,7 +215,7 @@ function SidebarSessionRowImpl({
   // to the left of the kebab's own column: never flush right, never swapping.
   const trailing: { key: string; node: React.ReactNode }[] = []
 
-  if ((showProfile || pinnedProfile) && hasProfileTag) {
+  if (hasProfileTag && (pinnedProfile || (showProfile && !isActiveProfile))) {
     trailing.push({ key: 'profile', node: <ProfileTag profile={session.profile} /> })
   }
 
