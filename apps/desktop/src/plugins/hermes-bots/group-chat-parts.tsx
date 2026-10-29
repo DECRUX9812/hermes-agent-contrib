@@ -485,7 +485,9 @@ export function GroupClarifyCard({ entry, members }: GroupClarifyCardProps) {
       ) : null}
       {questions.map(q => (
         <div className="grid gap-1" key={`q:${q.qid}`}>
-          {q.question ? <div className="text-xs whitespace-pre-wrap">{q.question}</div> : null}
+          {q.question ? (
+            <div className="text-[length:var(--conversation-text-font-size)] whitespace-pre-wrap">{q.question}</div>
+          ) : null}
           {q.choices.length ? (
             <div className="flex flex-wrap gap-1">
               {q.choices.map(choice => {

@@ -476,6 +476,8 @@ export function BotsPane() {
         b,
         activityToasts,
         activeSourceRoster,
+        hiddenCount: hiddenBots.length,
+        hiddenExpanded,
         roster,
         setCreateOpen,
         setGroupCreateOpen,

@@ -419,6 +419,8 @@ it.each([
       activityToasts: false,
       b: botsText(),
       gatewayFilter: 'all',
+      hiddenCount: 0,
+      hiddenExpanded: false,
       gatewayOptions: [],
       query: '',
       roster: withParked,
@@ -444,4 +446,50 @@ it.each([
   await waitFor(() => expect(item.hasAttribute('data-disabled')).toBe(disabled))
   fireEvent.click(item)
   expect(setGroupCreateOpen).toHaveBeenCalledTimes(disabled ? 0 : 1)
+})
+
+// The hide toast tells the user to look for "the eye button in the Bots
+// header" — it exists exactly while hidden bots exist, and it toggles the
+// session-only reveal the bottom-of-roster Hidden section also drives.
+it.each([
+  [0, false],
+  [2, true]
+])('Bots header eye toggle with %i hidden bots renders: %s', async (hiddenCount, rendered) => {
+  const { $showHiddenBots } = await import('./hidden-bots')
+  $showHiddenBots.set(false)
+
+  render(
+    renderRosterToolbar({
+      activeFilterCount: 0,
+      activeSourceRoster: roster,
+      activityFilter: 'all',
+      activityToasts: false,
+      b: botsText(),
+      gatewayFilter: 'all',
+      gatewayOptions: [],
+      hiddenCount,
+      hiddenExpanded: false,
+      query: '',
+      roster,
+      rowKindFilter: 'all',
+      setActivityFilter: vi.fn(),
+      setCreateOpen: vi.fn(),
+      setGatewayFilter: vi.fn(),
+      setGroupCreateOpen: vi.fn(),
+      setQuery: vi.fn(),
+      setRowKindFilter: vi.fn(),
+      setSectionDialog: vi.fn(),
+      showRosterFilters: false,
+      showRosterSearch: false,
+      showRosterTools: false
+    })
+  )
+
+  const button = screen.queryByRole('button', { name: new RegExp(botsText().roster.showHidden) })
+  expect(Boolean(button)).toBe(rendered)
+
+  if (button) {
+    fireEvent.click(button)
+    expect($showHiddenBots.get()).toBe(true)
+  }
 })

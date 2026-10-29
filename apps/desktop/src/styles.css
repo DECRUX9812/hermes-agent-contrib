@@ -1763,9 +1763,12 @@ body.guest-pointer-lock :is(webview, iframe) {
    virtualized items unmount, so :nth-last-child can't fire reliably. */
 
 /* Scope typography, not zoom: pane geometry and surrounding chrome stay put.
-   The editor owns its scope too, including inline edits and floating composers. */
+   The editor owns its scope too, including inline edits and floating composers.
+   Bot Mode group rooms are transcripts too — the same scale applies there
+   (#144095). */
 [data-slot='aui_thread-content'],
-[data-slot='composer-rich-input'] {
+[data-slot='composer-rich-input'],
+[data-slot='group-chat-transcript'] {
   --conversation-text-scale: var(--chat-text-scale, 1);
   --conversation-text-font-size: calc(var(--conversation-text-base-size) * var(--chat-text-scale, 1));
   --conversation-tool-font-size: calc(var(--conversation-tool-base-size) * var(--chat-text-scale, 1));

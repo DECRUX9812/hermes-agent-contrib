@@ -52,6 +52,39 @@ vi.mock('./group-chat-parts', () => ({
 }))
 afterEach(cleanup)
 
+// #144095: room text must obey Appearance → chat text size. The transcript
+// carries `data-slot="group-chat-transcript"`, which styles.css scopes into
+// the shared --conversation-* scale vars, and message bodies consume the text
+// var instead of a fixed size.
+it('scopes the room transcript into the shared chat text scale', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  $groupChats.set({
+    Room: {
+      log: [{ id: 'm1', thread: 'a', from: { kind: 'member' as const, name: 'builder' }, text: 'hi', at: 1 }],
+      members: [{ name: 'builder' }],
+      sessions: {},
+      watermarks: {}
+    }
+  })
+
+  const { container } = render(<GroupChatWorkspace group="Room" members={[{ name: 'builder' }] as never} />)
+
+  const transcript = await waitFor(() => {
+    const el = container.querySelector('[data-slot="group-chat-transcript"]')
+    expect(el).toBeTruthy()
+
+    return el as HTMLElement
+  })
+
+  const body = transcript.querySelector('[data-slot="group-chat-message-content"]')
+  expect(body).toBeTruthy()
+  expect(body!.className).toContain('--conversation-text-font-size')
+  expect(body!.className).not.toMatch(/\btext-(xs|sm|base|lg)\b/)
+})
+
 it('renders member replies through the shell message renderer, resolving media only for members on this gateway', async () => {
   Element.prototype.scrollIntoView = vi.fn()
   const { $groupChats } = await import('./group-chat')

@@ -271,7 +271,18 @@ function DialogHeader({ className, ...props }: React.ComponentProps<'div'>) {
 function DialogFooter({ className, ...props }: React.ComponentProps<'div'>) {
   return (
     <div
-      className={cn('flex flex-col-reverse gap-2 sm:flex-row sm:justify-end', className)}
+      className={cn(
+        // Actions pin to the bottom of the dialog's scrollport instead of
+        // scrolling away with the body (#128170): the body box owns the scroll
+        // and pads p-4, so the footer bleeds over that padding (-m*) and pins
+        // flush (sticky -bottom-4 measures from the content edge, one padding
+        // above the scrollport's painted edge). The solid background covers
+        // content sliding under it. At rest — content fits — the negative
+        // margins exactly consume the padding the footer sat beside, so an
+        // unclipped dialog renders pixel-identical to before.
+        'sticky -bottom-4 -mx-4 -mb-4 flex flex-col-reverse gap-2 bg-(--ui-chat-bubble-background) px-4 pt-3 pb-4 sm:flex-row sm:justify-end',
+        className
+      )}
       data-slot="dialog-footer"
       {...props}
     />

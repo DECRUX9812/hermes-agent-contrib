@@ -89,6 +89,7 @@ export type BotsMessages = {
     allHidden: string
     allHiddenDesc: string
     showHidden: string
+    hideHidden: string
     noHiddenMatch: string
     hiddenFromRoster: string
     pinned: string

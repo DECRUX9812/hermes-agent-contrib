@@ -1415,11 +1415,13 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             {isUser ? (
-              <span className="text-[0.7rem] font-semibold text-foreground">{label}</span>
+              <span className="text-[length:var(--conversation-tool-font-size)] font-semibold text-foreground">
+                {label}
+              </span>
             ) : (
               <Tip label={revealed ? 'Hide full handle' : 'Show full handle'}>
                 <Button
-                  className="text-left text-[0.7rem] font-semibold text-(--ui-accent)"
+                  className="text-left text-[length:var(--conversation-tool-font-size)] font-semibold text-(--ui-accent)"
                   onClick={() => setRevealedSpeaker(revealed ? null : entryKey)}
                   size="inline"
                   variant="text"
@@ -1451,7 +1453,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
             ) : null}
           </div>
           <div
-            className="min-w-0 text-xs text-(--ui-text-secondary) [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere" // The app shell sets user-select: none globally; message bodies opt
+            className="min-w-0 text-[length:var(--conversation-text-font-size)] text-(--ui-text-secondary) [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere" // The app shell sets user-select: none globally; message bodies opt
             // back in so drag-select and ⌘C work in group chat logs.
             data-selectable-text="true"
             data-slot="group-chat-message-content"
@@ -1597,7 +1599,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         members={members}
       />
       {activityPanel}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-slot="group-chat-transcript">
         {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
         {/* unbreakable code line widened every entry to its own width and the */}
         {/* log scrolled sideways as a whole instead of the code block (#91878). */}
@@ -1605,7 +1607,10 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           {room.log.length
             ? logChildren
             : [
-                <div className="px-2 py-4 text-center text-xs text-(--ui-text-tertiary)" key={'empty'}>
+                <div
+                  className="px-2 py-4 text-center text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)"
+                  key={'empty'}
+                >
                   {b.group.composerPlaceholder}
                 </div>
               ]}
@@ -1617,7 +1622,10 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
             />
           ))}
           {room.running ? (
-            <div className="px-2 py-1 text-[0.7rem] italic text-(--ui-text-quaternary)" key={'working'}>
+            <div
+              className="px-2 py-1 text-[length:var(--conversation-tool-font-size)] italic text-(--ui-text-quaternary)"
+              key={'working'}
+            >
               {roomClarifies.length
                 ? b.group.waitingForAnswer
                 : room.turn

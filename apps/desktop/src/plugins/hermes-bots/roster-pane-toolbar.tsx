@@ -13,6 +13,7 @@ import {
 
 import { seatableGroupBots, useGroupCapability } from './canonical-group-capabilities'
 import { botSourceStatus } from './data'
+import { $showHiddenBots } from './hidden-bots'
 import type { useBots } from './i18n'
 import { setActivityToasts } from './roster-actions'
 import { GatewayKindGlyph } from './roster-sections'
@@ -43,6 +44,10 @@ interface renderRosterToolbarProps {
   b: ReturnType<typeof useBots>
   activityToasts: boolean
   activeSourceRoster: RosterRow[]
+  /** Hidden-roster affordance: the toast after "Hide" points here, so the
+   *  button exists exactly while hidden bots exist. */
+  hiddenCount: number
+  hiddenExpanded: boolean
   /** Full roster; New Group Chat seats only `seatableGroupBots` of it. */
   roster: RosterRow[]
   setCreateOpen: (value: boolean) => void
@@ -69,6 +74,8 @@ export function renderRosterToolbar({
   b,
   activityToasts,
   activeSourceRoster,
+  hiddenCount,
+  hiddenExpanded,
   roster,
   setCreateOpen,
   setGroupCreateOpen,
@@ -94,6 +101,27 @@ export function renderRosterToolbar({
           Bots
         </span>
         <div className="flex items-center gap-0.5">
+          {hiddenCount > 0 ? (
+            <Tip
+              label={
+                hiddenExpanded ? b.roster.hideHidden : `${b.roster.showHidden} (${hiddenCount})`
+              }
+            >
+              <Button
+                aria-label={hiddenExpanded ? b.roster.hideHidden : `${b.roster.showHidden} (${hiddenCount})`}
+                aria-pressed={hiddenExpanded}
+                className={cn(
+                  'rounded-md text-(--ui-text-tertiary) hover:text-foreground',
+                  hiddenExpanded && 'text-(--ui-accent)'
+                )}
+                onClick={() => $showHiddenBots.set(!hiddenExpanded)}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <Codicon name={hiddenExpanded ? 'eye' : 'eye-closed'} />
+              </Button>
+            </Tip>
+          ) : null}
           <Tip
             label={activityToasts ? 'Activity toasts on — click to silence' : 'Activity toasts off — click to enable'}
           >
