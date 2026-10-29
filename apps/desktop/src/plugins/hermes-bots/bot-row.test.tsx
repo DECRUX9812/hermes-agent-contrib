@@ -120,6 +120,20 @@ describe('indicator density', () => {
 
     expect(container.querySelector('.codicon-pinned')).toBeTruthy()
   })
+
+  it('secondary metadata stays tucked until the row is hovered or focused', () => {
+    $botMeta.set({ alpha: { pinned: true } })
+
+    const { container } = render(
+      <BotRow bot={{ name: 'alpha' } as RosterRow} onDelete={noop} onEdit={noop} onGroup={noop} onNewSection={noop} />
+    )
+
+    const tucked = container.querySelector<HTMLElement>('.group-hover\\:opacity-100')
+    expect(tucked?.className).toContain('opacity-0')
+    expect(tucked?.className).toContain('group-focus-within:opacity-100')
+    // The pinned glyph lives inside the tucked cell, not on the resting row.
+    expect(tucked?.querySelector('.codicon-pinned')).toBeTruthy()
+  })
 })
 
 describe('pre-warm is hover-scoped, never roster-wide', () => {

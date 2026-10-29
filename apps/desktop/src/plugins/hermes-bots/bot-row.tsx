@@ -246,7 +246,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
       aria-busy={isOpening || undefined}
       aria-label={rowTooltip}
       className={cn(
-        'flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
+        'group flex w-full min-w-0 max-w-full items-center gap-2.5 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
         'hover:bg-(--chrome-action-hover)',
         isActive && 'bg-(--ui-row-active-background)',
         // The row being dragged fades in place; the browser's drag image is
@@ -282,11 +282,6 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
             <SidebarRowLead>
               <SessionStatusDot storedSessionId={canonicalSessionId} />
             </SidebarRowLead>
-            {pinned ? (
-              <Tip label={b.roster.pinned}>
-                <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
-              </Tip>
-            ) : null}
             {/* Hidden state needs no per-row glyph: hidden rows only ever list
                 under the pane's own labeled "Hidden" disclosure, and the row's
                 context menu names the Unhide action. */}
@@ -294,6 +289,9 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
               <span className="min-w-0 truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
             </Tip>
           </div>
+          {/* Transient high-signal marks stay painted; secondary metadata
+              (pin, age) rides hover/focus like the group row's carets, so the
+              resting rail reads one indicator per row. */}
           {attention ? (
             <Tip label={botAttentionHint(attention.reason)}>
               <Codicon
@@ -306,9 +304,18 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
           {isOpening ? (
             <GlyphSpinner ariaLabel={b.bot.openingChat} className="shrink-0 text-xs text-(--ui-text-secondary)" />
           ) : null}
-          {rowAgeTs ? (
-            <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
-              {rowAge(rowAgeTs * 1000, t.sidebar.row)}
+          {pinned || rowAgeTs ? (
+            <span className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+              {pinned ? (
+                <Tip label={b.roster.pinned}>
+                  <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
+                </Tip>
+              ) : null}
+              {rowAgeTs ? (
+                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+                  {rowAge(rowAgeTs * 1000, t.sidebar.row)}
+                </span>
+              ) : null}
             </span>
           ) : null}
         </div>
@@ -549,7 +556,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
     <RowButton
       aria-label={`${group}, ${b.group.memberCount(members.length)}, ${availabilityLabel}`}
       className={cn(
-        'flex w-full min-w-0 max-w-full items-center gap-2 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
+        'group flex w-full min-w-0 max-w-full items-center gap-2.5 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
         'hover:bg-(--chrome-action-hover)',
         active && 'bg-(--ui-row-active-background)',
         dragging && 'opacity-40'
@@ -600,19 +607,24 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
           <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium">{group}</span>
-          {room.pinned ? (
-            <Tip label={b.roster.pinned}>
-              <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
-            </Tip>
-          ) : null}
+          {/* needsYou is the row's one high-signal mark; pin + age tuck. */}
           {needsYou ? (
             <Tip label={b.group.needsYourInput}>
               <Codicon aria-label={b.roster.needsInput} className="shrink-0 text-(--ui-accent)" name="question" />
             </Tip>
           ) : null}
-          {lastAt ? (
-            <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
-              {rowAge(lastAt, t.sidebar.row)}
+          {room.pinned || lastAt ? (
+            <span className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
+              {room.pinned ? (
+                <Tip label={b.roster.pinned}>
+                  <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
+                </Tip>
+              ) : null}
+              {lastAt ? (
+                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+                  {rowAge(lastAt, t.sidebar.row)}
+                </span>
+              ) : null}
             </span>
           ) : null}
         </div>
