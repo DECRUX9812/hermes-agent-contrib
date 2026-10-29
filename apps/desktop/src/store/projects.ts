@@ -25,7 +25,7 @@ import {
   ensureActiveGatewayOpen,
   isActivePrimary
 } from '@/store/gateway'
-import { $sidebarShowAllSessions, setSidebarAgentsGrouped } from '@/store/layout'
+import { $sidebarShowAllSessions, includeSidebarProject, setSidebarAgentsGrouped } from '@/store/layout'
 import { notify } from '@/store/notifications'
 import {
   $activeGatewayProfile,
@@ -1199,6 +1199,9 @@ export async function createProject(input: CreateProjectInput): Promise<ProjectI
     }
 
     setSidebarAgentsGrouped(true)
+    // Grouping alone doesn't surface the lane when the project filter is
+    // already narrowed — an unchecked new id reads as "create did nothing".
+    includeSidebarProject(created.id)
   }
 
   reconcileProjects()

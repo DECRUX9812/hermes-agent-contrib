@@ -3,7 +3,7 @@ import { atom } from 'nanostores'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { NO_PROJECT_ID, type SidebarProjectTree } from '@/app/chat/sidebar/projects/workspace-groups'
-import { $sidebarAgentsGrouped, setSidebarAgentsGrouped } from '@/store/layout'
+import { $sidebarAgentsGrouped, $sidebarProjectFilter, setSidebarAgentsGrouped } from '@/store/layout'
 import { $activeGatewayProfile, $profiles, $profileScope, ALL_PROFILES, setShowAllProfiles } from '@/store/profile'
 import { $currentCwd, $selectedStoredSessionId, $sessions, applyConfiguredDefaultProjectDir } from '@/store/session'
 import { deferred } from '@/test/deferred'
@@ -501,6 +501,7 @@ describe('createProject', () => {
   beforeEach(() => {
     vi.clearAllMocks()
     setSidebarAgentsGrouped(false)
+    $sidebarProjectFilter.set([])
     $activeProjectId.set(null)
     $projectsRpcAvailable.set(null)
     $projects.set([])
@@ -622,6 +623,35 @@ describe('createProject', () => {
     expect(request).toHaveBeenCalledWith('projects.create', expect.objectContaining({ name: 'Demo' }))
     expect($sidebarAgentsGrouped.get()).toBe(true)
     expect($activeProjectId.get()).toBe('p_new')
+  })
+
+  it('adds the new project to an already-narrowed filter so its lane is visible (#146495)', async () => {
+    const created = { folders: [], id: 'p_new', name: 'Demo', primary_path: '/srv/demo' }
+
+    const request = vi.fn(async (method: string) =>
+      method === 'projects.create' ? { project: created } : { active_id: null, projects: [created], scoped_session_ids: [] }
+    )
+
+    activeGateway.mockReturnValue({ connectionState: 'open', request } as never)
+    $sidebarProjectFilter.set(['p_other'])
+
+    await createProject({ folders: ['/srv/demo'], name: 'Demo' })
+
+    expect($sidebarProjectFilter.get()).toEqual(['p_other', 'p_new'])
+  })
+
+  it('leaves an untouched project filter empty — it means "all", not "only these"', async () => {
+    const created = { folders: [], id: 'p_new', name: 'Demo', primary_path: '/srv/demo' }
+
+    const request = vi.fn(async (method: string) =>
+      method === 'projects.create' ? { project: created } : { active_id: null, projects: [created], scoped_session_ids: [] }
+    )
+
+    activeGateway.mockReturnValue({ connectionState: 'open', request } as never)
+
+    await createProject({ folders: ['/srv/demo'], name: 'Demo' })
+
+    expect($sidebarProjectFilter.get()).toEqual([])
   })
 
   it('marks the backend stale and surfaces a friendly error when projects.create is missing', async () => {
