@@ -167,3 +167,20 @@ Every former god file is a **facade** (public entry points + the names other pac
 
 Long-form background: `website/docs/developer-guide/`. Workflow rules (PR/issue/review/salvage
 process) live in the `hermes-agent-dev` skill, not here.
+
+---
+
+## Local deployment — desktop.decruxtech.com (fork ops, not upstream)
+
+This worktree IS the live site. `overlay/core-patches` is the deploy branch; the
+running service `hermes-gateway-6e0ae5f8.service` serves `apps/desktop/dist-webapp`
+on 127.0.0.1:9120 behind Cloudflare.
+
+- **Branch all fix/feature work off `overlay/core-patches`**, never off raw
+  `upstream`/`origin` `main` — an upstream-based branch cannot merge into the deploy
+  line without dragging thousands of unrelated commits.
+- Ship with `scripts/sync-deploy.sh ship` (typecheck + vitest ui gate, build
+  `dist-webapp`, restart the service). `update-upstream` stages nous main + our
+  commits in a throwaway worktree and only fast-forwards the deploy branch if the
+  gates stay green. `status` shows what is live.
+- Never run `hermes update` in this worktree.
