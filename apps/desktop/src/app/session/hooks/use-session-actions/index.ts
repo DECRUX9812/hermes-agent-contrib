@@ -1,4 +1,4 @@
-import { mergeUsage, randomUuid } from '@hermes/shared'
+import { mergeUsage, randomUuid, sessionScopedUsageLayer } from '@hermes/shared'
 import { useStore } from '@nanostores/react'
 import { type MutableRefObject, useCallback, useEffect, useRef } from 'react'
 import type { NavigateFunction } from 'react-router'
@@ -1511,7 +1511,9 @@ export function useSessionActions({
               }
 
               if (usage) {
-                setCurrentUsage(current => ({ ...mergeUsage(current, usage), compressions: usage.compressions }))
+                // session.usage answers with this session's own snapshot:
+                // an omitted session-scoped figure clears, like session.info.
+                setCurrentUsage(current => ({ ...mergeUsage(current, usage), ...sessionScopedUsageLayer(usage) }))
               }
 
               publishDegradedWarmCache()

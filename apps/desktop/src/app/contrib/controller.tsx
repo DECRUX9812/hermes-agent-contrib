@@ -33,6 +33,7 @@ import {
   toggleTargetZoneTabStrip
 } from '@/components/pane-shell/tree/store'
 import { $workspaceOwnerLabels, workspaceOwnerTitle } from '@/components/pane-shell/workspace-scope'
+import { Codicon } from '@/components/ui/codicon'
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { discoverBundledPlugins } from '@/contrib/plugins'
 import { Slot } from '@/contrib/react/slot'
@@ -209,6 +210,7 @@ registry.registerMany([
       // Standing chrome: no close gestures at all — the tab is shown/hidden
       // (zone menu Show/Hide rows + the auto-registered ⌘K toggle below).
       hideOnly: true,
+      tabIcon: () => <Codicon name="comment-discussion" size="0.9375rem" />,
       tabTitle: () => <LocalizedTabTitle select={t => t.sidebar.sessions} />,
       tabTitleText: () => translateNow('sidebar.sessions'),
       width: `${SIDEBAR_DEFAULT_WIDTH}px`,
@@ -249,6 +251,7 @@ registry.registerMany([
       height: '20vh',
       maxHeight: '80vh',
       lifecycleKeepAlive: true,
+      tabIcon: () => <Codicon name="terminal" size="0.9375rem" />,
       tabTitle: () => <LocalizedTabTitle select={t => t.sidebar.terminal} />,
       tabTitleText: () => translateNow('sidebar.terminal')
     },
@@ -267,6 +270,7 @@ registry.registerMany([
       width: FILE_BROWSER_DEFAULT_WIDTH,
       minWidth: FILE_BROWSER_MIN_WIDTH,
       maxWidth: FILE_BROWSER_MAX_WIDTH,
+      tabIcon: () => <Codicon name="files" size="0.9375rem" />,
       tabTitle: () => <LocalizedTabTitle select={t => t.sidebar.files} />,
       tabTitleText: () => translateNow('sidebar.files')
     },
@@ -285,6 +289,7 @@ registry.registerMany([
       width: FILE_BROWSER_DEFAULT_WIDTH,
       minWidth: FILE_BROWSER_MIN_WIDTH,
       maxWidth: FILE_BROWSER_MAX_WIDTH,
+      tabIcon: () => <Codicon name="diff" size="0.9375rem" />,
       tabTitle: () => <LocalizedTabTitle select={t => t.sidebar.review} />,
       tabTitleText: () => translateNow('sidebar.review')
     },

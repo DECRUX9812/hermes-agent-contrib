@@ -889,6 +889,10 @@ export interface SessionRuntimeInfo {
 }
 
 export interface UsageStats {
+  /** Live background/async subagent count (tui_gateway `_get_usage`). */
+  active_subagents?: number
+  /** Rolling average API-call latency in seconds over the last ~10 calls. Omitted when there is no history. */
+  avg_latency_s?: number
   /** Rolling tokens-per-second over the last ~10 API calls (tui_gateway `_get_usage`). */
   avg_tps?: number
   /** Session prompt-cache hit rate, 0–100. Omitted (not 0) when the provider reports no cache reads. */

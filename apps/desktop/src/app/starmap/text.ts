@@ -49,16 +49,60 @@ export function nodeFooter(node: StarmapNode): null | string {
   return null
 }
 
+// Shared grapheme segmenter for oversized-token wrapping — the same Intl
+// singleton convention as lib/time. Array.from is the fallback: it keeps code
+// points intact, so BMP CJK and most emoji still split safely.
+const graphemeSegmenter =
+  typeof Intl !== 'undefined' && 'Segmenter' in Intl
+    ? new Intl.Segmenter(undefined, { granularity: 'grapheme' })
+    : null
+
+function graphemes(text: string): string[] {
+  if (graphemeSegmenter) {
+    return [...graphemeSegmenter.segment(text)].map(s => s.segment)
+  }
+
+  return Array.from(text)
+}
+
 // Greedy word-wrap for the tooltip title so long memory lines don't blow out.
+// A single whitespace-delimited word wider than maxW (continuous CJK, a long
+// URL) wraps at grapheme boundaries instead of overflowing the card; normal
+// words keep the original whitespace-wrap behaviour.
 export function wrapText(ctx: CanvasRenderingContext2D, text: string, maxW: number): string[] {
   const words = text.split(/\s+/).filter(Boolean)
   const lines: string[] = []
   let line = ''
 
+  const fits = (s: string) => ctx.measureText(s).width <= maxW
+
   for (const word of words) {
+    if (!fits(word)) {
+      // Oversized token: close the current line, then pack its grapheme
+      // clusters within the width budget. A lone cluster wider than maxW gets
+      // its own line rather than splitting mid-grapheme.
+      if (line) {
+        lines.push(line)
+        line = ''
+      }
+
+      for (const seg of graphemes(word)) {
+        const next = line + seg
+
+        if (!line || fits(next)) {
+          line = next
+        } else {
+          lines.push(line)
+          line = seg
+        }
+      }
+
+      continue
+    }
+
     const next = line ? `${line} ${word}` : word
 
-    if (!line || ctx.measureText(next).width <= maxW) {
+    if (!line || fits(next)) {
       line = next
     } else {
       lines.push(line)

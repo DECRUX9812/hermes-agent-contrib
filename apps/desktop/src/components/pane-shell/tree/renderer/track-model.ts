@@ -118,6 +118,12 @@ interface PaneChrome extends PaneSizing {
    *  the tab and the sidebar row render status/color from the ONE primitive
    *  (self-subscribing — it updates without the strip re-registering). */
   tabLead?: () => React.ReactNode
+  /** This pane's GLYPH for the collapsed vertical rail (~15px, upright — the
+   *  renderer wraps it out of the rail's `writing-mode`). Present, the rail
+   *  tab shows the icon activity-bar style instead of the rotated label —
+   *  sideways Latin text is the worst-read affordance on the surface. Absent,
+   *  the rail falls back to the rotated label so plugin panes need nothing. */
+  tabIcon?: () => React.ReactNode
   /** Mint another tab of THIS pane's kind — the strip's "+" while this pane is
    *  active. A Browser tab makes another Browser tab; a pane that is one of a
    *  kind (a file peek) leaves it absent and the strip falls back to the chat

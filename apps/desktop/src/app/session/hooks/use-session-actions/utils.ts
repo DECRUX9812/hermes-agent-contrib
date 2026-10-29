@@ -1,4 +1,4 @@
-import { mergeUsage } from '@hermes/shared'
+import { mergeUsage, sessionScopedUsageLayer } from '@hermes/shared'
 
 import { resolveSessionRpcOwner } from '@/app/contrib/wiring-routing'
 import { textWithoutReferenceLines } from '@/components/assistant-ui/reference-kinds'
@@ -2326,8 +2326,9 @@ export function applyRuntimeInfo(
     publishRuntimeToComposer(sessionState)
 
     if (info.usage) {
-      // session.info/resume is an authoritative snapshot: an omitted compression count or plan gauge clears.
-      setCurrentUsage(current => ({ ...mergeUsage(current, info.usage), compressions: info.usage?.compressions }))
+      // session.info/resume is an authoritative snapshot: an omitted
+      // session-scoped figure clears, it never keeps the previous session's.
+      setCurrentUsage(current => ({ ...mergeUsage(current, info.usage), ...sessionScopedUsageLayer(info.usage) }))
     }
   }
 
@@ -2338,10 +2339,12 @@ export function applyStoredSessionPreviewRuntimeInfo(
   stored: { cwd?: null | string; model?: null | string } | undefined,
   storedSessionId: null | string
 ) {
-  // Compression count is live runtime state, not part of a durable session row.
-  // Drop the previous session's value immediately while the selected runtime
-  // resumes; the authoritative usage snapshot will repopulate it when present.
-  setCurrentUsage(current => ({ ...current, compressions: undefined }))
+  // Session-scoped usage figures are live runtime state, not part of a durable
+  // session row. Drop the previous session's values immediately while the
+  // selected runtime resumes; the authoritative usage snapshot will repopulate
+  // them when present — without this, cache-hit % and tokens/s keep showing the
+  // conversation you left (#146430).
+  setCurrentUsage(current => ({ ...current, ...sessionScopedUsageLayer(undefined) }))
   // Transient: this is a PREVIEW painted while `session.resume` is still in
   // flight. If the resume is abandoned (user starts a new chat before it
   // returns, or the row is switched away), nothing repairs the selection
