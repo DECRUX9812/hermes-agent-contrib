@@ -185,7 +185,7 @@ it.each(refused)('classifies %j as unavailable on both surfaces: no legacy rende
   await act(async () => { render(<GroupChatWorkspace group="Existing" members={roster} />) })
   expect(screen.getByText(unavailable)).toBeTruthy()
   expect(screen.queryByRole('textbox')).toBeNull()
-  expect((screen.getByRole('button', { name: 'Start gateway group' }) as HTMLButtonElement).disabled).toBe(true)
+  expect(screen.queryByRole('button', { name: 'Start gateway group' })).toBeNull()
   cleanup()
 
   const { onCreated, onClose } = await submitDialog()
@@ -433,8 +433,7 @@ it.each([
       setRowKindFilter: vi.fn(),
       setSectionDialog: vi.fn(),
       showRosterFilters: false,
-      showRosterSearch: false,
-      showRosterTools: false
+      showRosterSearch: false
     })
   )
 
@@ -480,8 +479,7 @@ it.each([
       setRowKindFilter: vi.fn(),
       setSectionDialog: vi.fn(),
       showRosterFilters: false,
-      showRosterSearch: false,
-      showRosterTools: false
+      showRosterSearch: false
     })
   )
 

@@ -456,6 +456,7 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
 export async function pluginSdkMock(host: Record<string, unknown>) {
   const nanostores = await import('nanostores')
   const { Textarea } = await import('@/components/ui/textarea')
+  const { PanelEmpty } = await import('@/app/overlays/panel')
   const { cn } = await import('@/lib/utils')
   const { randomUuid } = await import('@hermes/shared')
 
@@ -485,6 +486,7 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
     GlyphSpinner: () => null,
     useGatewayActivationEpoch: () => 0,
     host,
+    PanelEmpty,
     randomUuid,
     CapabilitiesView: undefined,
     MessageTextContent: undefined,

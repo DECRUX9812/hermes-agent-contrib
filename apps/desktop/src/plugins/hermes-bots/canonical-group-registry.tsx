@@ -139,11 +139,16 @@ export function CanonicalGroupList({ onOpen }: { onOpen: (key: string, origin: C
   const labels = useCanonicalGroupLabels()
   const connectionId = useValue(host.state.connectionId)
   const profile = useValue(host.state.profile)
+  const gatewayUp = useValue(host.state.gateway) === 'open'
   const [rooms, setRooms] = useState<ListedRoom[]>([])
   const [error, setError] = useState('')
   const [refresh, setRefresh] = useState(0)
   const revision = useValue($canonicalGroupListRevision)
   useEffect(() => {
+    if (!gatewayUp) {
+      return
+    }
+
     let cancelled = false
     setRooms([])
     setError('')
@@ -162,11 +167,21 @@ export function CanonicalGroupList({ onOpen }: { onOpen: (key: string, origin: C
     })().catch(e => { if (!cancelled) {setError(e instanceof Error ? e.message : String(e))} })
 
     return () => { cancelled = true }
-  }, [connectionId, profile, refresh, revision])
+  }, [connectionId, profile, refresh, revision, gatewayUp])
+
+  if (!rooms.length && !error) {
+    // An empty, healthy list paints nothing — the roster below already carries
+    // the room rows; a lone Refresh button here is orphan chrome.
+    return null
+  }
 
   return <div className="grid gap-1 px-2">
     <Button onClick={() => setRefresh(value => value + 1)} variant="ghost">{labels.refreshGroups}</Button>
-    {error && <p role="alert">{error}</p>}
+    {error ? (
+      <p className="px-2 text-[0.6875rem] leading-relaxed text-(--ui-text-tertiary)" role="alert">
+        {error}
+      </p>
+    ) : null}
     {rooms.map(room => <CanonicalGroupRow key={room.key} memberCount={room.memberCount} name={room.name}
       onDelete={() => disbandListedRoom(room, labels.disbanded(room.name))} onOpen={() => onOpen(room.key, 'key')} />)}
   </div>

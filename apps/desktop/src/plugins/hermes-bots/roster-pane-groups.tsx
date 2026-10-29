@@ -55,27 +55,34 @@ export function RosterGroupRowView({
     })
   }
 
+  const canMove = ([-1, 1] as const).some(delta => reorderGroupRows(sortedGroupRows, rowProps.group, delta))
+
   return (
-    <div className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center">
+    <div className="group/grprow grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center">
       <GroupRow
         {...rowProps}
         needsYou={Boolean(groupNeedsYou[rowProps.group]) || groupHasPendingClarify(groupClarify, rowProps.group)}
       />
-      <div className="flex flex-col">
-        {([-1, 1] as const).map(delta => (
-          <Tip key={delta} label={delta === -1 ? b.sections.moveUp : b.sections.moveDown}>
-            <Button
-              aria-label={`${rowProps.group}: ${delta === -1 ? b.sections.moveUp : b.sections.moveDown}`}
-              disabled={!reorderGroupRows(sortedGroupRows, rowProps.group, delta)}
-              onClick={() => moveRoom(rowProps.group, delta)}
-              size="icon-xs"
-              variant="ghost"
-            >
-              <Codicon name={delta === -1 ? 'chevron-up' : 'chevron-down'} />
-            </Button>
-          </Tip>
-        ))}
-      </div>
+      {/* Reorder is a gesture affordance, not row chrome: a stack that can do
+          nothing (single room) stays unmounted, and a working one keeps the
+          quiet row until hover or keyboard focus asks for it. */}
+      {canMove ? (
+        <div className="flex flex-col opacity-0 transition-opacity duration-100 group-hover/grprow:opacity-100 group-hover/grprow:transition-none focus-within:opacity-100">
+          {([-1, 1] as const).map(delta => (
+            <Tip key={delta} label={delta === -1 ? b.sections.moveUp : b.sections.moveDown}>
+              <Button
+                aria-label={`${rowProps.group}: ${delta === -1 ? b.sections.moveUp : b.sections.moveDown}`}
+                disabled={!reorderGroupRows(sortedGroupRows, rowProps.group, delta)}
+                onClick={() => moveRoom(rowProps.group, delta)}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <Codicon name={delta === -1 ? 'chevron-up' : 'chevron-down'} />
+              </Button>
+            </Tip>
+          ))}
+        </div>
+      ) : null}
     </div>
   )
 }

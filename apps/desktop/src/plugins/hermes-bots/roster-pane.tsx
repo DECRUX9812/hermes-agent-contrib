@@ -363,7 +363,6 @@ export function BotsPane() {
     allBotsHidden,
     showRosterSearch,
     showRosterFilters,
-    showRosterTools,
     hiddenGatewaySections
   } = deriveRosterPresentation({
     rowKindFilter,
@@ -482,7 +481,6 @@ export function BotsPane() {
         setCreateOpen,
         setGroupCreateOpen,
         setSectionDialog,
-        showRosterTools,
         showRosterSearch,
         showRosterFilters,
         query,

@@ -182,8 +182,6 @@ export function deriveRosterPresentation({
     rosterItemCount >= BOT_ROSTER_SEARCH_THRESHOLD ||
     activeFilterCount > 0
 
-  const showRosterTools = showRosterSearch || showRosterFilters
-
   const hiddenGatewaySections = rosterGatewaySections(
     matchingHiddenBots.map((bot: RosterRow) => ({
       kind: 'bot',
@@ -202,7 +200,6 @@ export function deriveRosterPresentation({
     allBotsHidden,
     showRosterSearch,
     showRosterFilters,
-    showRosterTools,
     hiddenGatewaySections
   }
 }

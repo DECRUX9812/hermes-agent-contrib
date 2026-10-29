@@ -26,6 +26,7 @@ import {
   DialogTitle,
   host,
   Input,
+  PanelEmpty,
   queryClient,
   relativeTime,
   RowButton,
@@ -664,20 +665,17 @@ function GroupExecutionGate(props: GroupChatWorkspaceProps) {
   // A `canonical:` key names an existing room; it never seeds a new one.
   const canCreate = mode === 'canonical' && lookupStatus === 'missing' && canonicalGroupKeyRoute(props.group, props.origin ?? 'name') === null
 
+  const checking = mode === 'canonical' ? lookupStatus === 'pending' : mode === 'checking'
+
   const message = mode !== 'canonical'
-    ? mode === 'unavailable' ? b.canonical.driverUnavailable : 'Checking group driver…'
+    ? mode === 'unavailable' ? b.canonical.driverUnavailable : b.canonical.checkingDriver
     : lookupStatus === 'pending' ? t.gatewayGroupOpen.opening
       : lookupStatus === 'failed' ? t.gatewayGroupOpen.lookupFailed
-        : canCreate ? 'This is a legacy Desktop room. Start a gateway-owned group with these members; the old history stays here and is not replayed.'
+        : canCreate ? b.canonical.legacyRoomNotice
           : t.gatewayGroupOpen.missing
 
-  return <div className="grid gap-3 p-3">
-    <h2>{props.group}</h2>
-    <p>{message}</p>
-    {error && <p role="alert">{error}</p>}
-    {mode === 'canonical' && lookupStatus !== 'pending' && !canCreate &&
-      <Button onClick={() => setLookupAttempt(value => value + 1)} variant="secondary">{t.common.retry}</Button>}
-    <Button disabled={!canCreate || busy} onClick={() => {
+  const action = canCreate ? (
+    <Button disabled={busy} onClick={() => {
       const route = { connectionId: connectionId ?? '', profile }
 
       const sourceCurrent = groupCreationSource(route, activationEpoch)
@@ -694,8 +692,30 @@ function GroupExecutionGate(props: GroupChatWorkspaceProps) {
           if (sourceCurrent()) {openGroupChat(registerCanonicalGroup(route, room), 'key')}
         })
         .catch(e => { if (sourceCurrent()) {setError(String(e))} }).finally(() => setBusy(false))
-    }}>Start gateway group</Button>
-  </div>
+    }}>{b.canonical.startGatewayGroup}</Button>
+  ) : mode === 'canonical' && lookupStatus !== 'pending' ? (
+    <Button onClick={() => setLookupAttempt(value => value + 1)} variant="secondary">{t.common.retry}</Button>
+  ) : null
+
+  return (
+    <div className="flex h-full min-h-0 flex-1 flex-col">
+      <PanelEmpty
+        action={action}
+        description={
+          <>
+            {message}
+            {error ? (
+              <span className="mt-1.5 block" role="alert">
+                {error}
+              </span>
+            ) : null}
+          </>
+        }
+        icon={checking ? 'loading~spin' : 'organization'}
+        title={props.group}
+      />
+    </div>
+  )
 }
 
 function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: GroupChatWorkspaceProps) {

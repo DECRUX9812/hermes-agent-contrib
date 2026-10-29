@@ -29,6 +29,9 @@ export interface CanonicalGroupMessages {
   memberWorking: string
   memberQueued: string
   groupWorking: string
+  legacyRoomNotice: string
+  startGatewayGroup: string
+  checkingDriver: string
 }
 
 export const CANONICAL_GROUP_LOCALES = {
@@ -62,7 +65,11 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: 'Upload failed',
     memberWorking: 'Working',
     memberQueued: 'Queued',
-    groupWorking: 'The group is working…'
+    groupWorking: 'The group is working…',
+    legacyRoomNotice:
+      'This is a legacy Desktop room. Start a gateway-owned group with these members; the old history stays here and is not replayed.',
+    startGatewayGroup: 'Start gateway group',
+    checkingDriver: 'Checking group driver…'
   },
   ja: {
     roomStopped: 'グループが停止しました',
@@ -94,7 +101,11 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: 'アップロードに失敗しました',
     memberWorking: '作業中',
     memberQueued: '待機中',
-    groupWorking: 'グループが作業中です…'
+    groupWorking: 'グループが作業中です…',
+    legacyRoomNotice:
+      'これは従来の Desktop ルームです。同じメンバーでゲートウェイ管理のグループを開始してください。以前の履歴はここに残り、再生されません。',
+    startGatewayGroup: 'ゲートウェイのグループを開始',
+    checkingDriver: 'グループの実行機能を確認中…'
   },
   zh: {
     roomStopped: '群组已停止',
@@ -126,7 +137,10 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: '上传失败',
     memberWorking: '工作中',
     memberQueued: '排队中',
-    groupWorking: '群组正在处理…'
+    groupWorking: '群组正在处理…',
+    legacyRoomNotice: '这是一个旧版 Desktop 房间。请用这些成员创建由网关管理的群组；旧历史保留在此处，不会重放。',
+    startGatewayGroup: '启动网关群组',
+    checkingDriver: '正在检查群组运行程序…'
   },
   'zh-hant': {
     roomStopped: '群組已停止',
@@ -158,7 +172,10 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: '上傳失敗',
     memberWorking: '工作中',
     memberQueued: '排隊中',
-    groupWorking: '群組正在處理…'
+    groupWorking: '群組正在處理…',
+    legacyRoomNotice: '這是舊版 Desktop 房間。請以這些成員啟動閘道管理的群組；舊紀錄會保留在此，不會重播。',
+    startGatewayGroup: '啟動閘道群組',
+    checkingDriver: '正在檢查群組執行程式…'
   },
   ar: {
     roomStopped: 'أُوقفت المجموعة',
@@ -190,7 +207,11 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: 'فشل الرفع',
     memberWorking: 'يعمل',
     memberQueued: 'في الانتظار',
-    groupWorking: 'المجموعة تعمل…'
+    groupWorking: 'المجموعة تعمل…',
+    legacyRoomNotice:
+      'هذه غرفة Desktop قديمة. ابدأ مجموعة تديرها البوابة بهؤلاء الأعضاء؛ يبقى السجل القديم هنا ولا يُعاد تشغيله.',
+    startGatewayGroup: 'بدء مجموعة البوابة',
+    checkingDriver: 'جارٍ فحص مشغّل المجموعة…'
   },
   ru: {
     roomStopped: 'Группа остановлена',
@@ -225,7 +246,11 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: 'Не удалось загрузить файл',
     memberWorking: 'Работает',
     memberQueued: 'В очереди',
-    groupWorking: 'Группа работает…'
+    groupWorking: 'Группа работает…',
+    legacyRoomNotice:
+      'Это устаревшая комната Desktop. Запустите группу под управлением шлюза с этими участниками; старая история останется здесь и не будет воспроизведена.',
+    startGatewayGroup: 'Запустить группу шлюза',
+    checkingDriver: 'Проверка исполнителя группы…'
   },
   fr: {
     roomStopped: 'Groupe arrêté',
@@ -259,7 +284,11 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: 'Échec du téléversement',
     memberWorking: 'En cours',
     memberQueued: 'En attente',
-    groupWorking: 'Le groupe travaille…'
+    groupWorking: 'Le groupe travaille…',
+    legacyRoomNotice:
+      "Ceci est un salon Desktop hérité. Lancez un groupe géré par la passerelle avec ces membres ; l'ancien historique reste ici et n'est pas rejoué.",
+    startGatewayGroup: 'Démarrer le groupe de passerelle',
+    checkingDriver: 'Vérification du pilote de groupe…'
   },
   de: {
     roomStopped: 'Gruppe angehalten',
@@ -294,7 +323,11 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: 'Hochladen fehlgeschlagen',
     memberWorking: 'Arbeitet',
     memberQueued: 'In der Warteschlange',
-    groupWorking: 'Die Gruppe arbeitet…'
+    groupWorking: 'Die Gruppe arbeitet…',
+    legacyRoomNotice:
+      'Dies ist ein älterer Desktop-Raum. Starten Sie eine gateway-verwaltete Gruppe mit diesen Mitgliedern; der alte Verlauf bleibt hier und wird nicht wiederholt.',
+    startGatewayGroup: 'Gateway-Gruppe starten',
+    checkingDriver: 'Gruppentreiber wird geprüft…'
   },
   es: {
     roomStopped: 'Grupo detenido',
@@ -328,6 +361,10 @@ export const CANONICAL_GROUP_LOCALES = {
     uploadFailed: 'Error al subir',
     memberWorking: 'Trabajando',
     memberQueued: 'En cola',
-    groupWorking: 'El grupo está trabajando…'
+    groupWorking: 'El grupo está trabajando…',
+    legacyRoomNotice:
+      'Esta es una sala heredada de Desktop. Inicia un grupo administrado por la pasarela con estos miembros; el historial antiguo permanece aquí y no se reproduce.',
+    startGatewayGroup: 'Iniciar grupo de pasarela',
+    checkingDriver: 'Comprobando el controlador de grupo…'
   }
 } satisfies Record<string, CanonicalGroupMessages>

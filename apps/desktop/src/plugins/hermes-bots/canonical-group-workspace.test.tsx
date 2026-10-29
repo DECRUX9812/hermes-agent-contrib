@@ -11,8 +11,9 @@ vi.mock('@hermes/plugin-sdk', async () => {
   const { en } = await import('@/i18n/en')
   const { CANONICAL_GROUP_LOCALES } = await import('./canonical-group-locales')
   const { ConfirmDialog } = await import('@/components/ui/confirm-dialog')
+  const { PanelEmpty } = await import('@/app/overlays/panel')
 
-  return { ...await pluginSdkMock(gateway.host), atom, useValue: useStore, ConfirmDialog,
+  return { ...await pluginSdkMock(gateway.host), atom, useValue: useStore, ConfirmDialog, PanelEmpty,
     useI18n: () => ({ t: en }),
     usePluginI18n: () => (key: string) => CANONICAL_GROUP_LOCALES.en[key.replace('canonical.', '') as keyof typeof CANONICAL_GROUP_LOCALES.en] ?? key,
     Button: (p: ComponentProps<'button'>) => <button {...p} />,

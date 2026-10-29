@@ -25,7 +25,7 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
       ...sdk.host,
       notify,
       requestProfile,
-      state: { ...sdk.host.state, connectionId: atom<null | string>('local'), profile: atom('default') }
+      state: { ...sdk.host.state, connectionId: atom<null | string>('local'), gateway: atom('open'), profile: atom('default') }
     },
     usePluginI18n: () => translateBotsIn('en')
   }
