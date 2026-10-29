@@ -5,11 +5,16 @@ import { afterEach, expect, it, vi } from 'vitest'
 import { expectDownloaded, observeDownloads } from './canonical-download-test-utils'
 
 const request = vi.hoisted(() => vi.fn())
+vi.mock('./avatar', () => ({
+  avatarColor: (_color: unknown, name: string) => name,
+  botAppearance: () => ({ color: '#000', image: '', shape: 'round' }),
+  BotFace: ({ name }: { name: string }) => <span data-face={name} />
+}))
 vi.mock('@hermes/plugin-sdk', async () => {
   const { en } = await import('@/i18n/en')
   const { Textarea } = await import('@/components/ui/textarea')
 
-  return { Textarea, atom: (await import('nanostores')).atom, MessageTextContent: undefined, Streamdown: undefined, host: { requestProfile: request }, useI18n: () => ({ locale: 'en', t: en }),
+  return { Textarea, atom: (await import('nanostores')).atom, cn: (await import('@/lib/utils')).cn, MessageTextContent: undefined, relativeTime: () => 'a moment ago', Streamdown: undefined, host: { requestProfile: request }, useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
     Codicon: () => <span />, Tip: ({ children }: { children: ReactNode }) => <>{children}</> }
 })

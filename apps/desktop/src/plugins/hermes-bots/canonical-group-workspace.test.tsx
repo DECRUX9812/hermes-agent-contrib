@@ -5,6 +5,11 @@ import type { ComponentProps } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const request = vi.hoisted(() => vi.fn())
+vi.mock('./avatar', () => ({
+  avatarColor: (_color: unknown, name: string) => name,
+  botAppearance: () => ({ color: '#000', image: '', shape: 'round' }),
+  BotFace: ({ name }: { name: string }) => <span data-face={name} />
+}))
 vi.mock('@hermes/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
   const gateway = createGroupGateway()
@@ -63,6 +68,23 @@ it('an empty room paints its empty state inside the scaled transcript, under qui
   const disband = screen.getByRole('button', { name: /disband/i })
   expect(disband.getAttribute('variant')).toBe('ghost')
   expect(disband.className).toContain('text-destructive')
+})
+
+it('pending actions render as elevated cards — icon, kind title, member, action hierarchy', async () => {
+  request.mockImplementation(async (_route, method) => method === 'groups.state'
+    ? { room: { name: 'Room', members: [{ member_id: 'm1', handle: 'alpha', profile: 'alpha' }] },
+        driver_status: { pending_actions: [{ kind: 'approval', member_id: 'm1', task_id: 't1', execution_generation: 1 }] } }
+    : method === 'groups.log' ? { events: [] } : {})
+  render(<CanonicalGroupWorkspace binding={{ connectionId: 'local', profile: 'team', roomId: 'acts', roomName: 'Room' }} />)
+
+  const title = await screen.findByText('Needs approval')
+  const card = title.parentElement!.parentElement!
+  expect(card.className).toContain('bg-(--ui-bg-secondary)')
+  // The member resolves to a display identity, not a raw id.
+  expect(card.textContent).toContain('alpha')
+  // Approval offers deny as the quiet option and allow as the action.
+  expect(within(card).getByRole('button', { name: 'Deny' })).toBeTruthy()
+  expect(within(card).getByRole('button', { name: 'Allow once' })).toBeTruthy()
 })
 
 it('restores a frozen send after remount and retires only its acknowledged exact retry', async () => {

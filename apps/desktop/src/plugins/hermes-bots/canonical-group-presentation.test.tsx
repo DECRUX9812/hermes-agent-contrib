@@ -2,6 +2,11 @@ import { cleanup, render, screen } from '@testing-library/react'
 import type { ComponentProps, ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
+vi.mock('./avatar', () => ({
+  avatarColor: (_color: unknown, name: string) => name,
+  botAppearance: () => ({ color: '#000', image: '', shape: 'round' }),
+  BotFace: ({ name }: { name: string }) => <span data-face={name} />
+}))
 vi.mock('@hermes/plugin-sdk', async () => {
   const { Streamdown } = await import('streamdown')
   const { en } = await import('@/i18n/en')
@@ -11,7 +16,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
   const MessageTextContent = ({ media = true, text }: { media?: boolean; text: string }) =>
     <div data-media={String(media)} data-testid="message-text"><Streamdown>{text}</Streamdown></div>
 
-  return { MessageTextContent, Streamdown, relativeTime, useI18n: () => ({ locale: 'en', t: en }),
+  return { MessageTextContent, Streamdown, cn: (await import('@/lib/utils')).cn, relativeTime, useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
     Codicon: () => <span />, Tip: ({ children }: { children: ReactNode }) => <>{children}</> }
 })

@@ -34,6 +34,9 @@ export interface CanonicalGroupMessages {
   checkingDriver: string
   roomEmpty: string
   roomEmptyHint: string
+  pendingApproval: string
+  pendingRetry: string
+  pendingDiscard: string
 }
 
 export const CANONICAL_GROUP_LOCALES = {
@@ -73,7 +76,10 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: 'Start gateway group',
     checkingDriver: 'Checking group driver…',
     roomEmpty: 'No messages yet',
-    roomEmptyHint: 'Send a message to start the group. Mention members with @.'
+    roomEmptyHint: 'Send a message to start the group. Mention members with @.',
+    pendingApproval: 'Needs approval',
+    pendingRetry: 'Run failed',
+    pendingDiscard: 'Interrupted work'
   },
   ja: {
     roomStopped: 'グループが停止しました',
@@ -111,7 +117,10 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: 'ゲートウェイのグループを開始',
     checkingDriver: 'グループの実行機能を確認中…',
     roomEmpty: 'メッセージはまだありません',
-    roomEmptyHint: 'メッセージを送信してグループを開始します。@ でメンバーに言及できます。'
+    roomEmptyHint: 'メッセージを送信してグループを開始します。@ でメンバーに言及できます。',
+    pendingApproval: '承認が必要です',
+    pendingRetry: '実行に失敗しました',
+    pendingDiscard: '中断された作業'
   },
   zh: {
     roomStopped: '群组已停止',
@@ -148,7 +157,10 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: '启动网关群组',
     checkingDriver: '正在检查群组运行程序…',
     roomEmpty: '还没有消息',
-    roomEmptyHint: '发送消息开始群组讨论，可用 @ 提及成员。'
+    roomEmptyHint: '发送消息开始群组讨论，可用 @ 提及成员。',
+    pendingApproval: '需要批准',
+    pendingRetry: '运行失败',
+    pendingDiscard: '已中断的工作'
   },
   'zh-hant': {
     roomStopped: '群組已停止',
@@ -185,7 +197,10 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: '啟動閘道群組',
     checkingDriver: '正在檢查群組執行程式…',
     roomEmpty: '還沒有訊息',
-    roomEmptyHint: '傳送訊息開始群組討論，可用 @ 提及成員。'
+    roomEmptyHint: '傳送訊息開始群組討論，可用 @ 提及成員。',
+    pendingApproval: '需要核准',
+    pendingRetry: '執行失敗',
+    pendingDiscard: '已中斷的工作'
   },
   ar: {
     roomStopped: 'أُوقفت المجموعة',
@@ -223,7 +238,10 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: 'بدء مجموعة البوابة',
     checkingDriver: 'جارٍ فحص مشغّل المجموعة…',
     roomEmpty: 'لا توجد رسائل بعد',
-    roomEmptyHint: 'أرسل رسالة لبدء المجموعة. اذكر الأعضاء بـ @.'
+    roomEmptyHint: 'أرسل رسالة لبدء المجموعة. اذكر الأعضاء بـ @.',
+    pendingApproval: 'يتطلب موافقة',
+    pendingRetry: 'فشل التنفيذ',
+    pendingDiscard: 'عمل متوقف'
   },
   ru: {
     roomStopped: 'Группа остановлена',
@@ -264,7 +282,10 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: 'Запустить группу шлюза',
     checkingDriver: 'Проверка исполнителя группы…',
     roomEmpty: 'Сообщений пока нет',
-    roomEmptyHint: 'Отправьте сообщение, чтобы начать. Упоминайте участников через @.'
+    roomEmptyHint: 'Отправьте сообщение, чтобы начать. Упоминайте участников через @.',
+    pendingApproval: 'Требуется разрешение',
+    pendingRetry: 'Запуск завершился ошибкой',
+    pendingDiscard: 'Прерванная работа'
   },
   fr: {
     roomStopped: 'Groupe arrêté',
@@ -304,7 +325,10 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: 'Démarrer le groupe de passerelle',
     checkingDriver: 'Vérification du pilote de groupe…',
     roomEmpty: 'Aucun message pour l’instant',
-    roomEmptyHint: 'Envoyez un message pour lancer le groupe. Mentionnez les membres avec @.'
+    roomEmptyHint: 'Envoyez un message pour lancer le groupe. Mentionnez les membres avec @.',
+    pendingApproval: 'Approbation requise',
+    pendingRetry: 'Échec de l\'exécution',
+    pendingDiscard: 'Travail interrompu'
   },
   de: {
     roomStopped: 'Gruppe angehalten',
@@ -345,7 +369,10 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: 'Gateway-Gruppe starten',
     checkingDriver: 'Gruppentreiber wird geprüft…',
     roomEmpty: 'Noch keine Nachrichten',
-    roomEmptyHint: 'Senden Sie eine Nachricht, um die Gruppe zu starten. Mitglieder mit @ erwähnen.'
+    roomEmptyHint: 'Senden Sie eine Nachricht, um die Gruppe zu starten. Mitglieder mit @ erwähnen.',
+    pendingApproval: 'Genehmigung erforderlich',
+    pendingRetry: 'Ausführung fehlgeschlagen',
+    pendingDiscard: 'Unterbrochene Arbeit'
   },
   es: {
     roomStopped: 'Grupo detenido',
@@ -385,6 +412,9 @@ export const CANONICAL_GROUP_LOCALES = {
     startGatewayGroup: 'Iniciar grupo de pasarela',
     checkingDriver: 'Comprobando el controlador de grupo…',
     roomEmpty: 'Aún no hay mensajes',
-    roomEmptyHint: 'Envía un mensaje para iniciar el grupo. Menciona a los miembros con @.'
+    roomEmptyHint: 'Envía un mensaje para iniciar el grupo. Menciona a los miembros con @.',
+    pendingApproval: 'Necesita aprobación',
+    pendingRetry: 'La ejecución falló',
+    pendingDiscard: 'Trabajo interrumpido'
   }
 } satisfies Record<string, CanonicalGroupMessages>

@@ -5,6 +5,11 @@ import type { ComponentProps } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
 const request = vi.hoisted(() => vi.fn())
+vi.mock('./avatar', () => ({
+  avatarColor: (_color: unknown, name: string) => name,
+  botAppearance: () => ({ color: '#000', image: '', shape: 'round' }),
+  BotFace: ({ name }: { name: string }) => <span data-face={name} />
+}))
 vi.mock('@hermes/plugin-sdk', async () => {
   const { pluginSdkMock, createGroupGateway } = await import('./group-test-utils')
   const gateway = createGroupGateway()

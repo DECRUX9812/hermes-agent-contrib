@@ -1,6 +1,7 @@
 import * as sdk from '@hermes/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 
+import { avatarColor, botAppearance, BotFace } from './avatar'
 import { type CanonicalGroupAttachment, CanonicalGroupAttachments, fetchCanonicalGroupAttachment } from './canonical-group-attachments'
 import { useCanonicalGroupLabels } from './canonical-group-labels'
 import type { CanonicalGroupBinding, CanonicalRoomMember } from './canonical-groups'
@@ -37,24 +38,18 @@ function eventAuthor(event: CanonicalGroupEvent, roster: Map<string, CanonicalRo
     (isMessage ? event.actor?.id : memberId)
 }
 
-function EventTime({ timestamp }: { timestamp?: number }) {
+function EventTime({ short, timestamp }: { short?: boolean; timestamp?: number }) {
   if (typeof timestamp !== 'number') {return null}
   const at = new Date(timestamp * 1000)
 
   if (!Number.isFinite(at.getTime())) {return null}
 
-  return <time className="text-[length:var(--conversation-caption-font-size)] text-(--ui-text-quaternary)" dateTime={at.toISOString()}>{sdk.relativeTime(at.getTime())}</time>
+  return <time className={short ? 'text-[0.5625rem]' : 'text-[length:var(--conversation-caption-font-size)]'} dateTime={at.toISOString()}>
+    {short ? at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : sdk.relativeTime(at.getTime())}
+  </time>
 }
 
-function EventBody({ event, notice }: { event: CanonicalGroupEvent; notice?: string }) {
-  if (notice) {
-    const detail = event.payload.error || event.payload.reason || event.payload.reason_code
-
-    return <p className="text-[length:var(--conversation-tool-font-size)] text-(--ui-text-secondary)" data-selectable-text="true">
-      <strong>{notice}</strong>{detail && <>: {detail}</>}
-    </p>
-  }
-
+function EventBody({ event }: { event: CanonicalGroupEvent }) {
   const text = event.payload.text || event.payload.content || ''
 
   return <div className="min-w-0 text-[length:var(--conversation-text-font-size)] text-(--ui-text-secondary) [&_p]:mb-1 [&_p:last-child]:mb-0 [&_ul]:mb-1 [&_ul]:list-disc [&_ul]:pl-4 [&_ol]:mb-1 [&_ol]:list-decimal [&_ol]:pl-4 [&_pre]:whitespace-pre-wrap [&_pre]:wrap-anywhere" data-selectable-text="true">
@@ -153,6 +148,84 @@ function ImagePreview({ binding, eventId, attachment, disabled }: {
   return previewable ? <div ref={box}>{src && <img alt={attachment.name} className="max-h-64 max-w-full rounded object-contain" src={src} />}</div> : null
 }
 
+/** Who a message belongs to — the grouping key, independent of display names. */
+function eventSpeakerKey(event: CanonicalGroupEvent): string {
+  if (event.actor?.kind) {
+    return `${event.actor.kind}:${event.actor.id ?? event.actor.display_name ?? ''}`
+  }
+
+  return event.payload.member_id ? `member:${event.payload.member_id}` : ''
+}
+
+/** A deterministic face seed for the speaker — member profile first, so the
+ *  room face matches the roster face for the same bot. */
+function eventFaceSeed(event: CanonicalGroupEvent, member?: CanonicalRoomMember): string {
+  return member?.profile || member?.handle || member?.display_name || event.actor?.display_name ||
+    event.actor?.id || event.payload.member_id || 'bot'
+}
+
+function SpeakerFace({ event, member }: { event: CanonicalGroupEvent; member?: CanonicalRoomMember }) {
+  if (event.actor?.kind === 'user') {
+    return <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-(--ui-bg-quaternary) text-[0.625rem] text-(--ui-text-tertiary)">
+      <sdk.Codicon name="account" />
+    </span>
+  }
+
+  const { shape, color, image } = botAppearance(eventFaceSeed(event, member), undefined)
+
+  return <BotFace color={avatarColor(color, eventFaceSeed(event, member))} image={image || null} name={eventFaceSeed(event, member)} shape={shape} size={20} />
+}
+
+interface EventRowProps {
+  author?: string
+  binding: CanonicalGroupBinding
+  continuation: boolean
+  disabled: boolean
+  event: CanonicalGroupEvent
+  member?: CanonicalRoomMember
+}
+
+function EventRow({ author, binding, continuation, disabled, event, member }: EventRowProps) {
+  const previewEventId = event.room_id === binding.roomId ? event.event_id : undefined
+
+  return <div className={sdk.cn('group/msg grid grid-cols-[24px_minmax(0,1fr)] gap-x-2 px-2', continuation ? 'py-0.5' : 'pt-2 pb-0.5')} data-seq={event.seq}>
+    <div className="pt-0.5">
+      {continuation
+        ? <span className="flex justify-center text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover/msg:opacity-100"><EventTime short timestamp={event.created_at} /></span>
+        : <SpeakerFace event={event} member={member} />}
+    </div>
+    <div className="min-w-0">
+      {continuation ? null : (
+        <div className="flex items-baseline gap-2">
+          {author && <strong className="text-[length:var(--conversation-text-font-size)] font-semibold text-(--ui-accent)">{author}</strong>}
+          <EventTime timestamp={event.created_at} />
+        </div>
+      )}
+      <EventBody event={event} />
+      {previewEventId && event.payload.attachments?.filter(a => a.kind === 'image').map(a =>
+        <ImagePreview attachment={a} binding={binding} disabled={disabled} eventId={previewEventId} key={a.attachment_id ?? a.name} />)}
+      {!!event.payload.attachments?.length && <CanonicalGroupAttachments
+        attachments={event.payload.attachments.map(attachment => ({ ...attachment, event_id: event.event_id }))}
+        binding={binding} disabled={disabled || !event.event_id || event.room_id !== binding.roomId} readOnly />}
+    </div>
+  </div>
+}
+
+function NoticeRow({ detail, event, notice, who }: { detail?: string; event: CanonicalGroupEvent; notice: string; who?: string }) {
+  return <div className="flex items-baseline gap-2 px-2 py-1" data-seq={event.seq}>
+    <sdk.Codicon aria-hidden className="shrink-0 self-center text-[0.625rem] text-(--ui-text-quaternary)" name="info" />
+    <p className="min-w-0 flex-1 text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)" data-selectable-text="true">
+      <strong className="font-medium">{notice}</strong>
+      {who && <> — <span className="text-(--ui-text-quaternary)">{who}</span></>}
+      {detail && <> — <span className="text-(--ui-text-quaternary)">{detail}</span></>}
+    </p>
+    <EventTime timestamp={event.created_at} />
+  </div>
+}
+
+// Back-to-back same-speaker messages within this window group under one header.
+const GROUP_WINDOW_S = 300
+
 export function CanonicalGroupHistory({ binding, events, members = [], disabled = false }: CanonicalGroupHistoryProps) {
   const labels = useCanonicalGroupLabels()
   const roster = new Map(members.map(member => [member.member_id, member]))
@@ -167,6 +240,9 @@ export function CanonicalGroupHistory({ binding, events, members = [], disabled 
     ['authority.lost', labels.authorityLost]
   ])
 
+  let prevSpeakerKey = ''
+  let prevSpeakerAt = 0
+
   return <>{events.map(event => {
     const notice = event.kind === 'room.activity' && event.payload.status === 'bounded'
       ? labels.workLimitReached : notices.get(event.kind)
@@ -174,19 +250,36 @@ export function CanonicalGroupHistory({ binding, events, members = [], disabled 
     const isMessage = event.kind === 'message' || event.kind === 'message.user' || event.kind === 'message.member'
 
     if (!notice && !isMessage) {return null}
-    const author = eventAuthor(event, roster, isMessage)
-    const previewEventId = event.room_id === binding.roomId ? event.event_id : undefined
 
-    return <div className="grid grid-cols-[minmax(0,1fr)] gap-1 px-2 py-1.5" key={event.seq}>
-    <div className="flex items-baseline gap-2">
-      {author && <strong className="text-[length:var(--conversation-text-font-size)] font-semibold text-(--ui-accent)">{author}</strong>}
-      <EventTime timestamp={event.created_at} />
-    </div>
-    <EventBody event={event} notice={notice} />
-    {previewEventId && event.payload.attachments?.filter(a => a.kind === 'image').map(a =>
-      <ImagePreview attachment={a} binding={binding} disabled={disabled} eventId={previewEventId} key={a.attachment_id ?? a.name} />)}
-    {!!event.payload.attachments?.length && <CanonicalGroupAttachments
-      attachments={event.payload.attachments.map(attachment => ({ ...attachment, event_id: event.event_id }))}
-      binding={binding} disabled={disabled || !event.event_id || event.room_id !== binding.roomId} readOnly />}
-  </div>})}</>
+    if (notice) {
+      // A status line is its own beat — the speaker group ends before it.
+      prevSpeakerKey = ''
+      prevSpeakerAt = 0
+      const member = roster.get(event.payload.member_id ?? '')
+
+      return <NoticeRow
+        detail={event.payload.error || event.payload.reason || event.payload.reason_code}
+        event={event}
+        key={event.seq}
+        notice={notice}
+        who={member ? member.display_name || member.handle : undefined} />
+    }
+
+    const speakerKey = eventSpeakerKey(event)
+    const at = typeof event.created_at === 'number' ? event.created_at : 0
+    const continuation = Boolean(speakerKey) && speakerKey === prevSpeakerKey && (!at || !prevSpeakerAt || at - prevSpeakerAt < GROUP_WINDOW_S)
+    prevSpeakerKey = speakerKey
+    prevSpeakerAt = at
+
+    const member = event.actor?.kind === 'member' ? roster.get(event.actor.id ?? '') : roster.get(event.payload.member_id ?? '')
+
+    return <EventRow
+      author={eventAuthor(event, roster, true)}
+      binding={binding}
+      continuation={continuation}
+      disabled={disabled}
+      event={event}
+      key={event.seq}
+      member={member} />
+  })}</>
 }

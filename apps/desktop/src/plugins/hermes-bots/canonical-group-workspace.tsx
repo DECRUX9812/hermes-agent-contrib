@@ -1,4 +1,4 @@
-import { Button, host, PanelEmpty, randomUuid } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, host, PanelEmpty, randomUuid } from '@hermes/plugin-sdk'
 import { type ClipboardEvent, type DragEvent, useEffect, useRef, useState } from 'react'
 
 import { type CanonicalDriverActivity, CanonicalGroupWorkingLine, canonicalMemberPhases } from './canonical-group-activity'
@@ -204,13 +204,27 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
         : <CanonicalGroupHistory binding={binding} disabled={!visible} events={events} members={state?.room.members} />}
       <CanonicalGroupWorkingLine driver={state?.driver_status} labels={labels} members={state?.room.members} phases={phases} />
     </div>
-    {(state?.driver_status?.pending_actions || []).map(action => <div className="flex items-center gap-2 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-quaternary) px-2.5 py-1.5 text-xs" key={`${action.kind}:${action.task_id}:${action.execution_generation}`}>
-      <span className="min-w-0 flex-1 font-medium text-(--ui-text-secondary)">{action.member_id}</span>
-      {action.kind === 'discard' && <Button disabled={busy} onClick={() => setDiscard({ ...action })} size="xs" variant="secondary">{labels.discard}</Button>}
-      {action.kind === 'retry' && <Button disabled={busy} onClick={() => void act({ ...action })} size="xs" variant="secondary">{labels.retry}</Button>}
-      {action.kind === 'approval' && <><Button disabled={busy} onClick={() => void act({ ...action }, 'once')} size="xs" variant="secondary">{labels.allowOnce}</Button><Button disabled={busy} onClick={() => void act({ ...action }, 'deny')} size="xs" variant="ghost">{labels.deny}</Button></>}
-    </div>)}
-    {discard && <div aria-label={labels.discardUnknown} className="grid gap-2 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-bg-quaternary) px-2.5 py-2" role="alertdialog">
+    {(state?.driver_status?.pending_actions || []).map(action => {
+      const member = state?.room.members?.find(m => m.member_id === action.member_id)
+      const who = member?.display_name || member?.handle || action.member_id
+      const { icon, title, tone } = action.kind === 'approval'
+        ? { icon: 'shield', title: labels.pendingApproval, tone: 'text-(--ui-accent)' }
+        : action.kind === 'retry'
+          ? { icon: 'warning', title: labels.pendingRetry, tone: 'text-amber-600 dark:text-amber-300' }
+          : { icon: 'circle-slash', title: labels.pendingDiscard, tone: 'text-(--ui-text-tertiary)' }
+
+      return <div className="flex items-center gap-2.5 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-3 py-2" key={`${action.kind}:${action.task_id}:${action.execution_generation}`}>
+        <Codicon className={cn('shrink-0 text-xs', tone)} name={icon} />
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-(--ui-text-primary)">{title}</p>
+          <p className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">{who}</p>
+        </div>
+        {action.kind === 'discard' && <Button disabled={busy} onClick={() => setDiscard({ ...action })} size="xs" variant="secondary">{labels.discard}</Button>}
+        {action.kind === 'retry' && <Button disabled={busy} onClick={() => void act({ ...action })} size="xs" variant="secondary">{labels.retry}</Button>}
+        {action.kind === 'approval' && <><Button disabled={busy} onClick={() => void act({ ...action }, 'deny')} size="xs" variant="ghost">{labels.deny}</Button><Button disabled={busy} onClick={() => void act({ ...action }, 'once')} size="xs">{labels.allowOnce}</Button></>}
+      </div>
+    })}
+    {discard && <div aria-label={labels.discardUnknown} className="grid gap-2 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-3 py-2" role="alertdialog">
       <p className="text-xs text-(--ui-text-secondary)">{labels.discardWarning}</p>
       <div className="flex gap-2">
         <Button disabled={busy} onClick={() => { const exact = discard; setDiscard(null); void act(exact) }} size="sm" variant="destructive">{labels.confirmDiscard}</Button>
@@ -218,7 +232,7 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
       </div>
     </div>}
     {restoredPending && <p className="px-1 text-[0.6875rem] text-(--ui-text-quaternary)" role="status">{labels.restoredPendingSend}</p>}
-    <form className="flex items-end gap-2" onDragOver={event => { if (event.dataTransfer.types.includes('Files')) {event.preventDefault()} }}
+    <form className="flex shrink-0 items-end gap-2 border-t border-(--ui-stroke-tertiary) pt-3" onDragOver={event => { if (event.dataTransfer.types.includes('Files')) {event.preventDefault()} }}
       onDrop={event => attachTransfer(event, event.dataTransfer)} onPaste={event => attachTransfer(event, event.clipboardData)} onSubmit={event => { event.preventDefault(); send() }}>
       <CanonicalGroupAttachments attachments={attachments} binding={binding} disabled={composerLocked} onChange={setAttachments} onUploadingChange={setUploading} ref={uploader} />
       <GroupMentionInput aria-label={labels.groupMessage} className="min-w-0 flex-1" disabled={composerLocked} handleFor={member => member.handle}

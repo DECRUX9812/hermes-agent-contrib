@@ -13,6 +13,8 @@ vi.mock('@hermes/plugin-sdk', async () => {
   return { PanelEmpty, Textarea, atom: (await import('nanostores')).atom, host: { requestProfile: request }, randomUuid: (await import('@hermes/shared')).randomUuid,
     useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
+    cn: (await import('@/lib/utils')).cn,
+    relativeTime: () => 'a moment ago',
     MessageTextContent: ({ text }: { text: string }) => <div data-testid="markdown">{text}</div>,
     Streamdown: ({ children }: { children: ReactNode }) => <div data-testid="markdown">{children}</div>,
     Codicon: () => <span />, Tip: ({ children }: { children: ReactNode }) => <>{children}</> }
@@ -21,6 +23,12 @@ vi.mock('@hermes/plugin-sdk', async () => {
 vi.mock('./group-chat-parts', () => ({
   GroupMentionInput: ({ onChange, ...props }: Omit<ComponentProps<'textarea'>, 'onChange'> & { onChange: (value: string) => void }) =>
     <textarea aria-label={props['aria-label']} disabled={props.disabled} onChange={event => onChange(event.target.value)} value={props.value} />
+}))
+// Faces are the roster's concern; history tests only need a speaker marker.
+vi.mock('./avatar', () => ({
+  avatarColor: (_color: unknown, name: string) => name,
+  botAppearance: () => ({ color: '#000', image: '', shape: 'round' }),
+  BotFace: ({ name }: { name: string }) => <span data-face={name} />
 }))
 vi.mock('./canonical-group-labels', async () => {
   const { CANONICAL_GROUP_LOCALES } = await import('./canonical-group-locales')
@@ -135,4 +143,44 @@ it('renders only room messages with their author and markdown presentation', asy
   expect(screen.getByRole('list', { name: 'Members' }).textContent).toContain('helper')
   expect(history.getByTestId('markdown').textContent).toBe('**Done**')
   expect(history.queryByText('turn.settled')).toBeNull()
+})
+
+it('groups back-to-back same-speaker messages and keeps notices to a quiet line', async () => {
+  const now = Math.floor(Date.now() / 1000)
+  request.mockImplementation(async (_route, method) => {
+    if (method === 'groups.state') {
+      return { room: { name: 'Room', members: [
+        { member_id: 'm-a', handle: 'alpha', profile: 'alpha' },
+        { member_id: 'm-b', handle: 'beta', profile: 'beta' }
+      ] }, driver_status: {} }
+    }
+
+    if (method === 'groups.log') {
+      return { events: [
+        { seq: 1, room_id: binding.roomId, kind: 'message.member', actor: { kind: 'member', id: 'm-a' }, created_at: now - 60, payload: { text: 'one' } },
+        { seq: 2, room_id: binding.roomId, kind: 'message.member', actor: { kind: 'member', id: 'm-a' }, created_at: now - 30, payload: { text: 'two' } },
+        { seq: 3, room_id: binding.roomId, kind: 'message.member', actor: { kind: 'member', id: 'm-b' }, created_at: now - 20, payload: { text: 'three' } },
+        { seq: 4, room_id: binding.roomId, kind: 'turn.failed', created_at: now - 10, payload: { error: 'boom' } }
+      ] }
+    }
+
+    throw new Error(`Unexpected method ${method}`)
+  })
+  const view = render(<CanonicalGroupWorkspace binding={binding} />)
+  await waitFor(() => expect(screen.getByText('three')).toBeTruthy())
+
+  const first = view.container.querySelector('[data-seq="1"]')!
+  // A new speaker opens a group: face + accent name + timestamp.
+  expect(first.querySelector('strong')?.textContent).toBe('alpha')
+  const second = view.container.querySelector('[data-seq="2"]')!
+  // A continuation repeats neither the name nor the face, and sits tighter.
+  expect(second.querySelector('strong')).toBeNull()
+  expect(second.className).toContain('py-0.5')
+  const third = view.container.querySelector('[data-seq="3"]')!
+  expect(third.querySelector('strong')?.textContent).toBe('beta')
+  // A status notice is one quiet line — detail on, but no speaker chrome.
+  const notice = view.container.querySelector('[data-seq="4"]')!
+  expect(notice.textContent).toContain('Turn failed')
+  expect(notice.textContent).toContain('boom')
+  expect(notice.querySelector('[data-selectable-text]')).toBeTruthy()
 })
