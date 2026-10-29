@@ -917,6 +917,18 @@ export function toggleSidebarProjectFilter(projectId: string) {
   toggleIn($sidebarProjectFilter, projectId)
 }
 
+/** A project the user just created has to be VISIBLE where it lands: when the
+ *  inclusion filter already narrows the view, the fresh id joins it — an
+ *  untouched filter stays empty (= all), since appending would hide every
+ *  other project instead (#146495). */
+export function includeSidebarProject(projectId: string) {
+  const current = $sidebarProjectFilter.get()
+
+  if (current.length > 0 && !current.includes(projectId)) {
+    $sidebarProjectFilter.set([...current, projectId])
+  }
+}
+
 export function toggleSidebarProfileFilter(profile: string) {
   toggleIn($sidebarProfileFilter, profile)
 }
