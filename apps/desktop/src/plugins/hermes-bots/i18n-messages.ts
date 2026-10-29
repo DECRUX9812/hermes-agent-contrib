@@ -242,6 +242,9 @@ export type BotsMessages = {
     deleteTitle: string
     deleteAction: string
     composerPlaceholder: string
+    jumpToLatest: (count: number) => string
+    dayToday: string
+    dayYesterday: string
     slashCommandsUnsupported: string
     attachHint: string
     newThread: string

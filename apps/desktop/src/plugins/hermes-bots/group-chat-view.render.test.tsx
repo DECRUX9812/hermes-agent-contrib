@@ -1,4 +1,4 @@
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
@@ -51,6 +51,60 @@ vi.mock('./group-chat-parts', () => ({
   GroupMentionInput: () => null
 }))
 afterEach(cleanup)
+
+it('keeps the reader in history until they jump to new messages', async () => {
+  const scrollIntoView = vi.fn()
+  Element.prototype.scrollIntoView = scrollIntoView
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+  const log = [{ id: 'm1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'first', at: 1 }]
+  $groupChats.set({ Room: { log, sessions: {}, watermarks: {} } })
+
+  const { container, rerender } = render(<GroupChatWorkspace group="Room" members={[]} />)
+  await waitFor(() => expect(container.textContent).toContain('first'))
+  await waitFor(() => expect(scrollIntoView).toHaveBeenCalled())
+  const transcript = container.querySelector('[data-slot="group-chat-transcript"]') as HTMLElement
+  Object.defineProperties(transcript, {
+    scrollHeight: { configurable: true, value: 1000 },
+    clientHeight: { configurable: true, value: 100 },
+    scrollTop: { configurable: true, value: 100, writable: true }
+  })
+  fireEvent.scroll(transcript)
+  expect(screen.getByText('Jump to latest')).toBeTruthy()
+  scrollIntoView.mockClear()
+
+  act(() => {
+    $groupChats.set({
+      Room: { log: [...log, { ...log[0], id: 'm2', text: 'second' }], sessions: {}, watermarks: {} }
+    })
+  })
+  rerender(<GroupChatWorkspace group="Room" members={[]} />)
+  await waitFor(() => expect(screen.getByText('Jump to latest (1 new)')).toBeTruthy())
+  expect(scrollIntoView).not.toHaveBeenCalled()
+
+  fireEvent.click(screen.getByText('Jump to latest (1 new)'))
+  expect(scrollIntoView).toHaveBeenCalledWith({ behavior: 'smooth', block: 'end' })
+  expect(screen.queryByText('Jump to latest (1 new)')).toBeNull()
+})
+
+it('separates messages when the local day changes', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+  const now = new Date()
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 12).getTime()
+
+  const log = [
+    { id: 'm1', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'before', at: yesterday },
+    { id: 'm2', thread: 'a', from: { kind: 'user' as const, name: 'You' }, text: 'after', at: now.getTime() }
+  ]
+
+  $groupChats.set({ Room: { log, sessions: {}, watermarks: {} } })
+
+  render(<GroupChatWorkspace group="Room" members={[]} />)
+  await waitFor(() => expect(screen.getAllByTestId('group-day-separator')).toHaveLength(2))
+  expect(screen.getAllByTestId('group-day-separator').map(element => element.textContent)).toEqual(['Yesterday', 'Today'])
+})
 
 // #144095: room text must obey Appearance → chat text size. The transcript
 // carries `data-slot="group-chat-transcript"`, which styles.css scopes into

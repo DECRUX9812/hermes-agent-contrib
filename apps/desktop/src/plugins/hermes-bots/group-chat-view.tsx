@@ -91,6 +91,7 @@ import { GroupClarifyCard, GroupImageControls, GroupMentionInput } from './group
 import type { GroupRoomPrompt } from './group-chat-parts'
 import { GroupMemberPicker } from './group-chat-view-members'
 import { compressGroupMemberHistory } from './group-compress'
+import { roomDayBucket, roomDayLabel } from './group-day-separators'
 import { sweepExternalGroupWrites } from './group-external-writes'
 import { GroupHoldStatus } from './group-hold-status'
 import {
@@ -908,29 +909,29 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
   // view on mount and whenever the log grows — but only when the user is
   // already near the bottom, so reading history is never yanked away.
   const bottomSentinelRef = useRef<HTMLDivElement | null>(null)
+  const scrollerRef = useRef<HTMLDivElement | null>(null)
   const stickToBottomRef = useRef(true)
-  // eslint-disable-next-line no-restricted-syntax -- tracks live scroll position from a DOM listener, not an atom
-  useEffect(() => {
-    const sentinel = bottomSentinelRef.current
+  const [leftAtLength, setLeftAtLength] = useState<null | number>(null)
 
-    if (!sentinel) {
+  const onLogScroll = () => {
+    const viewport = scrollerRef.current
+
+    if (!viewport) {
       return
     }
 
-    const viewport = sentinel.closest('[data-slot="scroll-area-viewport"]')
+    const nearBottom = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 80
+    stickToBottomRef.current = nearBottom
+    setLeftAtLength(current => (nearBottom ? null : (current ?? room.log.length)))
+  }
 
-    if (viewport) {
-      const onScroll = () => {
-        stickToBottomRef.current = viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight < 80
-      }
+  // A different room starts at its own latest message, not the previous room's scroll position.
+  // eslint-disable-next-line no-restricted-syntax -- resets scroll state at the room identity boundary
+  useEffect(() => {
+    stickToBottomRef.current = true
+    setLeftAtLength(null)
+  }, [group])
 
-      viewport.addEventListener('scroll', onScroll, {
-        passive: true
-      })
-
-      return () => viewport.removeEventListener('scroll', onScroll)
-    }
-  }, [])
   useEffect(() => {
     if (stickToBottomRef.current) {
       bottomSentinelRef.current?.scrollIntoView({
@@ -949,6 +950,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
   useEffect(() => {
     if (visible && !wasVisibleRef.current) {
       stickToBottomRef.current = true
+      setLeftAtLength(null)
       bottomSentinelRef.current?.scrollIntoView({
         block: 'end'
       })
@@ -1524,7 +1526,24 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
   const threadEnds = new Map<string, number>()
   room.log.forEach((entry, index) => threadEnds.set(groupThreadOf(entry), index))
   const logChildren: ReactNode[] = []
+  let previousDay: number | null = null
+
   room.log.forEach((entry, index) => {
+    const day = roomDayBucket(Number(entry.at) || 0)
+
+    if (day !== previousDay) {
+      previousDay = day
+      logChildren.push(
+        <div className="flex items-center gap-2 px-2 pt-2" data-testid="group-day-separator" key={`day:${day}:${index}`}>
+          <span aria-hidden className="h-px flex-1 bg-(--ui-stroke-secondary)" />
+          <span className="shrink-0 text-[0.625rem] font-medium text-(--ui-text-quaternary)">
+            {roomDayLabel(day, { today: b.group.dayToday, yesterday: b.group.dayYesterday })}
+          </span>
+          <span aria-hidden className="h-px flex-1 bg-(--ui-stroke-secondary)" />
+        </div>
+      )
+    }
+
     logChildren.push(renderEntry(entry, index))
     const id = groupThreadOf(entry)
 
@@ -1619,7 +1638,12 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         members={members}
       />
       {activityPanel}
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-slot="group-chat-transcript">
+      <div
+        className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        data-slot="group-chat-transcript"
+        onScroll={onLogScroll}
+        ref={scrollerRef}
+      >
         {/* minmax(0,1fr): an implicit grid track is min-content sized, so one */}
         {/* unbreakable code line widened every entry to its own width and the */}
         {/* log scrolled sideways as a whole instead of the code block (#91878). */}
@@ -1658,6 +1682,23 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           /* mount and on log growth — unless the user has scrolled up. */}
           <div aria-hidden key={'bottom-sentinel'} ref={bottomSentinelRef} />
         </div>
+        {leftAtLength !== null ? (
+          <div className="pointer-events-none sticky bottom-2 flex justify-center">
+            <Button
+              className="pointer-events-auto h-7 gap-1 rounded-full px-3 shadow-md"
+              onClick={() => {
+                stickToBottomRef.current = true
+                setLeftAtLength(null)
+                bottomSentinelRef.current?.scrollIntoView({ block: 'end', behavior: 'smooth' })
+              }}
+              size="sm"
+              variant="secondary"
+            >
+              <Codicon name="arrow-down" />
+              {b.group.jumpToLatest(Math.max(0, room.log.length - leftAtLength))}
+            </Button>
+          </div>
+        ) : null}
       </div>
       <div className="border-t border-(--ui-stroke-secondary) p-2">
         <form
