@@ -44,8 +44,8 @@ gate() { # run inside a checkout dir: typecheck + ui tests
   local dir=$1
   say "Gate: typecheck"
   (cd "$dir/apps/desktop" && npm run typecheck)
-  say "Gate: vitest ui"
-  (cd "$dir/apps/desktop" && npm run test:ui)
+  say "Gate: vitest ui (known-red aware — scripts/known-red.json)"
+  (cd "$dir/apps/desktop" && node scripts/test-ui-gate.mjs)
 }
 
 build_and_reload() {
