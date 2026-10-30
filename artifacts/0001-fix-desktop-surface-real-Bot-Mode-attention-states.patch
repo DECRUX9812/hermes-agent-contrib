@@ -1,0 +1,740 @@
+From 3a4f1a4c5d11c9cf2921cbc4db856f0f5fea5ddf Mon Sep 17 00:00:00 2001
+From: Ritesh Patel <DECRUX9812@users.noreply.github.com>
+Date: Sun, 23 Aug 2026 03:26:40 -0600
+Subject: [PATCH] fix(desktop): surface real Bot Mode attention states
+
+Expose a content-free per-session awaiting-input index to plugins, show canonical Bot Chats that genuinely need input, and derive Working now from exact per-session busy state or worker heartbeats instead of recent messages.
+---
+ .../desktop/src/plugins/hermes-bots/plugin.js | 278 ++++++++++++------
+ .../tests/active-now-strip.test.mjs           |  81 +++--
+ .../tests/focused-bot-highlight.test.mjs      |   9 +-
+ .../tests/needs-you-strip.test.mjs            |  48 +++
+ apps/desktop/src/sdk/index.ts                 |   6 +
+ apps/desktop/src/store/prompts.test.ts        |  17 ++
+ apps/desktop/src/store/prompts.ts             |  12 +
+ 7 files changed, 329 insertions(+), 122 deletions(-)
+ create mode 100644 apps/desktop/src/plugins/hermes-bots/tests/needs-you-strip.test.mjs
+
+diff --git a/apps/desktop/src/plugins/hermes-bots/plugin.js b/apps/desktop/src/plugins/hermes-bots/plugin.js
+index 7b6b6690a5..e98047558d 100644
+--- a/apps/desktop/src/plugins/hermes-bots/plugin.js
++++ b/apps/desktop/src/plugins/hermes-bots/plugin.js
+@@ -81,6 +81,13 @@ const blobatarSvg = typeof sdk === 'undefined' ? undefined : sdk.blobatarSvg
+ // Budgeted render loop (fps cap + observability pause + dormancy + teardown).
+ // Feature-detected: older desktops fall back to the hand-rolled clock below.
+ const createBudgetedLoop = typeof sdk === 'undefined' ? undefined : sdk.createBudgetedLoop
++// Content-free global attention index from the core prompt stores. Runtime
++// plugins on older Desktop builds feature-detect it and keep the roster usable,
++// but cannot claim "Needs you" without authoritative session state.
++const $awaitingInputSessionIds = host?.state?.awaitingInputSessionIds || atom([])
++// Per-session turn truth arrived after the earliest plugin SDK builds. Older
++// Desktop hosts keep loading Bot Mode, but Working now stays worker-only.
++const $busyBySession = host?.state?.busyBySession || atom({})
+ 
+ const ID = 'hermes-bots'
+ const ROSTER_KEY = [ID, 'roster']
+@@ -6705,25 +6712,50 @@ function workerActiveAt(bot, now = Date.now()) {
+   return Boolean(ts && now / 1000 - ts < WORKER_ACTIVE_WINDOW_S)
+ }
+ 
+-/** Bots that are working right now: the profile the gateway is running a
+- *  turn for (busy), any bot whose last message landed inside the liveness
+- *  window, plus any bot with a live kanban/tool worker. Pure — output
+- *  follows the input roster's order, so presence never reorders or hides
+- *  the normal list. */
+-function activeBots(roster, activeProfile, gatewayState, now = Date.now()) {
+-  return (roster || []).filter(bot => {
+-    const busyTurn = !bot.remoteSource && bot.name === activeProfile && gatewayState === 'busy'
+-    const last = botActivitySession(bot)?.last_active || 0
+-    const inWindow = Boolean(last && now / 1000 - last < ACTIVE_WINDOW_S)
++/** True only when the core renderer has a real blocking prompt parked on this
++ * bot's canonical forever-chat. Side chats deliberately stay in the Sessions
++ * sidebar: the bot row must always open the named Bot Chat registry row. */
++function botNeedsInput(bot, awaitingInputSessionIds) {
++  const session = bot?.canonical_session
+ 
+-    return busyTurn || inWindow || workerActiveAt(bot, now)
+-  })
++  if (!session || !Array.isArray(awaitingInputSessionIds) || !awaitingInputSessionIds.length) {
++    return false
++  }
++
++  const ids = new Set(awaitingInputSessionIds)
++
++  return Boolean(
++    (session.id && ids.has(session.id)) ||
++    (session.resolved_id && ids.has(session.resolved_id))
++  )
++}
++
++/** True while the canonical Bot Chat's durable row or live lineage tip is
++ * actually mid-turn in the renderer's per-session state cache. */
++function botSessionBusy(bot, busyBySession) {
++  const session = bot?.canonical_session
++
++  if (!session || !busyBySession || typeof busyBySession !== 'object') {
++    return false
++  }
++
++  return Boolean(
++    (session.id && busyBySession[session.id]) ||
++    (session.resolved_id && busyBySession[session.resolved_id])
++  )
++}
++
++/** Bots that are working right now: canonical Bot Chats with a live turn plus
++ * profiles with a live kanban/tool worker heartbeat. A recently completed
++ * message is "recent activity", not proof that work is still in flight. Pure
++ * — output follows roster order and never mutates it. */
++function activeBots(roster, busyBySession, now = Date.now()) {
++  return (roster || []).filter(bot => botSessionBusy(bot, busyBySession) || workerActiveAt(bot, now))
+ }
+ 
+ // ── bot row ──────────────────────────────────────────────────────────────────
+ 
+-function BotRow({ bot, onDelete, onEdit, onGroup }) {
+-  const activeProfile = useValue(host.state.profile)
++function BotRow({ bot, onDelete, onEdit, onGroup, awaitingInputSessionIds = [], busyBySession = {} }) {
+   const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
+   const activeGroup = useValue($groupChatWorkspace)
+   const meta = botRosterMeta(bot, useValue($botMeta))
+@@ -6734,15 +6766,11 @@ function BotRow({ bot, onDelete, onEdit, onGroup }) {
+   // old keying the wrong bot stayed highlighted while you read another's chat.
+   // A selected group chat suppresses every bot-row highlight: the group row
+   // owns the selection then (#88979).
+-  const activeConnectionId = String(host.state.connectionId?.get?.() || 'local').trim()
+   const isActive = !activeGroup && isActiveRosterBot(bot, focusedOwner)
+-  // Turn-busy is a SOCKET fact: only the gateway-home profile can be mid-turn.
+-  const isGatewayHome = !bot.remoteSource && bot.name === activeProfile &&
+-    isActiveRosterBot(bot, { name: activeProfile, connectionId: activeConnectionId })
++  const turnBusy = botSessionBusy(bot, busyBySession)
+   const { shape, color, image } = botAppearance(bot.name, meta)
+   // Keep user photos/pets. Drop the 160px SVG backfill so the math face can move.
+   const photo = Boolean(image && !isBackfilledFacePng(image))
+-  const gatewayState = useValue(host.state.gateway)
+   // Preview identity must match click identity (#88200): when the backend
+   // resolved the pinned canonical chat, preview THAT session — not the
+   // profile's most recent (but unrelated) activity. Activity signals
+@@ -6760,14 +6788,14 @@ function BotRow({ bot, onDelete, onEdit, onGroup }) {
+   const rowAgeTs = workerActive
+     ? Math.max(activitySession?.last_active || 0, bot.worker_session?.last_active || 0)
+     : activitySession?.last_active || 0
+-  // Work pose only when this bot is actually doing something: the active
+-  // profile while the gateway is busy, or a bot that wrote within the
+-  // liveness window. Not every bot whenever the gateway is busy.
+-  const botMood = (isGatewayHome && gatewayState === 'busy') || activeNow ? 'work' : 'idle'
++  // Work pose only when this bot is actually doing something. Recent chat
++  // activity keeps its small pulse/timestamp but never animates as in-flight.
++  const botMood = turnBusy || workerActive ? 'work' : 'idle'
+   // Subscribe on every render. A source switch turns the same keyed row from
+   // thin to rich; conditionally calling useValue here breaks React hook order.
+   const unreadByName = useValue($botUnread)
+   const unread = Boolean(unreadByName[botSelectionKey(bot)])
++  const needsYou = botNeedsInput(bot, awaitingInputSessionIds)
+   // WHO sent the last message (bot-to-bot DM vs human) — the full stored
+   // history lives in the canonical chat, not inline.
+   // Preview identity must match click identity (#88200): when the backend
+@@ -6924,12 +6952,18 @@ function BotRow({ bot, onDelete, onEdit, onGroup }) {
+                     : null
+                 ]
+               }),
+-              unread
++              needsYou
+                 ? jsx('span', {
+-                    className: 'size-2 shrink-0 rounded-full bg-(--ui-accent,#4f9cf9)',
+-                    'aria-label': 'unread'
++                    className:
++                      'shrink-0 rounded bg-(--ui-bg-quaternary) px-1.5 py-px text-[0.625rem] font-semibold text-(--ui-text-primary)',
++                    children: 'needs you'
+                   })
+-                : null,
++                : unread
++                  ? jsx('span', {
++                      className: 'size-2 shrink-0 rounded-full bg-(--ui-accent,#4f9cf9)',
++                      'aria-label': 'unread'
++                    })
++                  : null,
+               activeNow
+                 ? jsx('span', {
+                     className: 'hermes-bots-pulse size-1.5 shrink-0 rounded-full bg-(--ui-accent,#4f9cf9)',
+@@ -9810,13 +9844,63 @@ function RoutinesPane() {
+ 
+ // ── roster pane ──────────────────────────────────────────────────────────────
+ 
+-/** "Active now" presence strip above the roster: chips for every bot that is
+- *  working right now (the gateway-busy selected profile + bots whose last
+- *  message landed inside the liveness window). Reuses the row avatar; each
+- *  chip opens that bot's canonical Bot Chat. Omitted entirely when nothing
+- *  is active, and never reorders the roster below it. */
+-function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpen }) {
+-  const active = activeBots(roster, activeProfile, gatewayState)
++/** Blocking prompts across background Bot Chats, backed by the renderer's
++ * per-session prompt stores. This is the only roster state labeled "Needs you":
++ * unread messages and recent activity keep their separate, quieter signals. */
++function NeedsYouStrip({ roster, awaitingInputSessionIds, metaByName, onOpen }) {
++  const waiting = (roster || []).filter(bot => botNeedsInput(bot, awaitingInputSessionIds))
++
++  if (!waiting.length) {
++    return null
++  }
++
++  return jsxs('div', {
++    role: 'status',
++    'aria-live': 'polite',
++    'aria-label': 'Bots needing input',
++    className: 'flex flex-wrap items-center gap-1.5 px-2.5 pb-1.5',
++    children: [
++      jsx('span', {
++        className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-secondary)',
++        children: 'Needs you'
++      }),
++      ...waiting.map(bot => {
++        const meta = botRosterMeta(bot, metaByName)
++        const { shape, color, image } = botAppearance(bot.name, meta)
++        const photo = Boolean(image && !isBackfilledFacePng(image))
++        const label = displayName(bot, meta)
++
++        return jsx('button', {
++          type: 'button',
++          'aria-label': `Open ${label}'s chat — needs your input`,
++          className:
++            'flex items-center gap-1.5 rounded-md bg-(--ui-bg-quaternary) px-1.5 py-1 text-left text-(--ui-text-primary) transition-colors hover:bg-(--chrome-action-hover)',
++          onClick: () => onOpen(bot),
++          children: [
++            jsx(BotFace, {
++              shape,
++              color,
++              image: photo ? image : null,
++              size: 24,
++              name: bot.name,
++              mood: 'idle'
++            }),
++            jsx('span', {
++              className: 'max-w-28 truncate text-xs font-medium',
++              children: label
++            })
++          ]
++        }, botRosterKey(bot))
++      })
++    ]
++  })
++}
++
++/** "Working now" strip above the roster: chips only for a canonical
++ * Bot Chat with a live turn or a profile with a worker heartbeat.
++ * Recent-but-complete conversations keep their timestamp in the row below. */
++function ActiveNowStrip({ roster, busyBySession, metaByName, onOpen }) {
++  const active = activeBots(roster, busyBySession)
+ 
+   if (!active.length) {
+     return null
+@@ -9825,12 +9909,12 @@ function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpe
+   return jsxs('div', {
+     role: 'status',
+     'aria-live': 'polite',
+-    'aria-label': 'Active now',
++    'aria-label': 'Working now',
+     className: 'flex flex-wrap items-center gap-1.5 px-2.5 pb-1.5',
+     children: [
+       jsx('span', {
+         className: 'text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-quaternary)',
+-        children: 'Active now'
++        children: 'Working now'
+       }),
+       ...active.map(bot => {
+         const meta = botRosterMeta(bot, metaByName)
+@@ -9840,7 +9924,7 @@ function ActiveNowStrip({ roster, activeProfile, gatewayState, metaByName, onOpe
+ 
+         return jsx('button', {
+           type: 'button',
+-          title: `Open ${label}'s chat`,
++          'aria-label': `Open ${label}'s chat — working now`,
+           className: cn(
+             'flex items-center gap-1.5 rounded-md bg-(--chrome-action-hover) px-1.5 py-1 text-left transition-colors',
+             'hover:bg-(--chrome-action-hover) hover:text-foreground'
+@@ -11736,7 +11820,7 @@ function BotsPane() {
+   const { data, error, isLoading, refetch } = useRoster()
+   const gatewayState = useValue(host.state.gateway)
+   const gatewayUp = gatewayState === 'open'
+-  const activeProfile = (useValue(host.state.profile) || 'default').trim() || 'default'
++  const busyBySession = useValue($busyBySession)
+   const [createOpen, setCreateOpen] = useState(false)
+   const [groupCreateOpen, setGroupCreateOpen] = useState(false)
+   const [editing, setEditing] = useState(null)
+@@ -11799,6 +11883,7 @@ function BotsPane() {
+   // sweeps) keeps the FULL roster.
+   const showHidden = useValue($showHiddenBots)
+   const unreadByName = useValue($botUnread)
++  const awaitingInputSessionIds = useValue($awaitingInputSessionIds)
+   const hiddenBots = roster.filter(bot => isBotHidden(bot, allMeta))
+   const hiddenUnread = hiddenBots.some(bot => unreadByName[botSelectionKey(bot)])
+   const visibleRoster = showHidden ? roster : roster.filter(bot => !isBotHidden(bot, allMeta))
+@@ -11842,6 +11927,55 @@ function BotsPane() {
+     ? 'Roster refresh failed — showing the last good list.' + (gatewayUp ? '' : ' Waiting for the gateway to reconnect…')
+     : null
+   const groupChatMembers = groupChatName ? groupChatMemberBots(groupChatName, roster, allMeta) : []
++  const openStatusBot = bot => {
++    const generation = ++botOpenGeneration
++    haptic('tap')
++    $selectedBot.set(botSelectionKey(bot))
++
++    if ($botUnread.get()[botSelectionKey(bot)]) {
++      const next = { ...$botUnread.get() }
++      delete next[botSelectionKey(bot)]
++      $botUnread.set(next)
++    }
++
++    void (async () => {
++      try {
++        await prepareBotSource(bot)
++      } catch (error) {
++        host.notifyError?.(error, `Could not reach ${bot.connectionLabel || 'the remote source'}`)
++
++        return
++      }
++
++      if (generation !== botOpenGeneration) {
++        return
++      }
++
++      try {
++        const id = await openBotCanonicalChat(bot)
++
++        if (generation === botOpenGeneration && id) {
++          return
++        }
++      } catch (error) {
++        if (generation === botOpenGeneration) {
++          host.notifyError?.(error, `Could not open ${displayName(bot)}'s chat — try again`)
++        }
++
++        return
++      }
++
++      if (generation !== botOpenGeneration) {
++        return
++      }
++
++      if (typeof host.newChat === 'function') {
++        newBotChat(bot)
++      } else {
++        host.navigate('/')
++      }
++    })()
++  }
+ 
+   if (shouldRenderGroupChatInPane(groupChatName) && groupChatMembers.length) {
+     return jsx(GroupChatWorkspace, { group: groupChatName, members: groupChatMembers })
+@@ -11934,60 +12068,17 @@ function BotsPane() {
+           })
+         ]
+       }),
++      jsx(NeedsYouStrip, {
++        roster,
++        awaitingInputSessionIds,
++        metaByName: allMeta,
++        onOpen: openStatusBot
++      }),
+       jsx(ActiveNowStrip, {
+         roster: visibleRoster,
+-        activeProfile,
+-        gatewayState,
++        busyBySession,
+         metaByName: allMeta,
+-        onOpen: bot => {
+-          const generation = ++botOpenGeneration
+-          haptic('tap')
+-          $selectedBot.set(botSelectionKey(bot))
+-
+-          if ($botUnread.get()[botSelectionKey(bot)]) {
+-            const next = { ...$botUnread.get() }
+-            delete next[botSelectionKey(bot)]
+-            $botUnread.set(next)
+-          }
+-
+-          void (async () => {
+-            try {
+-              await prepareBotSource(bot)
+-            } catch (error) {
+-              host.notifyError?.(error, `Could not reach ${bot.connectionLabel || 'the remote source'}`)
+-
+-              return
+-            }
+-
+-            if (generation !== botOpenGeneration) {
+-              return
+-            }
+-
+-            try {
+-              const id = await openBotCanonicalChat(bot)
+-
+-              if (generation === botOpenGeneration && id) {
+-                return
+-              }
+-            } catch (error) {
+-              if (generation === botOpenGeneration) {
+-                host.notifyError?.(error, `Could not open ${displayName(bot)}'s chat — try again`)
+-              }
+-
+-              return
+-            }
+-
+-            if (generation !== botOpenGeneration) {
+-              return
+-            }
+-
+-            if (typeof host.newChat === 'function') {
+-              newBotChat(bot)
+-            } else {
+-              host.navigate('/')
+-            }
+-          })()
+-        }
++        onOpen: openStatusBot
+       }),
+       roster.length
+         ? jsx('div', {
+@@ -12069,7 +12160,14 @@ function BotsPane() {
+                           )
+                         : jsx(
+                             BotRow,
+-                            { bot: row.bot, onDelete: setDeleting, onEdit: setEditing, onGroup: setGrouping },
++                            {
++                              bot: row.bot,
++                              onDelete: setDeleting,
++                              onEdit: setEditing,
++                              onGroup: setGrouping,
++                              awaitingInputSessionIds,
++                              busyBySession
++                            },
+                             botRosterKey(row.bot)
+                           )
+                     )
+diff --git a/apps/desktop/src/plugins/hermes-bots/tests/active-now-strip.test.mjs b/apps/desktop/src/plugins/hermes-bots/tests/active-now-strip.test.mjs
+index 6d921aa75c..1f582450c5 100644
+--- a/apps/desktop/src/plugins/hermes-bots/tests/active-now-strip.test.mjs
++++ b/apps/desktop/src/plugins/hermes-bots/tests/active-now-strip.test.mjs
+@@ -15,7 +15,7 @@ function loadActiveBotsSlice() {
+ 
+   const context = {}
+   vm.runInNewContext(
+-    `${source.slice(start, end)}\nglobalThis.__activeBots = activeBots;\nglobalThis.__botActivitySession = botActivitySession;`,
++    `${source.slice(start, end)}\nglobalThis.__activeBots = activeBots;\nglobalThis.__botActivitySession = botActivitySession;\nglobalThis.__botSessionBusy = botSessionBusy;`,
+     context
+   )
+ 
+@@ -30,40 +30,54 @@ function loadBotActivitySession() {
+   return loadActiveBotsSlice().__botActivitySession
+ }
+ 
++function loadBotSessionBusy() {
++  return loadActiveBotsSlice().__botSessionBusy
++}
++
+ // Fixed clock so "inside the window" vs "stale" is deterministic.
+ const NOW = 1_000_000_000_000
+ 
+ const roster = [
+-  { name: 'researcher', last_session: { last_active: (NOW / 1000) - 10 } },
+-  { name: 'scribe', last_session: { last_active: (NOW / 1000) - 400 } },
+-  { name: 'analyst', last_session: null }
++  {
++    name: 'researcher',
++    canonical_session: { id: 'research-chat', resolved_id: 'research-runtime' },
++    last_session: { last_active: (NOW / 1000) - 10 }
++  },
++  {
++    name: 'scribe',
++    canonical_session: { id: 'scribe-chat', resolved_id: 'scribe-runtime' },
++    last_session: { last_active: (NOW / 1000) - 400 }
++  },
++  { name: 'analyst', canonical_session: { id: 'analyst-chat', resolved_id: 'analyst-runtime' }, last_session: null }
+ ]
+ 
+-test('activeBots includes the gateway-busy selected profile before its first response lands', () => {
++test('activeBots includes a canonical Bot Chat whose runtime session is busy', () => {
+   const activeBots = loadActiveBots()
+-  // analyst has no last_session at all — a busy turn must still show it.
+-  const names = activeBots(roster, 'analyst', 'busy', NOW).map(bot => bot.name)
++  const names = activeBots(roster, { 'analyst-runtime': true }, NOW).map(bot => bot.name)
+   assert.ok(names.includes('analyst'))
+ })
+ 
+-test('activeBots includes bots whose last message is inside the liveness window', () => {
++test('activeBots does not mislabel a recently completed chat as working', () => {
+   const activeBots = loadActiveBots()
+-  const names = activeBots(roster, 'default', 'open', NOW).map(bot => bot.name)
+-  assert.ok(names.includes('researcher'))
++  const names = activeBots(roster, {}, NOW).map(bot => bot.name)
++  assert.ok(!names.includes('researcher'))
+ })
+ 
+ test('activeBots excludes stale activity outside the window', () => {
+   const activeBots = loadActiveBots()
+-  const names = activeBots(roster, 'default', 'open', NOW).map(bot => bot.name)
++  const names = activeBots(roster, {}, NOW).map(bot => bot.name)
+   assert.ok(!names.includes('scribe'))
+ })
+ 
+-test('activeBots preserves roster order and never hides other bots', () => {
++test('activeBots preserves roster order for real working signals', () => {
+   const activeBots = loadActiveBots()
+-  // Mixed window: only researcher qualifies, but the output stays in input
+-  // order and the full roster object is untouched.
+-  const active = activeBots(roster, 'default', 'open', NOW)
+-  assert.deepEqual(active.map(bot => bot.name), ['researcher'])
++  const busyRoster = roster.map(bot =>
++    bot.name === 'scribe'
++      ? { ...bot, worker_session: { id: 'worker', last_active: NOW / 1000 - 10 } }
++      : bot
++  )
++  const active = activeBots(busyRoster, { 'analyst-runtime': true }, NOW)
++  assert.deepEqual(active.map(bot => bot.name), ['scribe', 'analyst'])
+   assert.equal(roster.length, 3)
+ })
+ 
+@@ -73,13 +87,13 @@ test('activeBots returns an empty list when nothing is active', () => {
+     { name: 'scribe', last_session: { last_active: (NOW / 1000) - 400 } },
+     { name: 'analyst', last_session: null }
+   ]
+-  assert.deepEqual(activeBots(quiet, 'default', 'open', NOW), [])
++  assert.deepEqual(activeBots(quiet, {}, NOW), [])
+ })
+ 
+ test('roster without profiles never throws', () => {
+   const activeBots = loadActiveBots()
+-  assert.equal(activeBots(null, 'default', 'open', NOW).length, 0)
+-  assert.equal(activeBots([], 'default', 'open', NOW).length, 0)
++  assert.equal(activeBots(null, {}, NOW).length, 0)
++  assert.equal(activeBots([], {}, NOW).length, 0)
+ })
+ 
+ // ── botActivitySession: canonical Bot Chat activity counts (hermes-agent "6d ago" bug) ──
+@@ -112,7 +126,7 @@ test('botActivitySession degrades to whichever side exists (older gateways / no
+   assert.equal(botActivitySession(null), null)
+ })
+ 
+-test('activeBots counts Bot Chat activity that last_session cannot see', () => {
++test('activeBots keeps recent canonical Bot Chat activity out of Working now', () => {
+   const activeBots = loadActiveBots()
+   const bots = [
+     {
+@@ -121,8 +135,8 @@ test('activeBots counts Bot Chat activity that last_session cannot see', () => {
+       last_session: { last_active: NOW / 1000 - 6 * 86400 }
+     }
+   ]
+-  const names = activeBots(bots, 'other', 'open', NOW).map(bot => bot.name)
+-  assert.ok(names.includes('default'), 'fresh canonical-chat activity must light the pulse dot')
++  const names = activeBots(bots, {}, NOW).map(bot => bot.name)
++  assert.ok(!names.includes('default'), 'a completed canonical-chat reply is recent, not proof of work')
+ })
+ 
+ test('row age label and recency sort key off botActivitySession, not last_session', () => {
+@@ -145,7 +159,7 @@ test('activeBots includes a bot whose kanban worker heartbeat is fresh', () => {
+       worker_session: { id: 'w1', source: 'kanban', last_active: NOW / 1000 - 30 }
+     }
+   ]
+-  const names = activeBots(bots, 'other', 'open', NOW).map(bot => bot.name)
++  const names = activeBots(bots, {}, NOW).map(bot => bot.name)
+   assert.ok(names.includes('coding'), 'live worker heartbeat must light ACTIVE NOW')
+ })
+ 
+@@ -158,10 +172,19 @@ test('activeBots ignores a finished worker outside the liveness window', () => {
+       worker_session: { id: 'w1', source: 'kanban', last_active: NOW / 1000 - 3600 }
+     }
+   ]
+-  assert.deepEqual(activeBots(bots, 'other', 'open', NOW), [])
++  assert.deepEqual(activeBots(bots, {}, NOW), [])
++})
++
++test('botSessionBusy matches the canonical durable id or live lineage tip', () => {
++  const botSessionBusy = loadBotSessionBusy()
++  const bot = { canonical_session: { id: 'chat', resolved_id: 'tip' } }
++
++  assert.equal(botSessionBusy(bot, { chat: true }), true)
++  assert.equal(botSessionBusy(bot, { tip: true }), true)
++  assert.equal(botSessionBusy(bot, { side: true }), false)
+ })
+ 
+-test('ActiveNowStrip renders above the roster, is a live region, and is click-accessible', () => {
++test('Working-now strip renders above the roster, is live, and is click-accessible', () => {
+   // Strip is placed between the pane header and the search field.
+   const headerEnd = source.indexOf("children: 'Bots'")
+   const searchField = source.indexOf("placeholder: 'Search bots…'")
+@@ -174,11 +197,15 @@ test('ActiveNowStrip renders above the roster, is a live region, and is click-ac
+   assert.match(source, /'aria-live': 'polite'/)
+   // Chips are real buttons (keyboard/click accessible), reuse BotFace, and
+   // open the canonical chat via the same path as roster rows.
+-  assert.match(source, /jsx\('button', \{\s*type: 'button',\s*title: `Open \$\{label\}'s chat`/)
++  assert.match(source, /jsx\('button', \{\s*type: 'button',\s*'aria-label': `Open \$\{label\}'s chat — working now`/)
+   // The key rides as jsx()'s third argument — the ONLY form React treats as
+   // a list key; a `key:` prop leaves chips unkeyed (index identity).
+   assert.match(source, /\}, botRosterKey\(bot\)\)\s*\}\)\s*\]\s*\}\)\s*\}\s*\/\*\* Assign a bot to a group/s)
+   assert.match(source, /jsx\(BotFace,\s*\{[\s\S]*?mood: 'work'/)
+-    assert.match(source, /await prepareBotSource\(bot\)/)
++  assert.match(source, /children: 'Working now'/)
++  assert.match(source, /const \$busyBySession = host\?\.state\?\.busyBySession \|\| atom\(\{\}\)/)
++  assert.match(source, /const busyBySession = useValue\(\$busyBySession\)/)
++  assert.match(source, /await prepareBotSource\(bot\)/)
+   assert.match(source, /bot\.canonical_session \|\| last/)
++  assert.match(source, /const botMood = turnBusy \|\| workerActive \? 'work' : 'idle'/)
+ })
+diff --git a/apps/desktop/src/plugins/hermes-bots/tests/focused-bot-highlight.test.mjs b/apps/desktop/src/plugins/hermes-bots/tests/focused-bot-highlight.test.mjs
+index 7b31017a8c..b89e84f1df 100644
+--- a/apps/desktop/src/plugins/hermes-bots/tests/focused-bot-highlight.test.mjs
++++ b/apps/desktop/src/plugins/hermes-bots/tests/focused-bot-highlight.test.mjs
+@@ -61,14 +61,13 @@ test('BotRow keys the highlight off the focused profile, not the socket home', (
+   assert.match(row, /const isActive = !activeGroup && isActiveRosterBot\(bot, focusedOwner\)/)
+ })
+ 
+-test('BotRow keeps turn-busy (work mood) a socket fact', () => {
++test('BotRow keeps turn-busy tied to the canonical session, not socket or focus state', () => {
+   const rowStart = source.indexOf('function BotRow(')
+   const row = source.slice(rowStart, rowStart + 3000)
+ 
+-  // Only the gateway-home profile can actually be mid-turn: the mood must NOT
+-  // switch to the focus-keyed identity.
+-  assert.match(row, /const isGatewayHome = !bot\.remoteSource && bot\.name === activeProfile/)
+-  assert.match(row, /const botMood = \(isGatewayHome && gatewayState === 'busy'\) \|\| activeNow \? 'work' : 'idle'/)
++  assert.match(row, /const turnBusy = botSessionBusy\(bot, busyBySession\)/)
++  assert.match(row, /const botMood = turnBusy \|\| workerActive \? 'work' : 'idle'/)
++  assert.doesNotMatch(row, /gatewayState === 'busy'/)
+ })
+ 
+ test('RoutinesPane scopes the Cronjobs tile to the focused chat owner', () => {
+diff --git a/apps/desktop/src/plugins/hermes-bots/tests/needs-you-strip.test.mjs b/apps/desktop/src/plugins/hermes-bots/tests/needs-you-strip.test.mjs
+new file mode 100644
+index 0000000000..316a0399e2
+--- /dev/null
++++ b/apps/desktop/src/plugins/hermes-bots/tests/needs-you-strip.test.mjs
+@@ -0,0 +1,48 @@
++import assert from 'node:assert/strict'
++import { readFileSync } from 'node:fs'
++import test from 'node:test'
++import vm from 'node:vm'
++
++const source = readFileSync(new URL('../plugin.js', import.meta.url), 'utf8')
++
++function loadBotNeedsInput() {
++  const start = source.indexOf('function botNeedsInput(')
++  const end = source.indexOf('/** Bots that are working right now', start)
++
++  assert.ok(start >= 0 && end > start, 'botNeedsInput must remain a small extractable pure helper')
++
++  const context = {}
++  vm.runInNewContext(`${source.slice(start, end)}\nglobalThis.__botNeedsInput = botNeedsInput;`, context)
++
++  return context.__botNeedsInput
++}
++
++test('botNeedsInput matches either identity of the canonical Bot Chat', () => {
++  const botNeedsInput = loadBotNeedsInput()
++  const bot = { canonical_session: { id: 'durable-chat', resolved_id: 'runtime-tip' } }
++
++  assert.equal(botNeedsInput(bot, ['durable-chat']), true)
++  assert.equal(botNeedsInput(bot, ['runtime-tip']), true)
++  assert.equal(botNeedsInput(bot, ['another-session']), false)
++})
++
++test('botNeedsInput never promotes side chats, missing rows, or draft prompts', () => {
++  const botNeedsInput = loadBotNeedsInput()
++
++  assert.equal(botNeedsInput({ last_session: { id: 'side-chat' } }, ['side-chat']), false)
++  assert.equal(botNeedsInput({ canonical_session: null }, ['']), false)
++  assert.equal(botNeedsInput(null, ['runtime-tip']), false)
++  assert.equal(botNeedsInput({ canonical_session: { id: 'durable-chat' } }, null), false)
++})
++
++test('Bots pane renders authoritative Needs you before activity without hiding urgent hidden bots', () => {
++  const needs = source.indexOf('jsx(NeedsYouStrip')
++  const active = source.indexOf('jsx(ActiveNowStrip')
++  const search = source.indexOf("placeholder: 'Search bots…'")
++
++  assert.ok(needs >= 0 && active > needs && search > active, 'attention precedes activity and roster search')
++  assert.match(source, /const awaitingInputSessionIds = useValue\(\$awaitingInputSessionIds\)/)
++  assert.match(source, /jsx\(NeedsYouStrip, \{\s*roster,\s*awaitingInputSessionIds,/)
++  assert.match(source, /children: 'Needs you'/)
++  assert.match(source, /'aria-label': `Open \$\{label\}'s chat — needs your input`/)
++})
+diff --git a/apps/desktop/src/sdk/index.ts b/apps/desktop/src/sdk/index.ts
+index c7e4328bd4..6b2728cbf2 100644
+--- a/apps/desktop/src/sdk/index.ts
++++ b/apps/desktop/src/sdk/index.ts
+@@ -58,6 +58,7 @@ import {
+   setActiveProfile,
+   setShowAllProfiles
+ } from '@/store/profile'
++import { $awaitingInputSessionIds } from '@/store/prompts'
+ import {
+   $activeSessionId,
+   $connection,
+@@ -445,6 +446,11 @@ export const host = {
+   state: {
+     /** Runtime id of the active chat session (null on a fresh draft). */
+     activeSessionId: readonlyAtom<null | string>($activeSessionId),
++    /** Runtime session ids currently blocked on clarify/approval/sudo/secret
++     *  input. Content-free and global across background sessions so contributed
++     *  roster surfaces can point the user at real attention, not infer it from
++     *  unread text. */
++    awaitingInputSessionIds: readonlyAtom<string[]>($awaitingInputSessionIds),
+     /** True from send until the first assistant payload on the focused chat. */
+     awaitingResponse: readonlyAtom<boolean>($focusedAwaitingResponse),
+     /**
+diff --git a/apps/desktop/src/store/prompts.test.ts b/apps/desktop/src/store/prompts.test.ts
+index bbe2d2f2ca..3d38860863 100644
+--- a/apps/desktop/src/store/prompts.test.ts
++++ b/apps/desktop/src/store/prompts.test.ts
+@@ -4,6 +4,7 @@ import { clearClarifyRequest, setClarifyRequest } from './clarify'
+ import {
+   $activeSessionAwaitingInput,
+   $approvalRequest,
++  $awaitingInputSessionIds,
+   $secretRequest,
+   $sudoRequest,
+   clearAllPrompts,
+@@ -218,3 +219,19 @@ describe('$activeSessionAwaitingInput', () => {
+     expect($activeSessionAwaitingInput.get()).toBe(true)
+   })
+ })
++
++describe('$awaitingInputSessionIds', () => {
++  it('unions every session parked on clarify, approval, sudo, or secret input', () => {
++    setApprovalRequest({ command: 'x', description: 'd', sessionId: 's3' })
++    setClarifyRequest({ choices: null, multiSelect: false, question: 'q', requestId: 'c1', sessionId: 's1' })
++    setSecretRequest({ envVar: 'E', prompt: 'p', requestId: 'secret', sessionId: 's2' })
++    setSudoRequest({ requestId: 'sudo', sessionId: 's1' })
++
++    expect($awaitingInputSessionIds.get()).toEqual(['s1', 's2', 's3'])
++
++    clearAllPrompts('s3')
++    clearClarifyRequest('c1', 's1')
++    clearSudoRequest('s1')
++    expect($awaitingInputSessionIds.get()).toEqual(['s2'])
++  })
++})
+diff --git a/apps/desktop/src/store/prompts.ts b/apps/desktop/src/store/prompts.ts
+index da9c7dedb5..9147edd009 100644
+--- a/apps/desktop/src/store/prompts.ts
++++ b/apps/desktop/src/store/prompts.ts
+@@ -201,6 +201,18 @@ export const $activeSessionAwaitingInput = computed(
+   (clarify, approval, sudo, secret) => Boolean(clarify || approval || sudo || secret)
+ )
+ 
++/** Every runtime session currently parked on user input, regardless of which
++ *  conversation is focused. This is a narrow, content-free attention index for
++ *  session tiles and contributed roster surfaces: it exposes IDs only, never
++ *  approval commands, secrets, or question text. */
++export const $awaitingInputSessionIds = computed(
++  [$clarifyRequests, approval.$all, sudo.$all, secret.$all],
++  (clarify, approvals, sudos, secrets) =>
++    [...new Set([...Object.keys(clarify), ...Object.keys(approvals), ...Object.keys(sudos), ...Object.keys(secrets)])]
++      .filter(Boolean)
++      .sort()
++)
++
+ /** True when `sessionId` is parked on a blocking prompt that typing cannot
+  *  answer (approval / sudo / secret). Clarify is deliberately excluded: typing
+  *  a real message IS an answer to a clarify ("none of these" — the composer
+-- 
+2.53.0
+

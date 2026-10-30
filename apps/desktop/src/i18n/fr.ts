@@ -23,6 +23,7 @@ import { frPreviewWeb } from './fr_preview_web'
 import { frProjects } from './fr_projects'
 import { frSharedMetrics } from './fr_shared_metrics'
 import { frThemePicker } from './fr_theme_picker'
+import { frToolCards } from './fr_tool_cards'
 import { frUpdateChannel } from './fr_update_channel'
 import { introFr } from './intro-fr'
 
@@ -607,6 +608,7 @@ export const frOverrides = {
       'view.toggleSimpleMode': 'Activer ou désactiver le mode simple',
       'view.showFiles': "Afficher l'explorateur de fichiers",
       'view.showBrowser': 'Basculer le navigateur',
+      'view.floatBrowser': 'Faire flotter le navigateur',
       'view.toggleHud': 'Basculer le mode HUD',
       'hud.snapToPointer': 'Déplacer le HUD vers le pointeur (global, lorsque le HUD est ouvert)',
       'view.showTerminal': 'Basculer le terminal',
@@ -4696,7 +4698,16 @@ export const frOverrides = {
     openInExternal: 'Ouvrir dans une application externe',
     popIn: 'Réintégrer',
     popOut: 'Détacher',
-    linkHint: "⌘/Ctrl-clic pour le panneau d'aperçu",
+    linkHint: "⌘/Ctrl-clic pour ouvrir dans le navigateur",
+    float: {
+      dock: 'Ancrer le navigateur',
+      dockLeft: 'Ancrer à gauche',
+      dockRight: 'Ancrer à droite',
+      float: 'Faire flotter au-dessus de l’app',
+      label: 'Navigateur flottant',
+      minimize: 'Réduire (Échap)',
+      restore: 'Afficher le navigateur flottant'
+    },
     sourceLineTitle: 'Clic pour sélectionner · shift-clic pour étendre · glisser vers le compositeur',
     source: 'SOURCE',
     renderedPreview: 'APERÇU',
@@ -5095,6 +5106,7 @@ export const frOverrides = {
       deniedSessionStopped: 'Refusé, session arrêtée.'
     },
     clarify: frClarify,
+    toolCards: frToolCards,
     themePicker: frThemePicker,
     catalogInstall: {
       preparing: 'Préparation de l’installation…',

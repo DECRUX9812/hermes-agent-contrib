@@ -23,6 +23,7 @@ import { esPreviewWeb } from './es_preview_web'
 import { esProjects } from './es_projects'
 import { esSharedMetrics } from './es_shared_metrics'
 import { esThemePicker } from './es_theme_picker'
+import { esToolCards } from './es_tool_cards'
 import { esUpdateChannel } from './es_update_channel'
 import { introEs } from './intro-es'
 
@@ -610,6 +611,7 @@ export const esOverrides = {
       'view.toggleSimpleMode': 'Activar o desactivar el modo simple',
       'view.showFiles': 'Mostrar explorador de archivos',
       'view.showBrowser': 'Alternar navegador',
+      'view.floatBrowser': 'Hacer flotar el navegador',
       'view.toggleHud': 'Alternar modo HUD',
       'hud.snapToPointer': 'Mover HUD al puntero (global, mientras el HUD esté abierto)',
       'view.showTerminal': 'Mostrar terminal',
@@ -4672,7 +4674,16 @@ export const esOverrides = {
     openInExternal: 'Abrir externamente',
     popIn: 'Acoplar',
     popOut: 'Desacoplar',
-    linkHint: '⌘/Ctrl-clic para acceder al panel de vista previa',
+    linkHint: '⌘/Ctrl-clic para abrir en el navegador',
+    float: {
+      dock: 'Acoplar navegador',
+      dockLeft: 'Acoplar a la izquierda',
+      dockRight: 'Acoplar a la derecha',
+      float: 'Flotar sobre la app',
+      label: 'Navegador flotante',
+      minimize: 'Minimizar (Esc)',
+      restore: 'Mostrar navegador flotante'
+    },
     sourceLineTitle: 'Haz clic para seleccionar · Mayús-clic para ampliar · arrastra al compositor',
     source: 'FUENTE',
     renderedPreview: 'VISTA PREVIA',
@@ -5074,6 +5085,7 @@ export const esOverrides = {
       deniedSessionStopped: 'Denegado, sesión detenida.'
     },
     clarify: esClarify,
+    toolCards: esToolCards,
     themePicker: esThemePicker,
     catalogInstall: {
       preparing: 'Preparando la instalación…',

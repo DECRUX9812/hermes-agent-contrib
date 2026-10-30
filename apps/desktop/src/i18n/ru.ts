@@ -22,6 +22,7 @@ import { ruPreviewWeb } from './ru_preview_web'
 import { ruProjects } from './ru_projects'
 import { ruSharedMetrics } from './ru_shared_metrics'
 import { ruThemePicker } from './ru_theme_picker'
+import { ruToolCards } from './ru_tool_cards'
 import { ruUpdateChannel } from './ru_update_channel'
 
 export const ruOverrides = {
@@ -265,6 +266,7 @@ export const ruOverrides = {
       'view.toggleSimpleMode': 'Переключить простой режим',
       'view.showFiles': 'Показать браузер файлов',
       'view.showBrowser': 'Переключить браузер',
+      'view.floatBrowser': 'Сделать браузер плавающим',
       'view.toggleHud': 'Включить / выключить режим HUD',
       'hud.snapToPointer': 'Переместить HUD под курсор (глобально, пока HUD открыт)',
       'view.showTerminal': 'Показать / скрыть терминал',
@@ -3345,7 +3347,16 @@ export const ruOverrides = {
     hide: 'Скрыть',
     openPreview: 'Открыть предпросмотр',
     openInBrowser: 'Открыть в браузере',
-    linkHint: '⌘/Ctrl-клик — панель предпросмотра',
+    linkHint: '⌘/Ctrl-клик — открыть в браузере',
+    float: {
+      dock: 'Закрепить браузер',
+      dockLeft: 'Закрепить слева',
+      dockRight: 'Закрепить справа',
+      float: 'Поверх приложения',
+      label: 'Плавающий браузер',
+      minimize: 'Свернуть (Esc)',
+      restore: 'Показать плавающий браузер'
+    },
     sourceLineTitle: 'Клик — выбрать · Shift-клик — расширить · перетащите в композер',
     source: 'ИСТОЧНИК',
     renderedPreview: 'ПРЕДПРОСМОТР',
@@ -3558,6 +3569,7 @@ export const ruOverrides = {
       deniedSessionStopped: 'Отклонено, сеанс остановлен.'
     },
     clarify: ruClarify,
+    toolCards: ruToolCards,
     themePicker: ruThemePicker,
     catalogInstall: {
       preparing: 'Готовим установку…',

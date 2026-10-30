@@ -75,6 +75,7 @@ import {
 import { useHistoryWindow } from './history-window'
 import { type DroppedFile, partitionDroppedFiles } from './hooks/use-composer-actions'
 import { useFileDropZone } from './hooks/use-file-drop-zone'
+import { InstantAckRow } from './instant-ack'
 import { shouldShowIntro } from './intro-visibility'
 import { ProfileTag } from './profile-tag'
 import { ResumeExhaustedOverlay } from './resume-exhausted-overlay'
@@ -835,6 +836,15 @@ const ChatViewContent = memo(function ChatViewContent({
             clipping through a stable portal host without remounting its editor. */}
         {showChatBar && (
           <FloatingComposerSurface>
+            {/* Instant ack: one quiet line above the composer, armed at send.
+                It lives outside the Thread so it can paint before the turn has
+                produced a message to hang it on. */}
+            <InstantAckRow
+              busy={busy}
+              lastVisibleIsUser={lastVisibleIsUser}
+              sessionId={activeSessionId}
+              sessionKey={queueSessionKey}
+            />
             <Suspense fallback={<ChatBarFallback />}>
               <ChatBar
                 busy={busy}

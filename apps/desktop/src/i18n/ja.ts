@@ -24,6 +24,7 @@ import { jaPreviewWeb } from './ja_preview_web'
 import { jaProjects } from './ja_projects'
 import { jaSharedMetrics } from './ja_shared_metrics'
 import { jaThemePicker } from './ja_theme_picker'
+import { jaToolCards } from './ja_tool_cards'
 import { jaUpdateChannel } from './ja_update_channel'
 
 export const jaOverrides = {
@@ -3100,7 +3101,16 @@ export const jaOverrides = {
     openInExternal: '外部で開く',
     popIn: 'ポップイン',
     popOut: 'ポップアウト',
-    linkHint: '⌘/Ctrl+クリックでプレビューペイン',
+    linkHint: '⌘/Ctrl+クリックでブラウザで開く',
+    float: {
+      dock: 'ブラウザをドック',
+      dockLeft: '左にドック',
+      dockRight: '右にドック',
+      float: 'アプリの上にフロート',
+      label: 'フローティングブラウザ',
+      minimize: '最小化 (Esc)',
+      restore: 'フローティングブラウザを表示'
+    },
     sourceLineTitle: 'クリックして選択 · Shift クリックで拡張 · コンポーザーにドラッグ',
     source: 'ソース',
     renderedPreview: 'プレビュー',
@@ -3410,6 +3420,7 @@ export const jaOverrides = {
       deniedSessionStopped: '拒否しました。セッションは停止しました。'
     },
     clarify: jaClarify,
+    toolCards: jaToolCards,
     themePicker: jaThemePicker,
     tool: {
       copyCode: 'コードをコピー',

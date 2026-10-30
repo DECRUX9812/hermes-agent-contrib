@@ -28,6 +28,7 @@ import { enPreviewWeb } from './en_preview_web'
 import { enProjects } from './en_projects'
 import { enSharedMetrics } from './en_shared_metrics'
 import { enThemePicker } from './en_theme_picker'
+import { enToolCards } from './en_tool_cards'
 import { enUninstallSection } from './en_uninstall_section'
 import { enUpdateChannel } from './en_update_channel'
 import type { Translations } from './types'
@@ -611,6 +612,7 @@ export const en: Translations = {
       'view.toggleSimpleMode': 'Toggle Simple mode',
       'view.showFiles': 'Show file browser',
       'view.showBrowser': 'Toggle browser',
+      'view.floatBrowser': 'Float browser',
       'view.toggleHud': 'Toggle HUD mode',
       'hud.snapToPointer': 'Move HUD to pointer (global, while HUD is open)',
       'view.showTerminal': 'Toggle terminal',
@@ -4281,7 +4283,16 @@ export const en: Translations = {
     openInExternal: 'Open in external',
     popIn: 'Pop in',
     popOut: 'Pop out',
-    linkHint: '⌘/Ctrl-click for preview pane',
+    linkHint: '⌘/Ctrl-click to open in your browser',
+    float: {
+      dock: 'Dock browser',
+      dockLeft: 'Dock to the left',
+      dockRight: 'Dock to the right',
+      float: 'Float over the app',
+      label: 'Floating browser',
+      minimize: 'Minimize (Esc)',
+      restore: 'Show floating browser'
+    },
     sourceLineTitle: 'Click to select · shift-click to extend · drag to composer',
     source: 'SOURCE',
     renderedPreview: 'PREVIEW',
@@ -4424,6 +4435,10 @@ export const en: Translations = {
       loadingResponse: 'Hermes is loading a response',
       loadingLocalModel: model => `Loading ${model} into memory`,
       processingPrompt: 'Processing prompt',
+      instantAckPrompt: (prompt: string) => `Got it — ${prompt}`,
+      instantAckCommand: (command: string) => `Running ${command}…`,
+      instantAckWaiting: 'Waiting on the model…',
+      instantAckApproval: 'Waiting on your approval',
       resumeWhenBackgroundDone: count =>
         count === 1
           ? 'Will resume when the background task finishes'
@@ -4539,6 +4554,7 @@ export const en: Translations = {
       deniedSessionStopped: 'Denied, session stopped.'
     },
     clarify: enClarify,
+    toolCards: enToolCards,
     themePicker: enThemePicker,
     catalogInstall: enCatalogInstall,
     mcpSetup: {

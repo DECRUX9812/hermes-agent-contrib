@@ -1,0 +1,23 @@
+# Screen at failure
+url: http://127.0.0.1:13000/
+revision: b1
+viewport: 1280x720
+nodes: 17
+
+#root document "Hermes"
+ #n2 dialog "Hermes couldn't start"
+  #n3 button "Close" [focused]
+   #n4 image
+   #n5 text="Close"
+  #n6 heading "Hermes couldn't start"
+  #n7 text="Hermes' background service didn't come up. Try one of the recovery steps below. Nothing here deletes your chats or settings."
+  #n8 text="Desktop IPC bridge is unavailable."
+  #n9 button "Retry"
+   #n10 image
+  #n11 button "Repair install"
+   #n12 image
+  #n13 button "Gateway settings"
+   #n14 image
+  #n15 button "Open logs"
+   #n16 image
+  #n17 text="Repair re-runs the installer and can take a few minutes on a fresh machine."

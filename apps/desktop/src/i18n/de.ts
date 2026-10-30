@@ -22,6 +22,7 @@ import { dePreviewWeb } from './de_preview_web'
 import { deProjects } from './de_projects'
 import { deSharedMetrics } from './de_shared_metrics'
 import { deThemePicker } from './de_theme_picker'
+import { deToolCards } from './de_tool_cards'
 import { deUpdateChannel } from './de_update_channel'
 import { defineLocale, type TranslationOverrides } from './define-locale'
 import { introDe } from './intro-de'
@@ -607,6 +608,7 @@ export const deOverrides = {
       'view.toggleSimpleMode': 'Einfachen Modus umschalten',
       'view.showFiles': 'Dateibrowser anzeigen',
       'view.showBrowser': 'Browser umschalten',
+      'view.floatBrowser': 'Browser schweben lassen',
       'view.toggleHud': 'HUD-Modus umschalten',
       'hud.snapToPointer': 'HUD zum Zeiger bewegen (global, während HUD offen ist)',
       'view.showTerminal': 'Terminal umschalten',
@@ -4688,7 +4690,16 @@ export const deOverrides = {
     openInExternal: 'In externem Programm öffnen',
     popIn: 'Eindocken',
     popOut: 'Abdocken',
-    linkHint: '⌘/Strg-Klick für das Vorschau-Fenster',
+    linkHint: '⌘/Strg-Klick öffnet im Browser',
+    float: {
+      dock: 'Browser andocken',
+      dockLeft: 'Links andocken',
+      dockRight: 'Rechts andocken',
+      float: 'Über der App schweben lassen',
+      label: 'Schwebender Browser',
+      minimize: 'Minimieren (Esc)',
+      restore: 'Schwebenden Browser anzeigen'
+    },
     sourceLineTitle: 'Zum Auswählen klicken · zum Erweitern Umschalt-Klick · zum Composer ziehen',
     source: 'QUELLE',
     renderedPreview: 'VORSCHAU',
@@ -5088,6 +5099,7 @@ export const deOverrides = {
       deniedSessionStopped: 'Abgelehnt, Sitzung gestoppt.'
     },
     clarify: deClarify,
+    toolCards: deToolCards,
     themePicker: deThemePicker,
     catalogInstall: {
       preparing: 'Installation wird vorbereitet…',

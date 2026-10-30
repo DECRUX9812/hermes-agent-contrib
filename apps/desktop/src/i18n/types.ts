@@ -32,6 +32,7 @@ import type { SidebarProjectsTranslations } from './types_projects'
 import type { RightSidebarTranslations } from './types_right_sidebar'
 import type { SharedMetricsTranslations } from './types_shared_metrics'
 import type { ThemePickerCopy } from './types_theme_picker'
+import type { ToolCardsCopy } from './types_tool_cards'
 import type { UninstallSectionTranslations } from './types_uninstall_section'
 import type { UpdateChannelCopy } from './types_update_channel'
 
@@ -3688,6 +3689,15 @@ catalog: CatalogTranslations
     popIn: string
     popOut: string
     linkHint: string
+    float: {
+      dock: string
+      dockLeft: string
+      dockRight: string
+      float: string
+      label: string
+      minimize: string
+      restore: string
+    }
     sourceLineTitle: string
     source: string
     renderedPreview: string
@@ -3754,6 +3764,8 @@ catalog: CatalogTranslations
       address: string
       addressPlaceholder: string
       blankPageBody: string
+      blankPageShortcuts: string
+      blankPageTitle: string
       finishedRestarting: (message?: string) => string
       failedRestarting: (message: string) => string
       unknownError: string
@@ -3773,6 +3785,14 @@ catalog: CatalogTranslations
       fallbackTitle: string
       annotate: string
       annotateOn: string
+      annotateTools: string
+      annotatePicker: string
+      annotateDraw: string
+      annotateArrow: string
+      annotateBox: string
+      annotateEllipse: string
+      annotateUndo: string
+      annotateClear: string
       annotateNeedPage: string
       annotateFailed: string
       commenting: string
@@ -3874,6 +3894,12 @@ catalog: CatalogTranslations
       loadingResponse: string
       loadingLocalModel: (model: string) => string
       processingPrompt: string
+      /** Part A receipt: "Got it — <restated ask>". */
+      instantAckPrompt: (prompt: string) => string
+      /** A slash command runs inline rather than in a turn. */
+      instantAckCommand: (command: string) => string
+      instantAckWaiting: string
+      instantAckApproval: string
       resumeWhenBackgroundDone: (count: number) => string
       thinking: string
       thought: string
@@ -4019,6 +4045,7 @@ catalog: CatalogTranslations
       deniedSessionStopped: string
     }
     clarify: ClarifyCopy
+    toolCards: ToolCardsCopy
     themePicker: ThemePickerCopy
     catalogInstall: CatalogInstallTranslations
     mcpSetup: {

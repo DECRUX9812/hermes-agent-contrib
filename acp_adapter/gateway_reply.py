@@ -126,6 +126,14 @@ class GatewayReplyMixin:
             return "" if not streamed and text.strip() in {s.strip() for s in shown} else remainder
         if text.strip() == streamed.strip():
             return ""
+        if streamed.strip():
+            s_strip = streamed.strip()
+            if text.strip().endswith(s_strip):
+                return ""
+            idx = text.find(s_strip)
+            if idx != -1:
+                remainder = text[idx + len(s_strip):]
+                return remainder if remainder.strip() else ""
         return "\n\n" + text
 
     async def _close_card(self, editor_id, tool_call, options, response):

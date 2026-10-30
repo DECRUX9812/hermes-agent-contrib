@@ -1,0 +1,428 @@
+{
+  "schemaVersion": "report-1",
+  "run": {
+    "id": "01a10eb0-c564-7e18-8072-57dd9cf9f324",
+    "specVersion": "0.1",
+    "runner": {
+      "name": "e2e",
+      "version": "0.17.0"
+    },
+    "status": "failed",
+    "exitCode": 1,
+    "startedAt": "2026-10-06T00:50:31.790Z",
+    "finishedAt": "2026-10-06T00:51:14.725Z",
+    "project": {
+      "id": "hermes-agent",
+      "configDigest": "aa358fdb0dd9086b538f3cf2ab19e61bf9351dd19e4b71612ccc73820da7a3f5"
+    },
+    "environment": {
+      "ci": false,
+      "trustNoticeShown": false,
+      "os": "linux 7.0.0-34-generic",
+      "arch": "x64",
+      "runtime": "node v22.23.1"
+    },
+    "vcs": {
+      "commit": "76c6e88416b3f1492269ae849390143fee54c814",
+      "branch": "feat/claude-mem-provider",
+      "dirty": true
+    },
+    "targets": [
+      {
+        "id": "web",
+        "index": 0,
+        "platform": "web",
+        "baseOrigin": "http://127.0.0.1:13000",
+        "environment": "test",
+        "engine": {
+          "name": "web",
+          "version": "0.12.0",
+          "spiVersion": 1
+        },
+        "capabilities": [
+          "actions",
+          "artifacts",
+          "browser",
+          "keyboard",
+          "location",
+          "observation",
+          "pointer",
+          "state"
+        ],
+        "artifactCapabilities": [
+          "screenshot",
+          "trace",
+          "video"
+        ],
+        "stateCapability": true
+      }
+    ],
+    "serialGroups": [],
+    "results": [
+      {
+        "id": "b7d57535871b62b9504b92cbd13f832eec398a229df1a67dcdf78e376aca9549",
+        "testId": "tests/example.e2e.ts::app%20opens",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "app opens"
+        ],
+        "file": "tests/example.e2e.ts",
+        "source": {
+          "file": "tests/example.e2e.ts",
+          "line": 4,
+          "column": 1
+        },
+        "targetId": "web",
+        "platform": "web",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": false,
+        "status": "skipped",
+        "skip": {
+          "cause": "filtered",
+          "reason": "file not selected by a positional argument"
+        },
+        "attempts": []
+      },
+      {
+        "id": "b9d4dd26077e37f2ff35ed9476d8a65e9aee62e44a7ed7582b37f6676931912a",
+        "testId": "tests/hermes-webapp.e2e.ts::webapp%20boots%20without%20IPC%20bridge%20crash",
+        "kind": "test",
+        "declarationIndex": 0,
+        "titlePath": [
+          "webapp boots without IPC bridge crash"
+        ],
+        "file": "tests/hermes-webapp.e2e.ts",
+        "source": {
+          "file": "tests/hermes-webapp.e2e.ts",
+          "line": 6,
+          "column": 1
+        },
+        "targetId": "web",
+        "platform": "web",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": true,
+        "status": "failed",
+        "attempts": [
+          {
+            "id": "01a10eb0-e386-7f4c-ae4c-85c158390edd",
+            "index": 0,
+            "status": "failed",
+            "startedAt": "2026-10-06T00:50:36.038Z",
+            "durationMs": 15251,
+            "artifacts": [
+              {
+                "id": "01a10eb0-e386-7f4c-ae4c-85c158390edd:artifact:0",
+                "kind": "log",
+                "mediaType": "text/plain",
+                "redaction": "complete",
+                "producer": {
+                  "kind": "attempt"
+                },
+                "path": "web/tests_hermes-webapp.e2e.ts__webapp_20boots_20without_20IPC_20bridge_20crash-a620717a/default/attempt-0/failure/screen.txt",
+                "size": 700,
+                "sha256": "6eb0417a8ae40f5426a2b13e7d83e90e14055e422213382390a609021736404c"
+              },
+              {
+                "id": "01a10eb0-e386-7f4c-ae4c-85c158390edd:artifact:1",
+                "kind": "screenshot",
+                "mediaType": "image/png",
+                "redaction": "complete",
+                "producer": {
+                  "kind": "attempt"
+                },
+                "path": "web/tests_hermes-webapp.e2e.ts__webapp_20boots_20without_20IPC_20bridge_20crash-a620717a/default/attempt-0/screenshots/001-failure.png",
+                "size": 32675,
+                "sha256": "373c9b89f846355ff7277d14861e989243b27d4e8f5ccb37aa6e946b0feafa55"
+              },
+              {
+                "id": "01a10eb0-e386-7f4c-ae4c-85c158390edd:artifact:2",
+                "kind": "trace",
+                "mediaType": "application/zip",
+                "redaction": "not-required",
+                "producer": {
+                  "kind": "attempt"
+                },
+                "path": "web/tests_hermes-webapp.e2e.ts__webapp_20boots_20without_20IPC_20bridge_20crash-a620717a/default/attempt-0/trace/trace.zip",
+                "size": 756506,
+                "sha256": "14c6980cb692c55986ba9c2470972ef7baee2c23af3bf8fc26cbe6861dcc6265"
+              }
+            ],
+            "error": {
+              "category": "test",
+              "code": "LOCATOR_AMBIGUOUS",
+              "message": "locator matched 3 nodes, expected exactly one: locator(\"text=IPC bridge is unavailable\")",
+              "retryable": false,
+              "phase": "body",
+              "details": {
+                "locator": "locator(\"text=IPC bridge is unavailable\")",
+                "matches": 3
+              },
+              "source": {
+                "file": "tests/hermes-webapp.e2e.ts",
+                "line": 10,
+                "column": 3
+              }
+            },
+            "secondaryErrors": [],
+            "cleanup": "complete",
+            "failure": {
+              "url": "http://127.0.0.1:13000/",
+              "screen": "01a10eb0-e386-7f4c-ae4c-85c158390edd:artifact:0",
+              "screenshot": "01a10eb0-e386-7f4c-ae4c-85c158390edd:artifact:1"
+            },
+            "steps": [
+              {
+                "id": "01a10eb0-e386-7f4c-ae4c-85c158390edd:0",
+                "index": 0,
+                "kind": "app",
+                "api": "app.open",
+                "label": "/",
+                "status": "passed",
+                "startedAt": "2026-10-06T00:50:38.178Z",
+                "durationMs": 10109,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/hermes-webapp.e2e.ts",
+                  "line": 7,
+                  "column": 13
+                }
+              },
+              {
+                "id": "01a10eb0-e386-7f4c-ae4c-85c158390edd:1",
+                "index": 1,
+                "kind": "assertion",
+                "api": "expect.toBeHidden",
+                "label": "locator(\"text=Something broke in the interface\")",
+                "status": "passed",
+                "startedAt": "2026-10-06T00:50:48.293Z",
+                "durationMs": 275,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/hermes-webapp.e2e.ts",
+                  "line": 9,
+                  "column": 74
+                }
+              },
+              {
+                "id": "01a10eb0-e386-7f4c-ae4c-85c158390edd:2",
+                "index": 2,
+                "kind": "assertion",
+                "api": "expect.toBeHidden",
+                "label": "locator(\"text=IPC bridge is unavailable\")",
+                "status": "failed",
+                "startedAt": "2026-10-06T00:50:48.571Z",
+                "durationMs": 140,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/hermes-webapp.e2e.ts",
+                  "line": 10,
+                  "column": 67
+                },
+                "error": {
+                  "category": "test",
+                  "code": "LOCATOR_AMBIGUOUS",
+                  "message": "locator matched 3 nodes, expected exactly one: locator(\"text=IPC bridge is unavailable\")",
+                  "retryable": false,
+                  "details": {
+                    "locator": "locator(\"text=IPC bridge is unavailable\")",
+                    "matches": 3
+                  },
+                  "source": {
+                    "file": "tests/hermes-webapp.e2e.ts",
+                    "line": 10,
+                    "column": 3
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "id": "ad1acb41e2be6ae2504637638cc2683eb15907b05401180c02e2786cf4600816",
+        "testId": "tests/hermes-webapp.e2e.ts::bot%20mode%20pane%20renders",
+        "kind": "test",
+        "declarationIndex": 1,
+        "titlePath": [
+          "bot mode pane renders"
+        ],
+        "file": "tests/hermes-webapp.e2e.ts",
+        "source": {
+          "file": "tests/hermes-webapp.e2e.ts",
+          "line": 16,
+          "column": 1
+        },
+        "targetId": "web",
+        "platform": "web",
+        "agent": "default",
+        "repeat": 0,
+        "tags": [],
+        "selected": true,
+        "status": "failed",
+        "attempts": [
+          {
+            "id": "01a10eb1-1f23-705f-95fa-9c3be34a0eca",
+            "index": 0,
+            "status": "failed",
+            "startedAt": "2026-10-06T00:50:51.299Z",
+            "durationMs": 22965,
+            "artifacts": [
+              {
+                "id": "01a10eb1-1f23-705f-95fa-9c3be34a0eca:artifact:0",
+                "kind": "log",
+                "mediaType": "text/plain",
+                "redaction": "complete",
+                "producer": {
+                  "kind": "attempt"
+                },
+                "path": "web/tests_hermes-webapp.e2e.ts__bot_20mode_20pane_20renders-e98b954d/default/attempt-0/failure/screen.txt",
+                "size": 697,
+                "sha256": "62cd871b5bde3b786a6fde1d202c2624f91f5f8cc36f2a5dcf72a7af6e51dcde"
+              },
+              {
+                "id": "01a10eb1-1f23-705f-95fa-9c3be34a0eca:artifact:1",
+                "kind": "screenshot",
+                "mediaType": "image/png",
+                "redaction": "complete",
+                "producer": {
+                  "kind": "attempt"
+                },
+                "path": "web/tests_hermes-webapp.e2e.ts__bot_20mode_20pane_20renders-e98b954d/default/attempt-0/screenshots/001-failure.png",
+                "size": 32675,
+                "sha256": "373c9b89f846355ff7277d14861e989243b27d4e8f5ccb37aa6e946b0feafa55"
+              },
+              {
+                "id": "01a10eb1-1f23-705f-95fa-9c3be34a0eca:artifact:2",
+                "kind": "trace",
+                "mediaType": "application/zip",
+                "redaction": "not-required",
+                "producer": {
+                  "kind": "attempt"
+                },
+                "path": "web/tests_hermes-webapp.e2e.ts__bot_20mode_20pane_20renders-e98b954d/default/attempt-0/trace/trace.zip",
+                "size": 2269561,
+                "sha256": "f24803c20187794e87caa85204937d24627099065c84d73ac723166e5cd8cf0f"
+              }
+            ],
+            "error": {
+              "category": "test",
+              "code": "ASSERTION_FAILED",
+              "message": "expect.toBeVisible failed\nlocator: locator(\"[data-testid=\\\"mission-rail\\\"], [data-testid=\\\"activity-pane\\\"], aside\").first()\nexpected: visible\nobserved: no node (match count 0)",
+              "retryable": false,
+              "phase": "body",
+              "details": {
+                "locator": "locator(\"[data-testid=\\\"mission-rail\\\"], [data-testid=\\\"activity-pane\\\"], aside\").first()",
+                "expected": "visible",
+                "observed": "no node",
+                "matches": 0
+              },
+              "source": {
+                "file": "tests/hermes-webapp.e2e.ts",
+                "line": 20,
+                "column": 3
+              }
+            },
+            "secondaryErrors": [],
+            "cleanup": "complete",
+            "failure": {
+              "url": "http://127.0.0.1:13000/",
+              "screen": "01a10eb1-1f23-705f-95fa-9c3be34a0eca:artifact:0",
+              "screenshot": "01a10eb1-1f23-705f-95fa-9c3be34a0eca:artifact:1"
+            },
+            "steps": [
+              {
+                "id": "01a10eb1-1f23-705f-95fa-9c3be34a0eca:0",
+                "index": 0,
+                "kind": "app",
+                "api": "app.open",
+                "label": "/",
+                "status": "passed",
+                "startedAt": "2026-10-06T00:50:51.315Z",
+                "durationMs": 6791,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/hermes-webapp.e2e.ts",
+                  "line": 17,
+                  "column": 13
+                }
+              },
+              {
+                "id": "01a10eb1-1f23-705f-95fa-9c3be34a0eca:1",
+                "index": 1,
+                "kind": "assertion",
+                "api": "expect.toBeVisible",
+                "label": "locator(\"[data-testid=\\\"mission-rail\\\"], [data-testid=\\\"activity-pane\\\"], aside\").first()",
+                "status": "failed",
+                "startedAt": "2026-10-06T00:50:58.109Z",
+                "durationMs": 15107,
+                "events": [],
+                "artifacts": [],
+                "source": {
+                  "file": "tests/hermes-webapp.e2e.ts",
+                  "line": 20,
+                  "column": 22
+                },
+                "error": {
+                  "category": "test",
+                  "code": "ASSERTION_FAILED",
+                  "message": "expect.toBeVisible failed\nlocator: locator(\"[data-testid=\\\"mission-rail\\\"], [data-testid=\\\"activity-pane\\\"], aside\").first()\nexpected: visible\nobserved: no node (match count 0)",
+                  "retryable": false,
+                  "details": {
+                    "locator": "locator(\"[data-testid=\\\"mission-rail\\\"], [data-testid=\\\"activity-pane\\\"], aside\").first()",
+                    "expected": "visible",
+                    "observed": "no node",
+                    "matches": 0
+                  },
+                  "source": {
+                    "file": "tests/hermes-webapp.e2e.ts",
+                    "line": 20,
+                    "column": 3
+                  }
+                }
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "errors": [],
+    "summary": {
+      "discovered": 3,
+      "selected": 2,
+      "executed": 2,
+      "passed": 0,
+      "failed": 2,
+      "interrupted": 0,
+      "flaky": 0,
+      "skipped": 0
+    },
+    "limits": {
+      "maxAgentContextBytes": 16384,
+      "maxLedgerBytes": 8192,
+      "maxObservationBytes": 262144,
+      "maxEventsPerStep": 1000,
+      "maxModelTokensPerCall": 64000
+    },
+    "usage": {
+      "discoveredResults": 3,
+      "maxAgentContextBytes": 0,
+      "maxLedgerBytes": 0,
+      "maxObservationBytes": 0,
+      "artifactBytes": 3092814,
+      "downloads": 0,
+      "events": 0,
+      "modelTokens": 0,
+      "maxModelCallsInStep": 0,
+      "maxActionStepsInStep": 0
+    }
+  }
+}
