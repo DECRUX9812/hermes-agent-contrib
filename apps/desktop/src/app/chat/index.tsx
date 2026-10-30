@@ -749,7 +749,7 @@ const ChatViewContent = memo(function ChatViewContent({
   return (
     <div
       className={cn(
-        'relative isolate flex h-full min-w-0 flex-col overflow-hidden bg-(--ui-chat-surface-background)',
+        'relative isolate flex h-full min-w-0 flex-col overflow-hidden bg-(--ui-bg-primary)',
         className
       )}
       data-chat-surface=""
@@ -788,7 +788,7 @@ const ChatViewContent = memo(function ChatViewContent({
         suppressMessages={routeSessionMismatch}
       >
         <div
-          className="relative min-h-0 max-w-full flex-1 overflow-hidden bg-(--ui-chat-surface-background) contain-[layout_paint]"
+          className="relative min-h-0 max-w-full flex-1 overflow-hidden bg-(--ui-bg-primary) contain-[layout_paint]"
           data-intro-holding={introHoldsThread ? '' : undefined}
           data-slot="composer-bounds"
           {...dropHandlers}
