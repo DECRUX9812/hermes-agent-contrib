@@ -14,6 +14,10 @@ it.each([false, true])('restores floating geometry and collapse with keep-alive=
   window.localStorage.clear()
   vi.resetModules()
   window.localStorage.setItem('hermes.desktop.floatingPanes.v1', JSON.stringify({ card: { x: 37, y: 71 } }))
+  // The geometry record is mode-scoped: the fixture exercises the Advanced →
+  // Simple → Advanced round trip, so it must boot in Advanced (the default is
+  // Simple now, which would read this same record and make the switch a no-op).
+  window.localStorage.setItem('hermes.desktop.interfaceMode.v1', 'advanced')
   const { registry } = await import('@/contrib/registry')
   const { setInterfaceMode } = await import('@/store/interface-mode')
   const { FloatingPanes } = await import('./floating-panes')

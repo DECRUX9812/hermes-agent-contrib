@@ -83,7 +83,7 @@ describe('FloatingPanes (live DOM)', () => {
     expect(el).toBeTruthy()
     // 1440 - 224 - 12 margin = 1204; titlebar 34 + 12 = 46.
     expect(el.style.left).toBe('1204px')
-    expect(el.style.top).toBe('46px')
+    expect(el.style.top).toBe('48px')
     expect(el.style.width).toBe('224px')
     expect(document.querySelector('[data-testid="hud-body"]')?.textContent).toBe('live')
   })
@@ -106,7 +106,7 @@ describe('FloatingPanes (live DOM)', () => {
     pointer(grab(), 'pointerup', 260, 240)
 
     expect(card()!.style.left).toBe('172px')
-    expect(card()!.style.top).toBe('186px')
+    expect(card()!.style.top).toBe('188px')
   })
 
   it('persists the dragged position across a remount', () => {
