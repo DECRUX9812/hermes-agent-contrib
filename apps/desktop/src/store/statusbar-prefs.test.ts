@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 const LEGACY_VISIBLE_KEY = 'hermes.desktop.statusbarVisible'
 
 const loadStore = () => import('./statusbar-prefs')
+const loadMode = () => import('./interface-mode')
 
 describe('statusbar whole-bar visibility', () => {
   beforeEach(() => {
@@ -13,12 +14,16 @@ describe('statusbar whole-bar visibility', () => {
   it('shows the bar on a fresh install and for installs that hid it under the v1 key', async () => {
     window.localStorage.setItem(LEGACY_VISIBLE_KEY, 'false')
 
+    const { setInterfaceMode } = await loadMode()
+    setInterfaceMode('advanced')
     const { $statusbarVisible } = await loadStore()
 
     expect($statusbarVisible.get()).toBe(true)
   })
 
   it('still honours a hide made after the update', async () => {
+    const { setInterfaceMode } = await loadMode()
+    setInterfaceMode('advanced')
     const first = await loadStore()
 
     first.toggleStatusbarVisible()

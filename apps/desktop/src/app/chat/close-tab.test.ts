@@ -28,13 +28,19 @@ vi.mock('@/store/session-states', () => ({
   nextSessionTileForWorkspace: () => nextSessionTileForWorkspace()
 }))
 
-vi.mock('@/store/profile', () => ({
-  // The layout store reads the sidebar's profile scope; this suite only cares
-  // about the fresh-session call.
-  $showAllProfiles: atom(false),
-  requestFreshSession: () => requestFreshSession(),
-  setShowAllProfiles: () => {}
-}))
+vi.mock('@/store/profile', async (importOriginal) => {
+  // Spread the real module so exports this suite does not care about
+  // ($activeGatewayProfile, normalizeProfileKey, …) keep working, and only
+  // override what the fresh-session call actually observes.
+  const actual = await importOriginal<typeof import('@/store/profile')>()
+  return {
+    ...actual,
+    $activeGatewayProfile: atom('default'),
+    $showAllProfiles: atom(false),
+    requestFreshSession: () => requestFreshSession(),
+    setShowAllProfiles: () => {}
+  }
+})
 
 import { $previewTabs, closeRightRail, openPreview, type PreviewTarget } from '@/store/preview'
 import { $activeSessionId, $selectedStoredSessionId } from '@/store/session'
