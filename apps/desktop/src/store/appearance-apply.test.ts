@@ -5,6 +5,8 @@ import { $activePresetId } from '@/components/pane-shell/tree/store'
 import { $pendingSkinApply } from '@/themes/backend-sync'
 import { $pendingModeApply } from '@/themes/request'
 
+import { DEFAULT_SKIN_NAME } from '@/themes/presets'
+
 import { applyAppearance } from './appearance-apply'
 import { $interfaceMode, setInterfaceMode } from './interface-mode'
 
@@ -25,7 +27,7 @@ describe('applyAppearance', () => {
       applied: { accent: 'violet', layout: 'terminal-deck', mode: 'dark' },
       success: true
     })
-    expect($pendingSkinApply.get()).toBe('nous-accent-8a2be2')
+    expect($pendingSkinApply.get()).toBe(`${DEFAULT_SKIN_NAME}-accent-8a2be2`)
     expect($pendingModeApply.get()).toBe('dark')
     expect($activePresetId.get()).toBe('terminal-deck')
     expect($interfaceMode.get()).toBe('advanced')

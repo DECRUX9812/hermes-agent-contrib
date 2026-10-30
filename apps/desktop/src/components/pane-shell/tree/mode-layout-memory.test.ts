@@ -165,9 +165,9 @@ it.each(['advanced', 'simple'] as const)(
     window.localStorage.setItem('hermes.desktop.layoutPreset.active', 'custom')
     window.localStorage.setItem('hermes.desktop.hiddenStripTabs.v1', '["bots"]')
 
-    if (initialMode === 'simple') {
-      window.localStorage.setItem('hermes.desktop.interfaceMode.v1', 'simple')
-    }
+    // Seed the requested mode — non-default values persist, so this always
+    // writes when initialMode is 'advanced' and is a no-op record for 'simple'.
+    window.localStorage.setItem('hermes.desktop.interfaceMode.v1', initialMode)
 
     const { mode, tree, panes, layout } = await boot()
     expect(mode.$interfaceMode.get()).toBe(initialMode)

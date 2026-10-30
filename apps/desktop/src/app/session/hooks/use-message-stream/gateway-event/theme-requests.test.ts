@@ -1,3 +1,4 @@
+import { DEFAULT_SKIN_NAME } from '@/themes/presets'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { registerLayoutPresets } from '@/app/contrib/layout-presets'
@@ -50,7 +51,7 @@ describe('set_theme requests', () => {
 
     expect(pickTheme('session-a', { accent: 'pink' })).toBe(true)
     expect(respond).toHaveBeenCalledWith({ picked: { accent: 'pink' } })
-    expect($pendingSkinApply.get()).toBe('nous-accent-e0218a')
+    expect($pendingSkinApply.get()).toBe(`${DEFAULT_SKIN_NAME}-accent-e0218a`)
     expect($themePicks.get()['session-a']).toBeUndefined()
   })
 
