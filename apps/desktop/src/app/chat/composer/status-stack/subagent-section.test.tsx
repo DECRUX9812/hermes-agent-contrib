@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 
 import { $subagentsBySession, upsertSubagent } from '@/store/subagents'
 
@@ -20,6 +20,13 @@ vi.stubGlobal(
 afterEach(() => {
   cleanup()
   $subagentsBySession.set({})
+})
+
+// The subagent group is Advanced-tier chrome — hidden under the Simple
+// default, so every case binds the mode explicitly.
+beforeEach(async () => {
+  const { setInterfaceMode } = await import('@/store/interface-mode')
+  setInterfaceMode('advanced')
 })
 
 it('shows live work only from the composer session and keeps it hidden after collapse and progress', () => {

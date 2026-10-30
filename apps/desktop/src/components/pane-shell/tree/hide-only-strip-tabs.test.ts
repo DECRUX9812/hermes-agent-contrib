@@ -38,8 +38,13 @@ function sessionsBotsTree() {
   )
 }
 
-beforeEach(() => {
+beforeEach(async () => {
   window.localStorage.clear()
+  // The suite reads/writes the bare hiddenStripTabs key — Simple namespaces it
+  // under `.simple`. The stores are statically imported, so the mode is bound
+  // explicitly (modeLayout.change), not seeded through storage.
+  const { setInterfaceMode } = await import('@/store/interface-mode')
+  setInterfaceMode('advanced')
   $hiddenStripTabs.set(new Set())
   $hiddenTreePanes.set(new Set())
   vi.mocked(notify).mockReset()

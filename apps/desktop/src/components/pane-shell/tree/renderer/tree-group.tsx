@@ -427,9 +427,14 @@ export function TreeGroup({
 
   const active = paneFor(activeId)
   const isEmpty = shown.length === 0
-  // A zone with no workspace/main pane is a SIDEBAR: its strip is a mode
-  // switcher, and it wears the segmented control instead of document tabs.
-  const sidebarGroup = !node.panes.some(id => id === 'workspace' || paneChrome(paneFor(id)).placement === 'main')
+  // A SIDEBAR column zone (all panes homed on the left rail) wears the
+  // mode-switcher segmented control instead of document tabs. Any other
+  // zone — terminal/logs bottom tools, right-rail panes — keeps the tab
+  // strip: 101ba59dc5 classified every main-less zone as sidebar, which left
+  // bottom/right zones with no tab header at all (no tabs, no context
+  // menu, no Close).
+  const sidebarGroup =
+    node.panes.length > 0 && node.panes.every(id => paneChrome(paneFor(id)).placement === 'left')
 
   const { compactTabs, tabStripHeight, tabsBelowControls, tabsInTitlebar, titlebarHeight } = useZoneHeaderLayout({
     measuredBelowControls,

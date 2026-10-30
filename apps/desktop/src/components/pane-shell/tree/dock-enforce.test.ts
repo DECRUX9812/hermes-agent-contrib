@@ -53,6 +53,10 @@ describe('enforced dock (stacked Bots pane → sessions-zone tab, every boot)', 
 
   async function setupTree(initialTree: object, options: { routines?: boolean } = {}) {
     window.localStorage.setItem(TREE_KEY, JSON.stringify(initialTree))
+    // Boot in Advanced so the tree reads/writes the bare key: the default is
+    // Simple now, which namespaces persistence under `${key}.simple` — the
+    // heals below would land in a key these assertions never read.
+    window.localStorage.setItem('hermes.desktop.interfaceMode.v1', 'advanced')
 
     const tree = await import('@/components/pane-shell/tree/store')
     const model = await import('@/components/pane-shell/tree/model')

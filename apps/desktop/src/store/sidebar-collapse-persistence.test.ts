@@ -4,6 +4,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 // the REAL stores, then re-import them (fresh module state reading persisted
 // localStorage) to simulate a ⌃R reload. `bind` mirrors the controller wiring.
 async function loadStores() {
+  // Restore/collapse semantics live in Advanced — the Simple default shadows
+  // these writes and namespaces their storage under `.simple`.
+  window.localStorage.setItem('hermes.desktop.interfaceMode.v1', 'advanced')
   const layout = await import('./layout')
   const tree = await import('@/components/pane-shell/tree/store')
 

@@ -34,6 +34,10 @@ function fileBrowserSwitch() {
 
 describe('File Browser setting', () => {
   it('turns the file browser on and off, and persists the choice', () => {
+    // Persistence is an Advanced-mode semantic: under the Simple default the
+    // preference is shadowed and a flip is session-only (the next test covers
+    // that), so this case runs in Advanced.
+    act(() => $interfaceMode.set('advanced'))
     const toggle = fileBrowserSwitch()
 
     expect(toggle.getAttribute('aria-checked')).toBe('false')

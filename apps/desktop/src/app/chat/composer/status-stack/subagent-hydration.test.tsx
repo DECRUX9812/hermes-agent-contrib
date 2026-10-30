@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, expect, it, vi } from 'vitest'
+import { beforeEach, afterEach, expect, it, vi } from 'vitest'
 
 import * as gateway from '@/store/gateway'
 import { _resetSessionOwnerHintsForTests, setSessionOwnerHint } from '@/store/session'
@@ -22,6 +22,13 @@ afterEach(() => {
   $subagentsBySession.set({})
   _resetSessionOwnerHintsForTests()
   vi.restoreAllMocks()
+})
+
+// The subagent group is Advanced-tier chrome — hidden under the Simple
+// default, so every case binds the mode explicitly.
+beforeEach(async () => {
+  const { setInterfaceMode } = await import('@/store/interface-mode')
+  setInterfaceMode('advanced')
 })
 
 it('hydrates the empty owner composer and exposes an extended owner-routed transcript without leaking on session change', async () => {

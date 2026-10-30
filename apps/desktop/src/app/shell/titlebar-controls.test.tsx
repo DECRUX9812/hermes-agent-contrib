@@ -10,6 +10,7 @@ import { $narrowViewport } from '@/components/pane-shell/tree/store'
 import { registry } from '@/contrib/registry'
 import { I18nProvider } from '@/i18n'
 import { $fileBrowserOpen, $leftSideOpen, CHAT_SIDEBAR_PANE_ID, FILE_BROWSER_PANE_ID } from '@/store/layout'
+import { setInterfaceMode } from '@/store/interface-mode'
 import { REVIEW_PANE_ID } from '@/store/review'
 import { setTitlebarAppActionsSide } from '@/store/titlebar-app-actions'
 
@@ -214,6 +215,7 @@ describe('titlebar app-action cluster', () => {
       'matchMedia',
       vi.fn().mockReturnValue({ matches: true, addEventListener: vi.fn(), removeEventListener: vi.fn() })
     )
+    setInterfaceMode('advanced') // right-sidebar/flip-panes tools are Advanced-tier
     $narrowViewport.set(true)
     $narrowOverlayPaneIds.set(new Set([CHAT_SIDEBAR_PANE_ID, REVIEW_PANE_ID]))
     const intents: unknown[] = []
@@ -224,12 +226,14 @@ describe('titlebar app-action cluster', () => {
       renderControls('/')
       const sidebar = screen.getByRole('button', { name: $leftSideOpen.get() ? 'Hide sidebar' : 'Show sidebar' })
 
-      const rightSidebar = screen.getByRole('button', {
+      // The right-side toggles fold into the More-actions overflow menu: a
+      // menuitem, not a top-level button.
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+      const rightSidebar = screen.getByRole('menuitem', {
         name: $fileBrowserOpen.get() ? 'Hide right sidebar' : 'Show right sidebar'
       })
 
       expect(sidebar.hasAttribute('aria-expanded')).toBe(false)
-      expect(rightSidebar.hasAttribute('aria-expanded')).toBe(false)
       fireEvent.click(sidebar)
       fireEvent.click(rightSidebar)
       expect(intents).toEqual([
@@ -277,6 +281,7 @@ describe('titlebar app-action cluster', () => {
   it('hides a review-only right sidebar instead of opening files', () => {
     window.document.documentElement.dataset.hermesDesktopHost = 'browser'
     $narrowViewport.set(true)
+    setInterfaceMode('advanced')
     $narrowOverlayPaneIds.set(new Set([REVIEW_PANE_ID]))
     const intents: unknown[] = []
     const listener = (event: Event) => intents.push((event as CustomEvent).detail)
@@ -284,7 +289,8 @@ describe('titlebar app-action cluster', () => {
 
     try {
       renderControls('/')
-      fireEvent.click(screen.getByRole('button', { name: 'Hide right sidebar' }))
+      fireEvent.click(screen.getByRole('button', { name: 'More actions' }))
+      fireEvent.click(screen.getByRole('menuitem', { name: 'Hide right sidebar' }))
       expect(intents).toEqual([{ id: 'review', mode: 'close' }])
     } finally {
       window.removeEventListener(PANE_TOGGLE_REVEAL_EVENT, listener)

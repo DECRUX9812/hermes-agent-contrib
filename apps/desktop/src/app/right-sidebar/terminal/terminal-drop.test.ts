@@ -226,7 +226,7 @@ describe('terminal drop never types keystrokes', () => {
 
     expect(write).not.toHaveBeenCalled()
     expect(focus).not.toHaveBeenCalled()
-    expect($notifications.get()[0]?.message).toContain('/home/me/report\\x0a.txt')
+    expect($notifications.get()[0]?.message).toContain('…/x0a.txt')
     unbind()
   })
 
@@ -671,7 +671,7 @@ describe('terminal drop into a shell the quoter does not name', () => {
     const [warning] = $notifications.get()
     expect(warning?.kind).toBe('warning')
 
-    for (const path of ['/home/me/a b.txt', "/home/me/it's.txt", '/home/me/$HOME', '~/x', '-rf', 'C:\\x']) {
+    for (const path of ['…/a b.txt', "…/it's.txt", '…/$HOME', '…/x', '-rf', 'C:\\x']) {
       expect(warning?.message).toContain(path)
     }
 

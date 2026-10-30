@@ -73,6 +73,23 @@ function LiveTreeGroup({ index = 0, parentAxis }: { index?: number; parentAxis: 
 const tablist = () => globalThis.document.querySelector('[role="tablist"]')
 const tabEl = (paneId: string) => globalThis.document.querySelector(`[data-tree-tab="${paneId}"]`)
 
+// Sidebar zones render their strip through SidebarModePortal into
+// [data-slot="sidebar-mode-slot"]; mount one so the segmented mode control
+// exists in the DOM the suite drives.
+const mountSidebarModeSlot = () => {
+  const slot = document.createElement('div')
+  slot.setAttribute('data-slot', 'sidebar-mode-slot')
+  document.body.appendChild(slot)
+  return () => slot.remove()
+}
+
+// In the mode-switcher chrome the "tabs" are aria-pressed buttons named by
+// the pane label; query them inside the segmented list.
+const modeButtons = () =>
+  [...globalThis.document.querySelectorAll<HTMLElement>('[data-slot="sidebar-mode-list"] button')]
+const modeButton = (label: string) =>
+  modeButtons().find(el => el.textContent?.toLowerCase().includes(label.toLowerCase())) ?? null
+
 const tap = (target: Element) => {
   fireEvent.pointerDown(target, { button: 0, clientX: 10, clientY: 10, pointerType: 'mouse' })
   fireEvent.pointerUp(window, { button: 0, clientX: 10, clientY: 10, pointerType: 'mouse' })
@@ -102,26 +119,38 @@ describe('Sessions/Bots strip — #91223', () => {
     )
   })
 
-  it('double-clicking the Sessions tab leaves the strip and both chips', () => {
-    render(<LiveTreeGroup parentAxis="row" />)
+  it('double-clicking the Sessions mode button leaves the strip and both chips', () => {
+    const unmount = mountSidebarModeSlot()
+    try {
+      render(<LiveTreeGroup parentAxis="row" />)
 
-    doubleTap(tabEl('sessions')!)
+      doubleTap(modeButton('sessions')!)
 
-    expect(tablist()).toBeTruthy()
-    expect(tabEl('sessions')).toBeTruthy()
-    expect(tabEl('hermes-bots:pane')).toBeTruthy()
-    expect(zoneAt(0).minimized).toBeFalsy()
-    expect(zoneAt(0).tabStrip).toBeUndefined()
+      expect(modeButton('sessions')).toBeTruthy()
+      expect(modeButton('Bots')).toBeTruthy()
+      expect(zoneAt(0).minimized).toBeFalsy()
+      expect(zoneAt(0).tabStrip).toBeUndefined()
+    } finally {
+      unmount()
+    }
   })
 
-  it('tapping the strip gutter does not collapse the sidebar', () => {
-    render(<LiveTreeGroup parentAxis="row" />)
+  it('stray taps around the mode switcher do not collapse the sidebar', () => {
+    const unmount = mountSidebarModeSlot()
+    try {
+      render(<LiveTreeGroup parentAxis="row" />)
 
-    tap(globalThis.document.querySelector('[data-zone-tabstrip="g-side"]')!)
+      // The sidebar zone has no per-zone tab strip in the new chrome; the
+      // stray-tap surface is the mode list itself and the zone body.
+      tap(globalThis.document.querySelector('[data-slot="sidebar-mode-list"]')!)
+      tap(globalThis.document.querySelector('[data-zone-body="g-side"]')!)
 
-    expect(zoneAt(0).minimized).toBeFalsy()
-    expect(tabEl('sessions')).toBeTruthy()
-    expect(tabEl('hermes-bots:pane')).toBeTruthy()
+      expect(zoneAt(0).minimized).toBeFalsy()
+      expect(modeButton('sessions')).toBeTruthy()
+      expect(modeButton('Bots')).toBeTruthy()
+    } finally {
+      unmount()
+    }
   })
 
   it('an explicit never hides the sessions/Bots strip', () => {
