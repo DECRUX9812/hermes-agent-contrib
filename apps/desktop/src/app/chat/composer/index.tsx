@@ -466,10 +466,15 @@ export function ChatBar({
 
   // Reconnecting / starting text comes from the hook. At rest it is one stable
   // line per mode: a random pick on every load read as noise, not design.
-  const transportPlaceholder = useComposerPlaceholder({ disabled, reconnecting, sessionId })
+  // The transport line must also win whenever the gateway isn't open
+  // (`reconnecting`): during a reconnect the host may not have flipped
+  // `disabled` yet, and a resting "ask me anything" starter is a lie there.
+  const transportDown = disabled || reconnecting
+  const transportPlaceholder = useComposerPlaceholder({ disabled: transportDown, reconnecting, sessionId })
 
   const prediction = useComposerPrediction({ busy, disabled, sessionId })
-  const placeholder = disabled
+
+  const placeholder = transportDown
     ? transportPlaceholder
     : ((sessionId ? t.composer.followUpPlaceholders[0] : t.composer.newSessionPlaceholders[0]) ?? transportPlaceholder)
 
