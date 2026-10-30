@@ -827,7 +827,7 @@ export function ModelCatalogMenu({
                   group.families.map((family, familyIdx) => (
                     <Fragment key={`${group.provider.slug}:${family.id}`}>
                       {!search && sectionTitle(group, familyIdx, copyPicker) ? (
-                        <DropdownMenuLabel className="px-2 pb-0.5 pt-1.5 text-[0.6rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary)">
+                        <DropdownMenuLabel className="px-2 pb-0.5 pt-1.5 text-[0.625rem] font-medium uppercase tracking-wide text-(--ui-text-tertiary)">
                           {sectionTitle(group, familyIdx, copyPicker)}
                         </DropdownMenuLabel>
                       ) : null}
@@ -1181,7 +1181,7 @@ function ModelFamilyRow({
                 style={{ width: `${Math.max(2, loadProgress.percent)}%` }}
               />
             </span>
-            <span className="text-[0.62rem] tabular-nums text-(--ui-text-tertiary)">{loadProgress.percent}%</span>
+            <span className="text-[0.625rem] tabular-nums text-(--ui-text-tertiary)">{loadProgress.percent}%</span>
           </span>
         ) : null}
         {showPricing && pricing && !rowLevel ? <ModelPrice pricing={pricing} /> : null}
@@ -1332,7 +1332,7 @@ function DownloadingModelRow({
             style={{ width: `${Math.max(2, percent ?? 0)}%` }}
           />
         </span>
-        <span className="text-[0.62rem] tabular-nums text-(--ui-text-tertiary)">
+        <span className="text-[0.625rem] tabular-nums text-(--ui-text-tertiary)">
           {paused
             ? copyLocal.downloadPausedLabel
             : typeof percent === 'number'

@@ -240,7 +240,7 @@ export function LocalModelsBrowseSection(): ReactElement {
                     {hit.gated ? ` · ${copy.browseGated}` : ''}
                   </span>
                 }
-                title={<span className="font-mono text-[0.8rem]">{hit.repo}</span>}
+                title={<span className="font-mono text-[0.8125rem]">{hit.repo}</span>}
               />
 
               {openRepo === hit.repo && (
@@ -289,7 +289,7 @@ export function LocalModelsBrowseSection(): ReactElement {
                           <>
                             <ProgressBar paused={dJob.status === 'paused'} percent={dJob.percent} />
 
-                            <span className="text-[0.68rem] text-muted-foreground">
+                            <span className="text-[0.6875rem] text-muted-foreground">
                               {downloadStatusText(dJob, copy)}
                             </span>
 
@@ -308,7 +308,7 @@ export function LocalModelsBrowseSection(): ReactElement {
                                     : copy.browseFitUnknown}
                             </Pill>
 
-                            <span className="shrink-0 text-[0.7rem] text-muted-foreground">
+                            <span className="shrink-0 text-[0.6875rem] text-muted-foreground">
                               {gbLabel(group.total_bytes)}
                             </span>
                           </span>

@@ -1049,7 +1049,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         <span
           aria-label={availabilityLabel}
           className={cn(
-            'shrink-0 text-[0.65rem] text-(--ui-text-quaternary)',
+            'shrink-0 text-[0.625rem] text-(--ui-text-quaternary)',
             members.length > 0 && availableMembers < members.length && 'text-amber-600 dark:text-amber-300'
           )}
         >
@@ -1149,10 +1149,10 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         <RowButton
           aria-controls={`group-activity:${group}`}
           aria-expanded={activityOpen}
-          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-[0.7rem] text-(--ui-text-quaternary) transition-colors hover:text-foreground"
+          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-foreground"
           onClick={() => setActivityOpen(prev => !prev)}
         >
-          <Codicon className="shrink-0 text-[0.65rem]" name={activityOpen ? 'chevron-down' : 'chevron-right'} />
+          <Codicon className="shrink-0 text-[0.625rem]" name={activityOpen ? 'chevron-down' : 'chevron-right'} />
           <span className="shrink-0 font-medium">{b.group.activity}</span>
           {summaryActivity ? (
             <span
@@ -1178,9 +1178,9 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         <div className="grid gap-0.5 px-2.5 pb-1.5" id={`group-activity:${group}`}>
           {activityEvents.length ? (
             [...activityEvents].reverse().map((event, i) => (
-              <div className="flex items-center gap-1.5 text-[0.7rem]" key={`${event.at}:${i}`}>
+              <div className="flex items-center gap-1.5 text-[0.6875rem]" key={`${event.at}:${i}`}>
                 <Codicon
-                  className={cn('shrink-0 text-[0.65rem]', groupActivityTone(event.kind))}
+                  className={cn('shrink-0 text-[0.625rem]', groupActivityTone(event.kind))}
                   name={GROUP_ACTIVITY_GLYPHS[event.kind] || 'circle-outline'}
                 />
                 <span className={cn('min-w-0 flex-1 truncate', groupActivityTone(event.kind))}>
@@ -1297,13 +1297,13 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           >
             {img.kind === 'pdf' || img.kind === 'file' ? (
               <Codicon
-                className="text-[0.9rem] text-(--ui-text-tertiary)"
+                className="text-[0.875rem] text-(--ui-text-tertiary)"
                 name={img.kind === 'pdf' ? 'file-pdf' : 'file'}
               />
             ) : (
               <img alt="" className="size-6 rounded object-cover" src={img.data} />
             )}
-            <span className="max-w-32 truncate text-[0.65rem] text-(--ui-text-tertiary)">{img.name || 'image'}</span>
+            <span className="max-w-32 truncate text-[0.625rem] text-(--ui-text-tertiary)">{img.name || 'image'}</span>
             <Tip label={b.group.removeAttachment}>
               <Button
                 aria-label={b.group.removeAttachment}
@@ -1496,11 +1496,11 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
               {entry.images.map((img, imgIndex) =>
                 img.kind === 'pdf' || img.kind === 'file' ? (
                   <div
-                    className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.65rem] text-(--ui-text-tertiary)"
+                    className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.625rem] text-(--ui-text-tertiary)"
                     key={`${entryKey}:img:${imgIndex}`}
                     title={img.name || 'attached file'}
                   >
-                    <Codicon className="text-[0.8rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
+                    <Codicon className="text-[0.8125rem]" name={img.kind === 'pdf' ? 'file-pdf' : 'file'} />
                     <span className="max-w-48 truncate">{img.name || 'attached file'}</span>
                   </div>
                 ) : (
@@ -1588,7 +1588,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         </form>
       ) : (
         <Button
-          className="w-fit px-2 pb-1 text-left text-[0.65rem] text-(--ui-accent) transition-colors"
+          className="w-fit px-2 pb-1 text-left text-[0.625rem] text-(--ui-accent) transition-colors"
           key={`replylink:${id}`}
           onClick={() => setReplyThread(id)}
           size="inline"

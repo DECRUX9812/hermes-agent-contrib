@@ -287,12 +287,12 @@ function ConfirmingModelPanel({
             {t.onboarding.defaultModel}
           </span>
           {freeTier === true && (
-            <span className="rounded-sm bg-emerald-500/15 px-1 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
+            <span className="rounded-sm bg-emerald-500/15 px-1 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-emerald-600 dark:text-emerald-400">
               {t.onboarding.freeTier}
             </span>
           )}
           {freeTier === false && (
-            <span className="rounded-sm bg-primary/15 px-1 py-0.5 text-[0.6rem] font-semibold uppercase tracking-wide text-primary">
+            <span className="rounded-sm bg-primary/15 px-1 py-0.5 text-[0.625rem] font-semibold uppercase tracking-wide text-primary">
               {t.onboarding.pro}
             </span>
           )}

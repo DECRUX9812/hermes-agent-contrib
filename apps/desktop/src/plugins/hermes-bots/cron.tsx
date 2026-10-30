@@ -584,9 +584,9 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
       {/* The schedule and the next-run label keep their words: when the
           pane can't fit both on one line the next-run label wraps to a second
           line instead of being cut to "next in 4" (#89534). */}
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-3.5 text-[0.65rem]">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-3.5 text-[0.625rem]">
         <span className="inline-flex min-w-0 items-center gap-1 whitespace-nowrap text-(--ui-text-tertiary)">
-          <Codicon className="shrink-0 text-[0.7rem]" name="calendar" />
+          <Codicon className="shrink-0 text-[0.6875rem]" name="calendar" />
           {scheduleLabel(job.schedule)}
         </span>
         <span className="ml-auto shrink-0 whitespace-nowrap text-(--ui-text-quaternary)">
@@ -596,7 +596,7 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
         </span>
       </div>
       {legacyUnsafe ? (
-        <div className="flex items-center gap-1.5 pl-3.5 pt-0.5 text-[0.65rem] leading-4 text-(--ui-accent)">
+        <div className="flex items-center gap-1.5 pl-3.5 pt-0.5 text-[0.625rem] leading-4 text-(--ui-accent)">
           <Codicon className="shrink-0" name="warning" />
           {b.cron.legacyUnsafe}
         </div>
@@ -921,7 +921,7 @@ function SchedulePicker({ state, setState }: SchedulePickerProps) {
           <span className="text-xs text-(--ui-text-tertiary)">{b.cron.runsHint}</span>
         </div>
       ) : null}
-      <div className="text-[0.65rem] text-(--ui-text-quaternary)">{`${scheduleSummary(state, b.cron, timeLabel)} \u00b7 ${composeSchedule(state) || '\u2014'}`}</div>
+      <div className="text-[0.625rem] text-(--ui-text-quaternary)">{`${scheduleSummary(state, b.cron, timeLabel)} \u00b7 ${composeSchedule(state) || '\u2014'}`}</div>
     </div>
   )
 }
@@ -1269,10 +1269,10 @@ export function RoutinesPane() {
               )}
             </div>
             {showsHandle(bot, meta, owner) ? (
-              <span className="shrink-0 font-mono text-[0.65rem] text-(--ui-text-quaternary)">{`@${botHandle(bot, owner)}`}</span>
+              <span className="shrink-0 font-mono text-[0.625rem] text-(--ui-text-quaternary)">{`@${botHandle(bot, owner)}`}</span>
             ) : null}
           </div>
-          <div className="text-[0.65rem] uppercase tracking-wider text-(--ui-text-quaternary)">{c.title}</div>
+          <div className="text-[0.625rem] uppercase tracking-wider text-(--ui-text-quaternary)">{c.title}</div>
         </div>
         <Tip label={c.newCron}>
           <Button aria-label={c.newCron} onClick={openCreate} size="icon-xs" variant="ghost">

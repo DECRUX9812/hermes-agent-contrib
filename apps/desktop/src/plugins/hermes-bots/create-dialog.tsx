@@ -830,7 +830,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
               )
             : null}
           {remoteTarget ? (
-            <div className="text-[0.7rem] leading-5 text-(--ui-text-tertiary)">{b.editor.remoteHint(targetLabel)}</div>
+            <div className="text-[0.6875rem] leading-5 text-(--ui-text-tertiary)">{b.editor.remoteHint(targetLabel)}</div>
           ) : null}
           {labeled(
             b.editor.title,
@@ -949,7 +949,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                     <Checkbox checked={shareAuth} onCheckedChange={value => setShareAuth(Boolean(value))} />
                     {remoteTarget ? b.editor.shareKeysOn(targetLabel) : b.editor.shareKeys}
                   </label>
-                  <div className="pl-6 pt-0.5 text-[0.7rem] leading-5 text-(--ui-text-tertiary)">
+                  <div className="pl-6 pt-0.5 text-[0.6875rem] leading-5 text-(--ui-text-tertiary)">
                     {b.editor.shareKeysHint}
                   </div>
                   <label className="flex items-center gap-2 text-xs text-(--ui-text-secondary)">
@@ -998,7 +998,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                         onToggle={(name, enabled) => toggleCap('skills', name, enabled)}
                       />
                     </div>
-                    <div className="text-[0.65rem] leading-4 text-(--ui-text-quaternary)">
+                    <div className="text-[0.625rem] leading-4 text-(--ui-text-quaternary)">
                       {b.editor.catalogHint(caps.source)}
                     </div>
                     <HubSkillsSection
@@ -1035,7 +1035,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                       onToggle={(name, enabled) => toggleCap('toolsets', name, enabled)}
                     />
                   </div>
-                  <div className="text-[0.65rem] leading-4 text-(--ui-text-quaternary)">
+                  <div className="text-[0.625rem] leading-4 text-(--ui-text-quaternary)">
                     {b.editor.defaultToolsHint}
                   </div>
                 </div>
@@ -1066,7 +1066,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                             <span className="min-w-0">
                               <span>{m.name}</span>
                               {m.fromCatalog && !needsSetup ? (
-                                <span className="ml-1.5 text-[0.65rem] text-(--ui-text-quaternary)">
+                                <span className="ml-1.5 text-[0.625rem] text-(--ui-text-quaternary)">
                                   {m.installed ? b.editor.catalogInstalled : b.editor.catalog}
                                 </span>
                               ) : null}
@@ -1102,7 +1102,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                                 />
                               ) : null}
                               {m.description ? (
-                                <div className="truncate text-[0.65rem] leading-4 text-(--ui-text-quaternary)">
+                                <div className="truncate text-[0.625rem] leading-4 text-(--ui-text-quaternary)">
                                   {m.description}
                                 </div>
                               ) : null}
@@ -1112,7 +1112,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                       })}
                     </div>
                   </div>
-                  <div className="text-[0.65rem] leading-4 text-(--ui-text-quaternary)">{b.editor.mcpHint}</div>
+                  <div className="text-[0.625rem] leading-4 text-(--ui-text-quaternary)">{b.editor.mcpHint}</div>
                 </div>
               )}
             </div>
@@ -1455,7 +1455,7 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
                     }
                   >
                     {displayName(bot, botRosterMeta(bot, allMeta))}
-                    <Codicon className="text-[0.6rem]" name="close" />
+                    <Codicon className="text-[0.625rem]" name="close" />
                   </RowButton>
                 </Tip>
               </Badge>

@@ -104,7 +104,7 @@ function ProfileDescriptionRow({ profile }: { profile: KanbanProfile }) {
         )}
       </span>
       <Input
-        className="h-7 flex-1 text-[0.71rem]"
+        className="h-7 flex-1 text-[0.6875rem]"
         onChange={event => setDraft(event.target.value)}
         placeholder={k.profileGoodAt}
         value={draft}

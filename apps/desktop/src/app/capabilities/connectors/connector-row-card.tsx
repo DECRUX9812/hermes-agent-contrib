@@ -91,7 +91,7 @@ export function ConnectorRowCard({
       onPointerEnter={onPrefetch}
     >
       <ConnectorLogo
-        className="size-9 shrink-0 rounded-[9px]"
+        className="size-9 shrink-0 rounded-[8px]"
         connector={{ iconUrl: local ? undefined : connectorIconUrl(card.slug), name: card.slug, title: card.name }}
       />
 
@@ -209,10 +209,10 @@ function AccountSummary({ card }: { card: ConnectorCardModel }) {
 
 function SecondLine({ card, reason }: { card: ConnectorCardModel; reason?: string }) {
   if (reason) {
-    return <p className={cn('truncate text-[0.72rem]', REASON_TONE[card.state])}>{reason}</p>
+    return <p className={cn('truncate text-[0.6875rem]', REASON_TONE[card.state])}>{reason}</p>
   }
 
   return card.description ? (
-    <p className="line-clamp-2 text-[0.72rem] leading-snug text-(--ui-text-secondary)">{card.description}</p>
+    <p className="line-clamp-2 text-[0.6875rem] leading-snug text-(--ui-text-secondary)">{card.description}</p>
   ) : null
 }

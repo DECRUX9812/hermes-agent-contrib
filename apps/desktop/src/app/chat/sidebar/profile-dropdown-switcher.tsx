@@ -205,7 +205,7 @@ export function ProfileSwitcher({ compact = false }: { compact?: boolean }) {
               ) : (
                 <ProfileGlyph
                   aria-hidden="true"
-                  className="size-3 text-[0.4375rem]"
+                  className="size-3 text-[0.5625rem]"
                   color={resolveProfileColor(active.name, colors)}
                   isDefault={active.is_default}
                   name={active.name}

@@ -132,7 +132,7 @@ function Header({ card, titleRef, ...rest }: PartProps & { titleRef: RefObject<H
   return (
     <header className="flex shrink-0 items-center gap-2.5 border-b border-(--ui-stroke-tertiary) px-5 py-3">
       <ConnectorLogo
-        className="size-9 shrink-0 rounded-[9px]"
+        className="size-9 shrink-0 rounded-[8px]"
         connector={{ iconUrl: local ? undefined : connectorIconUrl(card.slug), name: card.slug, title: card.name }}
       />
 
@@ -151,7 +151,7 @@ function Header({ card, titleRef, ...rest }: PartProps & { titleRef: RefObject<H
           </Badge>
         </div>
 
-        <DialogDescription className="truncate text-[0.72rem] text-(--ui-text-secondary)">
+        <DialogDescription className="truncate text-[0.6875rem] text-(--ui-text-secondary)">
           {card.description ?? localTarget(card) ?? copy.state[card.stateWord]}
         </DialogDescription>
       </div>
@@ -317,7 +317,7 @@ function HostedLead({
 
       {showsReason ? (
         <div className="flex items-center gap-3">
-          <p className="min-w-0 flex-1 text-[0.72rem] text-(--ui-text-secondary)">{reason}</p>
+          <p className="min-w-0 flex-1 text-[0.6875rem] text-(--ui-text-secondary)">{reason}</p>
           {waiting ? (
             <Button onClick={waiting} size="inline" variant="textStrong">
               {t.connectorsPage.card.verb.stopWaiting}
@@ -380,7 +380,7 @@ function LocalFoot({ advanced, cost }: PartProps) {
   return (
     <div className="grid shrink-0 gap-3 border-t border-(--ui-stroke-tertiary) px-3.5 py-2.5">
       {metrics ? (
-        <p className="text-[0.7rem] text-(--ui-text-tertiary)">
+        <p className="text-[0.6875rem] text-(--ui-text-tertiary)">
           {[
             cost?.usesPerMonth ? `${cost.usesPerMonth} ${copy.usesPerMonth}` : null,
             cost?.tokensPerCall ? `${cost.tokensPerCall} ${copy.tokensPerCall}` : null
@@ -410,7 +410,7 @@ function LocalFoot({ advanced, cost }: PartProps) {
 
 function FootLine({ children }: { children: string }) {
   return (
-    <p className="shrink-0 border-t border-(--ui-stroke-tertiary) px-3.5 py-2 text-[0.7rem] text-(--ui-text-tertiary)">
+    <p className="shrink-0 border-t border-(--ui-stroke-tertiary) px-3.5 py-2 text-[0.6875rem] text-(--ui-text-tertiary)">
       {children}
     </p>
   )
@@ -426,7 +426,7 @@ function OrgNote({ count, onOpenAdmin }: { count: number; onOpenAdmin?: () => vo
 
   return (
     <div className="grid gap-1 rounded-md bg-(--ui-orange)/8 p-2.5">
-      <p className="text-[0.7rem] text-(--ui-text-secondary)">{copy.orgNote(count)}</p>
+      <p className="text-[0.6875rem] text-(--ui-text-secondary)">{copy.orgNote(count)}</p>
       {onOpenAdmin ? (
         <Button className="justify-self-start" onClick={onOpenAdmin} size="inline" variant="textStrong">
           {copy.orgLink}
