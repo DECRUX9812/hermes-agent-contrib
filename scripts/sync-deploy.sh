@@ -43,7 +43,11 @@ need_deploy_branch() {
 gate() { # run inside a checkout dir: typecheck + ui tests
   local dir=$1
   say "Gate: typecheck"
-  (cd "$dir/apps/desktop" && npm run typecheck)
+  # The tree needs more than node's default ~2GB heap: `tsc -p .` alone reaches
+  # ~2.04GB and dies with "Ineffective mark-compacts near heap limit", exit 134
+  # and ZERO "error TS" lines — which reads as a pass in any grep-based check.
+  # The box has 95GB, so give the compiler room instead of shrinking the input.
+  (cd "$dir/apps/desktop" && NODE_OPTIONS="--max-old-space-size=12288" npm run typecheck)
   say "Gate: vitest ui (known-red aware — scripts/known-red.json)"
   (cd "$dir/apps/desktop" && node scripts/test-ui-gate.mjs)
 }
