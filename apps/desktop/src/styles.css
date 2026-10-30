@@ -50,7 +50,7 @@
    (#121910). Dropping the filter on the OS signal removes the re-sample from
    the frame budget entirely, for every frosted surface at once — present and
    future. Legibility does not regress: every frosted surface already carries
-   its own alpha-mixed fill (--composer-fill at 88%, color-mix panels) that
+   its own deliberate fill (--composer-fill, color-mix panels) that
    stands alone; the frost is a texture, not the legibility layer.
 
    Mirrors the blanket reduced-motion rule above; also mirrors what HUD mode
@@ -2325,7 +2325,7 @@ body.guest-pointer-lock :is(webview, iframe) {
 }
 
 [data-slot='composer-root'] {
-  --composer-fill: color-mix(in srgb, var(--dt-card) 88%, transparent);
+  --composer-fill: var(--dt-card);
 }
 
 [data-slot='composer-root'][data-thread-scrolled-up] {
