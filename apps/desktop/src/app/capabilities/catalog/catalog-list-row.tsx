@@ -47,7 +47,7 @@ export function CatalogListRow({
       />
       <span className="pointer-events-none min-w-0 flex-1">
         <span className="flex items-center gap-2">
-          <span className="truncate text-[0.78rem] font-medium">{entry.name}</span>
+          <span className="truncate text-[0.8125rem] font-medium">{entry.name}</span>
           {installed && <Codicon className="shrink-0 text-(--ui-text-tertiary)" name="check" />}
         </span>
         <span className="mt-1 line-clamp-2 text-[length:var(--conversation-caption-font-size)] leading-(--conversation-caption-line-height) text-(--ui-text-tertiary)">
@@ -56,7 +56,7 @@ export function CatalogListRow({
         <span className="pointer-events-auto relative mt-2 block">
           <CatalogMetadata entry={entry} limit={2} onCategory={onCategory} onSearch={onSearch} onTag={onTag} />
         </span>
-        <span className="mt-1.5 flex items-center gap-2 text-[0.65rem] text-(--ui-text-quaternary)">
+        <span className="mt-1.5 flex items-center gap-2 text-[0.625rem] text-(--ui-text-quaternary)">
           <span className="min-w-0 flex-1 truncate">{entry.author || catalogLabel(entry.source)}</span>
           <CatalogHeaderMeta entry={entry} />
         </span>

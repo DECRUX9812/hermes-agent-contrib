@@ -263,7 +263,7 @@ export const SystemMessage: FC = () => {
         <span className="font-mono text-muted-foreground/55">{slashStatus.groups.command}</span>
         {multiline ? (
           <LinkifiedText
-            className={cn('mt-0.5 block whitespace-pre-wrap', tabular && 'font-mono text-[0.65rem] leading-[1.15rem]')}
+            className={cn('mt-0.5 block whitespace-pre-wrap', tabular && 'font-mono text-[0.625rem] leading-[1.15rem]')}
             explicitOnly
             pretty={false}
             text={output}

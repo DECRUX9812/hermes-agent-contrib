@@ -129,7 +129,7 @@ export function SidebarStorageCorruptNotice({
         <AlertDescription>
           <p>{copy.body(profiles.join(', '))}</p>
           <p>{copy.action}</p>
-          <code className="break-all text-[0.7rem]">
+          <code className="break-all text-[0.6875rem]">
             hermes sessions recover --source &lt;state.db&gt; --inspect-only
           </code>
           <Button

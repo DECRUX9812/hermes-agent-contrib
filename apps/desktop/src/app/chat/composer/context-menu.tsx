@@ -108,7 +108,7 @@ export function ContextMenu({
 
           <DropdownMenuSeparator />
 
-          <div className="px-2 py-1 text-[0.7rem] text-muted-foreground/80">
+          <div className="px-2 py-1 text-[0.6875rem] text-muted-foreground/80">
             {c.tipPre}
             <Kbd size="sm">@</Kbd>
             {c.tipPost}

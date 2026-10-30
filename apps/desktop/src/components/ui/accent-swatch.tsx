@@ -18,8 +18,8 @@ export function AccentSwatch({
   onPick?: () => void
 }) {
   const className = cn(
-    'relative inline-flex size-9 items-center justify-center rounded-full border border-foreground/15 transition-transform duration-150',
-    !active && 'hover:scale-105'
+    'relative inline-flex size-9 items-center justify-center rounded-full border border-foreground/15 transition-colors duration-150',
+    !active && 'hover:border-foreground/40'
   )
 
   const style = {

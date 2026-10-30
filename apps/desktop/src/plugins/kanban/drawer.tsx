@@ -1134,7 +1134,7 @@ export function TaskDrawer({
                 )}
                 {task.last_failure_error && (
                   <MetaRow label={k.lastFailureError}>
-                    <span className="whitespace-pre-wrap font-mono text-[0.65rem] leading-snug text-(--ui-text-tertiary)">
+                    <span className="whitespace-pre-wrap font-mono text-[0.625rem] leading-snug text-(--ui-text-tertiary)">
                       {task.last_failure_error}
                     </span>
                   </MetaRow>

@@ -322,7 +322,7 @@ const AssistantMessageBody: FC<AssistantMessageProps & { collapsedNotice?: null 
             <AssistantPreviewEmbeds />
             <MessagePrimitive.Error>
               <ErrorPrimitive.Root
-                className="mt-1.5 flex flex-col gap-1.5 rounded-lg border border-[color-mix(in_srgb,var(--dt-destructive)_35%,transparent)] bg-[color-mix(in_srgb,var(--dt-destructive)_7%,transparent)] px-3 py-2 text-[0.78rem] leading-5 text-[color-mix(in_srgb,var(--dt-destructive)_78%,var(--ui-text-secondary))]"
+                className="mt-1.5 flex flex-col gap-1.5 rounded-lg border border-[color-mix(in_srgb,var(--dt-destructive)_35%,transparent)] bg-[color-mix(in_srgb,var(--dt-destructive)_7%,transparent)] px-3 py-2 text-[0.8125rem] leading-5 text-[color-mix(in_srgb,var(--dt-destructive)_78%,var(--ui-text-secondary))]"
                 role="alert"
               >
                 <div className="flex items-start gap-1.5">
@@ -385,7 +385,7 @@ const StoppedNotice: FC = () => {
 
   return (
     <div
-      className="flex items-center gap-1 px-(--message-text-indent) pt-1 text-[0.72rem] text-(--ui-text-tertiary)"
+      className="flex items-center gap-1 px-(--message-text-indent) pt-1 text-[0.6875rem] text-(--ui-text-tertiary)"
       data-slot="aui_assistant-message-stopped"
     >
       <Codicon className="size-3" name="debug-stop" />
@@ -620,7 +620,7 @@ const ErrorCardHeadline: FC = () => {
       <div className="font-medium">{title}</div>
       <div>{body}</div>
       {errorText && (
-        <details className="mt-0.5 min-w-0 text-[0.72rem] opacity-70">
+        <details className="mt-0.5 min-w-0 text-[0.6875rem] opacity-70">
           <summary className="cursor-pointer select-none">{t.assistant.thread.errorDetails}</summary>
           <div className="wrap-anywhere mt-0.5 whitespace-pre-wrap font-mono">{errorText}</div>
         </details>

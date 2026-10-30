@@ -85,13 +85,13 @@ export function ConnectorsDirectory({
               ) : null}
 
               {segmentFellBack ? (
-                <span className="text-[0.7rem] text-(--ui-text-tertiary)">
+                <span className="text-[0.6875rem] text-(--ui-text-tertiary)">
                   {copy.page.segmentNoMatch(segmentLabel(filter.segment))}
                 </span>
               ) : null}
 
               {hiddenMatches > 0 ? (
-                <span className="flex items-center gap-1 text-[0.7rem] text-(--ui-text-tertiary)">
+                <span className="flex items-center gap-1 text-[0.6875rem] text-(--ui-text-tertiary)">
                   {copy.page.matchesElsewhere(hiddenMatches)}
                   <Button onClick={() => set({ segment: 'all' })} size="xs" variant="text">
                     {copy.page.showAllMatches}

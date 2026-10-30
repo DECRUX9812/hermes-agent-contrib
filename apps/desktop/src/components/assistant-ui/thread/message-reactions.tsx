@@ -177,7 +177,7 @@ export const ReactionBadge: FC<{
         reaction.author === 'user' && onRetract ? (
           <button
             aria-label={`Remove ${reaction.emoji} reaction`}
-            className="reaction-pop cursor-pointer leading-none transition-transform hover:scale-110 active:scale-95"
+            className="reaction-pop cursor-pointer leading-none transition-[transform,opacity] hover:opacity-70 active:scale-95"
             key={`${reaction.author}-${reaction.emoji}`}
             onClick={event => {
               event.preventDefault()

@@ -659,7 +659,7 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
           <span className="text-[0.625rem] font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)">
             {cc.dailyTokens}
           </span>
-          <span className="flex items-center gap-3 text-[0.65rem] text-(--ui-text-tertiary)">
+          <span className="flex items-center gap-3 text-[0.625rem] text-(--ui-text-tertiary)">
             <span className="inline-flex items-center gap-1">
               <span className="size-2 rounded-[1px] bg-[color:var(--dt-primary)]/60" /> {cc.input}
             </span>
@@ -697,7 +697,7 @@ function UsagePanel({ error, loading, onRefresh, period, usage }: UsagePanelProp
                 )
               })}
             </div>
-            <div className="mt-1 flex justify-between text-[0.6rem] text-(--ui-text-tertiary)">
+            <div className="mt-1 flex justify-between text-[0.625rem] text-(--ui-text-tertiary)">
               <span>{daily[0]?.day}</span>
               <span>{daily[daily.length - 1]?.day}</span>
             </div>
@@ -751,8 +751,8 @@ function UsageList({
         <ul>
           {rows.map(row => (
             <li className="flex items-center justify-between gap-2 py-1.5" key={row.key}>
-              <span className="min-w-0 truncate font-mono text-[0.7rem] text-foreground">{row.label}</span>
-              <span className="shrink-0 text-[0.65rem] text-(--ui-text-tertiary)">{row.value}</span>
+              <span className="min-w-0 truncate font-mono text-[0.6875rem] text-foreground">{row.label}</span>
+              <span className="shrink-0 text-[0.625rem] text-(--ui-text-tertiary)">{row.value}</span>
             </li>
           ))}
         </ul>
@@ -766,7 +766,7 @@ function UsageStat({ hint, label, value }: { hint?: string; label: string; value
     <div className="min-w-0">
       <div className="text-[0.625rem] font-medium uppercase tracking-[0.12em] text-(--ui-text-tertiary)">{label}</div>
       <div className="mt-1 truncate text-base font-semibold tracking-tight text-foreground">{value}</div>
-      {hint && <div className="mt-0.5 truncate text-[0.62rem] text-(--ui-text-tertiary)">{hint}</div>}
+      {hint && <div className="mt-0.5 truncate text-[0.625rem] text-(--ui-text-tertiary)">{hint}</div>}
     </div>
   )
 }
