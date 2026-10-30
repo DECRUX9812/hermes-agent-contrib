@@ -58,7 +58,17 @@ function AttachmentPill({ attachment, onRemove }: { attachment: ComposerAttachme
 
   const canPreview = attachment.kind !== 'folder' && attachment.kind !== 'terminal' && !isUploading
 
-  const detail = attachment.detail && attachment.detail !== attachment.label ? attachment.detail : undefined
+  // Internal staging paths (.hermes-webapp/uploads/web-…, /srv/uploads/web-…)
+  // are the apps plumbing, not the files identity — show the type instead.
+  const detailIsInternalPath = Boolean(
+    attachment.detail &&
+      (attachment.detail === attachment.stagedUpload?.path ||
+        /(?:^|\/)uploads\/|\.hermes/.test(attachment.detail))
+  )
+  const detail =
+    attachment.detail && attachment.detail !== attachment.label && !detailIsInternalPath
+      ? attachment.detail
+      : attachment.mime || undefined
 
   // Keep full image bytes out of composer state. New chips read their path only
   // when clicked; previewUrl remains a compatibility fallback for older drafts.
