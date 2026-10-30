@@ -228,7 +228,7 @@ describe('titlebar app-action cluster', () => {
 
       // The right-side toggles fold into the More-actions overflow menu: a
       // menuitem, not a top-level button.
-      fireEvent.click(screen.getByRole('button', { name: 'More window actions' }))
+      fireEvent.pointerDown(screen.getByRole('button', { name: 'More window actions' }))
       const rightSidebar = screen.getByRole('menuitem', {
         name: $fileBrowserOpen.get() ? 'Hide right sidebar' : 'Show right sidebar'
       })
@@ -289,7 +289,7 @@ describe('titlebar app-action cluster', () => {
 
     try {
       renderControls('/')
-      fireEvent.click(screen.getByRole('button', { name: 'More window actions' }))
+      fireEvent.pointerDown(screen.getByRole('button', { name: 'More window actions' }))
       fireEvent.click(screen.getByRole('menuitem', { name: 'Hide right sidebar' }))
       expect(intents).toEqual([{ id: 'review', mode: 'close' }])
     } finally {
