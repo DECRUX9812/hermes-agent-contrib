@@ -18,6 +18,7 @@ describe('$layoutEditRevealsHidden', () => {
 
     expect($layoutEditRevealsHidden.get()).toBe(false)
 
+    setInterfaceMode('advanced')
     $layoutEditMode.set(true)
     expect($layoutEditRevealsHidden.get()).toBe(true)
 

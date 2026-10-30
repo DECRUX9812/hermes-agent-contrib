@@ -18,30 +18,30 @@ describe('interface mode persistence', () => {
     vi.resetModules()
   })
 
-  it('never writes a record for Advanced, so an untouched install stays untouched', async () => {
+  it('never writes a record for Simple, so an untouched install stays untouched', async () => {
     const { $interfaceMode, setInterfaceMode } = await loadStore()
 
-    expect($interfaceMode.get()).toBe('advanced')
-    setInterfaceMode('advanced')
+    expect($interfaceMode.get()).toBe('simple')
+    setInterfaceMode('simple')
     expect(window.localStorage.getItem(MODE_KEY)).toBeNull()
 
-    setInterfaceMode('simple')
+    setInterfaceMode('advanced')
     expect(window.localStorage.getItem(MODE_KEY)).not.toBeNull()
 
-    setInterfaceMode('advanced')
+    setInterfaceMode('simple')
     expect(window.localStorage.getItem(MODE_KEY)).toBeNull()
   })
 
-  it('restores Simple across a reload and treats anything else as Advanced', async () => {
+  it('restores Advanced across a reload and treats anything else as Simple', async () => {
     const first = await loadStore()
 
-    first.setInterfaceMode('simple')
+    first.setInterfaceMode('advanced')
     vi.resetModules()
-    expect((await loadStore()).$interfaceMode.get()).toBe('simple')
+    expect((await loadStore()).$interfaceMode.get()).toBe('advanced')
 
     window.localStorage.setItem(MODE_KEY, 'intermediate')
     vi.resetModules()
-    expect((await loadStore()).$interfaceMode.get()).toBe('advanced')
+    expect((await loadStore()).$interfaceMode.get()).toBe('simple')
   })
 })
 
@@ -52,7 +52,8 @@ describe('modeBound resolver', () => {
   })
 
   it('falls through to the preference in Advanced, and writes reach the preference', async () => {
-    const { modeBound } = await loadStore()
+    const { modeBound, setInterfaceMode } = await loadStore()
+    setInterfaceMode('advanced')
     const $pref = atom(true)
     const $bound = modeBound('statusbarVisible', $pref, value => $pref.set(value))
 
@@ -163,6 +164,8 @@ describe('tiers', () => {
     expect(items.filter(shownInMode('advanced')).map(item => item.id)).toEqual(['settings', 'hud'])
     expect(items.filter(shownInMode('simple')).map(item => item.id)).toEqual(['settings', 'side'])
 
+    expect($showsAdvancedChrome.get()).toBe(false)
+    setInterfaceMode('advanced')
     expect($showsAdvancedChrome.get()).toBe(true)
     setInterfaceMode('simple')
     expect($showsAdvancedChrome.get()).toBe(false)
