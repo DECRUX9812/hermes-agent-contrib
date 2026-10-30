@@ -166,7 +166,7 @@ export default defineConfig(({ command }) => ({
     // `advancedChunks` is the middle ground: heavyweight libraries merge into
     // a handful of named vendor chunks loaded on first use, app-level dynamic
     // imports stay lazy, and the file count stays in the tens.
-    chunkSizeWarningLimit: 25000,
+    chunkSizeWarningLimit: 2000,
     rolldownOptions: {
       output: {
         advancedChunks: {
@@ -207,9 +207,26 @@ export default defineConfig(({ command }) => ({
               name: 'mermaid',
               test: /node_modules[\\/](mermaid|cytoscape|dagre|khroma|elkjs|d3|d3-[^\\/]+|@mermaid-js)[\\/]/
             },
+            // Shiki's CORE RUNTIME only — engine, wasm glue, tokenizer.
+            //
+            // Grammars and themes are deliberately NOT listed. Shiki ships them
+            // as one module per grammar, and the renderer reaches them through
+            // explicit per-language dynamic imports (shiki-core.ts). Grouping
+            // `@shikijs` wholesale — which is what this used to do — pulled all
+            // 242 grammars + 65 themes into this one chunk: 19.5 MB, 56.7% of
+            // the renderer's JS, so the first code block downloaded and parsed
+            // every grammar to use one. Left out, each grammar is its own
+            // lazily-fetched chunk of a few tens of KB; the allowlist bounds the
+            // set at ~70 files, not the thousands bare default splitting
+            // produced (#38888).
+            //
+            // The bare `shiki` package is excluded on purpose, not overlooked:
+            // its `dist/langs/<id>.mjs` and `dist/themes/<id>.mjs` files are
+            // 46-byte re-export shims for the grammar itself, so matching the
+            // package name welds every grammar back in through its own shim.
             {
               name: 'shiki',
-              test: /node_modules[\\/](shiki|@shikijs|react-shiki|@streamdown[\\/]code|oniguruma-to-es|oniguruma-parser|regex(-[^\\/]+)?)[\\/]/
+              test: /node_modules[\\/](?:@shikijs[\\/](?:core|primitive|types|engine-oniguruma|engine-javascript|vscode-textmate|transformers|hast-utils)|oniguruma-to-es|oniguruma-parser|regex(?:-[^\\/]+)?)[\\/]/
             },
             { name: 'katex', test: /node_modules[\\/]katex[\\/]/ }
           ]

@@ -8,14 +8,12 @@ import {
   tailBoundedRemend
 } from '@assistant-ui/react-streamdown'
 import { useStore } from '@nanostores/react'
-import type { code as streamdownCode } from '@streamdown/code'
 import {
   Children,
   type ComponentProps,
   isValidElement,
   memo,
   type ReactNode,
-  useEffect,
   useMemo,
   useState
 } from 'react'
@@ -24,6 +22,7 @@ import { defaultRemarkPlugins } from 'streamdown'
 import { useSessionView } from '@/app/chat/session-view'
 import { ExpandableBlock } from '@/components/chat/expandable-block'
 import { PreviewAttachment } from '@/components/chat/preview-attachment'
+import { shikiCodePlugin } from '@/components/chat/shiki-code-plugin'
 import { chunkByLines, SyntaxHighlighter } from '@/components/chat/shiki-highlighter'
 import { TranscriptVideo } from '@/components/chat/transcript-video'
 import { ZoomableImage } from '@/components/chat/zoomable-image'
@@ -78,40 +77,13 @@ import { paragraphPlainText, TranscriptDirectiveLeaf, useResolvedParagraph } fro
 // LLM convention). The default false-setting only accepts `$$...$$`.
 const mathPlugin = createMemoizedMathPlugin({ singleDollarTextMath: true })
 
-// `@streamdown/code` statically imports ALL of shiki (every grammar + theme —
-// the single largest chunk in the renderer), so it must never sit on the
-// entry graph. Load it on first markdown mount and swap it into the plugin
-// table when it lands; until then fenced code renders through the
-// `SyntaxHighlighter` override's plain path (same output Shiki's own
-// `delay` fallback shows), so nothing flashes or reflows unexpectedly.
-type CodePlugin = typeof streamdownCode
-let codePluginCache: CodePlugin | null = null
-
-function useCodePlugin(): CodePlugin | null {
-  const [plugin, setPlugin] = useState(codePluginCache)
-
-  useEffect(() => {
-    if (plugin) {
-      return
-    }
-
-    let cancelled = false
-
-    void import('@streamdown/code').then(({ code }) => {
-      codePluginCache = code
-
-      if (!cancelled) {
-        setPlugin(code)
-      }
-    })
-
-    return () => {
-      cancelled = true
-    }
-  }, [plugin])
-
-  return plugin
-}
+// Shiki's code plugin (see components/chat/shiki-code-plugin.ts). It answers
+// Streamdown's `supportsLanguage` from a curated allowlist instead of reaching
+// for `shiki`'s `bundledLanguages`, so it is dependency-free and can sit on the
+// entry graph — the old `@streamdown/code` plugin had to be dynamically
+// imported on every message mount, and dragged the whole 19.5 MB grammar set
+// along with it before a single fence had rendered.
+const STREAMDOWN_PLUGINS = { math: mathPlugin, code: shikiCodePlugin }
 
 const REMARK_PLUGINS = [...Object.values(defaultRemarkPlugins), remarkTranscriptDirectives, remarkSoftBreaks]
 
@@ -647,10 +619,9 @@ function MarkdownTextSurface({
 
   // Keep code parsing enabled while streaming so incomplete fenced blocks still
   // render as code cards. The expensive Shiki pass is deferred by
-  // `SyntaxHighlighter` below when `isStreaming` is true, and the code plugin
-  // itself arrives async (useCodePlugin) so shiki never blocks cold start.
-  const code = useCodePlugin()
-  const plugins = useMemo(() => (code ? { math: mathPlugin, code } : { math: mathPlugin }), [code])
+  // `SyntaxHighlighter` below when `isStreaming` is true; the plugin itself is
+  // dependency-free (allowlist only), so it is available on the first render.
+  const plugins = STREAMDOWN_PLUGINS
 
   const components = useMemo(
     () =>

@@ -1,7 +1,7 @@
 'use client'
 
 import * as React from 'react'
-import type { BundledLanguage, ShikiTransformer, ThemedToken } from 'shiki'
+import type { ShikiTransformer, ThemedToken } from 'shiki'
 
 import { chunkLines, type LineChunk, useFixedRowWindow } from '@/components/chat/fixed-row-window'
 import { exceedsHighlightBudget, SHIKI_THEME } from '@/components/chat/shiki-highlighter'
@@ -384,13 +384,15 @@ function TokenizedDiffBody({
     let cancelled = false
 
     setTokens(null)
-    // Dynamic import so the multi-MB shiki chunk stays off the cold-start
-    // path — this effect only runs once a highlightable diff is on screen.
-    void import('shiki')
-      .then(({ codeToTokens }) => codeToTokens(code, { lang: language as BundledLanguage, theme }))
+    // Dynamic import so the highlighter chunk stays off the cold-start path —
+    // this effect only runs once a highlightable diff is on screen. It resolves
+    // through shiki-core's allowlist, so a diff in a known language loads that
+    // one grammar (a diff in an unknown one stays on the plain colored path).
+    void import('@/components/chat/shiki-core')
+      .then(core => core.shikiCodeToTokens({ code, language, theme }))
       .then(result => {
         if (!cancelled) {
-          setTokens(result.tokens)
+          setTokens(result ? result.tokens : [])
         }
       })
       .catch(() => {

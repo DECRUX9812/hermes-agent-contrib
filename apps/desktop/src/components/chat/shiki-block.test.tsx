@@ -18,9 +18,8 @@ const { codeToHtml } = vi.hoisted(() => ({
   })
 }))
 
-vi.mock('shiki', () => ({
-  bundledLanguages: { typescript: 'typescript-loader', text: 'text-loader' },
-  getSingletonHighlighter: vi.fn(async () => ({
+vi.mock('shiki/core', () => ({
+  createHighlighterCore: vi.fn(async () => ({
     codeToHtml: (code: string) => codeToHtml(code),
     getLoadedLanguages: () => ['text', 'typescript'],
     loadLanguage: vi.fn(async () => undefined)
