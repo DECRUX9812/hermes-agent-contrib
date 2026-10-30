@@ -1,6 +1,6 @@
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { MemoryRouter } from 'react-router'
-import { afterEach, expect, it } from 'vitest'
+import { beforeEach, afterEach, expect, it } from 'vitest'
 
 import { $backgroundStatusBySession } from '@/store/composer-status'
 import { $goalsBySession } from '@/store/goals'
@@ -41,6 +41,13 @@ afterEach(() => {
   $subagentsBySession.set({})
   $todosBySession.set({})
   clearSessionTodos('owner')
+})
+
+// The subagent group is Advanced-tier chrome — hidden under the Simple
+// default, so every case binds the mode explicitly.
+beforeEach(async () => {
+  const { setInterfaceMode } = await import('@/store/interface-mode')
+  setInterfaceMode('advanced')
 })
 
 it('offers a collapsed read-only checklist from an idle session, without a running spinner', () => {
