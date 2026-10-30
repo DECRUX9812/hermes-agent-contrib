@@ -67,7 +67,13 @@ function loadedMainOnly() {
 }
 
 beforeEach(() => {
-  vi.stubGlobal('document', { activeElement: null })
+  vi.stubGlobal('document', {
+    // The close path resolves the focus claim through queryVisible — the stub
+    // needs the DOM read surface, not just activeElement.
+    activeElement: null,
+    querySelector: () => null,
+    querySelectorAll: () => []
+  })
   closeRightRail()
   window.localStorage.clear()
   $selectedStoredSessionId.set(null)
