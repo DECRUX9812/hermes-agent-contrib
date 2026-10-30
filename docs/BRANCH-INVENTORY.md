@@ -382,3 +382,30 @@ revamp tc* → b3-toolcards-chain). The fork-line tip fixes (statusbar hide menu
 66e2762cc7, perf passes e6415b5b70/57f08a25e5/72d2031efe/6f57689b99) are the only cherry-pick audit
 candidates in that family.
 
+## CORRECTION (2026-10-29, after the first landing attempt)
+
+The "merge-tree CLEAN" column above was produced with the **legacy 3-argument form**
+`git merge-tree <merge-base> HEAD <branch>`, which prints a combined diff and does **not**
+signal conflicts in its output structure. Re-probing every UNIQUE-WORK row with the modern
+oracle `git merge-tree --write-tree --name-only HEAD <branch>`:
+
+| branch | legacy probe said | modern oracle says |
+|---|---|---|
+| `factory/3d-pane` | CLEAN | **592 conflicted paths** |
+| `factory/3d-pane-v1` | CLEAN | **585 conflicted paths** |
+| all other UNIQUE-WORK rows | — | re-probed, see `plan-fast.json` |
+
+Only 7 of the 42 candidate branches are actually mergeable in one shot:
+`feat/desktop-inapp-browser-clean`, `feat/instant-ack`, `feat/skill-usage-key-normalization`,
+`fix/118738-xai-toolcall-salvage`, `local/live-20261027`, `local/session-switch-perf-live`,
+`phase3/uiux-a11y`.
+
+`docs/perf-visual` is a separate case: it is an **orphan branch** (root commit, no common
+ancestor), so `merge-tree` fails with 0 conflicted paths and `merge_base_days` is null. Its 5
+commits must be cherry-picked onto HEAD, never merged.
+
+Consequence: "merges clean" must never be inferred from the legacy form, and a
+CONFLICT verdict is not a reason to skip a branch — it is a reason to land it per-commit
+(`git cherry-pick -x` of its patch-absent commits) rather than as a whole-branch merge.
+
+
