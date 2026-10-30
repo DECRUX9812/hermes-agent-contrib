@@ -466,10 +466,15 @@ export function ChatBar({
 
   // Reconnecting / starting text comes from the hook. At rest it is one stable
   // line per mode: a random pick on every load read as noise, not design.
-  const transportPlaceholder = useComposerPlaceholder({ disabled, reconnecting, sessionId })
+  // The transport line must also win whenever the gateway isn't open
+  // (`reconnecting`): during a reconnect the host may not have flipped
+  // `disabled` yet, and a resting "ask me anything" starter is a lie there.
+  const transportDown = disabled || reconnecting
+  const transportPlaceholder = useComposerPlaceholder({ disabled: transportDown, reconnecting, sessionId })
 
   const prediction = useComposerPrediction({ busy, disabled, sessionId })
-  const placeholder = disabled
+
+  const placeholder = transportDown
     ? transportPlaceholder
     : ((sessionId ? t.composer.followUpPlaceholders[0] : t.composer.newSessionPlaceholders[0]) ?? transportPlaceholder)
 
@@ -799,10 +804,20 @@ export function ChatBar({
     // The popover is open but its items are still in flight (debounce + RPC).
     // Tab must not fall through to the browser — it would move focus out of
     // the composer mid-completion, which reads as the popover "eating" the
-    // keypress. Swallow it; the refresh lands with the items.
-    if (trigger && triggerLoading && triggerItems.length === 0 && event.key === 'Tab') {
+    // keypress. Esc must dismiss the popover instead of falling through to the
+    // haltRun branch below, where it would interrupt the running turn.
+    if (
+      trigger &&
+      triggerLoading &&
+      triggerItems.length === 0 &&
+      (event.key === 'Tab' || event.key === 'Escape')
+    ) {
       event.preventDefault()
       triggerKeyConsumedRef.current = true
+
+      if (event.key === 'Escape') {
+        closeTrigger()
+      }
 
       return
     }
@@ -978,8 +993,10 @@ export function ChatBar({
       return
     }
 
-    // Cmd/Ctrl+Enter queues a follow-up while a turn runs. Plain Enter steers
-    // a text-only draft, so both live-turn actions stay reachable by keyboard.
+    // Cmd/Ctrl+Enter queues a follow-up while a turn runs, and sends when idle
+    // (the plain-Enter path below owns steer/newline semantics). Plain Enter
+    // steers a text-only draft, so every live-turn action stays reachable by
+    // keyboard.
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.shiftKey) {
       event.preventDefault()
 
@@ -994,6 +1011,10 @@ export function ChatBar({
         }
 
         queueDraft()
+      } else if (!disabled) {
+        // Idle: the accelerator sends like plain Enter — submitDraft() re-syncs
+        // the live editor text and owns the empty-draft no-op.
+        submitDraft()
       }
 
       return

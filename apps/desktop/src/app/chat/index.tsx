@@ -339,7 +339,12 @@ export function ChatRuntimeBoundary({
     )
 
     return next.window
-  }, [messages, windowPages])
+    // Windowing depends on WHICH messages exist, not their contents: keying on
+    // the `messages` array re-indexed the transcript on every streaming delta
+    // (~30×/s) because each flush hands over a fresh array. Length + tail id
+    // change exactly when the window's input does.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- messages is read as a stable snapshot; length/id change whenever the window input does
+  }, [messages.length, messages[0]?.id, windowPages])
 
   const currentMessages = history.page?.messages ?? windowedMessages
   // Release the store's paged-through history (persisted rows older than the

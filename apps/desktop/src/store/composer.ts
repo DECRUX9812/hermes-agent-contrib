@@ -172,8 +172,16 @@ export function createComposerAttachmentScope($attachments = atom<ComposerAttach
     },
     remove(id) {
       const current = $attachments.get()
-      const removed = current.find(attachment => attachment.id === id) || null
-      $attachments.set(current.filter(attachment => attachment.id !== id))
+      // `id` is an attachment IDENTITY: the occurrence when the chip carries
+      // one (the pill list keys and removes by it), else the plain path/id.
+      // Matching by `attachment.id` alone removed EVERY chip of the same file,
+      // so a duplicate's ✕ took its sibling with it.
+      const identity = (attachment: ComposerAttachment) => attachment.occurrenceId ?? attachment.id
+      const index = current.findIndex(attachment => identity(attachment) === id)
+      const target = index === -1 ? current.findIndex(attachment => attachment.id === id) : index
+      const removed = target === -1 ? null : (current[target] ?? null)
+
+      $attachments.set(target === -1 ? current : current.filter((_, position) => position !== target))
       revokeAttachmentPreviewUrl(removed?.previewUrl)
 
       return removed
