@@ -2291,13 +2291,11 @@ body.guest-pointer-lock :is(webview, iframe) {
   opacity: 0.33;
 }
 
-[data-slot='composer-root'] > .pointer-events-none {
-  background: linear-gradient(
-    to bottom,
-    transparent,
-    color-mix(in srgb, var(--ui-chat-surface-background) 88%, transparent)
-  ) !important;
-}
+/* (The resting-composer grey wash lived here: a `linear-gradient` to 88% opaque
+   painted on `composer-root`'s pointer-events-none child, which sat INSIDE the
+   surface and read as a smudge with a hard edge. Its only job was to dissolve a
+   transcript scrolling under the dock — that is `composer-dock::before`'s job,
+   painted behind the card. Deleted with the element that carried it.) */
 
 [data-slot='composer-surface'] {
   border-color: var(--ui-stroke-secondary) !important;

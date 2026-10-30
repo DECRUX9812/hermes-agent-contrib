@@ -52,7 +52,6 @@ import { deriveBusySubmitState } from './busy-submit-state'
 import { ComposerDockGlow, QueuedEditBanner } from './chat-bar-parts'
 import {
   acceptsTriggerCompletion,
-  COMPOSER_FADE_BACKGROUND,
   composerInputWidthClass,
   implicitSlashAcceptIndex,
   liveComposerDraft,
@@ -1441,12 +1440,12 @@ export function ChatBar({
                 scope={trigger.scope}
               />
             )}
-            {!poppedOut && (
-              <div
-                className="pointer-events-none absolute inset-0 rounded-[inherit]"
-                style={{ background: COMPOSER_FADE_BACKGROUND }}
-              />
-            )}
+              {/* No fade sheet over the composer. It painted a grey wash INSIDE
+                  the surface (a linear-gradient to 88% opaque), so a resting
+                  composer read as a smudged card with a hard edge where the
+                  gradient stopped. The surface already has an opaque fill; the
+                  thread dissolving under the dock is the dock's own ::before,
+                  which belongs behind the card, not on top of it. */}
             {/* Drag region: covers the transparent grab margin around the surface.
               The surface sits on top (z-4) so only the exposed ring receives this
               element's hover/cursor — grab cursor + a diagonal hatch (/////)
