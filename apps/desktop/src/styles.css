@@ -4224,9 +4224,9 @@ img[src*='filler-bg'] {
 /* Syntax tokens carry their own background in some Shiki themes; inside a diff
    that paints a yellow bar behind each string and stops mid-line. Row tint
    belongs to the row (--ui-diff-*), never to a token. */
-[data-slot='diff-lines'] span[style*='background'],
-[data-slot='diff-lines'] span[style*='background-color'],
-[data-slot='aui_assistant-message-content'] pre span[style*='background'] {
+html[data-hermes-desktop-host='browser'] [data-slot='diff-lines'] span[style*='background'],
+html[data-hermes-desktop-host='browser'] [data-slot='diff-lines'] span[style*='background-color'],
+html[data-hermes-desktop-host='browser'] [data-slot='aui_assistant-message-content'] pre span[style*='background'] {
   background-color: transparent !important;
 }
 
