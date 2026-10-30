@@ -125,7 +125,7 @@ describe('TreeGroup', () => {
     }
 
     it.each(['zone', 'default'] as const)('preserves the saved %s hide-tabs preference', source => {
-      mountCrowdedStrip(800, 'left')
+      mountCrowdedStrip(800, 'bottom')  // document tabs: 'left' is the sidebar mode-switcher now, no tab strip
       const originalDefault = $tabStripDefault.get()
 
       const node: GroupNode = {
