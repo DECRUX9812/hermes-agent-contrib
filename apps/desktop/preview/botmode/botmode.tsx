@@ -37,6 +37,8 @@ import { $activeGatewayProfile } from '@/store/profile'
 import { $connection, $gatewayState } from '@/store/session'
 import { skinPref, ThemeProvider } from '@/themes/context'
 
+import '@/styles.css'
+
 import { FIXTURE_LOG, FIXTURE_MEMBERS, FIXTURE_ROOM, FIXTURE_ROSTER, ROUTINE_JOBS } from './fixtures'
 
 // --- offline seams -----------------------------------------------------------
