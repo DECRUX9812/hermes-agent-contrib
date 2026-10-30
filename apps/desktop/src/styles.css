@@ -1965,7 +1965,7 @@ body.guest-pointer-lock :is(webview, iframe) {
    swap) and fought stick-to-bottom when parked at the bottom. */
 .sticky-human-clamp {
   cursor: pointer;
-  max-height: calc(4 * var(--human-msg-line-height) * var(--conversation-text-font-size) + 0.15rem);
+  max-height: calc(2 * var(--human-msg-line-height) * var(--conversation-text-font-size) + 0.15rem);
   overflow: hidden;
 }
 
