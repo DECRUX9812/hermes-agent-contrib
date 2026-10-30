@@ -988,8 +988,10 @@ export function ChatBar({
       return
     }
 
-    // Cmd/Ctrl+Enter queues a follow-up while a turn runs. Plain Enter steers
-    // a text-only draft, so both live-turn actions stay reachable by keyboard.
+    // Cmd/Ctrl+Enter queues a follow-up while a turn runs, and sends when idle
+    // (the plain-Enter path below owns steer/newline semantics). Plain Enter
+    // steers a text-only draft, so every live-turn action stays reachable by
+    // keyboard.
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey) && !event.shiftKey) {
       event.preventDefault()
 
@@ -1004,6 +1006,10 @@ export function ChatBar({
         }
 
         queueDraft()
+      } else if (!disabled) {
+        // Idle: the accelerator sends like plain Enter — submitDraft() re-syncs
+        // the live editor text and owns the empty-draft no-op.
+        submitDraft()
       }
 
       return
