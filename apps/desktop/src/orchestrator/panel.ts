@@ -47,6 +47,19 @@ export interface PanelRowView {
   title: string
 }
 
+export type SpotState = 'empty' | 'error' | 'ready'
+
+/**
+ * Three explicit states, so the pane can never show an unexplained blank.
+ * Lives here (not in the component) so it is covered by the node test project.
+ */
+export function spotState(spot: ContextSpotView | null, error?: string | null): SpotState {
+  if (error) return 'error'
+  if (!spot || spot.empty) return 'empty'
+
+  return 'ready'
+}
+
 export const SPOT_LIMITS = { constraints: 4, decisions: 2, promoted: 3, glyphs: 3 } as const
 
 export function deriveContextSpot(

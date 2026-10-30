@@ -1,13 +1,22 @@
 import { useStore } from '@nanostores/react'
 import { type DragEvent, useMemo, useState } from 'react'
+import { useNavigate } from 'react-router'
 
-import { useElapsedSeconds } from '@/components/chat/activity-timer'
+import { NEW_CHAT_ROUTE } from '@/app/routes'
 import { ActivityTimerText } from '@/components/chat/activity-timer-text'
+import { useElapsedSeconds } from '@/components/chat/activity-timer'
 import { Codicon } from '@/components/ui/codicon'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { useI18n } from '@/i18n'
 import { cn } from '@/lib/utils'
+import type { ContextSpotView } from '@/orchestrator/panel'
 import { $activeSessionId } from '@/store/session'
+import {
+  $contextSpot,
+  $orchestratorContextError,
+  $orchestratorSessions,
+  setObjective
+} from '@/store/orchestrator-context'
 import {
   $agentTileOrder,
   $subagentsBySession,
@@ -16,6 +25,7 @@ import {
   subagentsForPanel
 } from '@/store/subagents'
 
+import { ContextSpot } from './context-spot'
 import { statusGlyph } from './index'
 
 /** Apply the user's saved order, then append anything new in arrival order. */
@@ -42,6 +52,25 @@ export function AgentsSidePanel() {
   const [expanded, setExpanded] = useState<string | null>(null)
   const [dragIndex, setDragIndex] = useState<number | null>(null)
 
+  const navigate = useNavigate()
+  const spot = useStore($contextSpot)
+  const spotError = useStore($orchestratorContextError)
+  // Subscribe so the spot's active count follows the orchestrator's sessions,
+  // not just the delegation stream.
+  useStore($orchestratorSessions)
+
+  // Mounted in BOTH branches below: the pane must never render as a bare empty
+  // area — the context spot is what makes the workspace legible with no
+  // sub-agents running.
+  const spotElement = (
+    <ContextSpot
+      error={spotError}
+      onNewChat={() => navigate(NEW_CHAT_ROUTE)}
+      onSetObjective={setObjective}
+      spot={spot as ContextSpotView | null}
+    />
+  )
+
   const moveTile = (from: number, to: number) => {
     if (from === to) {
       return
@@ -55,11 +84,14 @@ export function AgentsSidePanel() {
 
   if (tiles.length === 0) {
     return (
-      <div className="grid min-w-0 flex-1 place-items-center gap-3 px-4 py-12 text-center" data-slot="agents-pane">
-        <Codicon className="text-muted-foreground/60" name="hubot" size="1.5rem" />
-        <div className="grid gap-1">
-          <p className="text-sm font-medium text-foreground/90">{t.agents.emptyTitle}</p>
-          <p className="max-w-56 text-xs leading-relaxed text-muted-foreground/75">{t.agents.emptyDesc}</p>
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col" data-slot="agents-pane">
+        {spotElement}
+        <div className="grid min-w-0 flex-1 place-items-center gap-3 px-4 py-10 text-center" data-slot="agents-empty">
+          <Codicon className="text-muted-foreground/60" name="hubot" size="1.5rem" />
+          <div className="grid gap-1">
+            <p className="text-sm font-medium text-foreground/90">{t.agents.emptyTitle}</p>
+            <p className="max-w-56 text-xs leading-relaxed text-muted-foreground/75">{t.agents.emptyDesc}</p>
+          </div>
         </div>
       </div>
     )
@@ -67,6 +99,7 @@ export function AgentsSidePanel() {
 
   return (
     <div className="flex min-h-0 min-w-0 flex-1 flex-col" data-slot="agents-pane">
+      {spotElement}
       <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-2 overflow-y-auto overscroll-contain px-2 py-2">
         {tiles.map((node, index) => (
           <AgentTile
