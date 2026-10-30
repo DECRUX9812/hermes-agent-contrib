@@ -2100,10 +2100,26 @@ body.guest-pointer-lock :is(webview, iframe) {
   justify-content: center;
 }
 
+/* The transcript wrapper and its scroller wear the surface fill (see the
+   `--ui-bg-primary` rule at the end of this file) so text scrolling under a
+   composer can't show through them. An empty chat shrinks both to the intro's
+   height, so those fills stop covering the surface and read as a hard-edged
+   white BAND across the middle of the canvas: the surface (and any chat
+   backdrop art painted on it) is visible above and below, but not through the
+   band. Nothing scrolls behind them in this state and the surface behind
+   already paints the same colour, so both go transparent and the empty state
+   is one continuous field again. !important is load-bearing: the fills come
+   from a rule later in this file and from Tailwind utilities. */
 [data-empty-state] [data-slot='composer-bounds'] {
   flex: 0 0 auto;
   max-width: 100%;
   overflow: visible;
+  background-color: transparent !important;
+}
+
+/* The scroller wears the same fill, and shrinks to the intro with it. */
+[data-empty-state] [data-slot='aui_thread-viewport'] {
+  background-color: transparent !important;
 }
 
 [data-empty-state] [data-slot='thread'] {
