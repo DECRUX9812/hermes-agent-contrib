@@ -98,7 +98,7 @@ describe('bot context panel', () => {
     expect(await screen.findByText('Research')).toBeTruthy()
 
     // Toolbar: all four views.
-    for (const tab of ['Tasks', 'Scheduled', 'History', 'Saved']) {
+    for (const tab of ['Tasks', 'Scheduled', 'History']) {
       expect(screen.getByText(tab)).toBeTruthy()
     }
 
@@ -124,7 +124,7 @@ describe('bot context panel', () => {
     expect(screen.getByRole('button', { name: 'New cron' })).toBeTruthy()
   })
 
-  it('shows honest empty states for history and saved', async () => {
+  it('shows an honest empty state for history', async () => {
     request.mockResolvedValue({ jobs: [], scoped: 'research' })
     renderPanel()
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
@@ -132,8 +132,5 @@ describe('bot context panel', () => {
 
     fireEvent.click(screen.getByText('History'))
     expect(await screen.findByText('No recent conversations')).toBeTruthy()
-
-    fireEvent.click(screen.getByText('Saved'))
-    expect(await screen.findByText('Nothing saved yet')).toBeTruthy()
   })
 })
