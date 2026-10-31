@@ -9,7 +9,9 @@
     "src/components/pane-shell/tree/side-collapse-persistence.test.ts",
     "src/sdk/settings.test.ts",
     "src/store/panes.test.ts",
-    "src/store/profile-rail-prefs.test.tsx"
+    "src/store/profile-rail-prefs.test.tsx",
+    "src/components/assistant-ui/thread/list-session-scroll.test.tsx",
+    "src/app/chat/composer/hooks/use-composer-submit.send-then-close.test.tsx"
   ],
   "tests": [
     "src/app/chat/close-tab.test.ts > closeActiveTab > leaves \u2318W to the zone rungs even with previews open",
@@ -30,6 +32,8 @@
     "src/store/panes.test.ts > panes store > width overrides > open flag is persisted across changes",
     "src/store/panes.test.ts > panes store > width overrides > width override is NOT in-memory only, and is persisted across reloads",
     "src/store/profile-rail-prefs.test.tsx > 'Webapp' > keeps exactly one profile door, the Webapp as a dropdown",
-    "src/store/profile-rail-prefs.test.tsx > 'native Desktop' > keeps exactly one profile door, the Webapp as a dropdown"
+    "src/store/profile-rail-prefs.test.tsx > 'native Desktop' > keeps exactly one profile door, the Webapp as a dropdown",
+    "src/components/assistant-ui/thread/list-session-scroll.test.tsx",
+    "src/app/chat/composer/hooks/use-composer-submit.send-then-close.test.tsx"
   ]
 }
