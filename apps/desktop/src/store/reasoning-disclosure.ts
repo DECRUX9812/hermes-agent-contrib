@@ -30,18 +30,10 @@ export function setReasoningCollapsedByDefault(value: boolean) {
 // Mirrors `display.show_reasoning` (Settings → Chat → Reasoning Blocks). On
 // by default like DEFAULT_CONFIG; a quoted "false" in config.yaml still
 // means off (sibling: display-timestamps.ts).
-// Reasoning is OPT-IN. The transcript must not narrate chain-of-thought by
-// default: the visible answer is the prose, the thinking stays in the message
-// object and the logs. A user who wants it turns on Settings → Chat →
-// Reasoning Blocks, or runs `/reasoning show`; both arrive through
-// `setShowReasoningFromConfig` / the platform override and flip this on.
-export const $showReasoning = atom(false)
+export const $showReasoning = atom(true)
 
 export function setShowReasoningFromConfig(value: unknown): void {
-  // Opt-in, not opt-out: only an explicit truthy value shows reasoning. A
-  // missing key, `undefined` or the backend's DEFAULT_CONFIG `true` do not
-  // re-enable it — the request is that the chat reads reasoning-free.
-  $showReasoning.set(value === true || value === 'true' || value === 1)
+  $showReasoning.set(!(value === false || value === 'false' || value === 0))
 }
 
 /** The `display.show_reasoning` a local surface uses: a local session's `/reasoning show|hide` saves the
