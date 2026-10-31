@@ -2,7 +2,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { bootstrapContext } from '@/orchestrator/context'
-import { deriveContextSpot } from '@/orchestrator/panel'
+import { deriveContextSpot, type ContextSpotView } from '@/orchestrator/panel'
 
 import { ContextSpot } from './context-spot'
 
@@ -21,7 +21,7 @@ const readySpot = () =>
     []
   )
 
-const props = () => ({ onNewChat: vi.fn(), onSetObjective: vi.fn(), spot: null })
+const props = () => ({ onNewChat: vi.fn(), onSetObjective: vi.fn(), spot: null as ContextSpotView | null })
 
 describe('Homie Spot', () => {
   it('renders an intentional empty state instead of blank space', () => {
@@ -58,5 +58,24 @@ describe('Homie Spot', () => {
     fireEvent.change(screen.getByLabelText('Orchestrator objective'), { target: { value: 'ship 1.0' } })
     fireEvent.submit(screen.getByLabelText('Orchestrator objective').closest('form')!)
     expect(p.onSetObjective).toHaveBeenCalledWith('ship 1.0')
+  })
+
+  it('shows a skeleton while the context store loads', () => {
+    const p = props()
+    const { container } = render(<ContextSpot {...p} loading />)
+
+    expect(container.querySelector('[data-slot="spot-loading"]')).toBeTruthy()
+  })
+
+  it('lets the objective be edited inline and saved', async () => {
+    const p = props()
+    p.spot = readySpot()
+    const { getByRole } = render(<ContextSpot {...p} />)
+
+    fireEvent.click(getByRole('button', { name: 'Edit objective' }))
+    fireEvent.change(getByRole('textbox', { name: 'Orchestrator objective' }), { target: { value: 'New objective' } })
+    fireEvent.click(getByRole('button', { name: 'Set' }))
+
+    expect(p.onSetObjective).toHaveBeenCalledWith('New objective')
   })
 })

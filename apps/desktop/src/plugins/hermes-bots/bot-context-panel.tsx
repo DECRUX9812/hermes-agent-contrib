@@ -53,13 +53,12 @@ import { cn } from '@/lib/utils'
 import { botRosterMeta } from './routing'
 import type { RosterRow, RoutineJob } from './types'
 
-type PanelView = 'history' | 'saved' | 'scheduled' | 'tasks'
+type PanelView = 'history' | 'scheduled' | 'tasks'
 
 // Module-level so the tab icons keep a stable component identity across renders.
 const TASKS_ICON = codiconIcon('list-tree')
 const SCHEDULED_ICON = codiconIcon('clock')
 const HISTORY_ICON = codiconIcon('history')
-const SAVED_ICON = codiconIcon('bookmark')
 
 /** A routine run worth a timeline row: it fired, and the gateway recorded when. */
 export interface PanelTaskRun {
@@ -271,7 +270,6 @@ const selected = useValue($selectedBot)
             { icon: TASKS_ICON, id: 'tasks', label: p.tasks },
             { icon: SCHEDULED_ICON, id: 'scheduled', label: p.scheduled },
             { icon: HISTORY_ICON, id: 'history', label: p.history },
-            { icon: SAVED_ICON, id: 'saved', label: p.saved }
           ]}
           value={view}
         />
@@ -412,11 +410,6 @@ const selected = useValue($selectedBot)
             ) : (
               <PanelEmpty description={p.noHistory} icon="history" title={p.history} />
             )}
-          </div>
-        ) : null}
-        {view === 'saved' ? (
-          <div className="px-1.5 py-1.5">
-            <PanelEmpty description={p.noSaved} icon="bookmark" title={p.saved} />
           </div>
         ) : null}
       </div>
