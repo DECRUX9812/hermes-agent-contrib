@@ -42,9 +42,11 @@ import {
   selectRoutineJobs
 } from './cron'
 import { $botMeta, $lastRoster, botRosterKey, saveBotMeta } from './data'
+import { $groupActivity } from './group-activity'
 import { $groupChats, $groupClarify, dismissGroupPrompt } from './group-chat'
 import { openGroupChat } from './group-chat-view'
 import { stopGroupThread } from './group-rounds'
+import { answerGroupClarify } from './group-turns'
 import { $activeGroupMemberKeys } from './group-presence'
 import { type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
@@ -196,6 +198,27 @@ const selected = useValue($selectedBot)
 
   // Inline goal editing (Homie Spot parity): the bot's working goal lives in
   // bot-meta, edits save through saveBotMeta like every other meta field.
+  const rooms = useValue($groupChats)
+  const activityByRoom = useValue($groupActivity)
+  const activity = Object.entries(rooms || {})
+    .filter(([, room]) => room && Array.isArray(room.members) && room.members.some(member => member && member.name === bot))
+    .flatMap(([group, room]) => (activityByRoom[group]?.events || []).map(event => ({ ...event, group })))
+    .sort((a, b) => (b.at || 0) - (a.at || 0))
+
+  // Swarm compression: consecutive same-member same-kind entries collapse
+  // into one row with a count instead of flooding the feed.
+  const feed = activity.slice(0, 20).reduce<typeof activity>((rows, event) => {
+    const last = rows[rows.length - 1]
+
+    if (last && last.member === event.member && last.kind === event.kind) {
+      ;(last as { count?: number }).count = ((last as { count?: number }).count || 1) + 1
+    } else {
+      rows.push({ ...event })
+    }
+
+    return rows
+  }, [])
+
   const goal = meta?.goal || ''
   const [editingGoal, setEditingGoal] = useState(false)
   const [goalDraft, setGoalDraft] = useState('')
@@ -339,6 +362,18 @@ const selected = useValue($selectedBot)
                   </span>
                   <Codicon className="shrink-0 text-(--ui-text-quaternary)" name="arrow-right" size="0.8125rem" />
                 </button>
+                {prompt.kind === 'approval'
+                  ? (prompt.choices || []).slice(0, 2).map(choice => (
+                      <button
+                        className="flex min-h-7 shrink-0 items-center rounded border border-(--ui-stroke-tertiary) px-2 text-[0.625rem] font-medium text-(--ui-text-primary) hover:bg-(--chrome-action-hover) focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
+                        key={choice}
+                        onClick={() => void answerGroupClarify(prompt, { name: bot }, choice)}
+                        type="button"
+                      >
+                        {choice}
+                      </button>
+                    ))
+                  : null}
                 <button
                   aria-label={b.panel.dismissPrompt}
                   className="flex min-h-7 min-w-7 shrink-0 items-center justify-center rounded text-(--ui-text-quaternary) hover:text-(--ui-text-primary) focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
@@ -422,6 +457,30 @@ const selected = useValue($selectedBot)
           </div>
         )}
       </div>
+      {feed.length ? (
+        <div className="mx-1.5 mb-1 rounded-md border border-(--ui-stroke-tertiary) px-2 py-1.5" data-slot="bot-live-activity">
+          <div className="px-1 pb-1 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-text-tertiary)">
+            {b.panel.liveActivity}
+          </div>
+          <ul className="grid gap-0.5">
+            {feed.slice(0, 6).map((event, i) => (
+              <li className="flex min-w-0 items-center gap-2 px-1 py-1 text-[0.6875rem]" key={`${event.group}:${event.at}:${i}`}>
+                <Codicon
+                  className={event.kind === 'failed' ? 'shrink-0 text-destructive' : event.kind === 'stopped' || event.kind === 'cancelled' ? 'shrink-0 text-(--ui-icon-attention)' : 'shrink-0 text-(--ui-text-quaternary)'}
+                  name={event.kind === 'failed' ? 'error' : event.kind === 'queued' ? 'watch' : 'check'}
+                  size="0.8125rem"
+                />
+                <span className="min-w-0 flex-1 truncate text-(--ui-text-secondary)">
+                  <span className="font-medium text-(--ui-text-primary)">@{event.member || '—'}</span> {event.kind}
+                  {(event as { count?: number }).count && (event as { count?: number }).count! > 1 ? ` ×${(event as { count?: number }).count}` : ''}
+                  {(event as { reason?: string }).reason ? ` — ${(event as { reason?: string }).reason}` : ''}
+                </span>
+                <span className="shrink-0 text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{relativeTime(event.at || 0)}</span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
       {view === 'tasks' ? (
           <div className="px-1.5 py-1.5">
             {working ? (

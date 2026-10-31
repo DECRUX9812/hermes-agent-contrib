@@ -479,6 +479,8 @@ export type BotsMessages = {
     updatedNow: string
     /** Inline dismiss × on a needs-you card. */
     dismissPrompt: string
+    /** Live round/activity feed header. */
+    liveActivity: string
     /** Live-round strip prefix (e.g. "Running round · Room"). */
     runningRound: string
     /** Stop button on the live-round strip. */
