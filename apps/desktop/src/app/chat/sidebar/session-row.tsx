@@ -23,6 +23,7 @@ import { displayModelName } from '@/lib/model-status-label'
 import { sessionProjectLabel } from '@/lib/session-project-label'
 import { SESSION_ROW_AREAS } from '@/lib/session-row-slots'
 import { handoffOriginSource, sessionSourceLabel } from '@/lib/session-source'
+import { $nowMinute } from '@/lib/now-minute'
 import { coarseElapsed } from '@/lib/time'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
@@ -117,8 +118,8 @@ function disarmMarquee(event: React.PointerEvent<HTMLElement>) {
 const TAIL_HIDES = 'session-row-tail min-w-5 transition-opacity group-hover:opacity-0'
 const KEBAB_YIELDS = 'session-row-kebab'
 
-function formatAge(seconds: number, r: Translations['sidebar']['row']): string {
-  const { unit, value } = coarseElapsed(Date.now() - seconds * 1000)
+function formatAge(seconds: number, r: Translations['sidebar']['row'], now: number): string {
+  const { unit, value } = coarseElapsed(now - seconds * 1000)
 
   // Under a minute reads as "now" — the sidebar never shows a seconds tick.
   return unit === 'second' ? r.ageNow : `${value}${r[AGE_KEY[unit]]}`
@@ -158,7 +159,11 @@ function SidebarSessionRowImpl({
   })
 
   const timestamp = session.last_active || session.started_at
-  const age = formatAge(timestamp, r)
+  // DESK-028: subscribe to the shared wall clock so the age label advances
+  // on its own — the row's memo bail keys on session identity and would
+  // otherwise freeze the printed age.
+  const now = useStore($nowMinute)
+  const age = formatAge(timestamp, r, now)
   const timestampDate = new Date(timestamp * 1000)
   const absoluteAge = formatMessageTimestamp(timestampDate, t.assistant.thread)
   const handleLabel = `Reorder ${title}`

@@ -158,7 +158,12 @@ export function ResizableMarkdownTable({ children, className, ...props }: Compon
       <table
         className={cn(
           'm-0 w-full min-w-[18rem] border-collapse text-[length:var(--conversation-text-font-size)] [&_tr]:border-b [&_tr]:border-(--ui-stroke-tertiary) last:[&_tr]:border-0',
-          widths && 'table-fixed [&_td]:wrap-anywhere',
+          // Default to table-fixed + wrap-anywhere: without it a long
+          // unbreakable cell stretches the whole transcript column past the
+          // viewport and the table clips mid-column at the window edge
+          // (overflow-x-auto on the wrapper can't help once the layout has
+          // grown). Resized tables keep their widths either way.
+          'table-fixed [&_td]:wrap-anywhere',
           className
         )}
         onDoubleClick={onDoubleClick}
