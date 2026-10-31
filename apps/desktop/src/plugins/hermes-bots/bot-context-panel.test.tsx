@@ -170,6 +170,7 @@ describe('bot context panel', () => {
         group: 'Ops',
         kind: 'approval',
         member: 'research',
+        choices: [],
         memberKey: 'research',
         question: 'Deploy the fix?',
         requestId: 'req1',
