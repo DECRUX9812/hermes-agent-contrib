@@ -42,7 +42,8 @@ import {
   selectRoutineJobs
 } from './cron'
 import { $botMeta, $lastRoster, botRosterKey } from './data'
-import { $groupClarify, $groupChatWorkspace } from './group-chat'
+import { $groupClarify } from './group-chat'
+import { openGroupChat } from './group-chat-view'
 import { $activeGroupMemberKeys } from './group-presence'
 import { type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
@@ -289,7 +290,7 @@ const selected = useValue($selectedBot)
               <button
                 className="flex min-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left hover:bg-(--chrome-action-hover)"
                 key={`${prompt.group}:${prompt.requestId}`}
-                onClick={() => $groupChatWorkspace.set(prompt.group)}
+                onClick={() => openGroupChat(prompt.group, 'name')}
                 type="button"
               >
                 <Codicon className="shrink-0 text-(--ui-icon-attention)" name="info" size="0.9375rem" />

@@ -5,7 +5,7 @@
  */
 import { host } from '@hermes/plugin-sdk'
 
-import { botFriendlyNames, botHandle, botMentionTag, mentionNameForms } from './data'
+import { botSourceStatus,  botFriendlyNames, botHandle, botMentionTag, mentionNameForms } from './data'
 import { groupFailureReason, recordGroupActivity } from './group-activity'
 import {
   $groupChats,
@@ -917,6 +917,20 @@ export function sendToGroupChat(
     host.notify({
       kind: 'error',
       message: botsText().group.noMembersToSend(group)
+    })
+
+    return null
+  }
+
+  // A room whose members are all unreachable (offline gateways, parked
+  // sources) used to accept the send and dispatch into the void — the
+  // message landed in the log, marked the user heard, and nobody ever
+  // answered. Refuse it the same way an empty roster is refused: keep the
+  // draft, name the problem.
+  if (!members.some(member => member && botSourceStatus(member).available)) {
+    host.notify({
+      kind: 'error',
+      message: botsText().group.noReachableMembers(group)
     })
 
     return null
