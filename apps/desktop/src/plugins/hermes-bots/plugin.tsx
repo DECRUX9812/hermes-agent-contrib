@@ -517,10 +517,11 @@ export default {
             pos: 'right',
             enforce: true
           },
-          // A bot's schedule is glanceable, not something you sit in — it
-          // arrives as the right edge's vertical tab and takes no width off the
-          // chat until the user opens it.
-          defaultCollapsed: true,
+          // On Bot Mode entry the pane arrives OPEN — a collapsed edge tab is
+          // invisible, which was the single biggest "bot mode is not working"
+          // contributor (BOTMODE-AUDIT). Collapse persists per the pane
+          // system's usual rules, so a user who folds it keeps it folded.
+          defaultCollapsed: false,
           width: '320px'
         },
         render: () => <BotContextPanel />
