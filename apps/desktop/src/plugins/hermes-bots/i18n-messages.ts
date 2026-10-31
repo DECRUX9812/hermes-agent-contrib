@@ -265,6 +265,7 @@ export type BotsMessages = {
     holdReleaseHint: string
     needsYourInput: string
     noMembersToSend: (group: string) => string
+    noReachableMembers: (group: string) => string
     pictureGenerationFailed: string
     nameTaken: (name: string) => string
     memberCount: (count: number) => string

@@ -295,6 +295,8 @@ const en: BotsMessages = {
     needsYourInput: 'A bot in this group chat needs your input',
     noMembersToSend: group =>
       `${group} has no members to send to — add a bot, or reopen the room if members are still loading.`,
+    noReachableMembers: group =>
+      `No one in ${group} can be reached right now — check that their gateways or desktops are online.`,
     pictureGenerationFailed: 'Group picture generation failed',
     nameTaken: name => `A group named “${name}” already exists.`,
     memberCount: count => `${count} bots`,
@@ -759,6 +761,8 @@ const ja: BotsMessages = {
     needsYourInput: 'このグループチャットのボットが入力を待っています',
     noMembersToSend: group =>
       `${group} に送信先のメンバーがいません。ボットを追加するか、メンバーの読み込み中であればルームを開き直してください。`,
+    noReachableMembers: group =>
+      `${group} には現在連絡可能なメンバーがいません。ゲートウェイまたはデスクトップがオンラインか確認してください。`,
     pictureGenerationFailed: 'グループ画像の生成に失敗しました',
     nameTaken: name => `「${name}」という名前のグループはすでに存在します。`,
     memberCount: count => `ボット${count}体`,
@@ -1213,6 +1217,8 @@ const zh: BotsMessages = {
     holdReleaseHint: '提及已暂停的机器人，或发送 @all resume 以恢复它们。',
     needsYourInput: '此群聊中有机器人需要你输入',
     noMembersToSend: group => `${group} 没有可发送的成员——请添加机器人，如果成员仍在加载，请重新打开该群聊。`,
+    noReachableMembers: group =>
+      `${group} 当前没有可联系的成员——请确认他们的网关或桌面端在线。`,
     pictureGenerationFailed: '群组图片生成失败',
     nameTaken: name => `已存在名为“${name}”的群聊。`,
     memberCount: count => `${count} 个机器人`,
@@ -1663,6 +1669,8 @@ const zhHant: BotsMessages = {
     holdReleaseHint: '提及已暫停的機器人，或傳送 @all resume 以恢復它們。',
     needsYourInput: '此群組聊天中有機器人需要您的輸入',
     noMembersToSend: group => `${group} 沒有可傳送的成員——請新增機器人，若成員仍在載入中，請重新開啟該群組聊天。`,
+    noReachableMembers: group =>
+      `${group} 目前沒有可聯絡的成員——請確認他們的閘道或桌面端在線。`,
     pictureGenerationFailed: '群組圖片產生失敗',
     nameTaken: name => `已存在名為「${name}」的群組聊天。`,
     memberCount: count => `${count} 個機器人`,
