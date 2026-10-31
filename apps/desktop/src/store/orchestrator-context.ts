@@ -25,6 +25,48 @@ export const $orchestratorSummaries = atom<Record<string, Summary>>({})
 
 export const $orchestratorContextError = atom<string | null>(null)
 
+export const $orchestratorContextLoading = atom(false)
+
+/** Monotonic generation so only the newest in-flight reload may write —
+ *  a superseded reload resolving last cannot clobber a newer fetch. */
+let reloadSeq = 0
+let reloadSource: (() => Promise<DurableContext>) | null = null
+
+/** The gateway bridge registers the real reload path when it lands. */
+export function setContextReloadSource(loader: (() => Promise<DurableContext>) | null): void {
+  reloadSource = loader
+}
+
+/** Reload the durable context. Until a source is registered this is the
+ *  honest reload: clears a stale error and re-derives — never fabricates. */
+export async function reloadContext(): Promise<void> {
+  const seq = ++reloadSeq
+
+  $orchestratorContextLoading.set(true)
+
+  try {
+    if (reloadSource) {
+      const ctx = await reloadSource()
+
+      if (seq !== reloadSeq) {
+        return
+      }
+
+      $orchestratorContext.set(ctx)
+    }
+
+    $orchestratorContextError.set(null)
+  } catch (error) {
+    if (seq === reloadSeq) {
+      $orchestratorContextError.set(error instanceof Error ? error.message : String(error))
+    }
+  } finally {
+    if (seq === reloadSeq) {
+      $orchestratorContextLoading.set(false)
+    }
+  }
+}
+
 /** Everything the Homie Spot header renders. Recomputed on any store change. */
 export const $contextSpot = computed(
   [$orchestratorContext, $orchestratorSessions, $orchestratorContextError],

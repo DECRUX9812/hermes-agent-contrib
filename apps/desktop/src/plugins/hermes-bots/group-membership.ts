@@ -12,6 +12,39 @@ import type { BotMeta, GroupChat, GroupMember, GroupMessageAuthor, RosterRow } f
 /** Follow the authoritative room record for one async operation. Rename moves
  * the record wholesale (including legacy rooms without a roomId); disband
  * retires this binding permanently, even if the same display name is reused. */
+export type FollowKillReason = 'deleted' | 'roomId-clobber' | 'tombstone'
+
+export interface FollowKillRecord {
+  /** The room key the follow was bound to when it died. */
+  at: number
+  currentRoomId: null | string | undefined
+  group: string
+  reason: FollowKillReason
+  roomId: null | string | undefined
+}
+
+/** Test + diagnostics seam: the last N reasons a group-chat follow died.
+ *  `isLive()` going false is the only hard kill a group drive has — when a bot
+ *  stops mid-run this buffer says exactly why, instead of the death being
+ *  silent. */
+export const groupChatFollowKills: FollowKillRecord[] = []
+const FOLLOW_KILL_LIMIT = 100
+
+function recordFollowKill(record: Omit<FollowKillRecord, 'at'>): void {
+  groupChatFollowKills.push({ ...record, at: Date.now() })
+
+  if (groupChatFollowKills.length > FOLLOW_KILL_LIMIT) {
+    groupChatFollowKills.shift()
+  }
+
+  if (typeof console !== 'undefined') {
+    console.warn(
+      `[hermes-bots] group follow died: ${record.reason} ` +
+        `(group=${record.group} roomId=${String(record.roomId)} -> ${String(record.currentRoomId)})`
+    )
+  }
+}
+
 export function followGroupChat(group: string, onRename: (name: string) => void) {
   let live = !$groupChats.get()[group]?.tombstone
 
@@ -33,6 +66,15 @@ export function followGroupChat(group: string, onRename: (name: string) => void)
     )
 
     if (!moved) {
+      const reason: FollowKillReason = !current ? 'deleted' : current.tombstone ? 'tombstone' : 'roomId-clobber'
+
+      recordFollowKill({
+        currentRoomId: current?.roomId,
+        group,
+        reason,
+        roomId: prior.roomId
+      })
+
       live = false
 
       return
