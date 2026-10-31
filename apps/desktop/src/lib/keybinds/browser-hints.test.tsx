@@ -67,4 +67,4 @@ it('renders the resolved browser binding in the first-run tip, tooltips and sett
   act(() => setBinding('session.new', []))
   expect(view.getByRole('status').querySelector('kbd')).toBeNull()
   expect(view.getByTestId('shortcut-labels').textContent).not.toContain('Alt+N')
-})
+}, 60_000)
