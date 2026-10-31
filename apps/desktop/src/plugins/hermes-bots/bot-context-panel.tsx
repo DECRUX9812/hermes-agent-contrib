@@ -274,7 +274,10 @@ const selected = useValue($selectedBot)
           value={view}
         />
       </div>
-      <div className="mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      {/* Keyed by owner: a bot/room switch remounts this body instead of
+          cross-flashing the previous bot's routines and needs-you strip while
+          the new owner's query is still loading (stale-flash defect). */}
+      <div className="mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain" key={bot}>
         {needsYou.length ? (
         <div className="mx-1.5 mb-1 grid gap-1 rounded-md border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-1.5" data-slot="bots-needs-you">
           <div className="px-1 pb-0.5 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-icon-attention)">
