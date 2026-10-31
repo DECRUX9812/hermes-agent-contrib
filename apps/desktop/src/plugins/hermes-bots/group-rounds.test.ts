@@ -1520,6 +1520,51 @@ describe('stopGroupThread (#91868/#94569)', () => {
     expect(room.chat.$groupChats.get().Room.running).toBe(false)
   })
 
+  it('drops only the stopped thread from the queue, keeping the other queued threads', async () => {
+    const room = await loadRoom()
+    seedRoom(room)
+
+    const state = room.chat.$groupChats.get().Room
+    const key = room.chat.groupChatRoomKey('Room', state)
+
+    room.rounds.groupChatDrivesForTest.set(key, {
+      binding: { dispose: () => {}, isLive: () => true },
+      failedMembers: new Set(),
+      pending: new Map([
+        ['t1', STOP_MEMBERS],
+        ['t2', STOP_MEMBERS]
+      ])
+    })
+
+    await room.rounds.stopGroupThread('Room', 't1', STOP_MEMBERS)
+
+    const drive = room.rounds.groupChatDrivesForTest.get(key)
+
+    expect(drive?.pending.has('t1')).toBe(false)
+    expect(drive?.pending.has('t2')).toBe(true)
+  })
+
+  it('clears the whole queue on a bare stop', async () => {
+    const room = await loadRoom()
+    seedRoom(room)
+
+    const state = room.chat.$groupChats.get().Room
+    const key = room.chat.groupChatRoomKey('Room', state)
+
+    room.rounds.groupChatDrivesForTest.set(key, {
+      binding: { dispose: () => {}, isLive: () => true },
+      failedMembers: new Set(),
+      pending: new Map([
+        ['t1', STOP_MEMBERS],
+        ['t2', STOP_MEMBERS]
+      ])
+    })
+
+    await room.rounds.stopGroupThread('Room', null, STOP_MEMBERS)
+
+    expect(room.rounds.groupChatDrivesForTest.get(key)?.pending.size).toBe(0)
+  })
+
   it('interrupts the member ON TURN via its live session', async () => {
     const room = await loadRoom()
     seedRoom(room)

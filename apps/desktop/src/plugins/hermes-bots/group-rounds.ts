@@ -548,7 +548,23 @@ export async function stopGroupThread(group: string, thread: null | string, memb
   const room = $groupChats.get()[group] || {}
   const roster = Array.isArray(members) && members.length ? members : room.members || []
   const onTurn = room.turn || null
-  groupChatDrives.get(groupChatRoomKey(group, room))?.pending.clear()
+  const drive = groupChatDrives.get(groupChatRoomKey(group, room))
+
+  // A scoped stop drops only its own queued message — other threads keep
+  // their seat and drain as usual. A bare stop (thread: null) is the room
+  // brake and clears the queue. Whatever was dropped is recorded so the
+  // queue never vanishes silently.
+  const dropped = thread ? (drive?.pending.delete(thread) ?? false) : Boolean(drive?.pending.size)
+
+  if (thread) {
+    drive?.pending.delete(thread)
+  } else {
+    drive?.pending.clear()
+  }
+
+  if (dropped) {
+    recordGroupActivity(group, { kind: 'stopped', member: null, thread: thread || null })
+  }
 
   const stamp: GroupHoldStamp = {
     at: Date.now(),
@@ -973,6 +989,10 @@ interface GroupChatDrive {
 // Keep the owner until its awaited member releases, even after Stop. A
 // rename follows the room identity; disband retires the binding permanently.
 const groupChatDrives = new Map<string, GroupChatDrive>()
+
+/** Test seam: lets specs seed/assert the room's queued threads without
+ *  driving a full round. */
+export const groupChatDrivesForTest = groupChatDrives
 
 function queueGroupChatDrive(group: string, members: GroupMember[], thread: string) {
   let key = groupChatRoomKey(group, $groupChats.get()[group])

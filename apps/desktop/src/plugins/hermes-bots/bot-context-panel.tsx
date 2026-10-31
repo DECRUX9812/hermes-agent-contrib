@@ -42,10 +42,12 @@ import {
   selectRoutineJobs
 } from './cron'
 import { $botMeta, $lastRoster, botRosterKey } from './data'
+import { $groupClarify, $groupChatWorkspace } from './group-chat'
 import { $activeGroupMemberKeys } from './group-presence'
 import { type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
 import { botRecentSession, openBotRecentSession } from './recent-session'
+import { EditProfileDialog } from './edit-profile-dialog'
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta } from './routing'
 import type { RosterRow, RoutineJob } from './types'
@@ -151,7 +153,8 @@ function TaskRow({ run }: { run: PanelTaskRun }) {
 }
 
 export function BotContextPanel() {
-  const selected = useValue($selectedBot)
+    const [editing, setEditing] = useState<null | RosterRow>(null)
+const selected = useValue($selectedBot)
   const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
   // Same owner ladder as the routines pane: an authoritative focused owner
   // wins through its exact roster row, otherwise the roster-clicked bot.
@@ -173,6 +176,12 @@ export function BotContextPanel() {
   const [createOpen, setCreateOpen] = useState(false)
   const [createOwner, setCreateOwner] = useState<RosterRow | null>(null)
   const working = useValue($activeGroupMemberKeys).has(owner ? botRosterKey(owner) : '')
+  // Needs-you strip (parity with the reference bot pane): pending clarify and
+  // approval prompts where THIS bot is the blocked member, or that sit in a
+  // room it belongs to — who asked, what for, and a jump to the room.
+  const needsYou = Object.values(useValue($groupClarify) || {})
+    .filter(prompt => prompt && (prompt.member === bot || prompt.member === owner?.name || prompt.memberKey === botRosterKey(owner || ({} as RosterRow))))
+    .sort((a, b) => (a.at || 0) - (b.at || 0))
 
   const routines = useQuery({
     queryKey: ['bot-context-panel', 'routines', bot],
@@ -259,7 +268,29 @@ export function BotContextPanel() {
         />
       </div>
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain">
-        {view === 'tasks' ? (
+        {needsYou.length ? (
+        <div className="mx-1.5 mb-1 grid gap-1 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay) px-2 py-1.5" data-slot="bots-needs-you">
+          {needsYou.map(prompt => {
+            const question = prompt.kind === 'approval' ? prompt.question : (prompt.questions || []).map(q => q.question).filter(Boolean).join(' · ')
+            return (
+              <button
+                className="flex min-w-full items-center gap-2 rounded-md px-1.5 py-1.5 text-left hover:bg-(--chrome-action-hover)"
+                key={`${prompt.group}:${prompt.requestId}`}
+                onClick={() => $groupChatWorkspace.set(prompt.group)}
+                type="button"
+              >
+                <Codicon className="shrink-0 text-(--ui-icon-attention)" name="info" size="0.9375rem" />
+                <span className="min-w-0 flex-1 truncate text-[0.6875rem] text-(--ui-text-secondary)">
+                  <span className="font-medium text-(--ui-text-primary)">@{prompt.member}</span>
+                  {' '}{question || b.group.needsYourInput}
+                </span>
+                <Codicon className="shrink-0 text-(--ui-text-quaternary)" name="arrow-right" size="0.8125rem" />
+              </button>
+            )
+          })}
+        </div>
+      ) : null}
+      {view === 'tasks' ? (
           <div className="px-1.5 py-1.5">
             {working ? (
               <div>
@@ -381,10 +412,24 @@ export function BotContextPanel() {
         <span className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">
           {dataUpdatedAt ? relativeTime(dataUpdatedAt) : p.updatedNow}
         </span>
-        <Button onClick={() => void openRosterBot(owner)} size="sm" variant="ghost">
-          {p.openChat} →
-        </Button>
+        <div className="flex items-center gap-1">
+          {owner ? (
+            <Button onClick={() => setEditing(owner)} size="sm" variant="ghost">
+              {b.bot.editMenu}
+            </Button>
+          ) : null}
+          <Button onClick={() => void openRosterBot(owner)} size="sm" variant="ghost">
+            {p.openChat} →
+          </Button>
+        </div>
       </div>
+      {owner ? (
+        <EditProfileDialog
+          bot={editing}
+          onClose={() => setEditing(null)}
+          open={Boolean(editing)}
+        />
+      ) : null}
     </div>
   )
 }
