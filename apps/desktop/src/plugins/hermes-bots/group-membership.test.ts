@@ -423,3 +423,73 @@ describe('renamed profile descriptors (#110200)', () => {
     expect(healed[0].previous_names).toEqual(['niezale-ny'])
   })
 })
+
+describe('followGroupChat kill diagnostics', () => {
+  it('records a tombstone kill when the room is tombstoned mid-follow', async () => {
+    const { chat, membership } = await load()
+    chat.$groupChats.set({
+      Room: { log: [], members: [], roomId: 'r1', running: true, watermarks: {} } as unknown as GroupChat
+    })
+    const binding = membership.followGroupChat('Room', () => {})
+    expect(binding.isLive()).toBe(true)
+
+    chat.$groupChats.set({
+      Room: { log: [], members: [], roomId: 'r1', tombstone: true, watermarks: {} } as unknown as GroupChat
+    })
+
+    expect(binding.isLive()).toBe(false)
+    const kill = membership.groupChatFollowKills.at(-1)
+    expect(kill?.reason).toBe('tombstone')
+    expect(kill?.group).toBe('Room')
+    expect(kill?.roomId).toBe('r1')
+  })
+
+  it('records a deleted kill when the room entry vanishes', async () => {
+    const { chat, membership } = await load()
+    chat.$groupChats.set({
+      Room: { log: [], members: [], roomId: 'r1', running: true, watermarks: {} } as unknown as GroupChat
+    })
+    const binding = membership.followGroupChat('Room', () => {})
+
+    chat.$groupChats.set({})
+
+    expect(binding.isLive()).toBe(false)
+    expect(membership.groupChatFollowKills.at(-1)?.reason).toBe('deleted')
+  })
+
+  it('records a roomId-clobber kill when a sync rewrite swaps the roomId in place', async () => {
+    const { chat, membership } = await load()
+    chat.$groupChats.set({
+      Room: { log: [], members: [], roomId: 'r1', running: true, watermarks: {} } as unknown as GroupChat
+    })
+    const binding = membership.followGroupChat('Room', () => {})
+
+    // A remote sync rewrites the same room key with a different roomId and
+    // no same-roomId survivor — the mid-run clobber path.
+    chat.$groupChats.set({
+      Room: { log: [], members: [], roomId: 'r2', running: true, watermarks: {} } as unknown as GroupChat
+    })
+
+    expect(binding.isLive()).toBe(false)
+    const kill = membership.groupChatFollowKills.at(-1)
+    expect(kill?.reason).toBe('roomId-clobber')
+    expect(kill?.roomId).toBe('r1')
+    expect(kill?.currentRoomId).toBe('r2')
+  })
+
+  it('follows a rename with the same roomId and keeps isLive true (no kill)', async () => {
+    const { chat, membership } = await load()
+    chat.$groupChats.set({
+      Old: { log: [], members: [], roomId: 'r1', running: true, watermarks: {} } as unknown as GroupChat
+    })
+    let renamedTo = ''
+    const binding = membership.followGroupChat('Old', name => { renamedTo = name })
+
+    chat.$groupChats.set({
+      New: { log: [], members: [], roomId: 'r1', running: true, watermarks: {} } as unknown as GroupChat
+    })
+
+    expect(binding.isLive()).toBe(true)
+    expect(renamedTo).toBe('New')
+  })
+})

@@ -14,7 +14,9 @@ import { $activeSessionId } from '@/store/session'
 import {
   $contextSpot,
   $orchestratorContextError,
+  $orchestratorContextLoading,
   $orchestratorSessions,
+  reloadContext,
   setObjective
 } from '@/store/orchestrator-context'
 import {
@@ -55,6 +57,7 @@ export function AgentsSidePanel() {
   const navigate = useNavigate()
   const spot = useStore($contextSpot)
   const spotError = useStore($orchestratorContextError)
+  const spotLoading = useStore($orchestratorContextLoading)
   // Subscribe so the spot's active count follows the orchestrator's sessions,
   // not just the delegation stream.
   useStore($orchestratorSessions)
@@ -65,7 +68,9 @@ export function AgentsSidePanel() {
   const spotElement = (
     <ContextSpot
       error={spotError}
+      loading={spotLoading}
       onNewChat={() => navigate(NEW_CHAT_ROUTE)}
+      onRefresh={() => void reloadContext()}
       onSetObjective={setObjective}
       spot={spot as ContextSpotView | null}
     />
