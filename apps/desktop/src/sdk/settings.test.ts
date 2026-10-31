@@ -21,7 +21,12 @@ const resetSettings = () => {
 }
 
 describe('host.settings', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    // Bare-key persistence reads assume Advanced — Simple namespaces these
+    // stores under `.simple`; statically-imported stores bind the mode at
+    // module init, so it is set explicitly.
+    const { setInterfaceMode } = await import('@/store/interface-mode')
+    setInterfaceMode('advanced')
     resetSettings()
   })
 

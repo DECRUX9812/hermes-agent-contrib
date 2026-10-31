@@ -48,5 +48,7 @@ it('offers Gateways settings to a parked background primary, whatever the error'
     notifyPrimaryReauth(detail, () => detail)
   }
 
-  expect(errorToasts().map(toast => toast.action?.label)).toEqual(['Open Gateways', 'Open Gateways'])
+  // Identical reauth notices (same kind+title+message) coalesce — the second
+  // replaces the first in place, carrying the latest detail.
+  expect(errorToasts().map(toast => toast.action?.label)).toEqual(['Open Gateways'])
 })

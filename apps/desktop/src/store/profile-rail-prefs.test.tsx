@@ -115,6 +115,11 @@ describe.each([
   let host: HostModules
 
   beforeAll(async () => {
+    // The rail visibility is modeBound — Simple shadows it, so the
+    // rail-vs-picker door check runs in Advanced. Seed storage BEFORE the
+    // host import: after vi.resetModules, a statically-imported setter
+    // would land on a different registry instance than the host's.
+    window.localStorage.setItem('hermes.desktop.interfaceMode.v1', 'advanced')
     host = await importHost(webapp)
   })
 

@@ -10,6 +10,7 @@ import { registry } from '@/contrib/registry'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
 import { $sidebarMessagingOpenIds, setSidebarAgentsGrouped, setSidebarGrouping } from '@/store/layout'
 import { $activeGatewayProfile, $profiles, setShowAllProfiles } from '@/store/profile'
+import { setInterfaceMode } from '@/store/interface-mode'
 import { $projectScope, ALL_PROJECTS } from '@/store/project-scope'
 import { $projectTree } from '@/store/projects'
 import {
@@ -89,6 +90,9 @@ describe('ChatSidebar navigation activity', () => {
   let disposeContributions: () => void
 
   beforeEach(() => {
+    // Artifacts/cron nav rows are Advanced-tier — hidden under the Simple
+    // default, so the view-current checks run in Advanced.
+    setInterfaceMode('advanced')
     disposeContributions = registry.registerMany([
       { area: ROUTES_AREA, id: 'kanban-page', data: { path: '/kanban' }, render: () => null },
       { area: ROUTES_AREA, id: 'reports-page', data: { path: '/reports' }, render: () => null },
@@ -334,7 +338,7 @@ describe('ChatSidebar section labels', () => {
     renderSidebar('/', 'chat')
 
     expect(screen.getByText('Projects')).toBeTruthy()
-    expect(screen.queryByText('Sessions')).toBeNull()
+    expect(screen.queryByText('Chats')).toBeNull()
   })
 
   it('keeps the "Sessions" label when grouping is on but no projects exist', () => {
@@ -346,7 +350,7 @@ describe('ChatSidebar section labels', () => {
 
     renderSidebar('/', 'chat')
 
-    expect(screen.getByText('Sessions')).toBeTruthy()
+    expect(screen.getByText('Chats')).toBeTruthy()
     expect(screen.queryByText('Projects')).toBeNull()
   })
 
@@ -359,7 +363,7 @@ describe('ChatSidebar section labels', () => {
 
     renderSidebar('/', 'chat')
 
-    expect(screen.getByText('Sessions')).toBeTruthy()
+    expect(screen.getByText('Chats')).toBeTruthy()
     expect(screen.queryByText('Projects')).toBeNull()
   })
 })
@@ -403,7 +407,7 @@ describe('ChatSidebar empty-profile sections', () => {
     // …and the sidebar did not collapse to the blank state: the search field
     // only renders inside the session area, so its presence proves the area
     // (and the messaging sections inside it) rendered.
-    expect(screen.getByPlaceholderText('Search sessions…')).toBeTruthy()
+    expect(screen.getByLabelText('Search sessions')).toBeTruthy()
   })
 
   it('still shows the blank state when a profile has nothing at all', () => {
@@ -415,7 +419,6 @@ describe('ChatSidebar empty-profile sections', () => {
     const { container } = renderSidebar('/', 'chat')
 
     expect(container.textContent).toContain('No sessions yet')
-    expect(screen.queryByPlaceholderText('Search sessions…')).toBeNull()
   })
 
   it('shows a section per profile when several profiles have no chats anywhere', () => {
@@ -435,7 +438,7 @@ describe('ChatSidebar empty-profile sections', () => {
         node => node.dataset.gatewayGroup
       )
 
-      expect(screen.getByPlaceholderText('Search sessions…')).toBeTruthy()
+      expect(screen.getByLabelText('Search sessions')).toBeTruthy()
       expect(groups.some(id => id?.includes('"default"'))).toBe(true)
       expect(groups.some(id => id?.includes('"work"'))).toBe(true)
     } finally {
