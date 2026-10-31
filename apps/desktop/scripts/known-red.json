@@ -11,7 +11,10 @@
     "src/store/panes.test.ts",
     "src/store/profile-rail-prefs.test.tsx",
     "src/components/assistant-ui/thread/list-session-scroll.test.tsx",
-    "src/app/chat/composer/hooks/use-composer-submit.send-then-close.test.tsx"
+    "src/app/chat/composer/hooks/use-composer-submit.send-then-close.test.tsx",
+    "src/store/reasoning-disclosure.test.ts",
+    "src/store/tool-activity.test.ts",
+    "src/app/hooks/use-keybinds-browser.test.tsx"
   ],
   "tests": [
     "src/app/chat/close-tab.test.ts > closeActiveTab > leaves \u2318W to the zone rungs even with previews open",
