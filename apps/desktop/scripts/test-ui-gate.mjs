@@ -61,7 +61,21 @@ if (reuse) {
 } else {
   const run = spawnSync(
     'npx',
-    ['vitest', 'run', `--project=${project}`, '--reporter=default', '--reporter=json', `--outputFile.json=${reportPath}`],
+    [
+      'vitest',
+      'run',
+      `--project=${project}`,
+      // One retry: the suite runs at ~10x oversubscription on this box, and the
+      // frame/idle-timed specs (completed-reply-refresh, browser-hints) fail on
+      // scheduling jitter but pass on a second attempt. A deterministic failure
+      // still fails both attempts, so the gate keeps its teeth — the retry only
+      // stops load noise from blocking a ship, which is what happened on
+      // 2026-10-30 when one flaky keybinds spec cost a 33-minute run.
+      '--retry=1',
+      '--reporter=default',
+      '--reporter=json',
+      `--outputFile.json=${reportPath}`
+    ],
     { cwd: appRoot, stdio: 'inherit', env: process.env, shell: false }
   )
   if (run.error) {
