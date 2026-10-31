@@ -352,8 +352,13 @@ function SidebarSessionRowImpl({
         <Button
           aria-label={r.sessionActions}
           className={cn(
-            'size-6 rounded-[4px] bg-transparent text-(--ui-text-quaternary) transition-colors duration-100 hover:bg-(--ui-control-active-background) hover:text-foreground focus-visible:bg-(--ui-control-active-background) focus-visible:text-foreground focus-visible:ring-0 data-[state=open]:bg-(--ui-control-active-background) data-[state=open]:text-foreground group-hover:text-(--ui-text-tertiary) [&_svg]:size-3.5!',
-            trailing.length > 0 && 'absolute right-0',
+            'size-6 shrink-0 rounded-[4px] bg-transparent text-(--ui-text-quaternary) transition-colors duration-100 hover:bg-(--ui-control-active-background) hover:text-foreground focus-visible:bg-(--ui-control-active-background) focus-visible:text-foreground focus-visible:ring-0 data-[state=open]:bg-(--ui-control-active-background) data-[state=open]:text-foreground group-hover:text-(--ui-text-tertiary) [&_svg]:size-3.5!',
+            // This used to be `absolute right-0`, overlaying the trailing slot
+            // while the kebab itself stayed text-transparent until hover — one
+            // of the two was always invisible, so the overlay never showed. The
+            // discoverability fix made the kebab resting-visible, and the age /
+            // dropdown underneath it started painting through: two pieces of
+            // metadata in the same pixels. In flow they can no longer collide.
             pr && KEBAB_YIELDS
           )}
           size="icon"
