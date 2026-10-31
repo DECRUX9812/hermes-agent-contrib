@@ -1,8 +1,9 @@
 import { type ThreadMessage } from '@assistant-ui/react'
 import { cleanup, render, screen } from '@testing-library/react'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 import { $activeSessionId } from '@/store/session'
+import { setShowToolActivityFromConfig } from '@/store/tool-activity'
 
 import { stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '../test-utils'
 import { Thread } from '../thread'
@@ -56,6 +57,13 @@ const Harness = ({ message }: { message: ThreadMessage }) => (
 afterEach(() => {
   cleanup()
   $activeSessionId.set(null)
+})
+
+// This spec is about how a *sealed* call without a result renders, not about
+// whether tool rows are shown: opt the feed in so the rows exist to assert on
+// (the transcript's default is hidden since the opt-in-only change).
+beforeEach(() => {
+  setShowToolActivityFromConfig('all')
 })
 
 describe('tool parts sealed without a result', () => {
