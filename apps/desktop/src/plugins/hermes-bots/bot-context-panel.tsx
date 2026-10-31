@@ -49,6 +49,7 @@ import { displayName } from './labels'
 import { botRecentSession, openBotRecentSession } from './recent-session'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { openRosterBot } from './roster-actions'
+import { cn } from '@/lib/utils'
 import { botRosterMeta } from './routing'
 import type { RosterRow, RoutineJob } from './types'
 
@@ -240,18 +241,26 @@ const selected = useValue($selectedBot)
         <div className="mt-2 max-w-full truncate text-sm font-semibold text-(--ui-text-primary)">
           {displayName({ name: bot }, meta)}
         </div>
-        <div className="mt-0.5 flex min-w-0 items-center gap-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
+        <div className="mt-0.5 flex min-w-0 items-center">
           <span
-            aria-hidden="true"
-            className={
+            className={cn(
+              'inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6875rem] font-medium',
               working
-                ? 'size-1.5 shrink-0 rounded-full bg-(--ui-green)'
+                ? 'bg-(--ui-green)/12 text-(--ui-green)'
                 : reachable
-                  ? 'size-1.5 shrink-0 rounded-full bg-(--ui-text-quaternary)'
-                  : 'size-1.5 shrink-0 rounded-full bg-destructive/60'
-            }
-          />
-          <span className="truncate">{statusText}</span>
+                  ? 'bg-(--ui-surface-overlay) text-(--ui-text-tertiary)'
+                  : 'bg-destructive/10 text-destructive'
+            )}
+          >
+            <span
+              aria-hidden="true"
+              className={cn(
+                'size-1.5 shrink-0 rounded-full',
+                working ? 'bg-(--ui-green)' : reachable ? 'bg-(--ui-text-quaternary)' : 'bg-destructive/70'
+              )}
+            />
+            <span className="truncate">{statusText}</span>
+          </span>
         </div>
       </div>
       <div className="px-3 pt-3">
@@ -269,7 +278,10 @@ const selected = useValue($selectedBot)
       </div>
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain">
         {needsYou.length ? (
-        <div className="mx-1.5 mb-1 grid gap-1 rounded-md border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay) px-2 py-1.5" data-slot="bots-needs-you">
+        <div className="mx-1.5 mb-1 grid gap-1 rounded-md border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-1.5" data-slot="bots-needs-you">
+          <div className="px-1 pb-0.5 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-icon-attention)">
+            {b.group.needsYourInput} · {needsYou.length}
+          </div>
           {needsYou.map(prompt => {
             const question = prompt.kind === 'approval' ? prompt.question : (prompt.questions || []).map(q => q.question).filter(Boolean).join(' · ')
             return (
@@ -418,7 +430,7 @@ const selected = useValue($selectedBot)
               {b.bot.editMenu}
             </Button>
           ) : null}
-          <Button onClick={() => void openRosterBot(owner)} size="sm" variant="ghost">
+          <Button onClick={() => void openRosterBot(owner)} size="sm" variant="secondary">
             {p.openChat} →
           </Button>
         </div>
