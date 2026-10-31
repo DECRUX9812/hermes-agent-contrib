@@ -9,19 +9,19 @@ describe('tool feed visibility follows display.tool_progress only', () => {
     setShowToolActivityFromConfig(undefined)
   })
 
-  it('silences the feed only for false or "off"', () => {
-    for (const off of [false, 'off', ' OFF ']) {
+  it('shows the feed only on an explicit opt-in', () => {
+    for (const off of [false, 'off', ' OFF ', 'unknown', undefined, null]) {
       expect(toolProgressVisible(off)).toBe(false)
     }
 
-    for (const on of [true, 'all', 'new', 'verbose', 'unknown', undefined, null]) {
+    for (const on of [true, 'all', 'new', 'verbose', 'on']) {
       expect(toolProgressVisible(on)).toBe(true)
     }
   })
 
   it('does not follow show_reasoning', () => {
     setShowReasoningFromConfig(false)
-    setShowToolActivityFromConfig(undefined)
+    setShowToolActivityFromConfig('all')
     expect($showToolActivity.get()).toBe(true)
 
     setShowReasoningFromConfig(true)

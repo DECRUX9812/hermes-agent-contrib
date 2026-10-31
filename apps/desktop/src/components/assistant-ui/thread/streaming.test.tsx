@@ -12,6 +12,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { $onboardingPhase } from '@/store/onboarding-phase'
 import { $onboardingSession } from '@/store/onboarding-session'
 import { $reasoningCollapsedByDefault, setShowReasoningFromConfig } from '@/store/reasoning-disclosure'
+import { setShowToolActivityFromConfig } from '@/store/tool-activity'
 import { $activeSessionId } from '@/store/session'
 
 import { stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '../test-utils'
@@ -438,6 +439,7 @@ describe('assistant-ui streaming renderer', () => {
     resizeObservers.clear()
     $reasoningCollapsedByDefault.set(false)
     setShowReasoningFromConfig(undefined)
+    setShowToolActivityFromConfig('all')
     $activeSessionId.set(null)
     $onboardingSession.set(null)
     $onboardingPhase.set('idle')

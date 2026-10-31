@@ -6,6 +6,7 @@ import { afterEach, beforeEach, expect, it } from 'vitest'
 import { parseAnsi } from '@/lib/ansi'
 import { type ChatMessage, type GatewayEventPayload, toChatMessages, upsertToolPart } from '@/lib/chat-messages'
 import { toRuntimeMessage } from '@/lib/chat-runtime'
+import { setShowToolActivityFromConfig } from '@/store/tool-activity'
 import { $toolDisclosureStates, setHideCodeDiffs, setToolViewMode } from '@/store/tool-view'
 import type { SessionMessage } from '@/types/hermes'
 
@@ -91,6 +92,7 @@ const receipts: Record<string, Receipt> = process.env.INLINE_EDIT_RECEIPTS
   : fixtures
 
 beforeEach(() => {
+  setShowToolActivityFromConfig('all')
   $toolDisclosureStates.set({})
   setHideCodeDiffs(false)
   setToolViewMode('product')

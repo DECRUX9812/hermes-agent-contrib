@@ -6,6 +6,7 @@ import { ApprovalComposerEntry } from '@/components/assistant-ui/tool/approval'
 import { $displayTimestamps } from '@/store/display-timestamps'
 import { clearAllPrompts, setApprovalRequest } from '@/store/prompts'
 import { $activeSessionId } from '@/store/session'
+import { setShowToolActivityFromConfig } from '@/store/tool-activity'
 import { clearDismissedToolRows } from '@/store/tool-dismiss'
 import { $toolDisclosureStates } from '@/store/tool-view'
 
@@ -362,6 +363,7 @@ beforeEach(() => {
   $activeSessionId.set('sess-1')
   $toolDisclosureStates.set({})
   clearDismissedToolRows()
+  setShowToolActivityFromConfig('all')
 })
 
 afterEach(() => {

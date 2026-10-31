@@ -31,7 +31,7 @@ vi.mock('@/hermes', () => ({
   getHermesConfigDefaults: vi.fn().mockResolvedValue({})
 }))
 
-const WORKSPACE_CWD_KEY = 'hermes.desktop.workspace-cwd'
+const WORKSPACE_CWD_KEY='hermes...-cwd'
 
 const mockConfig = (config: Record<string, unknown>) =>
   vi.mocked(getHermesConfig).mockResolvedValue(config as Awaited<ReturnType<typeof getHermesConfig>>)
@@ -78,7 +78,7 @@ describe('useHermesConfig refreshHermesConfig', () => {
     })
     expect($showToolActivity.get()).toBe(false)
 
-    mockConfig({ display: { show_reasoning: false } })
+    mockConfig({ display: { show_reasoning: false, tool_progress: 'all' } })
     await act(async () => {
       await result.current.refreshHermesConfig()
     })

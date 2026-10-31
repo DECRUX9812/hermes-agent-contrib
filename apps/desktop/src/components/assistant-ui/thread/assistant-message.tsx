@@ -85,6 +85,7 @@ import { requestSendDiagnostics } from '@/store/send-diagnostics'
 import { $connection, $currentModel, setModelPickerOpen } from '@/store/session'
 import { sessionTileDelegate } from '@/store/session-states'
 import { notifyThreadEditOpen } from '@/store/thread-scroll'
+import { $showToolActivity } from '@/store/tool-activity'
 import { $voicePlayback } from '@/store/voice-playback'
 
 // Stable empty identity for the settled-parts selector — a fresh [] per render
@@ -519,11 +520,18 @@ const AssistantPreviewEmbeds: FC = () => {
  * retires it — the working tree it describes is already history by then.
  */
 const SettledChangedFiles: FC = () => {
+  const showToolActivity = useStore($showToolActivity)
   const settledParts = useAuiState(s => {
     const isLastMessage = s.thread.messages[s.thread.messages.length - 1]?.id === s.message.id
 
     return s.message.status?.type === 'running' || !isLastMessage ? EMPTY_PARTS : s.message.parts
   })
+
+  // The changed-files card recaps file edits; with the tool feed hidden it is
+  // the same file-edit history the preference removes.
+  if (!showToolActivity) {
+    return null
+  }
 
   return <ChangedFilesCard parts={settledParts} />
 }

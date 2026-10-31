@@ -3,6 +3,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-libra
 import { afterEach, beforeEach, expect, it } from 'vitest'
 
 import { DEFAULT_INTERFACE_MODE, setInterfaceMode } from '@/store/interface-mode'
+import { setShowToolActivityFromConfig } from '@/store/tool-activity'
 import { $hideCodeDiffs, $toolDisclosureStates, setHideCodeDiffs, setToolViewMode } from '@/store/tool-view'
 
 import { assistantMessage, stubThreadEnvironment, stubThreadViewportSize, ThreadRuntime } from '../test-utils'
@@ -34,6 +35,7 @@ function editMessage(toolName: string, failed = false): ThreadMessage {
 beforeEach(() => {
   // The preference under test is the Advanced one; Simple Mode's policy owns it otherwise.
   setInterfaceMode('advanced')
+  setShowToolActivityFromConfig('all')
   $toolDisclosureStates.set({})
   setHideCodeDiffs(false)
   setToolViewMode('product')

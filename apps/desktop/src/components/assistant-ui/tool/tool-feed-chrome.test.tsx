@@ -133,9 +133,10 @@ describe('tool feed visibility policy', () => {
   })
 
   it('keeps the execution flow while reasoning stays hidden', async () => {
-    // Regression for #121524: hiding reasoning hid every tool row. A missing
-    // display.tool_progress means on, whatever show_reasoning says.
+    // Regression for #121524: hiding reasoning hid every tool row. An explicit
+    // display.tool_progress opt-in shows the feed whatever show_reasoning says.
     setShowReasoningFromConfig(false)
+    setShowToolActivityFromConfig('all')
 
     const { container } = render(<Harness />)
 
@@ -148,6 +149,8 @@ describe('tool feed visibility policy', () => {
   })
 
   it('still shows tool chrome when reasoning blocks are on', async () => {
+    setShowToolActivityFromConfig('all')
+
     const { container } = render(<Harness />)
 
     expect(await screen.findByText(/Explored 2 files/)).toBeTruthy()
