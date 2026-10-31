@@ -1048,6 +1048,24 @@ const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> =
   const collapsed = representedByApproval && !rowOpen && !persistedOpen
   const reduced = useReducedMotion()
 
+  // A settled turn reads as ONE line: the run collapses the moment its message
+  // stops streaming, and the header stays there to reopen it. Guarded by a ref
+  // so this fires only on the running -> settled transition, never re-closing a
+  // section the user opened afterwards.
+  const settledHandled = useRef(false)
+  useEffect(() => {
+    if (messageRunning) {
+      settledHandled.current = false
+
+      return
+    }
+    if (settledHandled.current || count < 2) {
+      return
+    }
+    settledHandled.current = true
+    if (persistedOpen === true) setToolDisclosureOpen(disclosureId, false)
+  }, [messageRunning, count, disclosureId, persistedOpen])
+
   // The original runtime stays mounted while its summary owns the activity.
   // Reveal its footprint gradually when the last approval clears, instead of
   // inserting all represented rows in the outgoing card's first exit frame.

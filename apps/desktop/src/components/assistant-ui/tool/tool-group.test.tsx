@@ -449,9 +449,13 @@ describe('live tool run', () => {
     rerender(<GroupHarness message={next} />)
     await waitFor(() => expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(3))
     rerender(<GroupHarness message={{ ...next, status: { type: 'complete', reason: 'stop' } }} />)
-    await waitFor(() => expect(toggle().getAttribute('aria-expanded')).toBe('true'))
+    // A settled turn reads as one line: the run collapses itself, and the
+    // header stays to reopen it. Replaces the older "an opened run survives
+    // settle" rule.
+    await waitFor(() => expect(toggle().getAttribute('aria-expanded')).toBe('false'))
     fireEvent.click(toggle())
-    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(0)
+    expect(toggle().getAttribute('aria-expanded')).toBe('true')
+    expect(container.querySelectorAll('[data-tool-row]')).toHaveLength(3)
   })
 
   it('updates named skill summaries when identifying arguments arrive late', async () => {
