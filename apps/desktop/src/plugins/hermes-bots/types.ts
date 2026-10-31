@@ -77,6 +77,9 @@ export interface BotMeta {
   /** Set when the user has customized the avatar, so defaults stop applying. */
   custom?: boolean
   description?: string
+  /** User-editable working goal for this bot — the Homie Spot objective's
+   *  bot-side equivalent. Edited inline from the context panel. */
+  goal?: string
   groups?: string[]
   hidden?: boolean
   /** Data URL. Stripped before `profiles.configure`; travels via `set_asset`. */

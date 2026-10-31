@@ -498,6 +498,15 @@ const en: BotsMessages = {
     noSaved: 'Nothing saved yet',
     noHistory: 'No recent conversations',
     openChat: 'Open chat',
+    dismissPrompt: 'Dismiss',
+    goalEdit: 'Edit goal',
+    goalEmpty: 'No goal set',
+    goalInput: 'Bot goal',
+    goalPlaceholder: 'What should this bot work toward?',
+    goalSet: 'Set',
+    runningRound: 'Running round',
+    stopRound: 'Stop',
+    unreachable: 'This bot is unreachable right now — its gateway is offline, so sends are paused.',
     updatedNow: 'Updated just now'
   }
 }
@@ -967,6 +976,15 @@ const ja: BotsMessages = {
     noSaved: '保存された項目はまだありません',
     noHistory: '最近の会話はありません',
     openChat: 'チャットを開く',
+    dismissPrompt: '閉じる',
+    goalEdit: '目標を編集',
+    goalEmpty: '目標が未設定',
+    goalInput: 'ボットの目標',
+    goalPlaceholder: 'このボットは何を目指すべきですか？',
+    goalSet: '設定',
+    runningRound: 'ラウンド実行中',
+    stopRound: '停止',
+    unreachable: 'このボットには現在接続できません — ゲートウェイがオフラインのため送信は一時停止中です。',
     updatedNow: 'たった今更新'
   }
 }
@@ -1419,6 +1437,15 @@ const zh: BotsMessages = {
     noSaved: '暂无已保存的内容',
     noHistory: '暂无最近会话',
     openChat: '打开聊天',
+    dismissPrompt: '忽略',
+    goalEdit: '编辑目标',
+    goalEmpty: '未设置目标',
+    goalInput: '机器人目标',
+    goalPlaceholder: '这个机器人应该朝什么目标努力？',
+    goalSet: '设定',
+    runningRound: '正在运行回合',
+    stopRound: '停止',
+    unreachable: '目前无法连接到此机器人——其网关离线，发送已暂停。',
     updatedNow: '刚刚更新'
   }
 }
@@ -1871,6 +1898,15 @@ const zhHant: BotsMessages = {
     noSaved: '尚無已儲存的內容',
     noHistory: '尚無最近交談',
     openChat: '開啟聊天',
+    dismissPrompt: '關閉',
+    goalEdit: '編輯目標',
+    goalEmpty: '尚未設定目標',
+    goalInput: '機器人目標',
+    goalPlaceholder: '這個機器人應該朝什麼目標努力？',
+    goalSet: '設定',
+    runningRound: '回合執行中',
+    stopRound: '停止',
+    unreachable: '目前無法連結到這個機器人——其閘道離線，傳送已暫停。',
     updatedNow: '剛剛更新'
   }
 }

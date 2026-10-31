@@ -37,6 +37,8 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
 const { host } = await import('@hermes/plugin-sdk')
 const { $lastRoster } = await import('./data')
 const { $selectedBot } = await import('./bot-state')
+const { $botMeta } = await import('./data')
+const { $groupChats, $groupClarify } = await import('./group-chat')
 const { BotContextPanel } = await import('./bot-context-panel')
 
 /** The SDK store the panel's owner ladder reads. */
@@ -83,6 +85,9 @@ beforeEach(() => {
   $lastRoster.set([])
   $selectedBot.set('default')
   $focused.set({ connectionId: 'local', profile: 'research' })
+  $botMeta.set({})
+  $groupChats.set({})
+  $groupClarify.set({})
 })
 
 afterEach(() => {
@@ -132,5 +137,83 @@ describe('bot context panel', () => {
 
     fireEvent.click(screen.getByText('History'))
     expect(await screen.findByText('No recent conversations')).toBeTruthy()
+  })
+
+  it('edits the bot goal inline — Enter commits, Esc cancels, Set stays disabled until non-blank', async () => {
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+    await screen.findByText('Research')
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit goal' }))
+    const input = screen.getByLabelText('Bot goal')
+    const setBtn = screen.getByRole('button', { name: 'Set' })
+
+    expect((setBtn as HTMLButtonElement).disabled).toBe(true)
+
+    fireEvent.change(input, { target: { value: 'Ship the release' } })
+    expect((setBtn as HTMLButtonElement).disabled).toBe(false)
+
+    fireEvent.keyDown(input, { key: 'Escape' })
+    expect(screen.queryByLabelText('Bot goal')).toBeNull()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Edit goal' }))
+    fireEvent.change(screen.getByLabelText('Bot goal'), { target: { value: 'Ship the release' } })
+    fireEvent.submit(screen.getByLabelText('Bot goal').closest('form')!)
+
+    await vi.waitFor(() => expect($botMeta.get()['research::local']?.goal ?? $botMeta.get()['research']?.goal).toBe('Ship the release'))
+  })
+
+  it('dismisses a needs-you prompt inline', async () => {
+    $groupClarify.set({
+      'room:req1': {
+        at: Date.now(),
+        group: 'Ops',
+        kind: 'approval',
+        member: 'research',
+        memberKey: 'research',
+        question: 'Deploy the fix?',
+        requestId: 'req1',
+        thread: 't1'
+      }
+    })
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText(/Deploy the fix/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+
+    expect(screen.queryByText(/Deploy the fix/)).toBeNull()
+    expect(Object.keys($groupClarify.get())).toHaveLength(0)
+  })
+
+  it('shows a running-round strip with an inline Stop that halts the room', async () => {
+    $groupChats.set({
+      Ops: {
+        epoch: 1,
+        holds: {},
+        log: [],
+        members: [{ name: 'research', title: '' }],
+        roomId: 'r1',
+        running: true,
+        sessions: {},
+        watermarks: {}
+      } as never
+    })
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText(/Running round/)).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Stop' }))
+
+    await vi.waitFor(() => expect($groupChats.get().Ops?.running).toBe(false))
+  })
+
+  it('shows an unreachable banner when the bot source is offline', async () => {
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research', sourceReachable: false }]))
+
+    expect(await screen.findByText(/unreachable right now/i)).toBeTruthy()
   })
 })

@@ -46,6 +46,18 @@ export const $groupNeedsYou = atom<Record<string, boolean>>({})
 // the room renders answer cards from it.
 export const $groupClarify = atom<Record<string, GroupPrompt>>({})
 
+/** Remove one pending clarify/approval card — the panel's inline dismiss.
+ *  Matches on requestId+group so a stale card clears without waiting for the
+ *  room's own resolution path. */
+export function dismissGroupPrompt(prompt: GroupPrompt): void {
+  const all = $groupClarify.get()
+  $groupClarify.set(
+    Object.fromEntries(
+      Object.entries(all).filter(([, entry]) => !(entry.requestId === prompt.requestId && entry.group === prompt.group))
+    )
+  )
+}
+
 const GROUP_CHAT_SYNC_META_KEY = 'hermes-bots-groups'
 // Gateway ui_meta is capped after Python JSON serialization. Keep a healthy
 // margin below that limit because Python escapes Unicode while JS does not.
