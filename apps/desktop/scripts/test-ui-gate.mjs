@@ -68,7 +68,6 @@ if (reuse) {
     console.error('[gate] could not start vitest:', run.error.message)
     process.exit(2)
   }
-  runStatus = run.status ?? 1
   if (!existsSync(reportPath)) {
     console.error(`[gate] vitest produced no json report at ${reportPath} (exit ${run.status})`)
     process.exit(2)
