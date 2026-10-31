@@ -40,9 +40,9 @@ export function CanonicalGroupRow({ active = false, memberCount, name, needsYou 
     <button
       aria-label={name}
       className={cn(
-        'group flex w-full min-w-0 max-w-full items-center gap-2.5 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
-        'hover:bg-(--chrome-action-hover)',
-        active && 'bg-(--ui-row-active-background)'
+        'group relative flex w-full min-w-0 max-w-full items-center gap-2.5 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
+        'hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--dt-ring)',
+        active && 'bg-(--ui-row-active-background) before:absolute before:left-0 before:top-1.5 before:bottom-1.5 before:w-0.5 before:rounded-full before:bg-(--dt-ring)'
       )}
       onClick={onOpen}
       type="button"
@@ -60,7 +60,7 @@ export function CanonicalGroupRow({ active = false, memberCount, name, needsYou 
         ) : null}
       </span>
       <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">{name}</span>
-      <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">{group.memberCount(memberCount)}</span>
+      <span className="shrink-0 rounded-full bg-(--ui-surface-overlay) px-1.5 py-0.5 text-[0.625rem] tabular-nums font-medium text-(--ui-text-tertiary) group-hover:bg-(--chrome-action-hover)">{group.memberCount(memberCount)}</span>
     </button>
   )
 

@@ -305,10 +305,10 @@ const selected = useValue($selectedBot)
             className={cn(
               'inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6875rem] font-medium',
               working
-                ? 'bg-(--ui-green)/12 text-(--ui-green)'
+                ? 'border border-(--ui-green)/25 bg-(--ui-green)/12 text-(--ui-green)'
                 : reachable
-                  ? 'bg-(--ui-surface-overlay) text-(--ui-text-tertiary)'
-                  : 'bg-destructive/10 text-destructive'
+                  ? 'border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay) text-(--ui-text-tertiary)'
+                  : 'border border-destructive/25 bg-destructive/10 text-destructive'
             )}
           >
             <span
@@ -339,7 +339,7 @@ const selected = useValue($selectedBot)
           the new owner's query is still loading (stale-flash defect). */}
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain" key={bot}>
         {needsYou.length ? (
-        <div className="mx-1.5 mb-1 grid gap-1 rounded-md border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-1.5" data-slot="bots-needs-you">
+        <div className="mx-1.5 mb-1 grid gap-1 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-2 shadow-2xs" data-slot="bots-needs-you">
           <div className="px-1 pb-0.5 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-icon-attention)">
             {b.group.needsYourInput} · {needsYou.length}
           </div>
@@ -388,7 +388,7 @@ const selected = useValue($selectedBot)
         </div>
       ) : null}
       {runningRoom ? (
-        <div className="mx-1.5 mb-1 flex items-center justify-between gap-2 rounded-md border border-(--ui-green)/35 bg-(--ui-green)/8 px-2 py-1.5" data-slot="bot-live-round">
+        <div className="mx-1.5 mb-1 flex items-center justify-between gap-2 rounded-lg border border-(--ui-green)/35 bg-(--ui-green)/8 px-2 py-2 shadow-2xs" data-slot="bot-live-round">
           <span className="inline-flex min-w-0 items-center gap-1.5 text-[0.6875rem] font-medium text-(--ui-green)">
             <span aria-hidden="true" className="size-1.5 shrink-0 animate-pulse rounded-full bg-(--ui-green)" />
             <span className="truncate">{b.panel.runningRound} · {runningRoom[0]}</span>
@@ -404,11 +404,11 @@ const selected = useValue($selectedBot)
         </div>
       ) : null}
       {!reachable ? (
-        <div className="mx-1.5 mb-1 rounded-md border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-1.5 text-[0.6875rem] leading-snug text-(--ui-text-secondary)" data-slot="bot-unreachable" role="status">
+        <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-2 text-[0.6875rem] leading-snug text-(--ui-text-secondary) shadow-2xs" data-slot="bot-unreachable" role="status">
           {b.panel.unreachable}
         </div>
       ) : null}
-      <div className="mx-1.5 mb-1 rounded-md border border-(--ui-stroke-tertiary) px-2 py-1.5" data-slot="bot-goal">
+      <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-stroke-tertiary) px-2 py-2 shadow-2xs transition-colors hover:border-(--ui-stroke-secondary) hover:bg-(--chrome-action-hover)" data-slot="bot-goal">
         {editingGoal ? (
           <form
             className="flex items-center gap-1.5"
@@ -458,7 +458,7 @@ const selected = useValue($selectedBot)
         )}
       </div>
       {feed.length ? (
-        <div className="mx-1.5 mb-1 rounded-md border border-(--ui-stroke-tertiary) px-2 py-1.5" data-slot="bot-live-activity">
+        <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/50 px-2 py-2 shadow-2xs" data-slot="bot-live-activity">
           <div className="px-1 pb-1 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-text-tertiary)">
             {b.panel.liveActivity}
           </div>
