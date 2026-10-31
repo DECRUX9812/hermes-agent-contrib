@@ -424,6 +424,72 @@ describe('renamed profile descriptors (#110200)', () => {
   })
 })
 
+describe('metadata writes during a live follow', () => {
+  it('keeps the follow alive while bot meta, room fields, and presence update mid-round', async () => {
+    const { chat, data, membership } = await load()
+    chat.$groupChats.set({
+      Room: {
+        epoch: 2,
+        holds: {},
+        log: [],
+        members: [{ name: 'alpha', title: '' }],
+        roomId: 'r1',
+        running: true,
+        sessions: {},
+        watermarks: {}
+      } as unknown as GroupChat
+    })
+
+    const binding = membership.followGroupChat('Room', () => {})
+    const killsBefore = membership.groupChatFollowKills.length
+
+    // Metadata churn the way a live round produces it: hold stamps flip,
+    // epoch bumps, a member record refresh, and a bot-meta save — none of
+    // which change roomId or drop the record.
+    chat.$groupChats.set({
+      Room: {
+        epoch: 3,
+        holds: { alpha: { at: Date.now(), byMessageId: null, thread: null } },
+        log: [{ at: 1, from: { kind: 'bot', name: 'alpha' }, text: 'working', thread: 't1' }],
+        members: [{ name: 'alpha', title: '' }],
+        roomId: 'r1',
+        running: true,
+        sessions: { alpha: 'sid-1' },
+        turn: { name: 'alpha', title: '' },
+        watermarks: {}
+      } as unknown as GroupChat
+    })
+
+    expect(binding.isLive()).toBe(true)
+    expect(membership.groupChatFollowKills.length).toBe(killsBefore)
+  })
+
+  it('a roomId-preserving room record rewrite (metadata sync) does not kill the follow', async () => {
+    const { chat, membership } = await load()
+    chat.$groupChats.set({
+      Room: { log: [], members: [], roomId: 'r1', running: true, watermarks: {} } as unknown as GroupChat
+    })
+    const binding = membership.followGroupChat('Room', () => {})
+
+    // Full-record rewrite with the same roomId — the sync/migration shape.
+    chat.$groupChats.set({
+      Room: {
+        epoch: 5,
+        holds: {},
+        log: [],
+        members: [{ name: 'alpha', title: '' }],
+        roomId: 'r1',
+        running: false,
+        sessions: {},
+        watermarks: {}
+      } as unknown as GroupChat
+    })
+
+    expect(binding.isLive()).toBe(true)
+    expect(membership.groupChatFollowKills.length).toBe(0)
+  })
+})
+
 describe('followGroupChat kill diagnostics', () => {
   it('records a tombstone kill when the room is tombstoned mid-follow', async () => {
     const { chat, membership } = await load()
