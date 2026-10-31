@@ -2,6 +2,7 @@ import { atom, Button, host, randomUuid, useValue } from '@hermes/plugin-sdk'
 import { useEffect, useState } from 'react'
 
 import { useCanonicalGroupLabels } from './canonical-group-labels'
+import { $groupClarify } from './group-chat'
 import { CanonicalGroupRow } from './canonical-group-row'
 import { canonicalGroupRequest, captureCanonicalGroupRoute, discoverCanonicalGroups } from './canonical-groups'
 import type { CanonicalGroupBinding, CanonicalGroupRoute, CanonicalRoom } from './canonical-groups'
@@ -169,6 +170,10 @@ export function CanonicalGroupList({ onOpen }: { onOpen: (key: string, origin: C
     return () => { cancelled = true }
   }, [connectionId, profile, refresh, revision, gatewayUp])
 
+  const clarifyRooms = new Set(
+    Object.values(useValue($groupClarify) || {}).map(entry => entry?.group).filter(Boolean)
+  )
+
   if (!rooms.length && !error) {
     // An empty, healthy list paints nothing — the roster below already carries
     // the room rows; a lone Refresh button here is orphan chrome.
@@ -183,6 +188,7 @@ export function CanonicalGroupList({ onOpen }: { onOpen: (key: string, origin: C
       </p>
     ) : null}
     {rooms.map(room => <CanonicalGroupRow key={room.key} memberCount={room.memberCount} name={room.name}
+        needsYou={clarifyRooms.has(room.name)}
       onDelete={() => disbandListedRoom(room, labels.disbanded(room.name))} onOpen={() => onOpen(room.key, 'key')} />)}
   </div>
 }

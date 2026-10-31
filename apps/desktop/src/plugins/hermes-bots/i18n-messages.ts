@@ -477,6 +477,20 @@ export type BotsMessages = {
     noHistory: string
     openChat: string
     updatedNow: string
+    /** Inline dismiss × on a needs-you card. */
+    dismissPrompt: string
+    /** Live-round strip prefix (e.g. "Running round · Room"). */
+    runningRound: string
+    /** Stop button on the live-round strip. */
+    stopRound: string
+    /** Amber banner when the focused bot's source is unreachable. */
+    unreachable: string
+    /** Inline goal editor affordances. */
+    goalEdit: string
+    goalEmpty: string
+    goalInput: string
+    goalPlaceholder: string
+    goalSet: string
   }
 
 }
