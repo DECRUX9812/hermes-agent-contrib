@@ -1,5 +1,7 @@
 import { atom } from 'nanostores'
 
+import { Codecs, persistentAtom } from '@/lib/persisted'
+
 import { capitalize } from '@/lib/text'
 
 export type SubagentStatus = 'completed' | 'failed' | 'interrupted' | 'queued' | 'running'
@@ -52,6 +54,14 @@ const PREVIEW_MAX = 220
 const TOOL_PREVIEW_MAX = 96
 
 export const $subagentsBySession = atom<Record<string, SubagentProgress[]>>({})
+
+// The side panel's tile order, persisted per profile — user-arranged order
+// wins over arrival order, unknown ids append at the end.
+export const $agentTileOrder = persistentAtom<string[]>(
+  'hermes.desktop.agentTileOrder.v1',
+  [],
+  Codecs.stringArray
+)
 
 // A turn prunes display rows, not child identities. Keep retired IDs with the
 // session's current list so late starts/rosters cannot recreate completed work.

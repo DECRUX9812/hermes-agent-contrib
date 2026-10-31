@@ -124,6 +124,7 @@ import { TermsButterbar } from '../shell/terms-butterbar'
 import { BASIC_TREE, DEFAULT_TREE, registerLayoutPresets } from './layout-presets'
 import { bindLayoutSides } from './layout-sides'
 import { FilesPane, LogsPane, ReviewPaneContent } from './panes'
+import { AgentsSidePanel } from '../agents/side-panel'
 import { PluginPreviewConsentDialog } from './plugin-preview-consent-dialog'
 import { ContribWiring, WiredPane } from './wiring'
 import { WorkspacePageHeaderHostContext } from './workspace-page-header'
@@ -295,6 +296,29 @@ registry.registerMany([
       tabTitleText: () => translateNow('sidebar.review')
     },
     render: () => idle(<ReviewPaneContent />)
+  },
+  {
+    id: 'agents',
+    area: 'panes',
+    title: translateNow('agents.title'),
+    // The monitoring rail: arrives collapsed as a slim right-edge tab (the
+    // same arrival as hermes-bots:routines) and never leaves the chrome —
+    // hideOnly turns its close gestures into Hide, so the zone-menu Show row
+    // is the way back. It is out of the reading area by construction: a
+    // right-placement dock beside workspace, 320px when open.
+    data: {
+      placement: 'right',
+      collapsible: true,
+      defaultCollapsed: true,
+      dock: { pane: 'workspace', pos: 'right' },
+      hideOnly: true,
+      revealAliases: ['agents'],
+      width: '320px',
+      tabIcon: () => <Codicon name="hubot" size="0.9375rem" />,
+      tabTitle: () => <LocalizedTabTitle select={t => t.agents.title} />,
+      tabTitleText: () => translateNow('agents.title')
+    },
+    render: () => idle(<AgentsSidePanel />)
   }
 ])
 
