@@ -10,7 +10,13 @@ import { PANE_TOGGLE_REVEAL_EVENT } from '@/components/pane-shell'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } from '@/components/ui/context-menu'
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger
+} from '@/components/ui/dropdown-menu'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { KbdGroup } from '@/components/ui/kbd'
 import {
@@ -23,7 +29,7 @@ import {
   SidebarMenuItem
 } from '@/components/ui/sidebar'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
-import { pluginDisplayName, pluginIdFromSource, splitChrome } from '@/contrib/chrome'
+import { pluginDisplayName, pluginIdFromSource } from '@/contrib/chrome'
 import { $pluginRecords, setPluginEnabled } from '@/contrib/plugins-store'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { type SessionInfo, type SessionSearchResult } from '@/hermes'
@@ -472,24 +478,34 @@ export function ChatSidebar({
   // disposes its contribution and the rows come straight back.
   const navPrefs = useContributions(SIDEBAR_NAV_PREFS_AREA)
 
-  // Chrome budget: plugin pages may only claim CHROME_PLUGIN_ROWS rows of the
-  // primary nav. The rest collapse into one "More pages" row instead of
-  // pushing the session list down the sidebar — the failure the user reads as
-  // "the layout is broken". Built-ins are never counted or moved.
-  const { inline: navInlinePlugins, overflow: navOverflowPlugins } = useMemo(() => {
-    const shown = contributedNav.filter(shownInMode(interfaceMode))
-
-    return splitChrome(shown, row => row.pluginId ?? null)
-  }, [contributedNav, interfaceMode])
+  // Chrome budget: the primary nav keeps a CONSTANT height no matter how many
+  // extensions are installed. Plugin pages live behind one "Extensions" row
+  // (count on the right) instead of each taking a row — six plugins used to
+  // push the session list 170px down the sidebar, which is what "the layout is
+  // broken" looks like from the outside. Built-ins never move.
+  const contributedShown = useMemo(
+    () => applySidebarNavPrefs(contributedNav.filter(shownInMode(interfaceMode)), navPrefs),
+    [contributedNav, interfaceMode, navPrefs]
+  )
 
   const navItems = useMemo(
-    () =>
-      applySidebarNavPrefs(
-        [...SIDEBAR_NAV.filter(shownInMode(interfaceMode)), ...navInlinePlugins],
-        navPrefs
-      ),
-    [interfaceMode, navPrefs, navInlinePlugins]
+    () => applySidebarNavPrefs(SIDEBAR_NAV.filter(shownInMode(interfaceMode)), navPrefs),
+    [interfaceMode, navPrefs]
   )
+
+  // One "Disable ⟨plugin⟩" row per plugin that owns a page, so the off-switch
+  // lives where the pages do instead of three pages deep in Capabilities.
+  const extensionPlugins = useMemo(() => {
+    const ids = new Map<string, string>()
+
+    for (const row of contributedShown) {
+      if (row.pluginId && !ids.has(row.pluginId)) {
+        ids.set(row.pluginId, pluginDisplayName(row.pluginId, pluginRecords[row.pluginId]?.name))
+      }
+    }
+
+    return [...ids.entries()]
+  }, [contributedShown, pluginRecords])
 
   const panesFlipped = useStore($panesFlipped)
   const grouping = useStore($sidebarGrouping)
@@ -521,6 +537,14 @@ export function ChatSidebar({
   const selectedSessionId = useStore($focusedStoredSessionId)
   const focusedSessionIsTile = useStore($focusedSessionIsTile)
   const currentView = focusedSessionIsTile ? 'chat' : routeView
+
+  // Which extension page (if any) the window is on. The Extensions row becomes
+  // that page's own label while it is active, so "where am I?" still works
+  // without every plugin holding a permanent row in the nav.
+  const activeExtension = useMemo(
+    () => (currentView === 'extension' ? contributedShown.find(row => row.route && row.route === pathname) : undefined),
+    [contributedShown, currentView, pathname]
+  )
   const sessions = useStore($sessions)
   const cronSessions = useStore($cronSessions)
   const cronJobs = useStore($cronJobs)
@@ -1797,36 +1821,68 @@ export function ChatSidebar({
                 )
               })}
 
-              {/* Plugin pages past the chrome budget. One row, always reachable,
-                  instead of an unbounded nav: the rows above stay at a
-                  glance-able height no matter how many extensions are loaded. */}
-              {navOverflowPlugins.length > 0 && (
+              {/* Extensions: one row for every plugin page, whatever the count.
+                  Constant height is the point — the nav can't grow with the
+                  plugin inventory, so the session list keeps its space. */}
+              {contributedShown.length > 0 && (
                 <SidebarMenuItem>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                       <SidebarMenuButton
-                        className="flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-[0.8125rem] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none"
-                        data-slot="sidebar-nav-overflow"
-                        tooltip={`${navOverflowPlugins.length} more plugin pages`}
+                        aria-current={activeExtension ? 'page' : undefined}
+                        className={cn(
+                          'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-[0.8125rem] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
+                          activeExtension &&
+                            'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!'
+                        )}
+                        data-slot="sidebar-nav-extensions"
+                        tooltip={activeExtension ? (s.nav[activeExtension.id] ?? activeExtension.label) : `${contributedShown.length} extension pages`}
                         type="button"
                       >
-                        <Codicon
-                          className="size-4 shrink-0 text-[color-mix(in_srgb,currentColor_72%,transparent)]"
-                          name="ellipsis"
-                        />
-                        <span className="min-w-0 truncate">More pages</span>
-                        <span className="ml-auto min-w-4 rounded-full bg-(--ui-control-hover-background) px-1 text-center text-[0.6875rem] font-medium leading-4 tabular-nums">
-                          {navOverflowPlugins.length}
+                        {activeExtension ? (
+                          <activeExtension.icon className="size-4 shrink-0 text-[color-mix(in_srgb,currentColor_72%,transparent)]" />
+                        ) : (
+                          <Codicon
+                            className="size-4 shrink-0 text-[color-mix(in_srgb,currentColor_72%,transparent)]"
+                            name="extensions"
+                          />
+                        )}
+                        <span className="min-w-0 truncate">
+                          {activeExtension ? (s.nav[activeExtension.id] ?? activeExtension.label) : 'Extensions'}
                         </span>
+                        {!activeExtension && (
+                          <span className="ml-auto min-w-4 rounded-full bg-(--ui-control-hover-background) px-1 text-center text-[0.6875rem] font-medium leading-4 tabular-nums">
+                            {contributedShown.length}
+                          </span>
+                        )}
                       </SidebarMenuButton>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="start" className="w-56">
-                      {navOverflowPlugins.map(row => (
+                    <DropdownMenuContent align="start" className="w-60">
+                      {contributedShown.map(row => (
                         <DropdownMenuItem key={row.id} onSelect={() => onNavigate(row)}>
                           <row.icon className="size-4 shrink-0" />
                           <span className="min-w-0 truncate">{s.nav[row.id] ?? row.label}</span>
+                          {row.pluginId && (
+                            <span className="ml-auto shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+                              {pluginDisplayName(row.pluginId, pluginRecords[row.pluginId]?.name)}
+                            </span>
+                          )}
                         </DropdownMenuItem>
                       ))}
+                      {extensionPlugins.length > 0 && (
+                        <>
+                          <DropdownMenuSeparator />
+                          {extensionPlugins.map(([id, name]) => (
+                            <DropdownMenuItem
+                              className="text-(--ui-text-tertiary)"
+                              key={`off:${id}`}
+                              onSelect={() => void setPluginEnabled(id, false)}
+                            >
+                              <span className="min-w-0 truncate">Disable {name}</span>
+                            </DropdownMenuItem>
+                          ))}
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </SidebarMenuItem>

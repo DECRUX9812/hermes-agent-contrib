@@ -122,10 +122,12 @@ describe('ChatSidebar navigation activity', () => {
     noteActiveTreeGroup(null)
   })
 
-  it('shows a contributed row badge only while one is set', () => {
+  it('keeps a contributed badge out of the nav and counts it in the Extensions row', () => {
     const calm = renderSidebar('/', 'chat')
 
     expect(calm.container.querySelectorAll('[data-slot="sidebar-nav-badge"]')).toHaveLength(0)
+    // The two nav rows this suite registers already sit behind the row.
+    expect(calm.container.querySelector('[data-slot="sidebar-nav-extensions"]')?.textContent).toContain('2')
 
     cleanup()
 
@@ -134,10 +136,14 @@ describe('ChatSidebar navigation activity', () => {
     ])
 
     const loud = renderSidebar('/', 'chat')
-    const badges = loud.container.querySelectorAll('[data-slot="sidebar-nav-badge"]')
 
-    expect(badges).toHaveLength(1)
-    expect(badges[0]?.textContent).toBe('2')
+    // No inline plugin row, no inline badge — one Extensions row that says how
+    // many pages are behind it.
+    expect(loud.container.querySelectorAll('[data-slot="sidebar-nav-badge"]')).toHaveLength(0)
+    const extensions = loud.container.querySelector('[data-slot="sidebar-nav-extensions"]')
+
+    expect(extensions?.textContent).toContain('Extensions')
+    expect(extensions?.textContent).toContain('3')
     disposeBadge()
   })
 
@@ -205,18 +211,24 @@ describe('ChatSidebar navigation activity', () => {
 
   // Teardown proof: the loader disposes a plugin's contributions on disable,
   // and that disposer alone must bring the row back — no store to clear.
-  it('hides a nav row while a sidebarNav.prefs contribution is registered and restores it on dispose', () => {
+  it('honours a sidebarNav.prefs hide for extension pages and restores on dispose', () => {
+    // /kanban is an extension page, so the Extensions row carries its label.
     renderSidebar('/kanban', 'extension')
     expect(screen.getByRole('button', { name: 'Kanban' })).toBeTruthy()
 
     let dispose = () => {}
 
     act(() => {
-      dispose = registry.register({ area: SIDEBAR_NAV_PREFS_AREA, id: 'prefs', data: { hide: ['kanban-nav'] } })
+      dispose = registry.register({
+        area: SIDEBAR_NAV_PREFS_AREA,
+        id: 'prefs',
+        data: { hide: ['kanban-nav', 'reports-nav'] }
+      })
     })
+    // Everything behind the row is hidden, so the row itself is a preference,
+    // not a removal: no Extensions row at all while it holds nothing.
     expect(screen.queryByRole('button', { name: 'Kanban' })).toBeNull()
-    // A hidden row is a preference, not a removal: the sibling nav row stays.
-    expect(screen.getByRole('button', { name: 'Reports' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Extensions' })).toBeNull()
 
     act(() => dispose())
     expect(screen.getByRole('button', { name: 'Kanban' })).toBeTruthy()
@@ -550,10 +562,10 @@ describe('ChatSidebar messaging owners', () => {
   })
 })
 
-// Chrome budget: extensions may claim only a fixed number of primary-nav rows.
-// Without this a stack of plugin pages pushes the session list off the sidebar,
-// which is the "layout is broken" failure this budget exists to prevent.
-describe('ChatSidebar plugin nav budget', () => {
+// Chrome budget: the primary nav keeps a constant height no matter how many
+// extensions are installed. Plugin pages live behind ONE "Extensions" row, so a
+// growing plugin inventory can never push the session list down the sidebar.
+describe('ChatSidebar extension pages', () => {
   let disposePlugins: () => void
 
   beforeEach(() => {
@@ -579,20 +591,19 @@ describe('ChatSidebar plugin nav budget', () => {
     noteActiveTreeGroup(null)
   })
 
-  it('renders only budgeted plugin rows and collapses the rest into one overflow row', () => {
+  it('collapses every plugin page into one constant-height row', () => {
     const { container } = renderSidebar('/', 'chat')
     const nav = container.querySelector('[data-slot="sidebar-menu"]') as HTMLElement
 
-    // First CHROME_PLUGIN_ROWS pages are inline…
-    expect(within(nav).getByRole('button', { name: /Plugin page 0/ })).toBeTruthy()
-    expect(within(nav).getByRole('button', { name: /Plugin page 2/ })).toBeTruthy()
-    // …the rest are NOT in the nav, so they can't crowd the session list.
-    expect(within(nav).queryByRole('button', { name: /Plugin page 3/ })).toBeNull()
+    // The nav height does not grow with the plugin inventory.
+    for (const i of [0, 1, 2, 3, 4]) {
+      expect(within(nav).queryByRole('button', { name: new RegExp(`Plugin page ${i}`) })).toBeNull()
+    }
 
-    const overflow = nav.querySelector('[data-slot="sidebar-nav-overflow"]')
+    const extensions = nav.querySelector('[data-slot="sidebar-nav-extensions"]')
 
-    expect(overflow).not.toBeNull()
-    expect(overflow?.textContent).toContain('More pages')
-    expect(overflow?.textContent).toContain('2')
+    expect(extensions).not.toBeNull()
+    expect(extensions?.textContent).toContain('Extensions')
+    expect(extensions?.textContent).toContain('5')
   })
 })
