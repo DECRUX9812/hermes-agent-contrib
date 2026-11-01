@@ -11,8 +11,20 @@ export type HudResizeDirection = (typeof HUD_RESIZE_DIRECTIONS)[number]
 const HUD_WAYLAND_RESIZE_DIRECTIONS = ['e', 'se', 's'] as const satisfies readonly HudResizeDirection[]
 
 /** Edges the HUD can honestly resize. Native Wayland cannot change a
- *  top-level's global x/y, so only edges that keep the existing origin. */
-export function hudResizeDirections(clientPlacement: boolean): readonly HudResizeDirection[] {
+ *  top-level's global x/y, so only edges that keep the existing origin.
+ *
+ *  `nativeResize` (the browser's Document-PiP HUD) has no edges at all: Chrome
+ *  gives a PiP window its own OS resize gesture and refuses script placement,
+ *  so a client-side frame would be dead chrome over a window the page does not
+ *  size. */
+export function hudResizeDirections(
+  clientPlacement: boolean,
+  nativeResize = false
+): readonly HudResizeDirection[] {
+  if (nativeResize) {
+    return []
+  }
+
   return clientPlacement ? HUD_RESIZE_DIRECTIONS : HUD_WAYLAND_RESIZE_DIRECTIONS
 }
 
@@ -101,7 +113,7 @@ function releasePointer(state: ResizeState): void {
  * drag: client coordinates are relative to a window that is changing position
  * and size, so they cannot be trusted mid-resize.
  */
-export function useHudResizeHandle(): {
+export function useHudResizeHandle(view: Window = window): {
   resizing: boolean
   onPointerDown: (event: ReactPointerEvent<HTMLElement>, direction: HudResizeDirection) => void
 } {
@@ -124,14 +136,16 @@ export function useHudResizeHandle(): {
       return
     }
 
+    // Measured on the HUD's own window: in the browser the HUD is portalled
+    // into a PiP window, whose outer bounds are the ones `setBounds` resizes.
     stateRef.current = {
       direction,
       startX: event.screenX,
       startY: event.screenY,
-      originX: window.screenX,
-      originY: window.screenY,
-      originW: window.outerWidth,
-      originH: window.outerHeight,
+      originX: view.screenX,
+      originY: view.screenY,
+      originW: view.outerWidth,
+      originH: view.outerHeight,
       pointerId: event.pointerId,
       target: event.currentTarget
     }
@@ -140,7 +154,7 @@ export function useHudResizeHandle(): {
     capturePointer(stateRef.current)
     event.preventDefault()
     event.stopPropagation()
-  }, [])
+  }, [view])
 
   useEffect(() => {
     const onMove = (event: PointerEvent) => {
@@ -184,7 +198,7 @@ export function useHudResizeHandle(): {
       window.removeEventListener('pointerup', onUp, true)
       window.removeEventListener('pointercancel', onUp, true)
     }
-  }, [reset])
+  }, [reset, view])
 
   // A resize interrupted by an unmount must not leave the state dangling.
   useEffect(() => reset, [reset])

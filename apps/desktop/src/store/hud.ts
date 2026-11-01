@@ -15,6 +15,7 @@
 
 import { atom } from 'nanostores'
 
+import type { HudPortalHost } from '@/lib/browser-hud'
 import { requestComposerDraftSync } from '@/store/composer'
 import { $activeGatewayProfile, normalizeProfileKey } from '@/store/profile'
 import { $sessions, rememberedSessionProfile } from '@/store/session'
@@ -38,6 +39,21 @@ export const $hudMode = atom(isHudWindow())
 /** Which conversation the HUD is showing, as far as this window knows. Lets the
  *  toggle tell "switch the HUD to this tab" apart from "dismiss the HUD". */
 export const $hudSession = atom<null | string>(null)
+
+/**
+ * Where the browser-hosted HUD lives, when it lives anywhere.
+ *
+ * Electron's HUD is a separate window with its own renderer, so `$hudMode` is
+ * true only inside it. Chrome's Document-PiP window cannot host a second
+ * renderer (a PiP document cannot navigate — see `lib/browser-hud.ts`), so the
+ * browser HUD is the SAME renderer portalled into an owned OS window: this atom
+ * carries the host element, and the app shell renders `HudShell` into it with
+ * `createPortal`. Null means "no browser HUD window is up".
+ *
+ * Kept as its own atom rather than a boolean so the portal has something to
+ * mount into, and so closing the window can clear it in one write.
+ */
+export const $hudPortalHost = atom<HudPortalHost | null>(null)
 
 /** True when the shell exposes HUD mode (desktop only). */
 export const canUseHud = (): boolean =>
@@ -68,7 +84,16 @@ export function openHud(sessionId?: null | string): void {
 
   $hudActive.set(true)
   $hudSession.set(sessionId ?? null)
-  void api.open({ sessionId: sessionId ?? null, profile })
+  void api.open({ sessionId: sessionId ?? null, profile }).then(result => {
+    // A refused window (Document-PiP without user activation, or a browser that
+    // took the API away) must not leave the toggle reading "open" for a window
+    // that does not exist. Electron never refuses, so this is browser-only in
+    // practice.
+    if (!result?.ok) {
+      $hudActive.set(false)
+      $hudSession.set(null)
+    }
+  })
 }
 
 /** Leave HUD mode. Callable from either window — main closes the child, the

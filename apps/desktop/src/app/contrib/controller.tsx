@@ -142,6 +142,7 @@ import {
 } from '../chat/session-tile'
 import { AppContextMenu } from '../context-menu/app-context-menu'
 import { HudShell } from '../hud/hud-shell'
+import { HudPortal } from '../hud/portal'
 import { $terminalTakeover, setTerminalTakeover } from '../right-sidebar/store'
 import { continueInHermesCli } from '../right-sidebar/terminal/hermes-cli'
 import { terminalPaletteToggle } from '../right-sidebar/terminal/reveal-focus'
@@ -1066,6 +1067,10 @@ export function ContribController() {
     >
       <ContribWiring>
         <AppContextMenu />
+        {/* The browser's HUD: the same shell, portalled into a Document-PiP
+            window. Renders nothing unless that window is up (and never in
+            Electron, which spawns its own renderer instead). */}
+        <HudPortal />
         <div
           className="flex h-full min-h-0 w-screen flex-col bg-(--ui-bg-chrome) text-(--ui-text-primary)"
           // Window-glass hook: this div and the sidebar-wrapper above it are

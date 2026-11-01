@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Hermes — Picture Request HUD",
+  "version": "0.2.0",
+  "description": "A chromeless always-on-top HUD beside Chrome, plus an assist dock. Shares your screen only after you pick it in Chrome's own picker.",
+  "minimum_chrome_version": "116",
+  "permissions": ["sidePanel", "storage"],
+  "host_permissions": ["http://127.0.0.1/*", "http://localhost/*"],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_title": "Picture Request HUD"
+  },
+  "side_panel": {
+    "default_path": "dock.html"
+  },
+  "commands": {
+    "open-dock": {
+      "suggested_key": { "default": "Ctrl+Shift+H", "mac": "Command+Shift+H" },
+      "description": "Open the Picture Request dock"
+    }
+  }
+}

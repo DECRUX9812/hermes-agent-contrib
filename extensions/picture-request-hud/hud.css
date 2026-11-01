@@ -1,0 +1,244 @@
+/* Picture Request HUD — one stylesheet for the dock and the floating window.
+   Deliberately: no layout animation, no backdrop-filter on the scroll path, no
+   JS-driven transitions. Only opacity/transform animate, so dragging and
+   resizing the OS window never fight a reflow (that is where browser HUDs
+   start to look janky next to an Electron one). */
+
+:root {
+  --bg: #0d0d10;
+  --panel: #15161b;
+  --panel-2: #1b1d24;
+  --line: #262932;
+  --fg: #eceef3;
+  --muted: #9aa0ad;
+  --accent: #7c9cff;
+  --accent-ink: #0b1020;
+  --danger: #ff5a5f;
+  --live: #ff3b30;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { height: 100%; }
+
+body.surface {
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  background: var(--bg);
+  color: var(--fg);
+  font: 13px/1.45 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+body.hud { padding: 10px; gap: 8px; }
+
+/* The whole window is the HUD: no page scroll, only the log scrolls. */
+.grow { flex: 1 1 auto; min-height: 0; }
+
+.hd {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 2px 2px 0;
+}
+
+body.hud .hd.drag { -webkit-app-region: drag; cursor: grab; }
+
+.hd-title { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.hd-sub { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .08em; }
+
+.dot-idle {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--muted); opacity: .55;
+}
+
+.live {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 3px 9px 3px 8px;
+  border-radius: 999px;
+  background: rgba(255, 59, 48, .12);
+  border: 1px solid rgba(255, 59, 48, .35);
+  color: #ffb3b0;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: .01em;
+  max-width: 62%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.live-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  background: var(--live);
+  box-shadow: 0 0 0 0 rgba(255, 59, 48, .7);
+  animation: pulse 1.8s ease-out infinite;
+  flex: none;
+}
+
+@keyframes pulse {
+  0% { box-shadow: 0 0 0 0 rgba(255, 59, 48, .55); }
+  70% { box-shadow: 0 0 0 7px rgba(255, 59, 48, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(255, 59, 48, 0); }
+}
+
+/* A live share tints the window edge — impossible to miss when parked over
+   another app, and it costs one custom property change, not a repaint storm. */
+body.is-live { box-shadow: inset 0 0 0 1px rgba(255, 59, 48, .5); }
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 0;
+}
+
+.row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.row.space { justify-content: space-between; }
+
+.btn {
+  appearance: none;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+  color: var(--fg);
+  font: inherit;
+  font-weight: 550;
+  padding: 7px 12px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background-color .12s ease, transform .08s ease, border-color .12s ease;
+}
+
+.btn:hover:not(:disabled) { background: #22242d; border-color: #343845; }
+.btn:active:not(:disabled) { transform: translateY(1px); }
+.btn:disabled { opacity: .45; cursor: default; }
+
+.btn-primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover:not(:disabled) { background: #93adff; border-color: #93adff; }
+.btn-danger { color: #ffb3b0; border-color: rgba(255, 59, 48, .4); background: rgba(255, 59, 48, .1); }
+.btn-quiet { background: transparent; border-color: transparent; color: var(--muted); padding: 4px 6px; }
+
+.hint, .ft { color: var(--muted); font-size: 11px; line-height: 1.4; margin: 0; }
+.ft { padding: 0 4px 2px; }
+
+.lbl { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: .07em; }
+
+.input {
+  width: 100%;
+  resize: none;
+  background: var(--panel-2);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  color: var(--fg);
+  font: inherit;
+  padding: 8px 10px;
+}
+
+.input:focus { outline: 2px solid rgba(124, 156, 255, .45); outline-offset: 1px; }
+
+.kbd { color: var(--muted); font-size: 11px; }
+
+.status { color: var(--muted); font-size: 11px; margin-left: auto; }
+
+.preview {
+  width: 100%;
+  border-radius: 8px;
+  background: #000;
+  border: 1px solid var(--line);
+  aspect-ratio: 16 / 9;
+  object-fit: contain;
+}
+
+body.hud .preview { aspect-ratio: auto; flex: 1 1 auto; min-height: 0; }
+
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  overscroll-behavior: contain;
+}
+
+.log-line { padding: 6px 8px; border-radius: 8px; background: var(--panel-2); color: #d6dae3; word-break: break-word; }
+.log-live { border-left: 2px solid var(--live); }
+.log-reply { border-left: 2px solid var(--accent); }
+.log-ask { color: var(--muted); }
+.log-warn { color: #ffce7a; }
+
+.error {
+  border: 1px solid rgba(255, 59, 48, .45);
+  background: rgba(255, 59, 48, .08);
+  border-radius: var(--radius);
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-start;
+}
+
+.error strong { font-size: 12px; }
+.error p { margin: 0; color: #ffc9c7; font-size: 12px; }
+
+.hud-state { margin: 0; color: var(--muted); font-size: 11px; padding: 0 4px; }
+
+.hidden { display: none !important; }
+
+/* --------------------------------------------------------------- launcher
+   The top-level control. It is the only element in the panel allowed to look
+   like the primary action, because it is the product: one click, HUD on screen.
+   Two states, one button — accent when it will launch, quiet when it will only
+   bring the window forward. */
+.launch { display: flex; flex-direction: column; gap: 6px; }
+
+.btn-launch {
+  width: 100%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  padding: 12px 14px;
+  font-size: 13.5px;
+  font-weight: 650;
+  letter-spacing: .005em;
+  color: var(--accent-ink);
+  background: linear-gradient(180deg, #a3b7ff, var(--accent));
+  border: 1px solid rgba(124, 156, 255, .7);
+  border-radius: 11px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .3), 0 8px 22px -14px rgba(124, 156, 255, .95);
+  cursor: pointer;
+}
+
+.btn-launch:hover:not(:disabled) { background: linear-gradient(180deg, #b3c4ff, #93adff); border-color: #a3b7ff; }
+.btn-launch:active:not(:disabled) { transform: translateY(1px); }
+.btn-launch:focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; }
+.btn-launch[data-open="true"] {
+  color: var(--fg);
+  background: var(--panel-2);
+  border-color: var(--line);
+  box-shadow: none;
+}
+.btn-launch[data-open="true"]:hover:not(:disabled) { background: #22242d; border-color: #343845; }
+
+.launch-glyph { flex: none; opacity: .9; }
+
+.launch-note { margin: 0; color: var(--muted); font-size: 11.5px; line-height: 1.35; text-align: center; }
+
+/* Respect the OS setting: the pulsing dot is decoration, not information. */
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; }
+  .btn { transition: none; }
+}

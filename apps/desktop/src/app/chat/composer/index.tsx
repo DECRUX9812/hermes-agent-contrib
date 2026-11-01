@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router'
 
 import { useTourMarker } from '@/app/chat/tour-marker'
 import { useHudComposerDrag } from '@/app/hud/composer-drag'
+import { useHudSurface } from '@/app/hud/view'
 import { CRON_ROUTE } from '@/app/routes'
 import { composerEdgeRing, composerFloatingStrip, composerInputBacking } from '@/components/chat/composer-dock'
 import { useSetupChatView } from '@/components/onboarding/first-run/assembly'
@@ -119,7 +120,11 @@ export function ChatBar({
   onSubmit: onSubmitProp,
   onTranscribeAudio
 }: ChatBarProps) {
-  const hudMode = useStore($hudMode)
+  // `$hudMode` is per-window; the portalled browser HUD shares this renderer
+  // with the app shell, so its subtree answers through context instead.
+  const hudWindowMode = useStore($hudMode)
+  const hudSurface = useHudSurface()
+  const hudMode = hudWindowMode || hudSurface
   const hudWindowing = window.hermesDesktop?.hud?.windowing
   const hudNativeDrag = hudMode && hudWindowing?.nativeDrag === true
 

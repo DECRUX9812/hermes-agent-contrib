@@ -17,7 +17,7 @@ const HUD_SHEET_OVERHANG_PX = 12
  * transcript's rows may not change size, but the available scrollback must, so
  * observing the rows alone cannot update the band.
  */
-export function useHudTranscriptBand(rootRef: RefObject<HTMLDivElement | null>): boolean {
+export function useHudTranscriptBand(rootRef: RefObject<HTMLDivElement | null>, view: Window = window): boolean {
   const [filled, setFilled] = useState(false)
 
   useEffect(() => {
@@ -66,10 +66,12 @@ export function useHudTranscriptBand(rootRef: RefObject<HTMLDivElement | null>):
       // Once the HUD has a transcript, a resize must buy readable scrollback.
       // The old glance-band ceiling froze this at 152px and turned every extra
       // pixel of native window height into empty transparent chrome.
+      // The PiP window's height in the browser, the HUD's own in Electron —
+      // never the app window that hosts the portal.
       const visible = hudTranscriptHeight({
         barHeight: root.querySelector<HTMLElement>('[data-slot="composer-dock"]')?.getBoundingClientRect().height ?? 0,
         contentHeight: contentSpan,
-        viewportHeight: window.innerHeight
+        viewportHeight: view.innerHeight
       })
 
       root.style.setProperty('--hud-band-height', `${visible}px`)
@@ -87,7 +89,7 @@ export function useHudTranscriptBand(rootRef: RefObject<HTMLDivElement | null>):
         root.style.setProperty('--hud-bar-height', `${Math.round(barHeight)}px`)
       }
 
-      setFilled(barHeight + visible >= window.innerHeight - 1)
+      setFilled(barHeight + visible >= view.innerHeight - 1)
     }
 
     measure()
@@ -106,14 +108,14 @@ export function useHudTranscriptBand(rootRef: RefObject<HTMLDivElement | null>):
       measure()
     }, 500)
 
-    window.addEventListener('resize', measure)
+    view.addEventListener('resize', measure)
 
     return () => {
       window.clearInterval(probe)
-      window.removeEventListener('resize', measure)
+      view.removeEventListener('resize', measure)
       ro.disconnect()
     }
-  }, [rootRef])
+  }, [rootRef, view])
 
   return filled
 }

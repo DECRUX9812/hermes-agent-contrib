@@ -5,6 +5,7 @@ import { BROWSER_BRIDGE_STUBS } from '@/lib/browser-bridge-stubs'
 import { createBrowserClipboardBridge } from '@/lib/browser-clipboard'
 import { createBrowserConnectionBridge, requireBrowserConnection } from '@/lib/browser-connection'
 import { createBrowserFilesBridge } from '@/lib/browser-files'
+import { canHostHudPortal, createBrowserHud } from '@/lib/browser-hud'
 import { watchWebappLaunchLink } from '@/lib/browser-launch-session'
 import { createBrowserProfileBridge } from '@/lib/browser-profile'
 import { createBrowserTerminal } from '@/lib/browser-terminal'
@@ -17,6 +18,7 @@ import {
 import { createBrowserUploadsBridge } from '@/lib/browser-uploads'
 import { createBrowserWindowOpener, sessionWindowTarget } from '@/lib/browser-window'
 import { createBrowserZoom } from '@/lib/browser-zoom'
+import { $hudPortalHost } from '@/store/hud'
 import { $connection } from '@/store/session'
 import type { BackendUpdateCheckResponse } from '@/types/hermes'
 
@@ -90,6 +92,12 @@ export function installBrowserDesktopBridge(): boolean {
       requireConnection: requireBrowserConnection
     }),
     ...uploads,
+    // HUD mode is Document-PiP only in the browser: the PiP window is an owned,
+    // chromeless OS window and the HUD is portalled into it (lib/browser-hud.ts).
+    // Attached ONLY where that API exists — `canUseHud()` is presence-based, so
+    // a `hud` that cannot open would show the titlebar toggle and Ctrl+Shift+H
+    // and then fail silently (store/hud.ts discards open()'s result).
+    ...(canHostHudPortal() ? { hud: createBrowserHud({ setHost: host => $hudPortalHost.set(host) }) } : {}),
     api,
     findInPage: async (query: string) => {
       const find = (window as Window & { find?: (value: string) => boolean }).find
@@ -145,6 +153,7 @@ export function installBrowserDesktopBridge(): boolean {
         const health = await api<{ version?: string; displayVersion?: string; commit?: string }>({
           path: '/api/health'
         })
+
         return {
           appVersion: health.displayVersion || health.version || 'browser-hosted',
           baseVersion: health.version,
@@ -171,8 +180,10 @@ export function installBrowserDesktopBridge(): boolean {
           const res = await api<BackendUpdateCheckResponse>({
             path: `/api/hermes/update/check?force=${force}`
           })
+
           const behind = res.behind === undefined ? 0 : res.behind
           const checkFailed = res.can_apply && res.behind === null
+
           return {
             supported: res.can_apply,
             error: checkFailed ? 'check-failed' : undefined,

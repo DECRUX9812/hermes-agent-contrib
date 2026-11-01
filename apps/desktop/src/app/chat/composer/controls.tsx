@@ -1,5 +1,6 @@
 import { useStore } from '@nanostores/react'
 
+import { useHudSurface } from '@/app/hud/view'
 import { Button } from '@/components/ui/button'
 import { Codicon } from '@/components/ui/codicon'
 import { Tip, TipKeybindLabel } from '@/components/ui/tooltip'
@@ -82,7 +83,10 @@ export function ComposerControls({
 }) {
   const { t } = useI18n()
   const c = t.composer
-  const hudMode = useStore($hudMode)
+  const hudWindowMode = useStore($hudMode)
+  const hudSurface = useHudSurface()
+  // Either window-level HUD mode (Electron) or the portalled browser HUD.
+  const hudMode = hudWindowMode || hudSurface
   const showsAdvancedChrome = useStore($showsAdvancedChrome)
 
   if (conversation.active) {

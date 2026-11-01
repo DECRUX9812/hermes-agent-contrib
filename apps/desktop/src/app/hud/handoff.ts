@@ -27,6 +27,8 @@ import { getActiveComposer, requestComposerFocus } from '../chat/composer/focus'
 import { openSession, type OpenSessionNavigate } from '../open-session'
 import { sessionRoute } from '../routes'
 
+import { useHudSurface } from './view'
+
 /** Session tiles route on `tile:<storedSessionId>` (see session-tile.tsx). */
 const TILE_TARGET_PREFIX = 'tile:'
 
@@ -114,18 +116,31 @@ export function useHudHandoff({ navigate, resumeSession }: HudHandoffParams): vo
  *  HUD is already up switches the conversation showing in it. */
 export function useHudGoto(navigate: OpenSessionNavigate): void {
   const navigateRef = useRef(navigate)
+  const portal = useHudSurface()
   navigateRef.current = navigate
 
-  useEffect(() => window.hermesDesktop?.hud?.onGoto?.(id => navigateRef.current(sessionRoute(id))), [])
+  // A portalled HUD shares this renderer's router, so a retarget would drag the
+  // app window to the session too. Electron (a window per router) keeps it; the
+  // browser HUD shows the conversation this renderer is already on.
+  useEffect(() => {
+    if (portal) {
+      return
+    }
+
+    return window.hermesDesktop?.hud?.onGoto?.(id => navigateRef.current(sessionRoute(id)))
+  }, [portal])
 }
 
 /** HUD side: keep main told which session this window is on. */
 export function useReportHudSession(): void {
   const selectedStoredSessionId = useStore($selectedStoredSessionId)
+  const portal = useHudSurface()
 
   useEffect(() => {
-    if (isHudWindow()) {
+    // Portalled HUD windows are not their own renderer, so `isHudWindow()` does
+    // not describe them — the surface flag does.
+    if (isHudWindow() || portal) {
       reportHudSession(selectedStoredSessionId)
     }
-  }, [selectedStoredSessionId])
+  }, [portal, selectedStoredSessionId])
 }

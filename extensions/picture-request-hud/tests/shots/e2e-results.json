@@ -1,0 +1,117 @@
+[
+  {
+    "detail": "id=fhmblcfkpoonojkijjogmcpkmlfnlcfm",
+    "name": "extension service worker registered",
+    "ok": true
+  },
+  {
+    "detail": "{\"hint\":\"A floating window you can park beside any app. Not\",\"pip\":true,\"popoutDisabled\":false}",
+    "name": "dock loads in Chrome with Document-PiP available",
+    "ok": true
+  },
+  {
+    "detail": "{\"aboveEverything\":true,\"enabled\":true,\"exists\":true,\"height\":46,\"label\":\"Launch HUD\",\"visible\":true,\"widthRatio\":0.98}",
+    "name": "a prominent top-level launch button sits above every other control",
+    "ok": true
+  },
+  {
+    "detail": "2 → 3",
+    "name": "one click on the launch button opens the HUD window",
+    "ok": true
+  },
+  {
+    "detail": "{\"label\":\"Bring HUD to front\",\"note\":\"The floating window is up. This brings it ba\",\"open\":\"true\",\"status\":\"HUD is open\"}",
+    "name": "the button switches to \"bring to front\" once the HUD is up",
+    "ok": true
+  },
+  {
+    "detail": "{\"href\":\"about:blank\",\"title\":\"Hermes HUD\"}",
+    "name": "the window is PiP-owned and chromeless (about:blank, not a tab)",
+    "ok": true
+  },
+  {
+    "detail": "{\"exists\":true,\"closed\":false,\"href\":\"about:blank\",\"hasHudFlag\":true,\"hasShare\":true,\"hasPreview\":true,\"hasLog\":true,\"cssApplied\":\"9px\",\"themeVar\":\"\",\"title\":\"Hermes HUD\",\"size\":[885,585]}",
+    "name": "the HUD surface was built inside that window (same markup contract)",
+    "ok": true
+  },
+  {
+    "detail": "border-radius=9px",
+    "name": "the extension stylesheet applies inside the PiP document",
+    "ok": true
+  },
+  {
+    "detail": "size=885,585",
+    "name": "geometry is applied from inside the window (not the advisory hint)",
+    "ok": true
+  },
+  {
+    "detail": "{\"dockBadge\":false,\"hudBadge\":false,\"hudVideo\":false,\"titles\":[\"Picture Request — Hermes\",\"Hermes HUD\"]}",
+    "name": "nothing captured and no live indicator before consent",
+    "ok": true
+  },
+  {
+    "detail": "{\"frame\":[1280,720],\"surface\":\"monitor\"}",
+    "name": "sharing starts only after the explicit click",
+    "ok": true
+  },
+  {
+    "detail": "[1280,720]",
+    "name": "the HUD renders the shared screen (frames flowing in the other document)",
+    "ok": true
+  },
+  {
+    "detail": "{\"dock\":\"● LIVE — Picture Request — Hermes\",\"hud\":\"● LIVE — Hermes HUD\"}",
+    "name": "privacy indicator is visible in BOTH surfaces and both window titles",
+    "ok": true
+  },
+  {
+    "detail": "dock=true hud=true",
+    "name": "the live edge tint is applied while frames flow",
+    "ok": true
+  },
+  {
+    "detail": "{\"dockBadge\":true,\"dockTitle\":\"Picture Request — Hermes\",\"hudBadge\":true,\"hudTitle\":\"Hermes HUD\",\"hudVideo\":false}",
+    "name": "Stop ends the share and clears both indicators",
+    "ok": true
+  },
+  {
+    "detail": "{\"body\":\"The Hermes gateway is not answering. Start it with `hermes webapp`, or set a dif\",\"hidden\":false,\"title\":\"Hermes is offline\"}",
+    "name": "a missing gateway produces a named error state, not a silent failure",
+    "ok": true
+  },
+  {
+    "detail": "{\"name\":\"NotAllowedError\",\"threw\":true}",
+    "name": "a PiP request without a click fails loudly (NotAllowedError)",
+    "ok": true
+  },
+  {
+    "detail": "{\"hudStillOpen\":true,\"status\":\"HUD is open — brought to the front\"}",
+    "name": "re-clicking \"Pop out\" re-homes the existing HUD instead of a second one",
+    "ok": true
+  },
+  {
+    "detail": "{\"label\":\"Bring HUD to front\"}",
+    "name": "a second panel sees the HUD already open on its first paint",
+    "ok": true
+  },
+  {
+    "detail": "{\"label\":\"Bring HUD to front\",\"status\":\"HUD is open — brought to the front\",\"alive\":true,\"pages\":4}",
+    "name": "launching from a second panel reuses that window instead of a duplicate",
+    "ok": true
+  },
+  {
+    "detail": "{\"status\":\"HUD closed\"}",
+    "name": "closing the HUD updates the dock without an error",
+    "ok": true
+  },
+  {
+    "detail": "{\"body\":\"Browsers only open a floating window directly from a click or key pres\",\"hidden\":false,\"status\":\"Could not open the HUD\",\"title\":\"Needs a click to open\"}",
+    "name": "a refused launch shows a visible, named error instead of a silent no-op",
+    "ok": true
+  },
+  {
+    "detail": "{\"errorHidden\":true,\"label\":\"Bring HUD to front\"}",
+    "name": "the next click after a failure recovers and opens the HUD",
+    "ok": true
+  }
+]

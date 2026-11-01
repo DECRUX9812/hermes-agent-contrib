@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Picture Request — Hermes</title>
+<link rel="stylesheet" href="hud.css">
+</head>
+<body class="surface dock">
+  <header class="hd">
+    <div class="hd-title">
+      <span class="dot-idle"></span>
+      <strong>Picture Request</strong>
+      <span class="hd-sub">dock</span>
+    </div>
+    <div id="live" class="live hidden" role="status" aria-live="polite">
+      <span class="live-dot"></span><span id="live-label"></span>
+    </div>
+  </header>
+
+  <!-- The one control that matters, at the top, where the desktop app puts it:
+       one click and the HUD is on screen. Everything below is secondary. -->
+  <div class="launch">
+    <button id="launch-hud" class="btn btn-launch" type="button" data-open="false" aria-describedby="launch-note">
+      <svg class="launch-glyph" viewBox="0 0 16 16" width="15" height="15" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round">
+        <rect x="1.6" y="2.6" width="12.8" height="10.8" rx="2.2"></rect>
+        <path d="M1.6 6.1h12.8"></path>
+      </svg>
+      <span id="launch-label">Launch HUD</span>
+    </button>
+    <p id="launch-note" class="launch-note">Always-on-top window beside any app. One click — no setup, no second tab.</p>
+  </div>
+
+  <p id="hud-state" class="hud-state hidden"></p>
+
+  <section class="card">
+    <div class="row">
+      <button id="share" class="btn btn-primary" type="button">Share screen</button>
+      <button id="stop" class="btn btn-danger" type="button" disabled>Stop</button>
+      <button id="popout" class="btn btn-quiet" type="button">Pop out HUD</button>
+      <button id="open-app" class="btn btn-quiet" type="button">Open Hermes</button>
+    </div>
+    <p class="hint" id="popout-hint">A floating window you can park beside any app. Nothing is captured until you press Share screen and pick a source in Chrome's own picker.</p>
+    <video id="preview" class="preview hidden" autoplay muted playsinline></video>
+  </section>
+
+  <section class="card">
+    <label class="lbl" for="task">Ask Hermes about what it can see</label>
+    <textarea id="task" class="input" rows="3" placeholder="e.g. this looks cool — can you build this for me?"></textarea>
+    <div class="row">
+      <button id="ask" class="btn btn-primary" type="button">Ask</button>
+      <span class="kbd">⌘/Ctrl + Enter</span>
+    </div>
+  </section>
+
+  <section id="error" class="error hidden" role="alert">
+    <strong id="error-title"></strong>
+    <p id="error-body"></p>
+    <button id="error-dismiss" class="btn btn-quiet" type="button">Dismiss</button>
+  </section>
+
+  <section class="card grow">
+    <div class="row space"><span class="lbl">Activity</span><span id="status" class="status">Not sharing</span></div>
+    <ul id="log" class="log"></ul>
+  </section>
+
+  <footer class="ft">Local only. Frames stay in this browser; only the text you press Ask on leaves this panel.</footer>
+
+  <script type="module" src="src/dock.mjs"></script>
+</body>
+</html>

@@ -18,6 +18,7 @@ import { hudResizeDirections, useHudResizeHandle } from './resize-handle'
 import { HudRunCards } from './run-cards'
 import { useHudThreadFocus } from './thread-focus'
 import { useHudTranscriptBand } from './transcript-band'
+import { ownHudView, useHudView } from './view'
 
 /** How long the transcript lingers at its glanceable opacity — after a turn
  *  lands, or after you let go of the composer — before it goes. This is the ONLY
@@ -196,6 +197,11 @@ function useHudHeld(gameUnder: boolean): boolean {
  * `useRecentActivity`).
  */
 export function HudShell() {
+  // The realm the HUD is actually painted in. Electron: the HUD's own window.
+  // Browser: the Document-PiP window it was portalled into, whose viewport,
+  // screen and focus events are the ones that matter — the app window's are not.
+  const view = useHudView()
+  const portal = view.window !== ownHudView().window
   const [recent, holdBand] = useRecentActivity()
   // A fullscreen app (a game) is under the HUD: wear `data-hud-game` so the
   // idle bar steps back to overlay opacity (see styles.css). Detection is
@@ -209,10 +215,10 @@ export function HudShell() {
   // window all the same, so the band lost its focus state with no hold running
   // and snapped shut instead of stepping down to the glanceable stage.
   useEffect(() => {
-    window.addEventListener('blur', holdBand)
+    view.window.addEventListener('blur', holdBand)
 
-    return () => window.removeEventListener('blur', holdBand)
-  }, [holdBand])
+    return () => view.window.removeEventListener('blur', holdBand)
+  }, [holdBand, view])
 
   // Main holds the session id on this window's behalf, so leaving HUD mode can
   // hand the app window back whatever conversation ended up here.
@@ -259,22 +265,26 @@ export function HudShell() {
 
     // availTop ≈ menu bar / notch inset on macOS; screenY is in full-screen
     // coordinates, so "parked at the top" means screenY ≈ availTop, not 0.
-    const availTop = (window.screen as { availTop?: number }).availTop ?? 0
-    const topGap = window.screenY - availTop
+    // Position is read from the HUD's OWN window: the piped-in PiP window in
+    // the browser (the PiP frame can be moved by the user just like the
+    // Electron window), never the app window that happens to host the portal.
+    const screen = view.window.screen as { availTop?: number }
+    const availTop = screen.availTop ?? 0
+    const topGap = view.window.screenY - availTop
 
     setEdge(prev => (topGap <= FLIP_ON ? 'top' : topGap >= FLIP_OFF ? 'bottom' : prev))
-  }, [])
+  }, [view])
 
   useViewedInterval(measureEdge, 300)
 
   useEffect(() => {
     measureEdge()
-    window.addEventListener('resize', measureEdge)
+    view.window.addEventListener('resize', measureEdge)
 
     return () => {
-      window.removeEventListener('resize', measureEdge)
+      view.window.removeEventListener('resize', measureEdge)
     }
-  }, [measureEdge])
+  }, [measureEdge, view])
 
   const rootRef = useRef<HTMLDivElement | null>(null)
 
@@ -285,19 +295,25 @@ export function HudShell() {
   // a grey slab hanging under the bar with nothing in it. Now that the band is
   // capped it almost never covers the window, so this is almost always false —
   // which is correct, and asking anything looser paints the slab back.
-  const filled = useHudTranscriptBand(rootRef)
+  const filled = useHudTranscriptBand(rootRef, view.window)
 
-  useHudGlass(rootRef, filled)
-  useHudClickThrough(rootRef)
+  useHudGlass(rootRef, filled, view.window)
+  // Click-through is a property of an OS window and has no browser equivalent
+  // (Chrome's PiP window is opaque and eats every click), so the portalled HUD
+  // runs solid. Electron keeps the native path.
+  useHudClickThrough(rootRef, !portal)
   useHudThreadFocus(rootRef)
 
   // Edge/corner resize frame. The window is created non-resizable so dragging can
   // never be misread as a resize gesture (the Windows transparent-frameless
   // growth bug); the handle is the one sanctioned way to change size, driving
   // the same flip-resizable-for-the-call pattern the pet overlay uses.
-  const { resizing: hudResizing, onPointerDown: onHudResizePointerDown } = useHudResizeHandle()
+  const { resizing: hudResizing, onPointerDown: onHudResizePointerDown } = useHudResizeHandle(view.window)
   const hudWindowing = window.hermesDesktop?.hud?.windowing
-  const resizeDirections = hudResizeDirections(hudWindowing?.clientPlacement !== false)
+  // Portal mode gets NO handles: Chrome resizes a Document-PiP window natively,
+  // and `setBounds` cannot place it, so a client-side frame would be chrome that
+  // does nothing.
+  const resizeDirections = hudResizeDirections(hudWindowing?.clientPlacement !== false, portal)
   // Linux X11 cannot ignore-mouse; a visible band that also ignores the
   // pointer just eats the click. The stylesheet keys off this.
   const hudInput = hudWindowing?.solid ? 'solid' : 'click-through'
@@ -309,17 +325,28 @@ export function HudShell() {
   // glass over a white wall. A style tag with `!important` is what the pet
   // overlay and quick entry already do; they get it at mount because they are
   // bespoke roots, and the HUD needs the same because it is not.
+  //
+  // Portal mode skips the transparency: Chrome's PiP window paints an opaque
+  // backdrop whatever the page says, so the PiP document keeps the theme
+  // background it was built with (see `adoptTheme`) and the HUD reads as a
+  // solid floating panel. `data-hud-window` still goes on the portal document —
+  // the dropdown/popover rules key off it.
   useEffect(() => {
-    const style = document.createElement('style')
-    style.textContent = 'html,body,#root{background:transparent !important;}'
-    document.head.appendChild(style)
-    document.documentElement.setAttribute('data-hud-window', '')
+    const target = view.document
+    const style = portal ? null : target.createElement('style')
+
+    if (style) {
+      style.textContent = 'html,body,#root{background:transparent !important;}'
+      target.head.appendChild(style)
+    }
+
+    target.documentElement.setAttribute('data-hud-window', '')
 
     return () => {
-      style.remove()
-      document.documentElement.removeAttribute('data-hud-window')
+      style?.remove()
+      target.documentElement.removeAttribute('data-hud-window')
     }
-  }, [])
+  }, [portal, view])
 
   return (
     <div

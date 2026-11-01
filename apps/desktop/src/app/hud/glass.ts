@@ -60,7 +60,11 @@ const DRAWER_SELECTOR = '[data-slot="composer-completion-drawer"]'
  * that answer lives in main (`hudFrostFor`) next to the state it reads. This
  * hook reports what the band is doing; it does not decide the material.
  */
-export function useHudGlass(rootRef: RefObject<HTMLElement | null>, backing: boolean): void {
+export function useHudGlass(
+  rootRef: RefObject<HTMLElement | null>,
+  backing: boolean,
+  view: Window = window
+): void {
   useEffect(() => {
     const root = rootRef.current
     const setFrost = window.hermesDesktop?.hud?.setFrost
@@ -111,8 +115,8 @@ export function useHudGlass(rootRef: RefObject<HTMLElement | null>, backing: boo
     // document.activeElement — but `:focus` stops matching, so the scrim goes
     // and the frost would be left behind as a bare slab. Deferred a frame so
     // the query runs after the deactivation has landed.
-    window.addEventListener('blur', schedule)
-    window.addEventListener('focus', schedule)
+    view.addEventListener('blur', schedule)
+    view.addEventListener('focus', schedule)
 
     return () => {
       void setFrost?.(false)
@@ -126,8 +130,8 @@ export function useHudGlass(rootRef: RefObject<HTMLElement | null>, backing: boo
 
       root.removeEventListener('focusin', apply)
       root.removeEventListener('focusout', apply)
-      window.removeEventListener('blur', schedule)
-      window.removeEventListener('focus', schedule)
+      view.removeEventListener('blur', schedule)
+      view.removeEventListener('focus', schedule)
     }
-  }, [backing, rootRef])
+  }, [backing, rootRef, view])
 }

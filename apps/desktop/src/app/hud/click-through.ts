@@ -79,12 +79,16 @@ export function hudIgnoresMouse(
  * as no-drag) and the compositor moves the window natively. That is also
  * the only move that works on Wayland, where `setBounds` position is a no-op.
  */
-export function useHudClickThrough(rootRef: RefObject<HTMLElement | null>): void {
+export function useHudClickThrough(rootRef: RefObject<HTMLElement | null>, enabled = true): void {
   useEffect(() => {
     const root = rootRef.current
     const setIgnoreMouse = window.hermesDesktop?.hud?.setIgnoreMouse
 
-    if (!root || !setIgnoreMouse) {
+    // `enabled` is false for the browser HUD: Chrome's Document-PiP window is
+    // opaque and always eats the pointer, so there is nothing to hand through —
+    // and the hit test here reads the APP document, not the PiP one, which would
+    // decide from the wrong realm anyway.
+    if (!root || !setIgnoreMouse || !enabled) {
       return
     }
 
@@ -155,5 +159,5 @@ export function useHudClickThrough(rootRef: RefObject<HTMLElement | null>): void
       document.removeEventListener('focusin', apply)
       document.removeEventListener('focusout', apply)
     }
-  }, [rootRef])
+  }, [enabled, rootRef])
 }
