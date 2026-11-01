@@ -103,10 +103,11 @@ async function loadModules() {
 
 // Pay the graph's cold transform once, up front. `loadModules` re-imports on
 // every test, and charging that one-time cost to whichever test happens to run
-// first makes it time out under a loaded runner.
+// first makes it time out under a loaded runner. The timeout comes from
+// vitest.config.ts (hookTimeout), one source of truth for cold setup.
 beforeAll(async () => {
   await loadModules()
-}, 60_000)
+})
 
 beforeEach(() => {
   vi.clearAllMocks()

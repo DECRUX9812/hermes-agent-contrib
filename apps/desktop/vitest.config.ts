@@ -23,8 +23,15 @@ const reactUi: TestProjectConfiguration = {
     // cold start headroom without masking genuinely hung tests. Hooks pay the
     // same cold cost when a beforeEach does `vi.resetModules()` + `await
     // import(...)` (65 files); one timed out at 10s on CI (#120318).
+    //
+    // 90s, not 30s: this plugin's module graph is ~57k LOC and one file's cold
+    // `resetModules()` + import chain ran past 60s under a full-suite run while
+    // finishing in ~12s alone — the deterministic "2 files failed" that made
+    // whole-suite results unreadable. Assertions keep their own 15s, so a hung
+    // test still fails fast; only cold setup is allowed to be slow, and DESK-049
+    // (per-file import cost) is the real fix for making this number small again.
     testTimeout: 15_000,
-    hookTimeout: 30_000
+    hookTimeout: 90_000
   }
 }
 
