@@ -13,11 +13,21 @@ const { openRosterBot, openSession, prepareBotSource } = vi.hoisted(() => ({
   prepareBotSource: vi.fn(async () => undefined)
 }))
 
-vi.mock('@hermes/plugin-sdk', () => ({
-  BOT_CHAT_SESSION_HYDRATION_TIMEOUT_MS: 60_000,
-  haptic: () => undefined,
-  host: { openSession, notifyError: vi.fn() }
-}))
+vi.mock('@hermes/plugin-sdk', async () => {
+  // `recent-session` reaches the plugin's module-level i18n for its localized
+  // failure copy (`botsText()`), which pulls `./shared` — and that store module
+  // builds atoms at import time. A three-key stub left the whole chain unable
+  // to load, so the atom factory is part of the contract now.
+  const { atom } = await import('nanostores')
+
+  return {
+    BOT_CHAT_SESSION_HYDRATION_TIMEOUT_MS: 60_000,
+    atom,
+    haptic: () => undefined,
+    host: { notifyError: vi.fn(), openSession },
+    usePluginI18n: () => (key: string) => key
+  }
+})
 vi.mock('./bot-state', () => ({ saveSelectedRosterBot: () => undefined }))
 vi.mock('./canonical-chat', () => ({
   prepareBotSource,
