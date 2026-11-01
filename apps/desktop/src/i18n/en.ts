@@ -2421,7 +2421,12 @@ export const en: Translations = {
     live: 'Live',
     liveHint: 'Watch live: skills pulse while a session uses them, and flash when it settles',
     liveOff: 'Stop live updates',
-    openSession: 'Open session'
+    openSession: 'Open session',
+    find: 'Find on the map',
+    findPlaceholder: 'Find a memory…',
+    findNone: 'No matches',
+    findPrev: 'Previous match',
+    findNext: 'Next match'
   },
   gatewayGroupOpen: enGatewayGroupOpen,
   agents: {

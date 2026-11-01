@@ -2176,6 +2176,11 @@ export interface Translations extends NoticeTranslations {
     liveHint: string
     liveOff: string
     openSession: string
+    find: string
+    findPlaceholder: string
+    findNone: string
+    findPrev: string
+    findNext: string
   }
   gatewayGroupOpen: GatewayGroupOpenCopy
   agents: {

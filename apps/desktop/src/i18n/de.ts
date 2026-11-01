@@ -2795,7 +2795,12 @@ export const deOverrides = {
     live: 'Live',
     liveHint: 'Live ansehen: Skills pulsieren, solange eine Session sie nutzt, und blitzen beim Abschluss',
     liveOff: 'Live-Updates stoppen',
-    openSession: 'Session öffnen'
+    openSession: 'Session öffnen',
+    find: 'Auf der Karte suchen',
+    findPlaceholder: 'Erinnerung suchen…',
+    findNone: 'Keine Treffer',
+    findPrev: 'Vorheriger Treffer',
+    findNext: 'Nächster Treffer'
   },
   agents: {
     extendedTranscript: 'Extended Transcript',

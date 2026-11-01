@@ -333,3 +333,6 @@ apps/desktop/.dist-build*
 renders/
 
 .expo/
+
+# Local build snapshots (never commit)
+apps/desktop/dist-webapp-backup-*/

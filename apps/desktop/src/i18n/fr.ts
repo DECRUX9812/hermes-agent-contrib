@@ -2803,7 +2803,12 @@ export const frOverrides = {
     live: 'Live',
     liveHint: "Suivre en direct : les skills pulsent tant qu'une session les utilise et flashent à la fin",
     liveOff: 'Arrêter le direct',
-    openSession: 'Ouvrir la session'
+    openSession: 'Ouvrir la session',
+    find: 'Rechercher sur la carte',
+    findPlaceholder: 'Rechercher un souvenir…',
+    findNone: 'Aucun résultat',
+    findPrev: 'Correspondance précédente',
+    findNext: 'Correspondance suivante'
   },
   agents: {
     extendedTranscript: 'Transcription étendue',

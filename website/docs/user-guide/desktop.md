@@ -295,6 +295,8 @@ For sessions running inside a Git repository, the app has a built-in source-cont
 
 The **Memory Graph** (command palette → *Memory Graph*, or the status-bar item) is an interactive map of what Hermes has learned for you — skills and memories laid out as a zoomable node graph with a timeline, filterable by **All / Used / Learned**. A share control exports the map layout as a compact code you can paste to someone else (layout only — none of your memory or skill text is included) and imports codes the same way.
 
+The **Find on the map** box (top right) searches node labels as you type, rings every hit on the map, and flies the view to the current one; **Enter** steps forward through the hits, **Shift+Enter** back, and **Esc** clears the search.
+
 ### Quick Entry
 
 Quick Entry is a small always-available composer summoned by a **global hotkey from anywhere on your system** — fire off a prompt without switching to (or even opening) the main window. Enable it in **Settings → Advanced → Quick Entry**; the default shortcut is **Ctrl/Cmd+Shift+Space** and you can set your own (it needs at least one modifier). If another app already owns the chord, the settings row tells you so you can pick a different one.

@@ -430,6 +430,7 @@ export function WorkBoard({
 
     return groups
   }, [shownDone, b.rail.today, b.rail.yesterday])
+
   const livePlan = plan && !plan.complete ? plan : null
   const current = livePlan ? activePlanStep(livePlan) : 0
   const planNext = livePlan ? livePlan.steps.map((text, i) => ({ n: i + 1, text })).filter(s => s.n > current) : []

@@ -2790,7 +2790,12 @@ export const esOverrides = {
     live: 'En vivo',
     liveHint: 'Ver en vivo: las skills pulsan mientras una sesión las usa y destellan al terminar',
     liveOff: 'Detener actualizaciones en vivo',
-    openSession: 'Abrir sesión'
+    openSession: 'Abrir sesión',
+    find: 'Buscar en el mapa',
+    findPlaceholder: 'Buscar un recuerdo…',
+    findNone: 'Sin resultados',
+    findPrev: 'Coincidencia anterior',
+    findNext: 'Coincidencia siguiente'
   },
   agents: {
     extendedTranscript: 'Transcripción ampliada',
