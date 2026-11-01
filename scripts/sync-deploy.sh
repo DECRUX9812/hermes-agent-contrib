@@ -57,12 +57,14 @@ build_and_reload() {
   (cd "$REPO/apps/desktop" && npm run build:webapp)
   say "Restarting $SERVICE"
   systemctl --user restart "$SERVICE"
-  sleep 4
-  if curl -sf -o /dev/null --max-time 10 "$LOCAL_URL/" ; then
-    echo "Local backend answering on $LOCAL_URL"
-  else
-    die "$LOCAL_URL did not answer after restart — deploy NOT live. Check: journalctl --user -u $SERVICE -n 40"
-  fi
+  # The gateway boots slowly (plugin + MCP fan-out takes minutes); a single
+  # short probe reported a false "NOT live" on a healthy restart (2026-10-31).
+  local deadline=$((SECONDS + 180))
+  until curl -sf -o /dev/null --max-time 5 "$LOCAL_URL/"; do
+    [ "$SECONDS" -lt "$deadline" ] || die "$LOCAL_URL did not answer within 180s of restart — deploy NOT live. Check: journalctl --user -u $SERVICE -n 40"
+    sleep 5
+  done
+  echo "Local backend answering on $LOCAL_URL"
   echo "Live site: $SITE_URL"
 }
 
