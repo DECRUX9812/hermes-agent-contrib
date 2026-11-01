@@ -29,6 +29,7 @@ from agent.turn_narration_guard import (
 )
 from agent.conversation_loop import _NARRATION_NO_TOOL_NUDGE
 from agent.turn_failure_copy import exit_reason_failure
+from run_agent import AIAgent
 
 # The real body, verbatim from the failing session's transcript (3,943 chars).
 FAILING_BODY = """The app already has the mechanism: `display.tool_progress` → `$showToolActivity` gates all plain tool rows (reads, searches, terminal, patch/write/edit calls), while failures and interactive cards still render. Let me check what "file-edit" entries are and where config lives.Config already has `tool_progress: false`, yet rows still show — so the leak is elsewhere. Checking the tool-group/run-summary path and where the atom is read.Config `tool_progress: false` already exists in `~/.hermes-webapp` — checking whether the desktop profile's own config also has it, and where file-edit rows bypass the gate.The pieces are clear. Plan:
@@ -152,7 +153,6 @@ class TestNotice:
 
 @pytest.fixture()
 def loop_agent():
-    from run_agent import AIAgent
     with (
         patch("model_tools.get_tool_definitions", return_value=[]),
         patch("model_tools.check_toolset_requirements", return_value={}),
