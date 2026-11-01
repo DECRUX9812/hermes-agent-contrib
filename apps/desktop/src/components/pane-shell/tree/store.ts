@@ -1076,6 +1076,14 @@ export const $collapsedTreeSides = modeLayout.atom<ReadonlySet<TreeSide>>(LAYOUT
 })
 const hasPersistedSides = modeLayout.has(LAYOUT_KEYS.collapsed)
 
+/**
+ * Whether a layout tree came back from storage on this load. A restored tree is
+ * the source of truth for what was open: binding a pane's toggle store must not
+ * write the store's pre-restore default over it (that default is what the
+ * refresh replaced), or the pane re-collapses on every boot.
+ */
+const hasPersistedTree = modeLayout.has(LAYOUT_KEYS.tree)
+
 // Side visibility persists separately from the bound pane's toggle: revealing
 // a neighbour opens the column without opening Files. Chrome changes still
 // drive the side; layout reset reopens through the setter too.
@@ -1087,6 +1095,27 @@ modeLayout.onRestore(() => {
     $collapsedTreeSides.set(
       new Set((Object.keys(sideVisibility) as TreeSide[]).filter(side => !sideVisibility[side]?.()))
     )
+  }
+})
+
+/**
+ * Bound tool-pane toggles, by pane. Kept for the one place a mode switch can
+ * move the tree without re-binding (see the handler above).
+ */
+const collapseBindings = new Map<string, { $open: { get(): boolean }; open: () => void; close: () => void }>()
+
+// The direction that was missing. Binding mirrored store → tree only, so a
+// refreshed page kept the tree's open terminal while the toggle store fell back
+// to its default: the screen showed the terminal and every control that reads
+// the store (the titlebar toggle, ⌘J, the pane's own chrome) claimed it was
+// closed. Nothing here writes the tree.
+modeLayout.onRestore(() => {
+  for (const [paneId, binding] of collapseBindings) {
+    if (!paneGroup(paneId) || isPaneVisible(paneId) === binding.$open.get()) {
+      continue
+    }
+
+    isPaneVisible(paneId) ? binding.open() : binding.close()
   }
 })
 
@@ -2067,8 +2096,29 @@ export function bindToolPaneCollapse(
 ) {
   markCollapsePane(paneId)
 
-  if (!$open.get()) {
-    setPaneCollapsed(paneId, true)
+  // A restored tree already encodes what the user left open, and the bound
+  // store has not read its own persisted value yet at bind time — so its
+  // get() is the pre-restore default. Folding the zone here wrote that default
+  // over the tree: the terminal came back minimized on every refresh even
+  // though its open flag and its tab had both survived (`hasPersistedSides`
+  // guards the same clobber for the side columns).
+  if (!hasPersistedTree) {
+    if (!$open.get()) {
+      setPaneCollapsed(paneId, true)
+    }
+  } else {
+    // The tree won the refresh. Its rail/minimize flag is NOT "the pane is
+    // closed" — folding the terminal's zone by hand leaves it open — so the
+    // toggle store is rebuilt from presence-and-not-dismissed, which is what a
+    // closed pane actually looks like. Without this the store fell back to its
+    // pre-restore default and the chrome (titlebar toggle, ⌘J) reported the
+    // pane closed while its tab sat right there on screen.
+    const tree = $layoutTree.get()
+    const present = tree !== null && findGroupOfPane(tree, paneId) !== null && !$dismissedPanes.get().has(paneId)
+
+    if (present && !$open.get()) {
+      open()
+    }
   }
 
   $open.listen(isOpen => {
@@ -2076,6 +2126,7 @@ export function bindToolPaneCollapse(
       isOpen ? revealTreePane(paneId) : setPaneCollapsed(paneId, true)
     }
   })
+  collapseBindings.set(paneId, { $open, open, close })
   registerPaneCloser(paneId, close)
   registerPaneOpener(paneId, open)
 

@@ -63,14 +63,26 @@ export type RootEdge = 'left' | 'right' | 'top' | 'bottom'
 let seq = 0
 export const nodeId = (kind: string) => `${kind}-${Date.now().toString(36)}-${(seq++).toString(36)}`
 
-export const group = (panes: string[], options?: Partial<Omit<GroupNode, 'type' | 'panes'>>): GroupNode => ({
-  type: 'group',
-  id: options?.id ?? nodeId('g'),
-  panes,
-  active: options?.active ?? panes[0] ?? '',
-  minimized: options?.minimized,
-  tabStrip: options?.tabStrip
-})
+export const group = (panes: string[], options?: Partial<Omit<GroupNode, 'type' | 'panes'>>): GroupNode => {
+  const node: GroupNode = {
+    type: 'group',
+    id: options?.id ?? nodeId('g'),
+    panes,
+    active: options?.active ?? panes[0] ?? ''
+  }
+  // Omit an unset flag instead of writing the key with an undefined value:
+  // the tree persists through JSON, which drops `undefined`. A group built
+  // with `minimized: undefined` therefore came back from a refresh WITHOUT
+  // the key, so the reloaded tree no longer deep-equalled the one that was
+  // saved (`'minimized' in node` flipped too, for anything that asks).
+  if (options?.minimized !== undefined) {
+    node.minimized = options.minimized
+  }
+  if (options?.tabStrip !== undefined) {
+    node.tabStrip = options.tabStrip
+  }
+  return node
+}
 
 export const split = (
   orientation: Orientation,

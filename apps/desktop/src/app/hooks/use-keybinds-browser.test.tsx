@@ -17,6 +17,12 @@ beforeEach(() => {
   closeTab.mockClear()
 })
 
+// Mounting imports the whole keybind graph, and a cold import costs 15–40 s on
+// a loaded box — vitest's 15 s default counted that against every test here, so
+// the file failed on TIME, not on behaviour (the same accommodation
+// browser-hints.test.tsx carries per test).
+vi.setConfig({ testTimeout: 60_000 })
+
 afterEach(() => {
   cleanup()
   vi.useRealTimers()

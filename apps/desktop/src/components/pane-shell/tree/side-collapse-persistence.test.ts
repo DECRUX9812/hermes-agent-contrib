@@ -130,9 +130,11 @@ describe('side visibility survives a page refresh independently of Files', () =>
     expect(state.tree.$collapsedTreeSides.get().has('right')).toBe(false)
     expect(state.tree.$collapsedTreeSides.get().has('left')).toBe(true)
 
-    // Invalid storage falls back to this mode's chrome defaults.
+    // Invalid storage falls back to this mode's chrome defaults. The app reads
+    // the MODE-SCOPED key (`.simple`), so corrupting the unscoped one left the
+    // valid `[]` in place and asserted nothing.
     const malformed = JSON.stringify(['left', 'invalid-side'])
-    window.localStorage.setItem(sidesKey, malformed)
+    window.localStorage.setItem(`${sidesKey}.simple`, malformed)
     state = await boot()
     expect(state.tree.$collapsedTreeSides.get().has('left')).toBe(false)
     expect(state.tree.$collapsedTreeSides.get().has('right')).toBe(true)

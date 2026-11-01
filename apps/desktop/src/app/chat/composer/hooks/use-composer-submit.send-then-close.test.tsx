@@ -5,6 +5,11 @@ import { afterEach, expect, it, vi } from 'vitest'
 
 import type { ChatBarProps } from '../types'
 
+// Each test boots a fresh module graph (a simulated window close), and a cold
+// import of the chat page costs more than vitest's 15 s default on a loaded
+// box — the file then failed on TIME rather than on the behaviour it encodes.
+vi.setConfig({ testTimeout: 60_000 })
+
 // The page is real (draft DOM, persistence, submit hook); only the assistant-ui adapter is
 // substituted. A "window close" is the page's own pagehide flush plus a fresh module graph, so
 // nothing the dead page held in memory survives into the next load: only localStorage does.
