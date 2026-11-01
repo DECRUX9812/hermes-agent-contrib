@@ -1050,7 +1050,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           aria-label={availabilityLabel}
           className={cn(
             'shrink-0 text-[0.625rem] text-(--ui-text-secondary)',
-            members.length > 0 && availableMembers < members.length && 'text-amber-600 dark:text-amber-300'
+            members.length > 0 && availableMembers < members.length && 'text-(--ui-yellow) dark:text-(--ui-yellow)'
           )}
         >
           {members.length > 0 && availableMembers < members.length
@@ -1703,7 +1703,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           </div>
         ) : null}
       </div>
-      <div className="border-t border-(--ui-stroke-secondary) p-2">
+      <div className="border-t border-(--ui-stroke-secondary) p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
         <form
           className="grid gap-0"
           onSubmit={event => {

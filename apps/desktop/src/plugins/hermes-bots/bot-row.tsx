@@ -296,7 +296,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
             <Tip label={botAttentionHint(attention.reason)}>
               <Codicon
                 aria-label={b.roster.needsAttention}
-                className="shrink-0 text-[0.6875rem] text-amber-600 dark:text-amber-300"
+                className="shrink-0 text-[0.6875rem] text-(--ui-yellow) dark:text-(--ui-yellow)"
                 name="warning"
               />
             </Tip>
@@ -602,7 +602,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
           <Tip label={availabilityLabel}>
             <span
               aria-label={availabilityLabel}
-              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] text-amber-600 ring-1 ring-(--ui-stroke-tertiary) dark:text-amber-300"
+              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] text-(--ui-yellow) ring-1 ring-(--ui-stroke-tertiary) dark:text-(--ui-yellow)"
             >
               <Codicon name="debug-disconnect" />
             </span>
@@ -633,7 +633,15 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             </span>
           ) : null}
         </div>
-        <div className="min-w-0 truncate text-xs text-(--ui-text-secondary)">{preview}</div>
+        {/* Truncation is unavoidable in a 2-line roster row, but it must not be
+            the end of the sentence: the full preview rides a hover tip, the
+            same affordance the pinned/age glyphs on this row already use
+            (DESIGN.md #3 — truncate WITH a way to expand). */}
+        {preview ? (
+          <Tip label={preview}>
+            <div className="min-w-0 truncate text-xs text-(--ui-text-secondary)">{preview}</div>
+          </Tip>
+        ) : null}
       </div>
     </RowButton>
   )

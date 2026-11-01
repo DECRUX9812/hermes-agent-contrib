@@ -14,7 +14,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { translateBots } from './i18n-test-helper'
 import type { RoutineJob } from './types'
 
-const { request } = vi.hoisted(() => ({ request: vi.fn() }))
+const { listPersistedSessions, openSession, request } = vi.hoisted(() => ({
+  listPersistedSessions: vi.fn(),
+  openSession: vi.fn(),
+  request: vi.fn()
+}))
 
 vi.mock('@hermes/plugin-sdk', async importOriginal => {
   const sdk = await importOriginal<typeof HermesSdk>()
@@ -24,6 +28,8 @@ vi.mock('@hermes/plugin-sdk', async importOriginal => {
     ...sdk,
     host: {
       ...sdk.host,
+      listPersistedSessions,
+      openSession,
       request,
       // The panel's owner ladder starts here, so it has to be a real store.
       state: { ...sdk.host.state, focusedSessionOwner: nanoAtom(null) }
@@ -82,6 +88,8 @@ function renderPanel() {
 beforeEach(() => {
   vi.clearAllMocks()
   request.mockResolvedValue({ jobs, scoped: 'research' })
+  listPersistedSessions.mockResolvedValue({ limit: 25, offset: 0, sessions: [], total: 0 })
+  openSession.mockResolvedValue(undefined)
   $lastRoster.set([])
   $selectedBot.set('default')
   $focused.set({ connectionId: 'local', profile: 'research' })
@@ -216,5 +224,68 @@ describe('bot context panel', () => {
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research', sourceReachable: false }]))
 
     expect(await screen.findByText(/unreachable right now/i)).toBeTruthy()
+  })
+
+  // The activity view used to be routines-only: a bot you actually talk to —
+  // the normal case — had zero scheduled jobs and therefore an empty panel
+  // that said "No completed runs yet" forever, even with 50 conversations on
+  // disk. Conversations are the other half of "activity".
+  it('lists the bot’s own conversations as activity when nothing is scheduled', async () => {
+    request.mockResolvedValue({ jobs: [], scoped: 'research' })
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [
+        { id: 'sess-today', last_active: Math.floor((NOW - 30_000) / 1000), message_count: 12, title: 'Rail layout options' },
+        { id: 'sess-yesterday', last_active: Math.floor((NOW - 86400000) / 1000), message_count: 1, title: 'Q3 notes' }
+      ],
+      total: 2
+    })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText('Rail layout options')).toBeTruthy()
+    expect(screen.getByText('Q3 notes')).toBeTruthy()
+    // Counts are singular/plural aware, not "1 messages".
+    expect(screen.getByText('12 messages')).toBeTruthy()
+    expect(screen.getByText('1 message')).toBeTruthy()
+
+    // Day grouping still applies, and the empty state is gone.
+    const days = await screen.findAllByTestId('panel-day')
+    expect(days.map(day => day.textContent)).toEqual(['Today', 'Yesterday'])
+    expect(screen.queryByTestId('panel-empty-live')).toBeNull()
+
+    // The panel asked the bot's OWN profile, not the active one.
+    expect(listPersistedSessions.mock.calls[0][1]).toMatchObject({ profile: 'research' })
+  })
+
+  it('opens the conversation a row belongs to', async () => {
+    request.mockResolvedValue({ jobs: [], scoped: 'research' })
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [{ id: 'sess-today', last_active: Math.floor((NOW - 60_000) / 1000), message_count: 3, title: 'Rail layout options' }],
+      total: 1
+    })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    fireEvent.click(await screen.findByText('Rail layout options'))
+
+    await vi.waitFor(() => expect(openSession).toHaveBeenCalled())
+    expect(openSession.mock.calls[0][0]).toBe('sess-today')
+    expect(openSession.mock.calls[0][1]).toMatchObject({ profile: 'research', intent: 'tab' })
+  })
+
+  it('offers a way out when there is genuinely nothing to show', async () => {
+    request.mockResolvedValue({ jobs: [], scoped: 'research' })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText(/Runs and conversations for this bot appear here/)).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'New cron' })).toBeTruthy()
   })
 })

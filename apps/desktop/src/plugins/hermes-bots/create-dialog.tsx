@@ -1292,6 +1292,22 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
   const [checked, setChecked] = useState<Record<string, boolean>>({})
   const [name, setName] = useState('')
   const [image, setImage] = useState<null | string>(null)
+  // Type-to-filter must be live the moment the dialog appears — the search box
+  // is the only way to narrow a long roster, and a dialog that opens with
+  // focus on the frame makes the first keystrokes no-ops.
+  const searchRef = useRef<HTMLInputElement | null>(null)
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+
+    // After the open transition: Radix moves focus to the content on mount,
+    // and stealing it in the same commit loses that race.
+    const timer = window.setTimeout(() => searchRef.current?.focus(), 0)
+
+    return () => window.clearTimeout(timer)
+  }, [open])
 
   // Reset per open so a cancelled draft doesn't leak into the next one.
   useEffect(() => {
@@ -1425,13 +1441,13 @@ export function CreateGroupChatDialog({ open, roster, onClose, onCreated }: Crea
           <DialogDescription>{`Pick 2–${GROUP_CHAT_MAX_MEMBERS} bots. Local memberships sync through each Bot profile; cross-machine members stay scoped to this room.`}</DialogDescription>
         </DialogHeader>
         {mode === 'unavailable' && <p role="status">{b.canonical.driverUnavailable}</p>}
-        {/* TODO(bot-mode-types): this search box never takes focus when the dialog
-            opens — SearchField accepts no `autoFocus` prop and forwards no extra
-            props, so the `autoFocus` that used to sit here was inert. */}
+        {/* Focus lands in the search box on open (the old `autoFocus` here was
+            inert — SearchField takes a ref, not the prop). */}
         <SearchField
           aria-label={b.group.searchToAdd}
           containerClassName="w-full"
           inputClassName="w-full"
+          inputRef={searchRef}
           onChange={setQuery}
           placeholder={b.group.searchToAddPlaceholder}
           value={query}

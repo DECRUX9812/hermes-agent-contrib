@@ -195,6 +195,8 @@ export type BotsMessages = {
     openUnreachableMessage: string
     openChatFailedTitle: (botName: string) => string
     openChatFailedMessage: string
+    /** Localized fallback when a session tab refuses to open. */
+    openSessionFailed: string
     openGateways: string
     /** Stands under the bot's name in a chat it has not spoken in yet. */
     chatEmpty: string
@@ -490,6 +492,10 @@ export type BotsMessages = {
     noRuns: string
     noSaved: string
     noHistory: string
+    /** Empty-state body for the activity timeline, which lists routine runs
+     *  AND listed conversations — the two things a bot actually does. */
+    noActivityHint: string
+    sessionMessages: (count: number) => string
     openChat: string
     updatedNow: string
     /** Inline dismiss × on a needs-you card. */

@@ -16,6 +16,7 @@ import {
   codiconIcon,
   DAY,
   GlyphSpinner,
+  host,
   nominalDayStart,
   PanelEmpty,
   relativeTime,
@@ -52,9 +53,9 @@ import { stopGroupThread } from './group-rounds'
 import { answerGroupClarify } from './group-turns'
 import { type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
-import { botRecentSession, openBotRecentSession } from './recent-session'
+import { botRecentSession, openBotRecentSession, openBotSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
-import { botRosterMeta } from './routing'
+import { botConnectionRoute, botRosterMeta } from './routing'
 import type { RosterRow, RoutineJob } from './types'
 
 type PanelView = 'history' | 'scheduled' | 'tasks'
@@ -64,13 +65,19 @@ const TASKS_ICON = codiconIcon('list-tree')
 const SCHEDULED_ICON = codiconIcon('clock')
 const HISTORY_ICON = codiconIcon('history')
 
-/** A routine run worth a timeline row: it fired, and the gateway recorded when. */
+/** A timeline row. Two kinds share the timeline because they are the two
+ *  things a bot actually does: a scheduled routine fires, and a conversation
+ *  happens. Before sessions were a source the timeline could only show
+ *  routines, so a bot used the normal way — chatting — reported "no completed
+ *  runs yet" forever (DESK-052 follow-up: an empty panel that was empty by
+ *  construction, not by absence of work). */
 export interface PanelTaskRun {
   at: number
   detail: null | string
   id: string
+  kind: 'routine' | 'session'
   result: null | string
-  status: 'error' | 'ok'
+  status: 'error' | 'ok' | 'session'
   title: string
 }
 
@@ -94,9 +101,48 @@ export function panelTaskRuns(jobs: RoutineJob[], c: BotsText['cron']): PanelTas
       at,
       detail: job.last_fire_error || job.last_delivery_error || scheduleLabel(job.schedule) || null,
       id: job.job_id,
+      kind: 'routine',
       result: routineLastResult(job.last_status, c),
       status: failed ? 'error' : 'ok',
       title: routineTitle(job, c)
+    })
+  }
+
+  return runs.sort((a, b) => b.at - a.at)
+}
+
+/** One listed conversation the bot's profile owns, as a timeline row. */
+interface PanelSessionSource {
+  id: string
+  last_active?: null | number
+  message_count?: null | number
+  title?: null | string
+}
+
+/** A listed conversation as a timeline row. `last_active` is unix SECONDS
+ *  (SessionPreview / SessionInfo), so it is scaled once, here. */
+export function panelSessionRuns(sessions: PanelSessionSource[], p: BotsText['panel']): PanelTaskRun[] {
+  const runs: PanelTaskRun[] = []
+
+  for (const session of sessions) {
+    const id = String(session.id || '').trim()
+    const seconds = Number(session.last_active ?? 0)
+    const at = Number.isFinite(seconds) && seconds > 0 ? seconds * 1000 : Number.NaN
+
+    if (!id || !Number.isFinite(at)) {
+      continue
+    }
+
+    const count = Number(session.message_count ?? 0)
+
+    runs.push({
+      at,
+      detail: Number.isFinite(count) && count > 0 ? p.sessionMessages(count) : null,
+      id,
+      kind: 'session',
+      result: null,
+      status: 'session',
+      title: String(session.title || '').trim() || id
     })
   }
 
@@ -119,7 +165,7 @@ function panelDayLabel(at: number, p: BotsText['panel']): string {
   return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
 }
 
-function RunTile({ status }: { status: 'error' | 'ok' | 'running' }) {
+function RunTile({ status }: { status: 'error' | 'ok' | 'running' | 'session' }) {
   if (status === 'running') {
     return (
       <span className="grid size-6 shrink-0 place-items-center rounded-full bg-(--ui-accent)/12 text-(--ui-accent)">
@@ -128,22 +174,23 @@ function RunTile({ status }: { status: 'error' | 'ok' | 'running' }) {
     )
   }
 
+  const tone =
+    status === 'error'
+      ? 'bg-destructive/10 text-destructive'
+      : 'bg-(--ui-inline-code-background) text-(--ui-text-secondary)'
+
+  const glyph = status === 'error' ? 'error' : status === 'session' ? 'comment-discussion' : 'check'
+
   return (
-    <span
-      className={
-        status === 'error'
-          ? 'grid size-6 shrink-0 place-items-center rounded-full bg-destructive/10 text-destructive'
-          : 'grid size-6 shrink-0 place-items-center rounded-full bg-(--ui-inline-code-background) text-(--ui-text-secondary)'
-      }
-    >
-      <Codicon name={status === 'error' ? 'error' : 'check'} size="0.8125rem" />
+    <span className={cn('grid size-6 shrink-0 place-items-center rounded-full', tone)}>
+      <Codicon name={glyph} size="0.8125rem" />
     </span>
   )
 }
 
-function TaskRow({ run }: { run: PanelTaskRun }) {
-  return (
-    <div className="flex min-w-0 items-start gap-2 px-2 py-1.5">
+function TaskRow({ onOpen, run }: { onOpen?: () => void; run: PanelTaskRun }) {
+  const body = (
+    <>
       <RunTile status={run.status} />
       <div className="min-w-0 flex-1">
         <div className="truncate text-xs font-medium text-(--ui-text-primary)">{run.title}</div>
@@ -152,8 +199,25 @@ function TaskRow({ run }: { run: PanelTaskRun }) {
         ) : null}
       </div>
       <span className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)">{relativeTime(run.at)}</span>
-    </div>
+    </>
   )
+
+  // A conversation row is a way back into that conversation; a routine run is
+  // history and stays inert. Same affordance the History tab and the roster
+  // preview use, so "click the row" means the same thing across the panel.
+  if (onOpen) {
+    return (
+      <button
+        className="flex w-full min-w-0 items-start gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)"
+        onClick={onOpen}
+        type="button"
+      >
+        {body}
+      </button>
+    )
+  }
+
+  return <div className="flex min-w-0 items-start gap-2 px-2 py-1.5">{body}</div>
 }
 
 export function BotContextPanel() {
@@ -256,6 +320,28 @@ const selected = useValue($selectedBot)
   const { data, dataUpdatedAt, error, isLoading, refetch } = routines
   const jobsView = selectRoutineJobs(data, error, lastGood, bot)
 
+  // The bot's own listed conversations — the missing half of "activity". The
+  // timeline below used to be routines-only, so a bot used the normal way
+  // (chatting) reported "No completed runs yet" forever even with a full
+  // history. `listPersistedSessions` reads the profile's own state, so this
+  // needs no gateway dial and cannot wedge the panel.
+  const sessionsQuery = useQuery({
+    queryKey: ['bot-context-panel', 'sessions', bot],
+    queryFn: async () => {
+      if (typeof host.listPersistedSessions !== 'function') {
+        return []
+      }
+
+      const route = owner ? botConnectionRoute(owner) : null
+      const page = await host.listPersistedSessions(route || null, { limit: 25, profile: bot })
+
+      return (page?.sessions || []).filter(session => Boolean(String(session?.id || '').trim()))
+    },
+    enabled: Boolean(owner?.name),
+    refetchInterval: 30000,
+    staleTime: 8000
+  })
+
   // Mirror the last good list outside render: a render-phase set loops when
   // the query resolves, an effect settles after paint.
   useEffect(() => {
@@ -269,7 +355,11 @@ const selected = useValue($selectedBot)
   }
 
   const jobs = jobsView.jobs
-  const runs = panelTaskRuns(jobs, b.cron)
+
+  const runs = [...panelTaskRuns(jobs, b.cron), ...panelSessionRuns(sessionsQuery.data || [], p)].sort(
+    (a, z) => z.at - a.at
+  )
+
   const groups: Array<{ key: number; runs: PanelTaskRun[] }> = []
 
   for (const run of runs) {
@@ -289,6 +379,18 @@ const selected = useValue($selectedBot)
   const reachable = owner.sourceReachable !== false && !owner.ghost && !owner.sourceMissing
   const statusText = working ? p.workingNow : reachable ? b.cron.active : p.offline
   const recent = botRecentSession(owner)
+
+  // A conversation row carries only what the timeline needs to draw; opening
+  // it wants the stored counts too, so they ride along from the same query.
+  const openSessionRow = (run: PanelTaskRun) => {
+    const source = (sessionsQuery.data || []).find(session => session.id === run.id)
+
+    void openBotSession(owner, {
+      id: run.id,
+      message_count: source?.message_count,
+      title: run.title
+    })
+  }
 
   const openCreate = () => {
     setCreateOwner(owner)
@@ -504,13 +606,22 @@ const selected = useValue($selectedBot)
                 </div>
               </div>
             ) : null}
-            {runs.length === 0 && !isLoading ? (
+            {runs.length === 0 && !isLoading && !sessionsQuery.isLoading ? (
               <div className="grid gap-2" data-testid="panel-empty-live">
                 <span className="flex items-center gap-2 px-2 text-[0.6875rem] text-(--ui-text-secondary)">
                   <GlyphSpinner className="text-(--ui-accent)" spinner="breathe" />
                   <span className="truncate">{statusText}</span>
                 </span>
-                <PanelEmpty description={p.noRuns} icon="list-tree" title={p.tasks} />
+                <PanelEmpty
+                  action={
+                    <Button onClick={openCreate} size="sm" variant="secondary">
+                      {c.newCron}
+                    </Button>
+                  }
+                  description={p.noActivityHint}
+                  icon="pulse"
+                  title={p.tasks}
+                />
               </div>
             ) : (
               groups.map(group => (
@@ -524,7 +635,11 @@ const selected = useValue($selectedBot)
                     </span>
                   </div>
                   {group.runs.map(run => (
-                    <TaskRow key={run.id} run={run} />
+                    <TaskRow
+                      key={`${run.kind}:${run.id}`}
+                      onOpen={run.kind === 'session' ? () => openSessionRow(run) : undefined}
+                      run={run}
+                    />
                   ))}
                 </div>
               ))

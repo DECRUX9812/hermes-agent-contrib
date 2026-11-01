@@ -86,9 +86,9 @@ const TONE_ICON: Record<PortalTone, string> = {
 }
 
 const TONE_DOT: Record<PortalTone, string> = {
-  live: 'bg-emerald-500',
-  human: 'bg-red-500',
-  other: 'bg-amber-500',
+  live: 'bg-(--ui-green)',
+  human: 'bg-(--ui-red)',
+  other: 'bg-(--ui-yellow)',
   off: 'bg-(--ui-text-quaternary)',
   missing: 'bg-(--ui-text-quaternary)',
   unsupported: 'bg-(--ui-text-quaternary)',

@@ -211,7 +211,7 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
       const { icon, title, tone } = action.kind === 'approval'
         ? { icon: 'shield', title: labels.pendingApproval, tone: 'text-(--ui-accent)' }
         : action.kind === 'retry'
-          ? { icon: 'warning', title: labels.pendingRetry, tone: 'text-amber-600 dark:text-amber-300' }
+          ? { icon: 'warning', title: labels.pendingRetry, tone: 'text-(--ui-yellow) dark:text-(--ui-yellow)' }
           : { icon: 'circle-slash', title: labels.pendingDiscard, tone: 'text-(--ui-text-secondary)' }
 
       return <div className="flex items-center gap-2.5 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-3 py-2" key={`${action.kind}:${action.task_id}:${action.execution_generation}`}>
