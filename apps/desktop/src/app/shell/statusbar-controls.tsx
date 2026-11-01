@@ -1,5 +1,6 @@
 import { useStore } from '@nanostores/react'
-import { type ComponentProps, memo, type ReactNode, useMemo, useState } from 'react'
+import { MoreHorizontal } from 'lucide-react'
+import { type ComponentProps, Fragment, memo, type ReactNode, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router'
 
 import {
@@ -13,6 +14,8 @@ import {
 } from '@/components/ui/context-menu'
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu'
 import { Tip, TipKeybindLabel, Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { pluginDisplayName, splitChrome } from '@/contrib/chrome'
+import { $pluginRecords, setPluginEnabled } from '@/contrib/plugins-store'
 import { ContribRender } from '@/contrib/react/boundary'
 import { useI18n } from '@/i18n'
 import { useKeybindHint } from '@/lib/keybinds/use-keybind-hint'
@@ -79,6 +82,12 @@ export interface StatusbarItem {
    *  center, update/version pills) would strand the user if they could be
    *  hidden from the surface that hides them. */
   lockedVisible?: boolean
+  /** Owning plugin id when an extension contributed this item (`plugin:<id>`
+   *  provenance, without the prefix). Drives three things the user needs:
+   *  the `data-plugin-id` attribution attribute, the plugin budget in
+   *  `splitChrome` (plugin items overflow before core ones), and the
+   *  "Disable ⟨plugin⟩" row in the bar's own menu. Core items leave it unset. */
+  plugin?: string
 }
 
 /** Human-readable name for the right-click show/hide menu. Built-ins set
@@ -124,6 +133,13 @@ export function StatusbarControls({ className, leftItems = [], items = [], ...pr
 
   const visible = (item: StatusbarItem) => !item.hidden && (item.lockedVisible || !hiddenIds.includes(item.id))
 
+  // Plugin budget: the bar is a fixed-height strip, so extension chips get
+  // CHROME_PLUGIN_ROWS slots and the rest hang off the `»` overflow menu
+  // instead of being clipped away by `overflow-x-clip`. Core items are never
+  // counted and never moved — they are the product's own controls.
+  const rightVisible = items.filter(visible)
+  const { inline: rightInline, overflow: rightOverflow } = splitChrome(rightVisible, item => item.plugin ?? null)
+
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
@@ -140,19 +156,101 @@ export function StatusbarControls({ className, leftItems = [], items = [], ...pr
               horizontal scrollbar across the bottom of the window. Items already
               `truncate` their labels, so clipping is the right behavior. */}
           <div className="flex min-w-0 items-stretch gap-0.5 overflow-x-clip">
-            {leftItems.filter(visible).map(item => (
-              <StatusbarItemView item={item} key={`left:${item.id}`} navigate={navigate} />
-            ))}
+            {leftItems.filter(visible).map(item => renderStatusItem(item, 'left', navigate))}
           </div>
           <div className="flex min-w-0 items-stretch gap-0.5 overflow-x-clip">
-            {items.filter(visible).map(item => (
-              <StatusbarItemView item={item} key={`right:${item.id}`} navigate={navigate} />
-            ))}
+            {rightInline.map(item => renderStatusItem(item, 'right', navigate))}
+            {rightOverflow.length > 0 && <StatusbarOverflowMenu items={rightOverflow} navigate={navigate} />}
           </div>
         </footer>
       </ContextMenuTrigger>
       <StatusbarVisibilityMenu hiddenIds={hiddenIds} items={items} leftItems={leftItems} />
     </ContextMenu>
+  )
+}
+
+/** One bar item, attributed when a plugin contributed it. The wrapper is
+ *  layout-neutral (`inline-flex`, full height) and carries `data-plugin-id`, so
+ *  "whose chip is this?" is answerable from the DOM — the plain contribution
+ *  path could not answer it before, which is why a plugin chip read as core. */
+function renderStatusItem(item: StatusbarItem, side: StatusbarItemSide, navigate: ReturnType<typeof useNavigate>) {
+  const key = `${side}:${item.id}`
+  const view = <StatusbarItemView item={item} navigate={navigate} />
+
+  return item.plugin ? (
+    <span className="inline-flex h-full items-stretch" data-plugin-id={item.plugin} key={key}>
+      {view}
+    </span>
+  ) : (
+    <Fragment key={key}>{view}</Fragment>
+  )
+}
+
+/** Activate an item from a menu row: same semantics as clicking its chip. */
+function activateStatusItem(item: StatusbarItem, navigate: ReturnType<typeof useNavigate>) {
+  if (item.onSelect) {
+    item.onSelect({ shiftKey: false })
+
+    return
+  }
+
+  if (item.to) {
+    navigate(item.to)
+
+    return
+  }
+
+  if (item.href) {
+    window.open(item.href, '_blank', 'noreferrer')
+  }
+}
+
+/** The bar's overflow affordance. Plugin chips past the budget live here
+ *  instead of being clipped by the cluster's `overflow-x-clip`; the `»` is a
+ *  menu rather than a scrollbar because the bar is 20px tall, so anything that
+ *  doesn't fit can never be scrolled to. */
+function StatusbarOverflowMenu({
+  items,
+  navigate
+}: {
+  items: readonly StatusbarItem[]
+  navigate: ReturnType<typeof useNavigate>
+}) {
+  const records = useStore($pluginRecords)
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          aria-label={`${items.length} more status items`}
+          className={STATUSBAR_ACTION_CLASS}
+          data-slot="statusbar-overflow"
+          title={`${items.length} more`}
+          type="button"
+        >
+          <MoreHorizontal className="size-3.5" />
+        </button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="w-60" side="top" sideOffset={8}>
+        {items.map(item => {
+          const pluginName = item.plugin ? pluginDisplayName(item.plugin, records[item.plugin]?.name) : null
+
+          return (
+            <DropdownMenuItem
+              className="gap-2 text-foreground focus:bg-accent [&_svg]:size-4"
+              key={item.id}
+              onSelect={() => activateStatusItem(item, navigate)}
+            >
+              {item.icon}
+              <span className="min-w-0 truncate">{itemMenuLabel(item)}</span>
+              {pluginName && (
+                <span className="ml-auto shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">{pluginName}</span>
+              )}
+            </DropdownMenuItem>
+          )
+        })}
+      </DropdownMenuContent>
+    </DropdownMenu>
   )
 }
 
@@ -171,6 +269,23 @@ function StatusbarVisibilityMenu({
 }) {
   const { t } = useI18n()
   const copy = t.shell.statusbar
+  const records = useStore($pluginRecords)
+
+  // Plugins contributing to THIS bar, with how many items each owns. The menu
+  // is the one surface the user already reaches for when the bar crowds them,
+  // so "which of these is an extension, and how do I turn it off?" belongs
+  // here rather than three pages deep in Capabilities.
+  const pluginGroups = useMemo(() => {
+    const counts = new Map<string, number>()
+
+    for (const item of [...leftItems, ...items]) {
+      if (item.plugin) {
+        counts.set(item.plugin, (counts.get(item.plugin) ?? 0) + 1)
+      }
+    }
+
+    return [...counts.entries()]
+  }, [items, leftItems])
 
   // Deduped by id: an item can legitimately appear in both clusters across
   // renders (contributions move sides), and a repeated checkbox would let one
@@ -210,6 +325,28 @@ function StatusbarVisibilityMenu({
             </ContextMenuCheckboxItem>
           ))}
           <ContextMenuSeparator />
+          {/* Attribute-then-remove: a plugin chip the user can't name is a chip
+              they can only put up with. One row per contributing plugin, right
+              where the user is already managing the bar. */}
+          {pluginGroups.length > 0 && (
+            <>
+              {pluginGroups.map(([id, count]) => (
+                <ContextMenuItem
+                  key={`plugin:${id}`}
+                  onSelect={event => {
+                    event.preventDefault()
+                    void setPluginEnabled(id, false)
+                  }}
+                >
+                  <span className="truncate">
+                    Disable {pluginDisplayName(id, records[id]?.name)}
+                    {count > 1 ? ` (${count} items)` : ''}
+                  </span>
+                </ContextMenuItem>
+              ))}
+              <ContextMenuSeparator />
+            </>
+          )}
           {/* Disabled rather than hidden when nothing is customized: the row is
               also how you find out there IS a shipped layout to get back to.
               Groups with the hide row below — both act on the bar, not an item. */}

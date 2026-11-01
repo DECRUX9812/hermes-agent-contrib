@@ -8,9 +8,9 @@ import { $layoutTree, noteActiveTreeGroup } from '@/components/pane-shell/tree/s
 import { SidebarProvider } from '@/components/ui/sidebar'
 import { registry } from '@/contrib/registry'
 import { $connectionsRegistry } from '@/store/connection-registry-state'
+import { setInterfaceMode } from '@/store/interface-mode'
 import { $sidebarMessagingOpenIds, setSidebarAgentsGrouped, setSidebarGrouping } from '@/store/layout'
 import { $activeGatewayProfile, $profiles, setShowAllProfiles } from '@/store/profile'
-import { setInterfaceMode } from '@/store/interface-mode'
 import { $projectScope, ALL_PROJECTS } from '@/store/project-scope'
 import { $projectTree } from '@/store/projects'
 import {
@@ -547,5 +547,52 @@ describe('ChatSidebar messaging owners', () => {
     expect(telegramGroups()).toHaveLength(0)
     expect(screen.queryByText('work-1')).toBeNull()
     expect(within(row('default-1')).queryByRole('img', { name: /^Profile:/ })).toBeNull()
+  })
+})
+
+// Chrome budget: extensions may claim only a fixed number of primary-nav rows.
+// Without this a stack of plugin pages pushes the session list off the sidebar,
+// which is the "layout is broken" failure this budget exists to prevent.
+describe('ChatSidebar plugin nav budget', () => {
+  let disposePlugins: () => void
+
+  beforeEach(() => {
+    setInterfaceMode('advanced')
+    disposePlugins = registry.registerMany(
+      Array.from({ length: 5 }, (_, i) => ({
+        area: SIDEBAR_NAV_AREA,
+        data: { codicon: 'plug', label: `Plugin page ${i}`, path: `/plugin-${i}` },
+        id: `plugin-${i}-nav`,
+        source: `plugin:ext-${i}`
+      }))
+    )
+    $sessions.set(sessionRows)
+    $selectedStoredSessionId.set('tile-one')
+    noteActiveTreeGroup('workspace-group')
+  })
+
+  afterEach(() => {
+    cleanup()
+    disposePlugins()
+    $selectedStoredSessionId.set(null)
+    $sessions.set([])
+    noteActiveTreeGroup(null)
+  })
+
+  it('renders only budgeted plugin rows and collapses the rest into one overflow row', () => {
+    const { container } = renderSidebar('/', 'chat')
+    const nav = container.querySelector('[data-slot="sidebar-menu"]') as HTMLElement
+
+    // First CHROME_PLUGIN_ROWS pages are inline…
+    expect(within(nav).getByRole('button', { name: /Plugin page 0/ })).toBeTruthy()
+    expect(within(nav).getByRole('button', { name: /Plugin page 2/ })).toBeTruthy()
+    // …the rest are NOT in the nav, so they can't crowd the session list.
+    expect(within(nav).queryByRole('button', { name: /Plugin page 3/ })).toBeNull()
+
+    const overflow = nav.querySelector('[data-slot="sidebar-nav-overflow"]')
+
+    expect(overflow).not.toBeNull()
+    expect(overflow?.textContent).toContain('More pages')
+    expect(overflow?.textContent).toContain('2')
   })
 })

@@ -19,6 +19,7 @@ import type { GroupSetter } from '@/app/shell/group-setter'
 import type { StatusbarItem } from '@/app/shell/statusbar-controls'
 import type { TitlebarTool } from '@/app/shell/titlebar-controls'
 import { DecodeText } from '@/components/ui/decode-text'
+import { pluginIdFromSource } from '@/contrib/chrome'
 import { ContribBoundary, ContribRender } from '@/contrib/react/boundary'
 import { useContributions } from '@/contrib/react/use-contributions'
 import { registry } from '@/contrib/registry'
@@ -168,19 +169,28 @@ export function useStatusbarContributions(side: 'left' | 'right'): StatusbarItem
   return useMemo(
     () =>
       items
-        .map(c =>
-          c.render
-            ? ({
-                id: c.id,
-                render: () => (
-                  <ContribBoundary id={c.id} variant="chip">
-                    <ContribRender render={c.render!} />
-                  </ContribBoundary>
-                )
-              } satisfies StatusbarItem)
-            : (c.data as StatusbarItem)
-        )
-        .filter(Boolean),
+        .map((c): StatusbarItem | null => {
+          // `plugin:<id>` provenance becomes the item's `plugin`, which is what
+          // the bar uses to attribute the chip, budget it, and offer "Disable".
+          const plugin = pluginIdFromSource(c.source) ?? undefined
+
+          if (c.render) {
+            return {
+              id: c.id,
+              plugin,
+              render: () => (
+                <ContribBoundary id={c.id} variant="chip">
+                  <ContribRender render={c.render!} />
+                </ContribBoundary>
+              )
+            }
+          }
+
+          const data = c.data as StatusbarItem | undefined
+
+          return data ? { ...data, plugin: plugin ?? data.plugin } : null
+        })
+        .filter((item): item is StatusbarItem => item !== null),
     [items]
   )
 }

@@ -139,6 +139,10 @@ export interface SidebarNavItem extends Tiered {
   keybindActionId?: string
   /** Attention count shown at the row's end; unset when nothing needs the user. */
   badge?: string
+  /** Owning plugin id for a contributed row (`plugin:<id>` provenance). Render
+   *  hosts use it to budget plugin rows against the chrome and to offer
+   *  "Disable ⟨plugin⟩" on the row itself; built-ins leave it unset. */
+  pluginId?: string
 }
 
 export interface PersistedDisplayTranscriptProvenance {
