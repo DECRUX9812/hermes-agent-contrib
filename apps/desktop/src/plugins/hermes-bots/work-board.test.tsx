@@ -182,11 +182,14 @@ describe('WorkBoard', () => {
     const done = screen.getAllByTestId('activity-row')
     expect(done.map(row => row.textContent?.includes('Check UI build status'))).toEqual([true, false])
 
-    // The row IS its subject: one line, then status · time · receipts. The
-    // reply's first sentence is not on the row — it lives in the dialog.
+    // The row carries the subject, then the outcome as a second line (muted,
+    // clamped) — the "what" and the "so what" at a glance. The full reply
+    // still lives in the dialog, so the row never becomes a wall of text.
     expect(done[0].querySelector('[data-testid="activity-subject"]')?.textContent).toBe('Check UI build status')
     expect(done[0].textContent).toContain('Done')
-    expect(done[0].textContent).not.toContain('Saved 3 screenshots for the preview.')
+    expect(done[0].querySelector('[data-testid="activity-outcome"]')?.textContent).toBe(
+      'Saved 3 screenshots for the preview.'
+    )
 
     fireEvent.click(done[0])
     expect(screen.getByTestId('activity-detail').textContent).toContain('Saved 3 screenshots for the preview.')

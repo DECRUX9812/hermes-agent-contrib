@@ -281,6 +281,32 @@ function routineWhen(job: RoutineJob, w: BotsText['activity']['work']): string {
   return routineDetailIssue(job) ? `${w.lastRunFailed} · ${when}` : when
 }
 
+/** Calendar-day key for a task's end time, so the log can be dated. */
+function dayKey(seconds: number): string {
+  const d = new Date(seconds * 1000)
+
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+}
+
+/** "Today" / "Yesterday" / "Oct 24" — the dated-log subheader. */
+function dayLabel(seconds: number, today: string, yesterday: string): string {
+  const when = new Date(seconds * 1000)
+
+  if (dayKey(seconds) === dayKey(Date.now() / 1000)) {
+    return today
+  }
+
+  const prior = new Date()
+
+  prior.setDate(prior.getDate() - 1)
+
+  if (dayKey(seconds) === dayKey(prior.getTime() / 1000)) {
+    return yesterday
+  }
+
+  return when.toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
+}
+
 function DoneRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask }) {
   const b = useBots()
   const a = b.activity
@@ -294,13 +320,13 @@ function DoneRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask }) {
   return (
     <li>
       <button
-        className="group/done flex w-full min-w-0 items-start gap-2.5 rounded-lg px-2 py-2 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)"
+        className="group/done flex w-full min-w-0 items-start gap-3 rounded-lg px-2 py-2.5 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)"
         data-task-status={task.status}
         data-testid="activity-row"
         onClick={onOpen}
         type="button"
       >
-        <StatusTile className="size-6 rounded-lg [&_.codicon]:text-[0.75rem]" status={task.status} />
+        <StatusTile className="size-8 rounded-[0.625rem] [&_.codicon]:text-[0.8125rem]" status={task.status} />
         <span className="grid min-w-0 flex-1 gap-0.5">
           <span
             className="truncate text-[0.8125rem] font-medium leading-snug text-foreground"
@@ -308,6 +334,14 @@ function DoneRow({ onOpen, task }: { onOpen: () => void; task: ActivityTask }) {
           >
             {subject}
           </span>
+          {task.outcome ? (
+            <span
+              className="line-clamp-2 text-[0.75rem] leading-snug text-(--ui-text-tertiary)"
+              data-testid="activity-outcome"
+            >
+              {task.outcome}
+            </span>
+          ) : null}
           <span className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-[0.6875rem] tabular-nums">
             <span className={failed ? 'text-destructive' : 'text-(--ui-text-quaternary)'}>
               {[a.status[task.status], ended ? relativeTime(ended * 1000) : ''].filter(Boolean).join(' · ')}
@@ -376,6 +410,26 @@ export function WorkBoard({
   const running = tasks.at(-1)?.status === 'running' ? tasks.at(-1)! : null
   const done = useMemo(() => tasks.filter(task => task.status !== 'running').reverse(), [tasks])
   const shownDone = showAllDone ? done : done.slice(0, DONE_PREVIEW)
+
+  // Dated log: group the Done rows by the calendar day they finished on, so a
+  // long list reads "Today / Yesterday / Oct 24" instead of one run-on block.
+  const dayGroups = useMemo(() => {
+    const groups: { key: string; label: string; tasks: ActivityTask[] }[] = []
+
+    for (const task of shownDone) {
+      const at = task.completedAt ?? task.startedAt
+      const key = dayKey(at)
+      const last = groups.at(-1)
+
+      if (last && last.key === key) {
+        last.tasks.push(task)
+      } else {
+        groups.push({ key, label: dayLabel(at, b.rail.today, b.rail.yesterday), tasks: [task] })
+      }
+    }
+
+    return groups
+  }, [shownDone, b.rail.today, b.rail.yesterday])
   const livePlan = plan && !plan.complete ? plan : null
   const current = livePlan ? activePlanStep(livePlan) : 0
   const planNext = livePlan ? livePlan.steps.map((text, i) => ({ n: i + 1, text })).filter(s => s.n > current) : []
@@ -464,11 +518,20 @@ export function WorkBoard({
 
       {done.length ? (
         <BoardSection count={done.length} title={w.done}>
-          <ol className="grid gap-0.5">
-            {shownDone.map(task => (
-              <DoneRow key={task.id} onOpen={() => setOpenId(task.id)} task={task} />
+          <div className="grid gap-1.5">
+            {dayGroups.map(group => (
+              <div className="grid gap-0.5" key={group.key}>
+                <h4 className="px-1 pb-0.5 pt-1 text-[0.6875rem] font-semibold tracking-wide text-(--ui-text-quaternary)">
+                  {group.label}
+                </h4>
+                <ol className="grid gap-0.5">
+                  {group.tasks.map(task => (
+                    <DoneRow key={task.id} onOpen={() => setOpenId(task.id)} task={task} />
+                  ))}
+                </ol>
+              </div>
             ))}
-          </ol>
+          </div>
           {done.length > DONE_PREVIEW ? (
             <Button
               className="justify-self-start"

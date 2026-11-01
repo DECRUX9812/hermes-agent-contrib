@@ -128,8 +128,8 @@ function BotHero({
   const [sharing, setSharing] = useState(false)
 
   return (
-    <div className="px-4 pb-4 pt-4" data-testid="rail-profile-card">
-      <div className="flex min-w-0 items-start gap-3">
+    <div className="px-4 pb-4 pt-5" data-testid="rail-profile-card">
+      <div className="flex min-w-0 items-start gap-3.5">
         <div className="relative shrink-0">
           <BotFace
             color={avatarColor(color, bot.name)}
@@ -137,7 +137,7 @@ function BotHero({
             mood={mood}
             name={bot.name}
             shape={shape}
-            size={48}
+            size={56}
           />
           <Tip label={b.bot.editTitle}>
             <Button
@@ -152,7 +152,7 @@ function BotHero({
           </Tip>
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="max-w-full truncate text-base font-semibold leading-tight text-foreground">{name}</h2>
+          <h2 className="max-w-full truncate text-lg font-semibold leading-tight tracking-[-0.01em] text-foreground">{name}</h2>
           <p
             className={cn(
               'mt-1 flex max-w-full items-start gap-1.5 text-xs leading-relaxed',
