@@ -1020,7 +1020,13 @@ def _schedule_ws_orphan_reap(
                 # wins over both: its latches block every tick and reattach.
                 reschedule_delay = _WS_ORPHAN_REAP_GRACE_S
             elif not current.get("running"):
-                session = _pop_session_by_id(sid)
+                if _session_has_inflight_background_review(current):
+                    # A review fork is mid-call: real work is still writing skills/memory after the
+                    # user's turn closed. Re-check next grace instead of ending the session under it.
+                    logger.debug("client_gone sid=%s action=defer (background review in flight)", sid)
+                    reschedule_delay = _WS_ORPHAN_REAP_GRACE_S
+                else:
+                    session = _pop_session_by_id(sid)
             elif not current.get("_client_gone_interrupt_requested") and _ws_orphan_turn_activity_is_fresh(current):
                 # Client-absent but producing: keep running detached (the sentinel buffers emits), re-check each grace.
                 logger.debug("client_gone sid=%s action=defer (turn activity fresh; stale threshold %.0fs)",

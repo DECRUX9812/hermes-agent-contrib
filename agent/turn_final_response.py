@@ -118,6 +118,7 @@ def finish_text_response(
     stop gates accept it."""
     from agent.conversation_loop import (
         _CODEX_ACK_CONTINUATION_NUDGE, _DEGENERATE_FINAL_NUDGE, _DROPPED_TOOLCALL_NUDGE_CONTENT,
+        _NARRATION_NO_TOOL_NUDGE,
     )
 
     def _verdict(action: str, result: Optional[dict[str, Any]] = None) -> FinalResponseVerdict:
@@ -219,6 +220,7 @@ def finish_text_response(
     )
 
     _ack_mode = intent_ack_continuation_mode(agent)
+    from agent.turn_narration_guard import looks_like_unexecuted_work_narration
     # Said-continue-but-stopped guard: no tool calls but the short reply TAILS with an
     # announced next action. Reuses the SAME bounded continuation counter (max 2 per turn).
     # Promoted reasoning gets the broader first-person-plan tail detector: with tools offered
@@ -246,11 +248,26 @@ def finish_text_response(
         and _tool_rows > 0
         and looks_like_degenerate_final(_stall_text, user_message=user_message)
     )
+    # Unexecuted-work narration (devin-swe2/ACP flattening, desktop session local-10cbdc…): the
+    # provider returned one plain-text body that narrates an ENTIRE tool run - step announcements
+    # plus "Done —", "All applied.", "Tests updated" - with zero tool calls and zero tool results.
+    # Every other guard above reads a tail, a fragment, or promoted reasoning, so this shipped as
+    # a finished answer. Re-prompt on the same bounded counter; when the counter is spent the
+    # claim set is replaced by a truthful notice (see below) instead of a false "done".
+    _narration_without_work = (
+        bool(agent.valid_tool_names)
+        and _tool_rows == 0
+        and looks_like_unexecuted_work_narration(
+            _stall_text, user_message=user_message, tool_results=_tool_rows,
+        )
+    )
     # Precedence: an announced next action outranks the fragment shape; the codex ack is last.
     if _stall_continue_intent:
         _continuation_kind = "stall"
     elif _degenerate_final:
         _continuation_kind = "degenerate"
+    elif _narration_without_work and _ack_mode != "off" and codex_ack_continuations < 2:
+        _continuation_kind = "narration"
     elif (
         _ack_mode != "off"
         and agent.valid_tool_names
@@ -276,6 +293,17 @@ def finish_text_response(
                 "re-prompting (%d/2)", len(_stall_text), _stall_text[:40], _tool_rows,
                 codex_ack_continuations + 1,
             )
+        elif _continuation_kind == "narration":
+            logger.warning(
+                "Unexecuted work narration: %d-char body narrates a tool run with 0 tool calls "
+                "and 0 tool results (model=%s provider=%s) — re-prompting (%d/2)",
+                len(_stall_text), getattr(agent, "model", ""), getattr(agent, "provider", ""),
+                codex_ack_continuations + 1,
+            )
+            agent._emit_diagnostic_status(
+                "↻ The model described actions but ran no tool — re-prompting "
+                f"({codex_ack_continuations + 1}/2)"
+            )
         codex_ack_continuations += 1
         interim_msg = agent._build_assistant_message(assistant_message, "incomplete")
         if _promoted:
@@ -288,6 +316,7 @@ def finish_text_response(
             "role": "user",
             "content": (
                 _DEGENERATE_FINAL_NUDGE if _continuation_kind == "degenerate"
+                else _NARRATION_NO_TOOL_NUDGE if _continuation_kind == "narration"
                 else _CODEX_ACK_CONTINUATION_NUDGE
             ),
         })
@@ -298,6 +327,25 @@ def finish_text_response(
         return _verdict("continue")
 
     codex_ack_continuations = 0
+
+    # Bounded re-prompts spent and the body STILL narrates a run that never happened: deliver a
+    # truthful notice around it instead of a polished false "done". Lossless (the plan may be
+    # useful) but it can no longer read as completed work, and the turn is failed, not completed.
+    if _narration_without_work:
+        from agent.turn_narration_guard import unverified_work_notice
+        final_response = unverified_work_notice(
+            final_response, model=str(getattr(agent, "model", "") or ""),
+            provider=str(getattr(agent, "provider", "") or ""),
+        )
+        _turn_exit_reason = f"unexecuted_tool_narration(finish_reason={finish_reason})"
+        logger.error(
+            "Unexecuted work narration shipped with a correction notice: 0 tool calls, "
+            "0 tool results (model=%s provider=%s api_calls=%s)",
+            getattr(agent, "model", ""), getattr(agent, "provider", ""), api_call_count,
+        )
+        agent._emit_diagnostic_status(
+            "⚠️ No tool ran this turn — the model's 'done' claims were marked unverified"
+        )
 
     final_response, _joined = _absorb_continuation_fragments(final_response, truncated_response_parts, messages)
     if _joined:
@@ -414,7 +462,8 @@ def finish_text_response(
             exc_info=True,
         )
 
-    _turn_exit_reason = f"text_response(finish_reason={finish_reason})"
+    if not _narration_without_work:
+        _turn_exit_reason = f"text_response(finish_reason={finish_reason})"
     if not agent.quiet_mode:
         agent._safe_print(f"🎉 Conversation completed after {api_call_count} OpenAI-compatible API call(s)")
     return _verdict("break")

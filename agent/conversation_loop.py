@@ -1048,6 +1048,17 @@ _DROPPED_TOOLCALL_NUDGE_CONTENT = (
     "restate intent — issue the actual tool call now to continue the task."
 )
 
+# Re-prompt after a body that NARRATED a whole tool run (step announcements plus "Done —",
+# "All applied.") while the turn produced zero tool calls and zero tool results. Unlike the ack
+# nudge this one must not be satisfiable by prose: the only acceptable continuations are a real
+# tool call or an answer that no longer claims the work was performed.
+_NARRATION_NO_TOOL_NUDGE = (
+    "[System: Your previous message described running tools (\"Let me check…\", \"Implementing…\", "
+    "\"Done —\", \"All applied.\") but this turn executed NO tool call, so none of it happened. "
+    "Either issue the tool calls the task needs now, or — if you already know the answer without "
+    "tools — reply without claiming that anything was edited, run, or verified.]"
+)
+
 # Re-prompt for an empty response after tool calls (#9400); the metadata flag does not
 # survive SessionDB projection, so it is matched by content.
 _EMPTY_TOOL_RESPONSE_NUDGE = (

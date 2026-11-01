@@ -322,6 +322,23 @@ def _session_owns_live_wakeup_schedule(session: dict) -> bool:
         return False
 
 
+def _session_has_inflight_background_review(session: dict) -> bool:
+    """True while a skill/memory review fork is still running for ``session``.
+
+    The review runs on a daemon thread AFTER the user's turn has closed, so ``session["running"]``
+    is already False while a provider call is genuinely in flight and will write skills/memory.
+    Reaping on that arm ends the session row under live work: agent.log for session ``local-ede…``
+    shows the review turn starting 15:27:54 and the session ending (``ws_orphan_reap``)
+    15:28:24, with the fork's tool work still logging past the end. Bounded by the fork's own
+    cancel/latch lifecycle (``finish_background_review_run`` clears the token), so this can never
+    hold a session open indefinitely.
+    """
+    agent = session.get("agent")
+    if agent is None:
+        return False
+    return getattr(agent, "_background_review_run", None) is not None
+
+
 def _session_owns_pending_process_notification(session: dict) -> bool:
     """True while a background process this session started will still report back into it (``notify_on_complete``
     or ``watch_patterns``): running, or its notice not yet routed (see ``tools.process_registry_awaiting``). The notice
