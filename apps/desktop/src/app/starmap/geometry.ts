@@ -107,6 +107,26 @@ export function fitViewport(w: number, h: number, outer: number = RING_OUTER): V
   return { k, x: w / 2, y: h / 2 + h * 0.05 }
 }
 
+/**
+ * Viewport that puts a world point at the centre of the canvas at zoom `k`.
+ *
+ * The inverse of render.ts's projection (screen = world·k + vp, the disk
+ * squashed by TILT), which is what makes "fly to this star" land on the star
+ * instead of near it. Keeps fitViewport's small downward bias so a find never
+ * parks its node under the timeline.
+ */
+export function centerOn(wx: number, wy: number, size: { h: number; w: number }, k: number): Viewport {
+  const safeK = Number.isFinite(k) && k > 0 ? k : 1
+  const w = Number.isFinite(size?.w) ? size.w : 0
+  const h = Number.isFinite(size?.h) ? size.h : 0
+
+  return {
+    k: safeK,
+    x: w / 2 - wx * safeK,
+    y: h / 2 + h * 0.05 - wy * safeK * TILT
+  }
+}
+
 // Target radius for a node at recency `rec` (oldest at the core), scaled to a
 // disk of the given outer radius.
 export function radiusForRecency(rec: number, outer: number = RING_OUTER): number {

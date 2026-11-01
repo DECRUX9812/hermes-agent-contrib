@@ -24,7 +24,9 @@ import type { StarmapGraph } from '@/types/hermes'
 import { computePalette, memoryInkFor, resolveRgb, rgba } from './color'
 import { RING_OUTER, TILT, ZOOM_MAX, ZOOM_MIN } from './constants'
 import { registerStarMapContextMenu } from './context-menu-handle'
-import { clamp, distToSegmentSq, fitScale, fitViewport, nodeRadius } from './geometry'
+import { findMatches, stepMatch } from './find-matches'
+import { FindOnMap } from './find-on-map'
+import { centerOn, clamp, distToSegmentSq, fitScale, fitViewport, nodeRadius } from './geometry'
 import { drawLiveOverlay } from './live'
 import { NodeContextMenu, type NodeMenuTarget } from './node-context-menu'
 import { shouldIgnorePlaybackHotkey } from './playback-hotkey'
@@ -175,6 +177,20 @@ export function StarMap({
   const [selectedId, setSelectedId] = useState<null | string>(null)
   const [menuTarget, setMenuTarget] = useState<NodeMenuTarget | null>(null)
   const [size, setSize] = useState({ h: 0, w: 0 })
+
+  // Find-on-map. The query is React state because it is an input; the hit set
+  // is mirrored into a ref so the paint loop can read it without re-rendering
+  // the canvas subtree on every keystroke.
+  const [findQuery, setFindQuery] = useState('')
+  const [matchIds, setMatchIds] = useState<string[]>([])
+  const [matchIndex, setMatchIndex] = useState(0)
+  const matchSetRef = useRef<Set<string>>(new Set())
+  // Each explicit step bumps this, so Enter always moves the camera even when
+  // there is a single hit (or the same hit came round again).
+  const [stepTick, setStepTick] = useState(0)
+  // What we last flew to. A live refresh re-creates the match list; without
+  // this the camera would yank back to hit #1 every poll while you were reading.
+  const flownKeyRef = useRef('')
 
   // Live mode: the toggle is React state (drives the button's pressed look);
   // everything else lives in refs/atoms the frame loop reads directly — the
@@ -388,6 +404,71 @@ export function StarMap({
     memByIdRef.current = memById
     invalidate()
   }, [adjacency, invalidate, memById])
+
+  // Match against the live node list (rebuilt above, so this runs after it), so
+  // a search survives a graph refresh instead of pointing at dead ids.
+  useEffect(() => {
+    setMatchIds(findMatches(nodesRef.current, findQuery))
+    setMatchIndex(0)
+  }, [findQuery, graph])
+
+  // The paint loop reads hits from a ref; repaint so rings appear at once.
+  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
+  useEffect(() => {
+    matchSetRef.current = new Set(matchIds)
+    invalidate()
+  }, [matchIds, invalidate])
+
+  // Fly the camera to the current hit and select it, so the ring and the
+  // tooltip agree. Keyed on what actually changed (query, hit, index, step) and
+  // not on the array identity: a live graph poll re-creates matchIds, and
+  // re-centring on that would fight the user every few seconds. Guarded end to
+  // end — a hit whose node vanished (a live refresh mid-search) moves nothing
+  // instead of throwing.
+  // eslint-disable-next-line no-restricted-syntax -- legitimate non-atom ref write (see eslint rule comment)
+  useEffect(() => {
+    const id = matchIds[matchIndex]
+    const node = id ? byIdRef.current.get(id) : null
+    const key = `${findQuery}|${id ?? ''}|${matchIndex}|${stepTick}`
+
+    if (!node || key === flownKeyRef.current || !Number.isFinite(node.x) || !Number.isFinite(node.y)) {
+      return
+    }
+
+    flownKeyRef.current = key
+    setPlaying(false)
+    setSelectedId(node.id)
+    // Never zoom OUT to a hit: keep whatever the user was looking at, but come
+    // in to at least 1.5× so the star is legible where it lands.
+    viewportRef.current = centerOn(node.x, node.y, sizeRef.current, Math.max(viewportRef.current.k, 1.5))
+    invalidate()
+  }, [findQuery, invalidate, matchIds, matchIndex, stepTick])
+
+  const onFindChange = useCallback((next: string) => {
+    setFindQuery(next)
+  }, [])
+
+  const onFindStep = useCallback(
+    (direction: 1 | -1) => {
+      const nextId = stepMatch(matchIds[matchIndex] ?? null, matchIds, direction)
+
+      if (!nextId) {
+        return
+      }
+
+      const next = matchIds.indexOf(nextId)
+      setMatchIndex(next < 0 ? 0 : next)
+      setStepTick(tick => tick + 1)
+    },
+    [matchIds, matchIndex]
+  )
+
+  const onFindClear = useCallback(() => {
+    flownKeyRef.current = ''
+    setFindQuery('')
+    setMatchIds([])
+    setMatchIndex(0)
+  }, [])
 
   // The empty-core ASCII scramble uses the bundled JetBrains Mono face. Canvas
   // text doesn't reflow when a webfont loads, so repaint once it's ready.
@@ -655,6 +736,7 @@ export function StarMap({
           hoverLink: hoveredLinkRef.current,
           hoverRing: hoveredRingRef.current,
           links: linksRef.current,
+          matchIds: matchSetRef.current,
           memById: memByIdRef.current,
           nodes: nodesRef.current,
           palette,
@@ -1065,6 +1147,22 @@ export function StarMap({
           ringStops={ringStops}
         />
       </div>
+
+      {/* Find-on-map — top-right, clear of the centred scrubber and of the
+          bottom-right share cluster. Hidden on an empty map: there is nothing
+          to find, and an input that can only ever say "no matches" is noise. */}
+      {graph.nodes.length > 0 && (
+        <div className="pointer-events-none absolute right-2 top-6 z-20">
+          <FindOnMap
+            index={matchIndex}
+            matchCount={matchIds.length}
+            onChange={onFindChange}
+            onClear={onFindClear}
+            onStep={onFindStep}
+            query={findQuery}
+          />
+        </div>
+      )}
 
       {/* Share / import (WoW-talent-style code) + live toggle — bottom-right,
           mirroring the legend. Live is hidden for imported maps: a pasted map

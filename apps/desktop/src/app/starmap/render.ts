@@ -36,6 +36,10 @@ export interface Scene {
   hoverRing: null | number
   links: SimLink[]
   memById: Map<string, MemoryCard>
+  // Find-on-map hits. Drawn as a ring on every matching node and kept at full
+  // ink even while a focus or a date filter dims everything else, so a search
+  // always shows something. Empty/absent = search off.
+  matchIds?: Set<string>
   nodes: SimNode[]
   palette: Palette
   // Time scrubber: only paint nodes/links whose recency has been reached. 1 =
@@ -174,6 +178,7 @@ export function drawScene(scene: Scene): DrawResult {
     hoverLink,
     hoverRing,
     links,
+    matchIds,
     memById,
     nodes,
     palette,
@@ -201,7 +206,7 @@ export function drawScene(scene: Scene): DrawResult {
 
   const erec = (rec: number) => (frontier > 0 ? clamp(rec / frontier, 0, 1) : 1)
   const { h, w } = size
-  const { bandInk, base, bg, c, chipBg, darkTheme, inkInv, memoryInk, skillInk } = palette
+  const { bandInk, base, bg, c, chipBg, darkTheme, inkInv, memoryInk, primary, skillInk } = palette
   const { bandAlpha, lightSize, ringAlpha, sheen } = RING_PARAMS[darkTheme ? 'dark' : 'light']
 
   let animating = false
@@ -465,6 +470,8 @@ export function drawScene(scene: Scene): DrawResult {
   // filter is alpha-only, so the two states compose. Track which rings have at
   // least one revealed node so a ring's date only shows once it has content.
   const revealedRings = new Set<number>()
+  // An empty set means "no search", so this stays null unless a find is live.
+  const matchSet = matchIds && matchIds.size > 0 ? matchIds : null
 
   for (const n of nodes) {
     // The land comes first: a node waits for the ring that CAPS its region (its
@@ -479,8 +486,11 @@ export function drawScene(scene: Scene): DrawResult {
 
     const isFocus = revealed && n.id === focusId
     const isNeighbor = revealed && !!focusSet && focusSet.has(n.id)
+    // A search hit is lifted to full ink like a focus: finding something and
+    // having it stay dimmed would defeat the search.
+    const isMatch = revealed && !!matchSet?.has(n.id)
     const inRing = !!ring && n.rec >= ringLo && n.rec < ringHi
-    const nodeHigh = isFocus || isNeighbor
+    const nodeHigh = isFocus || isNeighbor || isMatch
     const er = erec(n.rec)
     const ageScale = nodeHigh || inRing ? 1 : 0.34 + Math.min(1, er / 0.4) * 0.66
     // Stable screen-space radius: use the graph's resting fit zoom, not the
@@ -526,6 +536,17 @@ export function drawScene(scene: Scene): DrawResult {
       ctx.strokeStyle = rgba(nodeInk, 1)
       ctx.lineWidth = 1.4
       shapePath(ctx, shape, sx, sy, r + 4)
+      ctx.stroke()
+    }
+
+    if (isMatch) {
+      // Outside the focus ring, so a hit that is also the selected node still
+      // reads as "found". Accent ink = "this is what you asked about", the same
+      // colour the rest of the chrome uses for the active thing.
+      ctx.globalAlpha = 1
+      ctx.strokeStyle = rgba(primary, 0.9)
+      ctx.lineWidth = 1.2
+      shapePath(ctx, shape, sx, sy, r + 7)
       ctx.stroke()
     }
   }
