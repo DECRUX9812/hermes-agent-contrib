@@ -225,7 +225,6 @@ function StatusbarOverflowMenu({
           aria-label={`${items.length} more status items`}
           className={STATUSBAR_ACTION_CLASS}
           data-slot="statusbar-overflow"
-          title={`${items.length} more`}
           type="button"
         >
           <MoreHorizontal className="size-3.5" />
