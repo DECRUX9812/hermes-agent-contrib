@@ -30,6 +30,11 @@ export function CatalogDetailDialog({
   const { t } = useI18n()
   const pageable = order.length > 1
 
+  const selected = order.find(entry => entry.id === selectedId)
+  // Radix needs one name for the dialog; the entry's own title is the honest
+  // one (falls back to the id when the row is not in this page of the list).
+  const name = selected?.name || selectedId
+
   const step = (delta: number) => {
     if (!pageable) {
       return
@@ -59,6 +64,7 @@ export function CatalogDetailDialog({
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
         aria-describedby={undefined}
+        aria-label={name}
         bodyClassName="gap-5 p-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         chrome={
           pageable && (

@@ -62,8 +62,8 @@ export const SessionControlLoopSection = memo(function SessionControlLoopSection
     loop.status === 'done'
       ? 'text-muted-foreground/70'
       : loop.status === 'paused' || loop.deferred_by_goal
-        ? 'text-amber-500'
-        : 'text-emerald-500'
+        ? 'text-(--ui-yellow)0'
+        : 'text-(--ui-green)0'
 
   const handleAction = useCallback(
     async (action: SessionControlAction, args?: SessionControlActionArgs): Promise<boolean> => {

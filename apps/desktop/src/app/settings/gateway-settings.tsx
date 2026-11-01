@@ -153,8 +153,11 @@ function ModeCard({
         {hint ? (
           <Tip label={hint}>
             <span
+              aria-label={hint}
               className="grid size-3.5 shrink-0 cursor-help place-items-center text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)"
               onClick={event => event.stopPropagation()}
+              role="img"
+              tabIndex={0}
             >
               <HelpCircle className="size-3.5" />
             </span>

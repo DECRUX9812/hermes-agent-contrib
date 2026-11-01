@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Tip } from '@/components/ui/tooltip'
 import { Check, CheckCircle2, Cpu, Download, Eject, Loader2, Trash2 } from '@/lib/icons'
 import { cn } from '@/lib/utils'
+import { confirm } from '@/store/confirm'
 import { runningDownloadFor } from '@/store/local-runtime-jobs'
 import type { LocalCatalogModel, LocalModelPlacement, LocalModelsStatus, LocalRuntimeJob } from '@/types/hermes'
 
@@ -101,7 +102,16 @@ function DeleteModelButton({ modelId }: ModelIdProps): ReactElement {
   const [deleting, setDeleting] = useState<boolean>(false)
 
   async function handleDelete(): Promise<void> {
-    if (!window.confirm(scope.copy.deleteConfirm(modelId))) {
+    // The rest of Settings asks through the themed ConfirmDialog (`@/store/
+    // confirm`); a native window.confirm here blocked the renderer, ignored the
+    // theme, and read as a browser prompt inside a desktop app.
+    const ok = await confirm({
+      confirmLabel: scope.copy.deleteAction,
+      destructive: true,
+      title: scope.copy.deleteConfirm(modelId)
+    })
+
+    if (!ok) {
       return
     }
 

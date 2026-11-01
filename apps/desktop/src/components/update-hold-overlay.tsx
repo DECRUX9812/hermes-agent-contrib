@@ -93,7 +93,7 @@ export function UpdateHoldOverlay() {
     >
       <div className="relative w-full max-w-[40rem] overflow-hidden rounded-xl border border-(--stroke-nous) bg-(--ui-chat-bubble-background) shadow-nous">
         <div className="flex items-start gap-3 px-5 py-4">
-          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-amber-500" />
+          <AlertTriangle className="mt-0.5 size-5 shrink-0 text-(--ui-yellow)0" />
           <div>
             <h2 className="text-[0.9375rem] font-semibold tracking-tight" id={titleId}>
               {confirming ? copy.confirmTitle : unverified ? copy.titleUnverified : copy.title}
@@ -106,7 +106,7 @@ export function UpdateHoldOverlay() {
 
         <div className="grid gap-4 p-5 pt-0">
           <div
-            className="rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-(--ui-text-secondary)"
+            className="rounded-2xl border border-(--ui-yellow)0/30 bg-(--ui-yellow)0/10 px-4 py-3 text-xs text-(--ui-text-secondary)"
             data-testid="update-hold-detail"
           >
             <p>{unverified ? copy.unverified : hold.ownerPid ? copy.heldByProcess(hold.ownerPid) : copy.heldUnknown}</p>

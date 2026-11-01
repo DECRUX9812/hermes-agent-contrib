@@ -462,7 +462,7 @@ function ProfileOwnedWebhooksView({ backendProfile, onClose }: ProfileOwnedWebho
               {visible.map(sub => (
                 <PanelListRow
                   active={selectedSub?.name === sub.name}
-                  dotClassName={sub.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/50'}
+                  dotClassName={sub.enabled ? 'bg-(--ui-green)0' : 'bg-muted-foreground/50'}
                   key={sub.name}
                   menuItems={[
                     {

@@ -203,7 +203,7 @@ function CardFooter({ arc, task }: { arc: ArcState | null; task: KanbanTask }) {
       )}
       {arc === 'stale' && (
         <Tip label={k.arcStale}>
-          <span className="shrink-0 cursor-help font-medium text-amber-500">{k.noHeartbeat}</span>
+          <span className="shrink-0 cursor-help font-medium text-(--ui-yellow)0">{k.noHeartbeat}</span>
         </Tip>
       )}
       {task.status === 'blocked' && task.block_kind && (
@@ -218,7 +218,7 @@ function CardFooter({ arc, task }: { arc: ArcState | null; task: KanbanTask }) {
       )}
       {unassignedReady && !fallback && (
         <Tip label={k.wontRunTip}>
-          <span className="inline-flex shrink-0 cursor-help items-center gap-1 text-amber-500">
+          <span className="inline-flex shrink-0 cursor-help items-center gap-1 text-(--ui-yellow)0">
             <Codicon name="debug-disconnect" size="0.7rem" />
             {k.wontRun}
           </span>

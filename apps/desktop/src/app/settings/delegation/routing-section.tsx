@@ -161,7 +161,7 @@ function ModeOption({ routing, mode, selected, blocked, available, onChoose }: M
         'rounded-lg border transition-colors hover:transition-none',
         selected
           ? blocked
-            ? 'border-amber-500/50 bg-amber-500/5'
+            ? 'border-(--ui-yellow)0/50 bg-(--ui-yellow)0/5'
             : 'border-(--ui-stroke-secondary) bg-(--ui-bg-tertiary)'
           : 'border-(--ui-stroke-tertiary)',
         !selected && available && 'hover:bg-(--chrome-action-hover)'
@@ -223,7 +223,7 @@ function BlockedBanner({ message, action, scope }: { message: string; action?: R
 
   return (
     <div
-      className="mt-2 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-md border border-amber-500/40 bg-amber-500/10 px-3 py-2.5"
+      className="mt-2 flex flex-wrap items-start gap-x-3 gap-y-2 rounded-md border border-(--ui-yellow)0/40 bg-(--ui-yellow)0/10 px-3 py-2.5"
       data-slot="delegation-blocked"
       role="alert"
     >

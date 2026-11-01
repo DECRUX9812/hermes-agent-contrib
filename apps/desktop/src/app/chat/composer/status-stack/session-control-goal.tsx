@@ -156,12 +156,12 @@ export const SessionControlGoalSection = memo(function SessionControlGoalSection
 
   const iconClass =
     goal.last_verdict === 'blocked'
-      ? 'text-red-500'
+      ? 'text-(--ui-red)0'
       : visibleState === 'done'
         ? 'text-muted-foreground/70'
         : visibleState === 'active'
-          ? 'text-emerald-500'
-          : 'text-amber-500'
+          ? 'text-(--ui-green)0'
+          : 'text-(--ui-yellow)0'
 
   const stateLabel =
     goal.last_verdict === 'blocked'

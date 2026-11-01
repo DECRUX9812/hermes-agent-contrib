@@ -239,7 +239,7 @@ export function PriorityGlyph({ priority }: { priority: number }) {
   }
 
   return (
-    <span className="inline-flex items-center gap-0.5 text-amber-500">
+    <span className="inline-flex items-center gap-0.5 text-(--ui-yellow)0">
       <Codicon name="arrow-up" size="0.7rem" />
       {priority}
     </span>

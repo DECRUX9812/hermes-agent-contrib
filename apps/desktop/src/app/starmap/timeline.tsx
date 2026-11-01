@@ -178,6 +178,34 @@ export const Timeline = memo(function Timeline({
     }
   }
 
+  // The track is a role="slider" with tabIndex, so it accepts focus — but with
+  // no key handler a keyboard user could focus it and scrub nothing (the only
+  // way to move the reveal was pointer drag). Arrow = 2%, Shift+Arrow = 10%,
+  // Home/End = ends. stopPropagation keeps the starmap canvas, which also
+  // listens for arrows, from panning at the same time.
+  const onScrubKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const current = revealStore.get()
+    const step = e.shiftKey ? 0.1 : 0.02
+    const next =
+      e.key === 'ArrowLeft' || e.key === 'ArrowDown'
+        ? current - step
+        : e.key === 'ArrowRight' || e.key === 'ArrowUp'
+          ? current + step
+          : e.key === 'Home'
+            ? 0
+            : e.key === 'End'
+              ? 1
+              : null
+
+    if (next === null) {
+      return
+    }
+
+    e.preventDefault()
+    e.stopPropagation()
+    onScrub(Math.max(0, Math.min(1, next)))
+  }
+
   const colorFor = (kind: Star['kind']) => (kind === 'skill' ? 'var(--theme-primary)' : memoryColor)
 
   return (
@@ -197,6 +225,7 @@ export const Timeline = memo(function Timeline({
         aria-valuemin={0}
         aria-valuenow={Math.round(revealStore.get() * 100)}
         className="relative h-7 min-w-0 flex-1 cursor-pointer select-none touch-none"
+        onKeyDown={onScrubKeyDown}
         onPointerDown={onPointerDown}
         onPointerMove={onPointerMove}
         onPointerUp={onPointerUp}

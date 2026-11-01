@@ -1191,7 +1191,7 @@ function FleetDivider({
     >
       {!first && <span className="h-3 w-px bg-(--ui-stroke-tertiary)" />}
       <ConnectionGlyph connection={connection} />
-      {!reachable && <span className="size-1.5 rounded-full bg-amber-500" data-slot="profile-rail-unreachable" />}
+      {!reachable && <span className="size-1.5 rounded-full bg-(--ui-yellow)0" data-slot="profile-rail-unreachable" />}
     </span>
   )
 

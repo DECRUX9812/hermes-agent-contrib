@@ -143,7 +143,7 @@ export function PanelList({
 
 interface PanelListRowProps {
   active: boolean
-  // Leading status dot color class (e.g. 'bg-emerald-500'); omit for none.
+  // Leading status dot color class (e.g. 'bg-(--ui-green)0'); omit for none.
   dotClassName?: string
   // Leading codicon glyph name (used when there's no lead/dot).
   icon?: string

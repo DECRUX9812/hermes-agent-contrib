@@ -23,6 +23,9 @@ export interface ZoomableImageProps extends ComponentProps<'img'> {
 
 export interface ImageActionCopy {
   downloadImage: string
+  /** Accessible name for the lightbox itself — an unnamed dialog announces as
+   *  just "dialog" in every screen reader. */
+  openImage: string
   savingImage: string
   zoomIn: string
   zoomOut: string
@@ -132,6 +135,7 @@ export function ImageLightbox({
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
+        aria-label={alt || copy.openImage}
         bodyClassName="block overflow-visible p-0"
         chrome={
           open && (

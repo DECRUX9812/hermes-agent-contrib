@@ -79,6 +79,7 @@ export function PetGenerateOverlay() {
     <Dialog onOpenChange={handleOpenChange} open={open}>
       <DialogContent
         aria-describedby={undefined}
+        aria-label={copy.title}
         banner={banner}
         bannerTone={errored ? 'error' : 'info'}
         bodyClassName="gap-4 text-center"

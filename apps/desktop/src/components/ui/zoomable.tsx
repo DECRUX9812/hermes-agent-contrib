@@ -50,7 +50,7 @@ export function Zoomable({ children, overlay, onCopy, label = 'Open full view', 
         </span>
       </div>
       {open && (
-        <ZoomPanViewer onCopy={onCopy} onOpenChange={setOpen} open={open}>
+        <ZoomPanViewer label={label} onCopy={onCopy} onOpenChange={setOpen} open={open}>
           {overlay ?? children}
         </ZoomPanViewer>
       )}
@@ -60,11 +60,13 @@ export function Zoomable({ children, overlay, onCopy, label = 'Open full view', 
 
 function ZoomPanViewer({
   children,
+  label = 'Open full view',
   onCopy,
   onOpenChange,
   open
 }: {
   children: ReactNode
+  label?: string
   onCopy?: () => Promise<void> | void
   onOpenChange: (open: boolean) => void
   open: boolean
@@ -85,6 +87,7 @@ function ZoomPanViewer({
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
       <DialogContent
+        aria-label={label}
         bodyClassName="flex min-h-0 flex-1 flex-col gap-0 overflow-hidden p-0"
         className="h-[85vh] w-[90vw] max-w-[90vw]"
         showCloseButton={false}
