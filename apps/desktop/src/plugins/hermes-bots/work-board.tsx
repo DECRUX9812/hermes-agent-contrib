@@ -21,7 +21,7 @@ import {
   relativeTime,
   useValue
 } from '@hermes/plugin-sdk'
-import { type ReactNode, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { ActivityDetailDialog } from './activity-detail'
 import { stepLabel, taskSubject } from './activity-format'
@@ -29,7 +29,9 @@ import { useActivitySubjects } from './activity-subjects'
 import { type BotPlanState, deriveBotPlanState } from './bot-plan'
 import { routineDetailIssue, routineTitle } from './cron'
 import { type BotsText, useBots } from './i18n'
+import { botLiveStatusLabel, useBotLiveStatus } from './live-status'
 import { requestForBot } from './routing'
+import { botCanonicalSessionId } from './row-helpers'
 import type { RosterRow, RoutineJob } from './types'
 
 const TILE_TONE: Record<ActivityStatus, string> = {
@@ -131,6 +133,25 @@ function activePlanStep(plan: BotPlanState): number {
   return index === -1 ? plan.steps.length : index + 1
 }
 
+/**
+ * Re-render once a second while `active`, so a running task's "started 2m ago"
+ * actually moves. Without this the Now card reads as a frozen screenshot even
+ * when the turn is streaming.
+ */
+function useTicker(active: boolean): void {
+  const [, tick] = useState(0)
+
+  useEffect(() => {
+    if (!active) {
+      return
+    }
+
+    const id = setInterval(() => tick(value => value + 1), 1000)
+
+    return () => clearInterval(id)
+  }, [active])
+}
+
 function NowCard({
   onOpen,
   onStop,
@@ -145,6 +166,7 @@ function NowCard({
   const b = useBots()
   const a = b.activity
   const w = a.work
+  useTicker(true)
   const step = currentStep(task)
   const live = step && step.action.status === 'running' ? stepLabel(step, a, 'doing') : a.thinking
   const planStep = plan && !plan.complete ? activePlanStep(plan) : null
@@ -211,12 +233,54 @@ function NowCard({
   )
 }
 
-function IdleNow({ name, w }: { name: string; w: BotsText['activity']['work'] }) {
+/**
+ * The bot's presence as motion. `focusedActivity` only describes the focused
+ * chat, so an unfocused bot has no tasks to draw — presence is the one signal
+ * that spans sessions, and showing it moving is the difference between "idle"
+ * and "broken".
+ */
+function StatusPulse({ bot, className }: { bot?: RosterRow; className?: string }) {
+  const dots = useValue(host.state.dotStateBySession)
+  const sessionId = botCanonicalSessionId(bot)
+  const state = sessionId ? dots[sessionId] : undefined
+  const running = state === 'background' || state === 'stalled' || state === 'working'
+  const needsAnswer = state === 'needs-input'
+
+  if (running) {
+    return <GlyphSpinner className={cn('shrink-0 text-(--ui-accent)', className)} spinner="breathe" />
+  }
+
+  if (needsAnswer) {
+    return (
+      <span aria-hidden className={cn('relative flex shrink-0', className)}>
+        <span className="absolute inline-flex size-full animate-ping rounded-full bg-amber-500 opacity-60" />
+        <span className="relative inline-flex size-2 rounded-full bg-amber-500" />
+      </span>
+    )
+  }
+
+  return <span aria-hidden className={cn('size-2 shrink-0 rounded-full bg-(--ui-text-quaternary)', className)} />
+}
+
+/** The bot's live line from presence — for a rail that is not this bot's chat. */
+function PresenceLabel({ bot }: { bot: RosterRow }) {
+  const b = useBots()
+  const live = useBotLiveStatus(bot)
+
   return (
-    <div className="flex items-center gap-2.5 rounded-xl px-2 py-2" data-testid="work-idle">
-      <span aria-hidden className="size-2 shrink-0 rounded-full bg-(--ui-text-quaternary)" />
+    <span className="min-w-0 truncate text-[0.75rem] leading-snug text-(--ui-text-tertiary)" data-testid="work-presence">
+      {botLiveStatusLabel(live, b.roster)}
+    </span>
+  )
+}
+
+function IdleNow({ bot, name, w }: { bot?: RosterRow; name: string; w: BotsText['activity']['work'] }) {
+  return (
+    <div className="flex items-start gap-2.5 rounded-xl px-2 py-2" data-testid="work-idle">
+      <StatusPulse bot={bot} className="mt-1" />
       <span className="grid min-w-0 gap-0.5">
         <span className="text-[0.8125rem] font-medium text-(--ui-text-secondary)">{w.idleTitle}</span>
+        {bot ? <PresenceLabel bot={bot} /> : null}
         <span className="text-[0.75rem] leading-snug text-(--ui-text-tertiary)">{w.idleBody(name)}</span>
       </span>
     </div>
@@ -446,17 +510,22 @@ export function WorkBoard({
 
   if (!tasks.length && !routines.length) {
     return (
-      <div className="grid place-items-center px-6 py-10 text-center" data-testid="activity-empty">
-        <div className="grid max-w-60 gap-1.5">
-          <Codicon className="mx-auto text-(--ui-text-quaternary)" name="pulse" size="1.25rem" />
-          <div className="text-[0.8125rem] font-medium text-(--ui-text-secondary)">{a.emptyTitle}</div>
-          <div className="text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)">{a.emptyBody(name)}</div>
-          {onAddRoutine ? (
-            <Button className="mt-2 justify-self-center" onClick={onAddRoutine} size="xs" variant="secondary">
-              <Codicon name="add" />
-              {w.addRoutine}
-            </Button>
-          ) : null}
+      <div className="grid min-w-0 gap-4 px-3 pb-4 pt-1" data-testid="activity-empty">
+        <BoardSection title={w.now}>
+          <IdleNow bot={owner} name={name} w={w} />
+        </BoardSection>
+        <div className="grid place-items-center px-4 py-6 text-center">
+          <div className="grid max-w-60 gap-1.5">
+            <Codicon className="mx-auto text-(--ui-text-quaternary)" name="pulse" size="1.25rem" />
+            <div className="text-[0.8125rem] font-medium text-(--ui-text-secondary)">{a.emptyTitle}</div>
+            <div className="text-[0.75rem] leading-relaxed text-(--ui-text-tertiary)">{a.emptyBody(name)}</div>
+            {onAddRoutine ? (
+              <Button className="mt-2 justify-self-center" onClick={onAddRoutine} size="xs" variant="secondary">
+                <Codicon name="add" />
+                {w.addRoutine}
+              </Button>
+            ) : null}
+          </div>
         </div>
       </div>
     )
@@ -482,7 +551,7 @@ export function WorkBoard({
             task={running}
           />
         ) : (
-          <IdleNow name={name} w={w} />
+          <IdleNow bot={owner} name={name} w={w} />
         )}
       </BoardSection>
 

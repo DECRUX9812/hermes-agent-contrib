@@ -163,14 +163,13 @@ function BotHero({
           >
             {tone === 'working' ? (
               <GlyphSpinner className="shrink-0 text-[0.85rem] text-(--ui-accent)" spinner="breathe" />
+            ) : tone === 'waiting' ? (
+              <span aria-hidden className="relative mt-0.5 flex size-1.5 shrink-0">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-60" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-current" />
+              </span>
             ) : (
-              <span
-                aria-hidden
-                className={cn(
-                  'size-1.5 shrink-0 rounded-full',
-                  tone === 'waiting' ? 'bg-current' : 'bg-(--ui-text-quaternary)'
-                )}
-              />
+              <span aria-hidden className="size-1.5 shrink-0 rounded-full bg-(--ui-text-quaternary)" />
             )}
             <span className="min-w-0 wrap-anywhere">{now ?? botLiveStatusLabel(live, b.roster)}</span>
           </p>
