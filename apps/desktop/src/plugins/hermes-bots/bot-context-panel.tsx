@@ -11,6 +11,7 @@
 
 import {
   Button,
+  cn,
   Codicon,
   codiconIcon,
   DAY,
@@ -42,18 +43,17 @@ import {
   selectRoutineJobs
 } from './cron'
 import { $botMeta, $lastRoster, botRosterKey, saveBotMeta } from './data'
+import { EditProfileDialog } from './edit-profile-dialog'
 import { $groupActivity } from './group-activity'
 import { $groupChats, $groupClarify, dismissGroupPrompt } from './group-chat'
 import { openGroupChat } from './group-chat-view'
+import { $activeGroupMemberKeys } from './group-presence'
 import { stopGroupThread } from './group-rounds'
 import { answerGroupClarify } from './group-turns'
-import { $activeGroupMemberKeys } from './group-presence'
 import { type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
 import { botRecentSession, openBotRecentSession } from './recent-session'
-import { EditProfileDialog } from './edit-profile-dialog'
 import { openRosterBot } from './roster-actions'
-import { cn } from '@/lib/utils'
 import { botRosterMeta } from './routing'
 import type { RosterRow, RoutineJob } from './types'
 
@@ -180,6 +180,7 @@ const selected = useValue($selectedBot)
   const [createOpen, setCreateOpen] = useState(false)
   const [createOwner, setCreateOwner] = useState<RosterRow | null>(null)
   const working = useValue($activeGroupMemberKeys).has(owner ? botRosterKey(owner) : '')
+
   // Needs-you strip (parity with the reference bot pane): pending clarify and
   // approval prompts where THIS bot is the blocked member, or that sit in a
   // room it belongs to — who asked, what for, and a jump to the room.
@@ -200,6 +201,7 @@ const selected = useValue($selectedBot)
   // bot-meta, edits save through saveBotMeta like every other meta field.
   const rooms = useValue($groupChats)
   const activityByRoom = useValue($groupActivity)
+
   const activity = Object.entries(rooms || {})
     .filter(([, room]) => room && Array.isArray(room.members) && room.members.some(member => member && member.name === bot))
     .flatMap(([group, room]) => (activityByRoom[group]?.events || []).map(event => ({ ...event, group })))
@@ -311,13 +313,20 @@ const selected = useValue($selectedBot)
                   : 'border border-destructive/25 bg-destructive/10 text-destructive'
             )}
           >
-            <span
-              aria-hidden="true"
-              className={cn(
-                'size-1.5 shrink-0 rounded-full',
-                working ? 'bg-(--ui-green)' : reachable ? 'bg-(--ui-text-quaternary)' : 'bg-destructive/70'
-              )}
-            />
+            {working ? (
+              <span aria-hidden="true" className="relative flex size-1.5 shrink-0">
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-(--ui-green) opacity-70" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-(--ui-green)" />
+              </span>
+            ) : (
+              <span
+                aria-hidden="true"
+                className={cn(
+                  'size-1.5 shrink-0 rounded-full',
+                  reachable ? 'bg-(--ui-text-quaternary)' : 'bg-destructive/70'
+                )}
+              />
+            )}
             <span className="truncate">{statusText}</span>
           </span>
         </div>
@@ -345,6 +354,7 @@ const selected = useValue($selectedBot)
           </div>
           {needsYou.map(prompt => {
             const question = prompt.kind === 'approval' ? prompt.question : (prompt.questions || []).map(q => q.question).filter(Boolean).join(' · ')
+
             return (
               <div
                 className="flex min-w-full items-center gap-0.5 rounded-md hover:bg-(--chrome-action-hover)"
@@ -495,7 +505,13 @@ const selected = useValue($selectedBot)
               </div>
             ) : null}
             {runs.length === 0 && !isLoading ? (
-              <PanelEmpty description={p.noRuns} icon="list-tree" title={p.tasks} />
+              <div className="grid gap-2" data-testid="panel-empty-live">
+                <span className="flex items-center gap-2 px-2 text-[0.6875rem] text-(--ui-text-tertiary)">
+                  <GlyphSpinner className="text-(--ui-accent)" spinner="breathe" />
+                  <span className="truncate">{statusText}</span>
+                </span>
+                <PanelEmpty description={p.noRuns} icon="list-tree" title={p.tasks} />
+              </div>
             ) : (
               groups.map(group => (
                 <div key={group.key}>
