@@ -168,7 +168,7 @@ export function AvatarPicker({ shape, color, image, onShape, onColor, onImage, g
                             size={32}
                           />
                         ) : (
-                          <span className="text-[0.625rem] text-(--ui-text-tertiary)">{b.editor.auto}</span>
+                          <span className="text-[0.625rem] text-(--ui-text-secondary)">{b.editor.auto}</span>
                         )}
                       </RowButton>
                     </Tip>
@@ -197,11 +197,11 @@ export function AvatarPicker({ shape, color, image, onShape, onColor, onImage, g
                     {locked ? b.editor.unlock : b.editor.lockFace}
                   </Button>
                 </div>
-                <div className="text-center text-[0.625rem] text-(--ui-text-quaternary)">
+                <div className="text-center text-[0.625rem] text-(--ui-text-secondary)">
                   {locked ? b.editor.lockedHint : b.editor.unlockedHint}
                 </div>
                 <Button
-                  className="text-(--ui-text-tertiary)"
+                  className="text-(--ui-text-secondary)"
                   onClick={() => onShape(defaultShapeFor(pickerName))}
                   size="sm"
                   type="button"
@@ -266,11 +266,11 @@ export function AvatarPicker({ shape, color, image, onShape, onColor, onImage, g
               {genBusy ? b.avatar.generating : b.avatar.generate}
             </Button>
             {describe.trim() ? null : (
-              <div className="text-center text-[0.625rem] text-(--ui-text-quaternary)">{b.bot.descriptionHint}</div>
+              <div className="text-center text-[0.625rem] text-(--ui-text-secondary)">{b.bot.descriptionHint}</div>
             )}
           </div>
         ) : (
-          <div className="px-2 py-3 text-center text-xs leading-5 text-(--ui-text-tertiary)">
+          <div className="px-2 py-3 text-center text-xs leading-5 text-(--ui-text-secondary)">
             {imagen === false ? b.editor.noImageModel : b.editor.checkingImage}
           </div>
         )

@@ -1,4 +1,6 @@
 import {
+  cn,
+  Codicon,
   ConfirmDialog,
   ContextMenu,
   ContextMenuContent,
@@ -7,9 +9,6 @@ import {
   ContextMenuTrigger
 } from '@hermes/plugin-sdk'
 import { useState } from 'react'
-
-import { Codicon } from '@/components/ui/codicon'
-import { cn } from '@/lib/utils'
 
 import { useCanonicalGroupLabels } from './canonical-group-labels'
 import { useBots } from './i18n'
@@ -48,7 +47,7 @@ export function CanonicalGroupRow({ active = false, memberCount, name, needsYou 
       type="button"
     >
       <span className="relative shrink-0">
-        <Codicon className="text-(--ui-text-quaternary)" name="hubot" size="0.9375rem" />
+        <Codicon className="text-(--ui-text-secondary)" name="hubot" size="0.9375rem" />
         {needsYou || running ? (
           <span
             aria-hidden="true"
@@ -60,7 +59,7 @@ export function CanonicalGroupRow({ active = false, memberCount, name, needsYou 
         ) : null}
       </span>
       <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">{name}</span>
-      <span className="shrink-0 rounded-full bg-(--ui-surface-overlay) px-1.5 py-0.5 text-[0.625rem] tabular-nums font-medium text-(--ui-text-tertiary) group-hover:bg-(--chrome-action-hover)">{group.memberCount(memberCount)}</span>
+      <span className="shrink-0 rounded-full bg-(--ui-surface-overlay) px-1.5 py-0.5 text-[0.625rem] tabular-nums font-medium text-(--ui-text-secondary) group-hover:bg-(--chrome-action-hover)">{group.memberCount(memberCount)}</span>
     </button>
   )
 

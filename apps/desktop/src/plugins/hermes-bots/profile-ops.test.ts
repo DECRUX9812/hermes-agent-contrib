@@ -118,6 +118,54 @@ describe('duplicating a bot', () => {
     expect(await duplicateBot({ name: 'ops' } as RosterRow, roster)).toBe('ops-4')
   })
 
+  // DESK-038: "full copy" copied the copy's PLACE, not just its look. A hidden
+  // source produced an invisible duplicate the app claimed to have created; a
+  // pinned one minted a second pin; a filed one filed the copy next to it and
+  // seated it in the original's rooms — none of which a user asks for by
+  // pressing Duplicate.
+  it('copies the look but never the place or the visibility', async () => {
+    $botMeta.set({
+      writer: {
+        color: '#38bdf8',
+        group: 'staff',
+        groups: ['staff'],
+        hidden: true,
+        pinned: true,
+        screenAutoOpen: true,
+        sectionId: 'desk',
+        sectionName: 'Desk',
+        shape: 'cloud',
+        title: 'Writer'
+      }
+    })
+
+    const name = await duplicateBot({ name: 'writer' } as RosterRow, [{ name: 'writer' } as RosterRow])
+    const copy = $botMeta.get()[name]
+
+    // The look travels.
+    expect(copy).toMatchObject({ color: '#38bdf8', shape: 'cloud', title: 'Writer (copy)' })
+
+    // The place and the visibility do not.
+    for (const key of ['group', 'groups', 'hidden', 'pinned', 'screenAutoOpen', 'sectionId', 'sectionName'] as const) {
+      expect(copy[key]).toBeUndefined()
+    }
+  })
+
+  // DESK-037: the failure used to be a thrown English sentence handed straight
+  // to `notifyError`, which renders `err.message` — untranslatable by
+  // construction. The fact is now a code; the caller owns the words.
+  it('fails with a typed code when no suffixed name is free', async () => {
+    const roster: RosterRow[] = [{ name: 'ops' } as RosterRow]
+
+    for (let n = 2; n < 100; n++) {
+      roster.push({ name: `ops-${n}` } as RosterRow)
+    }
+
+    await expect(duplicateBot({ name: 'ops' } as RosterRow, roster)).rejects.toMatchObject({
+      code: 'duplicate-no-free-name'
+    })
+  })
+
   it('truncates the BASE so a max-length name still gets a distinct suffix (#19)', async () => {
     const base = 'b'.repeat(64)
 

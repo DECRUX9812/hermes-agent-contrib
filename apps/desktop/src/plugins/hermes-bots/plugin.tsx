@@ -29,6 +29,7 @@ import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@hermes/p
 
 import { startFaceClock, stopFaceClock } from './avatar'
 import { BotContextPanel } from './bot-context-panel'
+import { BotModeBoundary } from './bot-mode-boundary'
 import {
   $botChatFocused,
   $botsPaneVisible,
@@ -524,7 +525,11 @@ export default {
           defaultCollapsed: false,
           width: '320px'
         },
-        render: () => <BotContextPanel />
+        render: () => (
+          <BotModeBoundary surface="bot-context-panel">
+            <BotContextPanel />
+          </BotModeBoundary>
+        )
       })
 
       // The pane's ✕ remembers a Close across launches, and nothing else ever

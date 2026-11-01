@@ -39,6 +39,35 @@ import type { BotMeta, RosterRow } from './types'
 
 const avatarFetchInflight = new Set<string>()
 const avatarPushInflight = new Set<string>()
+
+/** `duplicateBot`'s only typed failure: the roster has no unused name left.
+ *  Callers translate it (`bot.duplicateNoFreeName`); the string never renders. */
+export class DuplicateBotError extends Error {
+  readonly code = 'duplicate-no-free-name' as const
+
+  constructor() {
+    super('duplicate-no-free-name')
+    this.name = 'DuplicateBotError'
+  }
+}
+
+/** Meta that describes a PLACE or a VISIBILITY DECISION, not an appearance.
+ *  A copy that inherited these would arrive hidden (a duplicate the user
+ *  cannot find), pinned (a second pin for one bot), or filed in the
+ *  original's section and seated in its rooms — none of which the user asked
+ *  for when they asked for "a copy". */
+const NOT_COPIED_META = new Set<string>([
+  'chat',
+  'created',
+  'group',
+  'groups',
+  'hidden',
+  'pinned',
+  'screenAutoOpen',
+  'sectionId',
+  'sectionName'
+])
+
 // Rows whose server avatar is only the plugin's own face raster: nothing to
 // paint, so the roster must not re-fetch it on every tick.
 const avatarFaceOnly = new Set<string>()
@@ -371,7 +400,10 @@ export async function duplicateBot(bot: RosterRow, roster: RosterRow[]) {
   }
 
   if (!name) {
-    throw new Error('No free name for the duplicate.')
+    // Typed, not prose: `notifyError(err, fallback)` shows `err.message`, so a
+    // literal here would ship English in every locale and be untranslatable
+    // forever. The caller owns the word, this owns the fact.
+    throw new DuplicateBotError()
   }
 
   await requestForBot(bot, 'profiles.create', {
@@ -392,7 +424,7 @@ export async function duplicateBot(bot: RosterRow, roster: RosterRow[]) {
   const meta = $botMeta.get()[botMetaKey(bot)]
 
   if (meta) {
-    const { chat, created, ...look } = meta
+    const look = Object.fromEntries(Object.entries(meta).filter(([key]) => !NOT_COPIED_META.has(key)))
     await saveBotMeta(
       {
         ...bot,

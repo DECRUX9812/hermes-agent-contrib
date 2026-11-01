@@ -172,7 +172,7 @@ export function UserSectionHeader({
       <DropdownMenuTrigger asChild>
         <button
           aria-label={b.sections.options(name)}
-          className="shrink-0 rounded-md p-0.5 text-(--ui-text-quaternary) opacity-0 transition hover:text-foreground group-hover/section:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
+          className="shrink-0 rounded-md p-0.5 text-(--ui-text-secondary) opacity-0 transition hover:text-foreground group-hover/section:opacity-100 focus-visible:opacity-100 data-[state=open]:opacity-100"
           type="button"
         >
           <Codicon name="ellipsis" />

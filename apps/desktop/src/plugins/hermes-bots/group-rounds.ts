@@ -5,7 +5,7 @@
  */
 import { host } from '@hermes/plugin-sdk'
 
-import { botSourceStatus,  botFriendlyNames, botHandle, botMentionTag, mentionNameForms } from './data'
+import { botFriendlyNames,  botHandle, botMentionTag, botSourceStatus, mentionNameForms } from './data'
 import { groupFailureReason, recordGroupActivity } from './group-activity'
 import {
   $groupChats,
@@ -550,17 +550,22 @@ export async function stopGroupThread(group: string, thread: null | string, memb
   const onTurn = room.turn || null
   const drive = groupChatDrives.get(groupChatRoomKey(group, room))
 
-  // A scoped stop drops only its own queued message — other threads keep
-  // their seat and drain as usual. A bare stop (thread: null) is the room
-  // brake and clears the queue. Whatever was dropped is recorded so the
-  // queue never vanishes silently.
-  const dropped = thread ? (drive?.pending.delete(thread) ?? false) : Boolean(drive?.pending.size)
+  // A scoped stop drops only its own queued message. Other threads keep their
+  // seat and still drain — but every member is held room-wide by the stamp
+  // below, so their turns land on the holds and are kept (`heldMessages`)
+  // until a resume, not silently deleted. Both paths report what survived so
+  // the caller can say the queue's fate out loud instead of leaving it to the
+  // log.
+  const queuedBefore = drive?.pending.size ?? 0
 
   if (thread) {
     drive?.pending.delete(thread)
   } else {
     drive?.pending.clear()
   }
+
+  const survivors = drive?.pending.size ?? 0
+  const dropped = queuedBefore > survivors
 
   if (dropped) {
     recordGroupActivity(group, { kind: 'stopped', member: null, thread: thread || null })
@@ -627,6 +632,8 @@ export async function stopGroupThread(group: string, thread: null | string, memb
          the abandoned poll loop exits on its staleness check */
     }
   }
+
+  return { dropped, survivors }
 }
 
 /** Deliver any replies that finished after their turn timed out — every

@@ -86,7 +86,7 @@ export function CheckList({ items, onToggle, columns = 2 }: CheckListProps) {
           <Checkbox checked={item.enabled} onCheckedChange={value => onToggle(item.name, Boolean(value))} />
           <span className="truncate">{item.name}</span>
           {item.tool_count ? (
-            <span className="shrink-0 text-[0.625rem] text-(--ui-text-quaternary)">{`${item.tool_count}`}</span>
+            <span className="shrink-0 text-[0.625rem] text-(--ui-text-secondary)">{`${item.tool_count}`}</span>
           ) : null}
         </label>
       ))}
@@ -183,13 +183,13 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
   }
 
   if (unsupported) {
-    return <div className="px-2 py-3 text-center text-xs text-(--ui-text-tertiary)">{b.editor.fullConfigHint}</div>
+    return <div className="px-2 py-3 text-center text-xs text-(--ui-text-secondary)">{b.editor.fullConfigHint}</div>
   }
 
   if (!state.loaded) {
     return (
       <div className="flex justify-center py-4">
-        <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
+        <GlyphSpinner className="text-(--ui-text-secondary)" spinner="breathe" />
       </div>
     )
   }
@@ -317,7 +317,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
             model: state.model
           }}
         />
-        <div className="rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-text-tertiary)">
+        <div className="rounded-md border border-(--ui-stroke-secondary) px-3 py-2 text-xs text-(--ui-text-secondary)">
           {b.editor.remoteCapabilitiesHint}
         </div>
         {labeled(
@@ -439,7 +439,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
               <ConnectorsTab gateway={host.getGateway()} profile={backendScope} />
             </div>
           ) : mcpList.length === 0 ? (
-            <div className="px-1 py-2 text-center text-xs text-(--ui-text-tertiary)">{b.tools.noMcpServers}</div>
+            <div className="px-1 py-2 text-center text-xs text-(--ui-text-secondary)">{b.tools.noMcpServers}</div>
           ) : (
             <div
               className="overflow-y-auto overscroll-contain"
@@ -464,7 +464,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
                       <span className="min-w-0">
                         <span>{m.name}</span>
                         {m.fromCatalog && !needsSetup ? (
-                          <span className="ml-1.5 text-[0.625rem] text-(--ui-text-quaternary)">
+                          <span className="ml-1.5 text-[0.625rem] text-(--ui-text-secondary)">
                             {m.installed ? b.editor.catalogInstalled : b.editor.catalog}
                           </span>
                         ) : null}
@@ -472,7 +472,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
                           <McpSetupButton entry={m} onDone={() => toggleMcp(m.name, true)} profile={backendScope} />
                         ) : null}
                         {m.description ? (
-                          <div className="truncate text-[0.625rem] leading-4 text-(--ui-text-quaternary)">
+                          <div className="truncate text-[0.625rem] leading-4 text-(--ui-text-secondary)">
                             {m.description}
                           </div>
                         ) : null}

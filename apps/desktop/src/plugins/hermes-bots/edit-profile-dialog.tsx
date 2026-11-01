@@ -237,7 +237,7 @@ export function EditProfileDialog({ bot, open, onClose }: EditProfileDialogProps
             />
           )}
           <Button
-            className="flex items-center gap-1 text-xs font-medium text-(--ui-text-tertiary) hover:text-(--ui-text-secondary)"
+            className="flex items-center gap-1 text-xs font-medium text-(--ui-text-secondary) hover:text-(--ui-text-secondary)"
             onClick={() => setAdvanced(v => !v)}
             size="inline"
             variant="text"

@@ -114,6 +114,6 @@ export function CanonicalGroupAttachments({ binding, attachments, onChange, onUp
       <span className="max-w-40 truncate">{a.name}</span><Button disabled={disabled || busy} onClick={() => void download(a)} size="micro" type="button" variant="text">{labels.download}</Button>
       {!readOnly && <Button disabled={disabled || busy} onClick={() => onChange?.(attachments.filter(item => item !== a))} size="micro" type="button" variant="text">{labels.removeAttachment}</Button>}
     </span>)}
-    {error && <span className="text-(--ui-text-tertiary)" role="alert">{labels.uploadFailed}: {error}</span>}
+    {error && <span className="text-(--ui-text-secondary)" role="alert">{labels.uploadFailed}: {error}</span>}
   </div>
 }

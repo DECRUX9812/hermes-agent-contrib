@@ -171,6 +171,13 @@ export type BotsMessages = {
     attentionBlocked: string
     duplicate: string
     duplicateFailed: string
+    /** Row context menu: re-opening the freshest listed session for this bot. */
+    openRecentSession: string
+    duplicating: (name: string) => string
+    /** Names what a duplicate actually got: the look, never the chat. */
+    duplicated: (name: string, original: string) => string
+    /** Typed failure from `duplicateBot` — the caller translates this code. */
+    duplicateNoFreeName: string
     deleteTitle: string
     removeFromAllGroups: string
     createFirstHint: string
@@ -286,6 +293,14 @@ export type BotsMessages = {
     disbandDescPrefix: string
     disbandDescSuffix: (count: number) => string
     stopped: (group: string) => string
+    /** Room row context menu + its toasts (mirrors the bot row's pin/chat pairs). */
+    openChat: string
+    pinToTop: string
+    unpin: string
+    pinnedToast: (room: string) => string
+    unpinnedToast: (room: string) => string
+    /** A scoped stop that left other threads' sends in the queue says so. */
+    stoppedWithQueued: (room: string, queued: number) => string
     removeAttachment: string
     threadFallback: string
     replyCount: (replies: number) => string
@@ -493,6 +508,13 @@ export type BotsMessages = {
     goalInput: string
     goalPlaceholder: string
     goalSet: string
+  }
+  /** Render-failure containment copy (`BotModeBoundary`). One pair for every
+   *  surface: the panel, the room, and anything added later say the same
+   *  thing — this surface broke, the rest still works. */
+  errors: {
+    title: string
+    body: string
   }
 
 }

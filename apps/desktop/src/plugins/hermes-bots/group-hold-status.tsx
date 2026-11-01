@@ -53,7 +53,7 @@ export function GroupHoldStatus(props: GroupHoldStatusProps) {
       <Codicon aria-hidden className="mt-0.5 shrink-0 text-(--ui-text-secondary)" name="debug-pause" />
       <div className="min-w-0">
         <div className="font-medium text-(--ui-text-primary)">{label}</div>
-        <div className="text-(--ui-text-tertiary)">{b.group.holdReleaseHint}</div>
+        <div className="text-(--ui-text-secondary)">{b.group.holdReleaseHint}</div>
       </div>
     </div>
   )

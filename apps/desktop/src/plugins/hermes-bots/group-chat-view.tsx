@@ -1040,7 +1040,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           src={room.image}
         />
       ) : (
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-tertiary)">
+        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-secondary)">
           <Codicon name="organization" />
         </span>
       )}
@@ -1049,7 +1049,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         <span
           aria-label={availabilityLabel}
           className={cn(
-            'shrink-0 text-[0.625rem] text-(--ui-text-quaternary)',
+            'shrink-0 text-[0.625rem] text-(--ui-text-secondary)',
             members.length > 0 && availableMembers < members.length && 'text-amber-600 dark:text-amber-300'
           )}
         >
@@ -1061,7 +1061,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
       <Tip label={b.group.settingsHint(group)}>
         <Button
           aria-label={b.group.settingsLabel(group)}
-          className="shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
+          className="shrink-0 text-(--ui-text-secondary) hover:text-foreground"
           onClick={() => setSettingsOpen(true)}
           size="sm"
           variant="ghost"
@@ -1072,7 +1072,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
       <Tip label="Manage members">
         <Button
           aria-label="Manage group members"
-          className="shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
+          className="shrink-0 text-(--ui-text-secondary) hover:text-foreground"
           onClick={() => setMemberPickerOpen(true)}
           size="sm"
           variant="ghost"
@@ -1083,7 +1083,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
       <Tip label={b.group.disbandHint(group)}>
         <Button
           aria-label={b.group.disbandLabel(group)}
-          className="shrink-0 text-(--ui-text-tertiary) hover:text-destructive"
+          className="shrink-0 text-(--ui-text-secondary) hover:text-destructive"
           onClick={() => setConfirmDisband(true)}
           size="sm"
           variant="ghost"
@@ -1136,10 +1136,13 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
   // epoch bump + holds the loop marched on to the next member. Thread scope:
   // the run being stopped is the one the latest activity belongs to.
   const stopRoomRun = async () => {
-    await stopGroupThread(group, latestActivity?.thread || null, memberDescriptors())
+    const { survivors } = await stopGroupThread(group, latestActivity?.thread || null, memberDescriptors())
     host.notify({
       kind: 'success',
-      message: b.group.stopped(group)
+      // A scoped stop leaves the room's other threads queued, and a user who
+      // just pressed Stop must not learn that from watching the log — say how
+      // many sends are still going to run.
+      message: survivors > 0 ? b.group.stoppedWithQueued(group, survivors) : b.group.stopped(group)
     })
   }
 
@@ -1149,7 +1152,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         <RowButton
           aria-controls={`group-activity:${group}`}
           aria-expanded={activityOpen}
-          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-[0.6875rem] text-(--ui-text-quaternary) transition-colors hover:text-foreground"
+          className="flex min-w-0 flex-1 items-center gap-1.5 px-2.5 py-1 text-left text-[0.6875rem] text-(--ui-text-secondary) transition-colors hover:text-foreground"
           onClick={() => setActivityOpen(prev => !prev)}
         >
           <Codicon className="shrink-0 text-[0.625rem]" name={activityOpen ? 'chevron-down' : 'chevron-right'} />
@@ -1186,7 +1189,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
                 <span className={cn('min-w-0 flex-1 truncate', groupActivityTone(event.kind))}>
                   {groupActivityLabel(event, group)}
                 </span>
-                <span className="shrink-0 text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(event.at)}</span>
+                <span className="shrink-0 text-[0.625rem] text-(--ui-text-secondary)">{relativeTime(event.at)}</span>
                 {room.running && event.kind === 'working' ? (
                   <Tip label={b.group.stopHint}>
                     <Button
@@ -1203,7 +1206,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
               </div>
             ))
           ) : (
-            <div className="px-0.5 pb-0.5 text-[0.625rem] text-(--ui-text-quaternary)">{b.group.noActivityYet}</div>
+            <div className="px-0.5 pb-0.5 text-[0.625rem] text-(--ui-text-secondary)">{b.group.noActivityYet}</div>
           )}
         </div>
       ) : null}
@@ -1297,13 +1300,13 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           >
             {img.kind === 'pdf' || img.kind === 'file' ? (
               <Codicon
-                className="text-[0.875rem] text-(--ui-text-tertiary)"
+                className="text-[0.875rem] text-(--ui-text-secondary)"
                 name={img.kind === 'pdf' ? 'file-pdf' : 'file'}
               />
             ) : (
               <img alt="" className="size-6 rounded object-cover" src={img.data} />
             )}
-            <span className="max-w-32 truncate text-[0.625rem] text-(--ui-text-tertiary)">{img.name || 'image'}</span>
+            <span className="max-w-32 truncate text-[0.625rem] text-(--ui-text-secondary)">{img.name || 'image'}</span>
             <Tip label={b.group.removeAttachment}>
               <Button
                 aria-label={b.group.removeAttachment}
@@ -1324,7 +1327,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
     <Tip label={b.group.attachHint}>
       <Button
         aria-label={b.group.attachHint}
-        className="shrink-0 text-(--ui-text-tertiary) hover:text-foreground"
+        className="shrink-0 text-(--ui-text-secondary) hover:text-foreground"
         onClick={() => void pickGroupAttachments().then(picked => addImages(thread, picked))}
         size="sm"
         type="button"
@@ -1452,14 +1455,14 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
                 </Button>
               </Tip>
             )}
-            <span className="text-[0.625rem] text-(--ui-text-quaternary)">{relativeTime(entry.at)}</span>
+            <span className="text-[0.625rem] text-(--ui-text-secondary)">{relativeTime(entry.at)}</span>
             {entry.text.trim() || !isUser ? (
               <div className="ml-auto flex shrink-0 items-center gap-0.5 opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
                 {isUser ? null : (
                   <Tip label={`Reply to @${replyMentionTag(entry, member)}`}>
                     <Button
                       aria-label={`Reply to ${display}`}
-                      className="text-(--ui-text-tertiary) hover:text-foreground"
+                      className="text-(--ui-text-secondary) hover:text-foreground"
                       onClick={() => replyToMember(entry, member)}
                       size="icon"
                       variant="ghost"
@@ -1496,7 +1499,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
               {entry.images.map((img, imgIndex) =>
                 img.kind === 'pdf' || img.kind === 'file' ? (
                   <div
-                    className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.625rem] text-(--ui-text-tertiary)"
+                    className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) px-1.5 py-1 text-[0.625rem] text-(--ui-text-secondary)"
                     key={`${entryKey}:img:${imgIndex}`}
                     title={img.name || 'attached file'}
                   >
@@ -1536,7 +1539,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
       logChildren.push(
         <div className="flex items-center gap-2 px-2 pt-2" data-testid="group-day-separator" key={`day:${day}:${index}`}>
           <span aria-hidden className="h-px flex-1 bg-(--ui-stroke-secondary)" />
-          <span className="shrink-0 text-[0.625rem] font-medium text-(--ui-text-quaternary)">
+          <span className="shrink-0 text-[0.625rem] font-medium text-(--ui-text-secondary)">
             {roomDayLabel(day, { today: b.group.dayToday, yesterday: b.group.dayYesterday })}
           </span>
           <span aria-hidden className="h-px flex-1 bg-(--ui-stroke-secondary)" />
@@ -1652,7 +1655,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
             ? logChildren
             : [
                 <div
-                  className="px-2 py-4 text-center text-[length:var(--conversation-caption-font-size)] text-(--ui-text-tertiary)"
+                  className="px-2 py-4 text-center text-[length:var(--conversation-caption-font-size)] text-(--ui-text-secondary)"
                   key={'empty'}
                 >
                   {b.group.composerPlaceholder}
@@ -1667,7 +1670,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           ))}
           {room.running ? (
             <div
-              className="px-2 py-1 text-[length:var(--conversation-tool-font-size)] italic text-(--ui-text-quaternary)"
+              className="px-2 py-1 text-[length:var(--conversation-tool-font-size)] italic text-(--ui-text-secondary)"
               key={'working'}
             >
               {roomClarifies.length

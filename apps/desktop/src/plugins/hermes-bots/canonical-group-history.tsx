@@ -166,7 +166,7 @@ function eventFaceSeed(event: CanonicalGroupEvent, member?: CanonicalRoomMember)
 
 function SpeakerFace({ event, member }: { event: CanonicalGroupEvent; member?: CanonicalRoomMember }) {
   if (event.actor?.kind === 'user') {
-    return <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-(--ui-bg-quaternary) text-[0.625rem] text-(--ui-text-tertiary)">
+    return <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-(--ui-bg-quaternary) text-[0.625rem] text-(--ui-text-secondary)">
       <sdk.Codicon name="account" />
     </span>
   }
@@ -191,7 +191,7 @@ function EventRow({ author, binding, continuation, disabled, event, member }: Ev
   return <div className={sdk.cn('group/msg grid grid-cols-[24px_minmax(0,1fr)] gap-x-2 px-2', continuation ? 'py-0.5' : 'pt-2 pb-0.5')} data-seq={event.seq}>
     <div className="pt-0.5">
       {continuation
-        ? <span className="flex justify-center text-(--ui-text-quaternary) opacity-0 transition-opacity group-hover/msg:opacity-100"><EventTime short timestamp={event.created_at} /></span>
+        ? <span className="flex justify-center text-(--ui-text-secondary) opacity-0 transition-opacity group-hover/msg:opacity-100"><EventTime short timestamp={event.created_at} /></span>
         : <SpeakerFace event={event} member={member} />}
     </div>
     <div className="min-w-0">
@@ -213,11 +213,11 @@ function EventRow({ author, binding, continuation, disabled, event, member }: Ev
 
 function NoticeRow({ detail, event, notice, who }: { detail?: string; event: CanonicalGroupEvent; notice: string; who?: string }) {
   return <div className="flex items-baseline gap-2 px-2 py-1" data-seq={event.seq}>
-    <sdk.Codicon aria-hidden className="shrink-0 self-center text-[0.625rem] text-(--ui-text-quaternary)" name="info" />
-    <p className="min-w-0 flex-1 text-[length:var(--conversation-tool-font-size)] text-(--ui-text-tertiary)" data-selectable-text="true">
+    <sdk.Codicon aria-hidden className="shrink-0 self-center text-[0.625rem] text-(--ui-text-secondary)" name="info" />
+    <p className="min-w-0 flex-1 text-[length:var(--conversation-tool-font-size)] text-(--ui-text-secondary)" data-selectable-text="true">
       <strong className="font-medium">{notice}</strong>
-      {who && <> — <span className="text-(--ui-text-quaternary)">{who}</span></>}
-      {detail && <> — <span className="text-(--ui-text-quaternary)">{detail}</span></>}
+      {who && <> — <span className="text-(--ui-text-secondary)">{who}</span></>}
+      {detail && <> — <span className="text-(--ui-text-secondary)">{detail}</span></>}
     </p>
     <EventTime timestamp={event.created_at} />
   </div>
@@ -230,7 +230,7 @@ const GROUP_WINDOW_S = 300
 function DayDivider({ label }: { label: string }) {
   return <div className="flex items-center gap-2 px-2 pt-2" role="separator">
     <span aria-hidden="true" className="h-px flex-1 bg-(--ui-bg-quaternary)" />
-    <span className="text-[0.6875rem] font-semibold tracking-wide text-(--ui-text-quaternary)" data-testid="history-day">{label}</span>
+    <span className="text-[0.6875rem] font-semibold tracking-wide text-(--ui-text-secondary)" data-testid="history-day">{label}</span>
     <span aria-hidden="true" className="h-px flex-1 bg-(--ui-bg-quaternary)" />
   </div>
 }

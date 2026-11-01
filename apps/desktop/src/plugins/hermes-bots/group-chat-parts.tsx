@@ -101,7 +101,7 @@ export function GroupImageControls({ image, onImage, seedName, seedMembers }: Gr
         {image ? (
           <img alt="" className="size-full object-cover" src={image} />
         ) : (
-          <Codicon className="text-(--ui-text-tertiary)" name="organization" />
+          <Codicon className="text-(--ui-text-secondary)" name="organization" />
         )}
       </div>
       <Button onClick={upload} size="sm" type="button" variant="secondary">
@@ -276,7 +276,7 @@ export function GroupMentionInput({ handleFor, members, onChange, onSubmitDraft,
               onMouseEnter={() => setSelected(index)}
             >
               <span className="font-medium">{`@${option.handle}`}</span>
-              <span className="truncate text-[0.625rem] text-(--ui-text-quaternary)">{option.meta}</span>
+              <span className="truncate text-[0.625rem] text-(--ui-text-secondary)">{option.meta}</span>
             </RowButton>
           ))}
         </div>

@@ -1,6 +1,7 @@
 import { host, useI18n, useValue } from '@hermes/plugin-sdk'
 import { useEffect, useRef, useState } from 'react'
 
+import { BotModeBoundary } from './bot-mode-boundary'
 import { BotRow } from './bot-row'
 import {
   $botChatFocused,
@@ -420,7 +421,11 @@ export function BotsPane() {
   const groupChatMembers = groupChatName ? groupChatMemberBots(groupChatName, roster, allMeta) : []
 
   if (shouldRenderGroupChatInPane(groupChatName) && groupChatMembers.length) {
-    return <GroupChatWorkspace group={groupChatName} members={groupChatMembers} origin={groupOpenOrigin(groupChatName)} />
+    return (
+      <BotModeBoundary surface="group-chat-workspace">
+        <GroupChatWorkspace group={groupChatName} members={groupChatMembers} origin={groupOpenOrigin(groupChatName)} />
+      </BotModeBoundary>
+    )
   }
 
   const renderBotRow = (bot: RosterRow, keyPrefix = '') => (

@@ -197,7 +197,7 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
       <Button onClick={() => void refresh().catch(e => setReadError(String(e)))} size="xs" variant="secondary">{labels.refresh}</Button>
     </div>}
     {error && <div className="rounded-md bg-(--ui-bg-quaternary) px-2.5 py-1.5 text-xs text-(--ui-text-secondary)" role="alert">{error}</div>}
-    {state && !state.driver_status && <p className="px-1 text-xs text-(--ui-text-tertiary)">{labels.driverUnavailable}</p>}
+    {state && !state.driver_status && <p className="px-1 text-xs text-(--ui-text-secondary)">{labels.driverUnavailable}</p>}
     <div className="flex min-h-0 flex-1 flex-col overflow-auto" data-slot="group-chat-transcript" role="log">
       {state && !events.length
         ? <PanelEmpty description={labels.roomEmptyHint} icon="comment-discussion" title={labels.roomEmpty} />
@@ -207,17 +207,18 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
     {(state?.driver_status?.pending_actions || []).map(action => {
       const member = state?.room.members?.find(m => m.member_id === action.member_id)
       const who = member?.display_name || member?.handle || action.member_id
+
       const { icon, title, tone } = action.kind === 'approval'
         ? { icon: 'shield', title: labels.pendingApproval, tone: 'text-(--ui-accent)' }
         : action.kind === 'retry'
           ? { icon: 'warning', title: labels.pendingRetry, tone: 'text-amber-600 dark:text-amber-300' }
-          : { icon: 'circle-slash', title: labels.pendingDiscard, tone: 'text-(--ui-text-tertiary)' }
+          : { icon: 'circle-slash', title: labels.pendingDiscard, tone: 'text-(--ui-text-secondary)' }
 
       return <div className="flex items-center gap-2.5 rounded-lg border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-3 py-2" key={`${action.kind}:${action.task_id}:${action.execution_generation}`}>
         <Codicon className={cn('shrink-0 text-xs', tone)} name={icon} />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-(--ui-text-primary)">{title}</p>
-          <p className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">{who}</p>
+          <p className="truncate text-[0.6875rem] text-(--ui-text-secondary)">{who}</p>
         </div>
         {action.kind === 'discard' && <Button disabled={busy} onClick={() => setDiscard({ ...action })} size="xs" variant="secondary">{labels.discard}</Button>}
         {action.kind === 'retry' && <Button disabled={busy} onClick={() => void act({ ...action })} size="xs" variant="secondary">{labels.retry}</Button>}
@@ -231,7 +232,7 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
         <Button onClick={() => setDiscard(null)} size="sm" variant="ghost">{labels.cancel}</Button>
       </div>
     </div>}
-    {restoredPending && <p className="px-1 text-[0.6875rem] text-(--ui-text-quaternary)" role="status">{labels.restoredPendingSend}</p>}
+    {restoredPending && <p className="px-1 text-[0.6875rem] text-(--ui-text-secondary)" role="status">{labels.restoredPendingSend}</p>}
     <form className="flex shrink-0 items-end gap-2 border-t border-(--ui-stroke-tertiary) pt-3" onDragOver={event => { if (event.dataTransfer.types.includes('Files')) {event.preventDefault()} }}
       onDrop={event => attachTransfer(event, event.dataTransfer)} onPaste={event => attachTransfer(event, event.clipboardData)} onSubmit={event => { event.preventDefault(); send() }}>
       <CanonicalGroupAttachments attachments={attachments} binding={binding} disabled={composerLocked} onChange={setAttachments} onUploadingChange={setUploading} ref={uploader} />

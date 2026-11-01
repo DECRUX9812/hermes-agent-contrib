@@ -297,7 +297,7 @@ export function McpSetupButton({ profile, entry, onDone, ensureProfile }: McpSet
 
   if (supported === false) {
     return (
-      <span className="ml-1.5 text-[0.625rem] text-(--ui-text-quaternary)">
+      <span className="ml-1.5 text-[0.625rem] text-(--ui-text-secondary)">
         {b.tools.needsSetup(requires.join(', '))}
       </span>
     )
@@ -338,11 +338,11 @@ export function McpSetupButton({ profile, entry, onDone, ensureProfile }: McpSet
   }
 
   if (phase === 'oauth') {
-    return <span className="ml-1.5 text-[0.625rem] text-(--ui-text-quaternary)">{message || b.tools.authorizing}</span>
+    return <span className="ml-1.5 text-[0.625rem] text-(--ui-text-secondary)">{message || b.tools.authorizing}</span>
   }
 
   if (phase === 'busy') {
-    return <span className="ml-1.5 text-[0.625rem] text-(--ui-text-quaternary)">{b.tools.working}</span>
+    return <span className="ml-1.5 text-[0.625rem] text-(--ui-text-secondary)">{b.tools.working}</span>
   }
 
   if (phase === 'error') {

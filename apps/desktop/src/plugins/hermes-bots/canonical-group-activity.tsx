@@ -38,14 +38,14 @@ export function CanonicalGroupRoster({ members = [], label, labels, phases }: {
 }) {
   if (!members.length) {return null}
 
-  return <ul aria-label={label} className="flex flex-wrap gap-x-2 text-xs text-(--ui-text-tertiary)">
+  return <ul aria-label={label} className="flex flex-wrap gap-x-2 text-xs text-(--ui-text-secondary)">
     {members.map(member => {
       const phase = phases.get(member.member_id)
 
       return <li className="inline-flex items-center gap-1" data-phase={phase ?? 'idle'} key={member.member_id}>
         {phase === 'working' && <GlyphSpinner ariaLabel={labels.memberWorking} className="text-(--ui-accent)" />}
         <span className={phase === 'working' ? 'text-(--ui-text-secondary)' : undefined}>{memberName(member)}</span>
-        {phase === 'queued' && <span className="text-(--ui-text-quaternary)">· {labels.memberQueued}</span>}
+        {phase === 'queued' && <span className="text-(--ui-text-secondary)">· {labels.memberQueued}</span>}
       </li>
     })}
   </ul>
@@ -60,7 +60,7 @@ export function CanonicalGroupWorkingLine({ driver, members = [], labels, phases
 
   if (!working.length && !driver?.working) {return null}
 
-  return <div className="flex items-center gap-1.5 px-2 py-1 text-[length:var(--conversation-tool-font-size)] italic text-(--ui-text-quaternary)" role="status">
+  return <div className="flex items-center gap-1.5 px-2 py-1 text-[length:var(--conversation-tool-font-size)] italic text-(--ui-text-secondary)" role="status">
     {/* The line is the live region; the spinner's own status role would nest a second one. */}
     <span aria-hidden="true"><GlyphSpinner className="not-italic" /></span>
     <span>{working.length ? `${labels.memberWorking}: ${working.join(', ')}` : labels.groupWorking}</span>

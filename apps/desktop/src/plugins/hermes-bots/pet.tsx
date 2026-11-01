@@ -151,14 +151,14 @@ export function PetTab({ image, onImage }: PetTabProps) {
   if (isLoading) {
     return (
       <div className="flex justify-center py-4">
-        <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
+        <GlyphSpinner className="text-(--ui-text-secondary)" spinner="breathe" />
       </div>
     )
   }
 
   if (!pets.length) {
     return (
-      <div className="px-2 py-3 text-center text-xs text-(--ui-text-tertiary)">
+      <div className="px-2 py-3 text-center text-xs text-(--ui-text-secondary)">
         No pets in the petdex gallery. Run `hermes pets` to explore.
       </div>
     )
@@ -189,7 +189,7 @@ export function PetTab({ image, onImage }: PetTabProps) {
 
   return (
     <div className="grid w-full gap-2">
-      <div className="text-center text-[0.625rem] text-(--ui-text-quaternary)">{b.avatar.pickPet}</div>
+      <div className="text-center text-[0.625rem] text-(--ui-text-secondary)">{b.avatar.pickPet}</div>
       <Input
         className="h-7 text-xs"
         onChange={event => {
@@ -214,7 +214,7 @@ export function PetTab({ image, onImage }: PetTabProps) {
         </Button>
       ) : null}
       {filtered.length === 0 ? (
-        <div className="py-3 text-center text-xs text-(--ui-text-quaternary)">No pets match.</div>
+        <div className="py-3 text-center text-xs text-(--ui-text-secondary)">No pets match.</div>
       ) : (
         <div
           className="overflow-y-auto"
@@ -253,14 +253,14 @@ export function PetTab({ image, onImage }: PetTabProps) {
                 }}
               >
                 <PetThumb size={40} slug={pet.slug} spriteUrl={pet.spritesheetUrl} />
-                <span className="w-full truncate text-center text-[0.625rem] text-(--ui-text-tertiary)">
+                <span className="w-full truncate text-center text-[0.625rem] text-(--ui-text-secondary)">
                   {pet.displayName}
                 </span>
               </RowButton>
             ))}
           </div>
           {limit < ranked.length ? (
-            <div className="py-2 text-center text-[0.625rem] text-(--ui-text-quaternary)">{`Scroll for more (${limit} of ${ranked.length})`}</div>
+            <div className="py-2 text-center text-[0.625rem] text-(--ui-text-secondary)">{`Scroll for more (${limit} of ${ranked.length})`}</div>
           ) : null}
         </div>
       )}

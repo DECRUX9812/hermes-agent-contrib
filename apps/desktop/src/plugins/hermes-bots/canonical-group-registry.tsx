@@ -2,10 +2,10 @@ import { atom, Button, host, randomUuid, useValue } from '@hermes/plugin-sdk'
 import { useEffect, useState } from 'react'
 
 import { useCanonicalGroupLabels } from './canonical-group-labels'
-import { $groupClarify } from './group-chat'
 import { CanonicalGroupRow } from './canonical-group-row'
 import { canonicalGroupRequest, captureCanonicalGroupRoute, discoverCanonicalGroups } from './canonical-groups'
 import type { CanonicalGroupBinding, CanonicalGroupRoute, CanonicalRoom } from './canonical-groups'
+import { $groupClarify } from './group-chat'
 import { closeGroupChatMainTab } from './group-panes'
 
 export const $canonicalGroupBindings = atom<Record<string, CanonicalGroupBinding>>({})
@@ -183,7 +183,7 @@ export function CanonicalGroupList({ onOpen }: { onOpen: (key: string, origin: C
   return <div className="grid gap-1 px-2">
     <Button onClick={() => setRefresh(value => value + 1)} variant="ghost">{labels.refreshGroups}</Button>
     {error ? (
-      <p className="px-2 text-[0.6875rem] leading-relaxed text-(--ui-text-tertiary)" role="alert">
+      <p className="px-2 text-[0.6875rem] leading-relaxed text-(--ui-text-secondary)" role="alert">
         {error}
       </p>
     ) : null}

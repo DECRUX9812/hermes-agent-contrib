@@ -204,6 +204,10 @@ const en: BotsMessages = {
     attentionBlocked: 'Bot is blocked — see its last message',
     duplicate: 'Duplicate',
     duplicateFailed: 'Duplicate failed',
+    openRecentSession: 'Open recent session',
+    duplicating: name => `Duplicating ${name}…`,
+    duplicated: (name, original) => `Created ${name} — same look as ${original}, its chat was not copied`,
+    duplicateNoFreeName: 'No free name left for the duplicate — delete an unused copy first.',
     deleteTitle: 'Delete bot and profile?',
     removeFromAllGroups: 'Remove from all groups',
     createFirstHint: 'Open the Bots pane and hit “New Bot”.',
@@ -314,6 +318,15 @@ const en: BotsMessages = {
     disbandDescSuffix: count =>
       ` grouping from its ${count} bots and clears the shared room log. The bots themselves and their per-group sessions are kept.`,
     stopped: group => `Stopped ${group} — remaining turns are held until you resume`,
+    openChat: 'Open Group Chat',
+    pinToTop: 'Pin to top',
+    unpin: 'Unpin',
+    pinnedToast: (room: string) => `${room} pinned to top`,
+    unpinnedToast: (room: string) => `${room} unpinned`,
+    stoppedWithQueued: (room: string, queued: number) =>
+      queued === 1
+        ? `Stopped ${room} — 1 queued message is held until you resume`
+        : `Stopped ${room} — ${queued} queued messages are held until you resume`,
     removeAttachment: 'Remove attachment',
     threadFallback: 'Thread',
     replyCount: replies => `${replies} ${replies === 1 ? 'reply' : 'replies'}`,
@@ -509,6 +522,10 @@ const en: BotsMessages = {
     stopRound: 'Stop',
     unreachable: 'This bot is unreachable right now — its gateway is offline, so sends are paused.',
     updatedNow: 'Updated just now'
+  },
+  errors: {
+    title: 'Bot Mode hit an error',
+    body: 'This surface failed to render. The rest of Bot Mode keeps working — retry rebuilds it.'
   }
 }
 
@@ -680,6 +697,10 @@ const ja: BotsMessages = {
     attentionBlocked: 'ボットがブロックされています — 最後のメッセージを確認してください',
     duplicate: '複製',
     duplicateFailed: '複製に失敗しました',
+    openRecentSession: '最近のセッションを開く',
+    duplicating: name => `${name} を複製しています…`,
+    duplicated: (name, original) => `${name} を作成しました — 見た目は ${original} と同じ（チャットは引き継ぎません）`,
+    duplicateNoFreeName: '複製に使える名前が残っていません。未使用のコピーを削除してください。',
     deleteTitle: 'ボットとプロファイルを削除しますか？',
     removeFromAllGroups: 'すべてのグループから外す',
     createFirstHint: 'ボットパネルを開いて「新しいボット」を押してください。',
@@ -790,6 +811,12 @@ const ja: BotsMessages = {
     disbandDescSuffix: count =>
       `のグループ分けをボット${count}体から解除し、共有ルームログを消去します。ボット自体と各グループのセッションは保持されます。`,
     stopped: group => `${group}を停止しました — 残りのターンは再開するまで保留されます`,
+    openChat: 'グループチャットを開く',
+    pinToTop: '上部に固定',
+    unpin: '固定を解除',
+    pinnedToast: (room: string) => `${room} を上部に固定しました`,
+    unpinnedToast: (room: string) => `${room} の固定を解除しました`,
+    stoppedWithQueued: (room: string, queued: number) => `${room} を停止しました — 待機中のメッセージ ${queued} 件は再開するまで保留されます`,
     removeAttachment: '添付を削除',
     threadFallback: 'スレッド',
     replyCount: replies => `返信${replies}件`,
@@ -988,6 +1015,10 @@ const ja: BotsMessages = {
     stopRound: '停止',
     unreachable: 'このボットには現在接続できません — ゲートウェイがオフラインのため送信は一時停止中です。',
     updatedNow: 'たった今更新'
+  },
+  errors: {
+    title: 'Bot Mode でエラーが発生しました',
+    body: 'この画面を描画できませんでした。Bot Mode のほかの部分は動作しています。再試行で再構築します。'
   }
 }
 
@@ -1149,6 +1180,10 @@ const zh: BotsMessages = {
     attentionBlocked: '机器人已被阻止 — 请查看其最后一条消息',
     duplicate: '复制',
     duplicateFailed: '复制失败',
+    openRecentSession: '打开最近的会话',
+    duplicating: name => `正在复制 ${name}…`,
+    duplicated: (name, original) => `已创建 ${name} — 外观与 ${original} 相同（未复制聊天记录）`,
+    duplicateNoFreeName: '没有可用的复制名称，请先删除未使用的副本。',
     deleteTitle: '删除机器人和配置档案？',
     removeFromAllGroups: '从所有群组中移除',
     createFirstHint: '打开机器人面板，点击“新建机器人”。',
@@ -1256,6 +1291,12 @@ const zh: BotsMessages = {
     disbandDescSuffix: count =>
       ` 的分组将从 ${count} 个机器人中移除，并清空共享房间日志。机器人本身及其各群聊会话都会保留。`,
     stopped: group => `已停止 ${group} — 其余轮次将保留到你恢复为止`,
+    openChat: '打开群聊',
+    pinToTop: '置顶',
+    unpin: '取消置顶',
+    pinnedToast: (room: string) => `${room} 已置顶`,
+    unpinnedToast: (room: string) => `${room} 已取消置顶`,
+    stoppedWithQueued: (room: string, queued: number) => `已停止 ${room} — 仍有 ${queued} 条排队消息会保留到你恢复为止`,
     removeAttachment: '移除附件',
     threadFallback: '讨论串',
     replyCount: replies => `${replies} 条回复`,
@@ -1450,6 +1491,10 @@ const zh: BotsMessages = {
     stopRound: '停止',
     unreachable: '目前无法连接到此机器人——其网关离线，发送已暂停。',
     updatedNow: '刚刚更新'
+  },
+  errors: {
+    title: 'Bot Mode 出现错误',
+    body: '此界面渲染失败。Bot Mode 的其他部分仍可正常使用——重试即可重建。'
   }
 }
 
@@ -1611,6 +1656,10 @@ const zhHant: BotsMessages = {
     attentionBlocked: '機器人已被封鎖 — 請查看其最後一則訊息',
     duplicate: '複製',
     duplicateFailed: '複製失敗',
+    openRecentSession: '開啟最近的會話',
+    duplicating: name => `正在複製 ${name}…`,
+    duplicated: (name, original) => `已建立 ${name} — 外觀與 ${original} 相同（未複製聊天記錄）`,
+    duplicateNoFreeName: '沒有可用的複製名稱，請先刪除未使用的副本。',
     deleteTitle: '刪除機器人和設定檔？',
     removeFromAllGroups: '從所有群組中移除',
     createFirstHint: '開啟機器人面板，點「新增機器人」。',
@@ -1718,6 +1767,12 @@ const zhHant: BotsMessages = {
     disbandDescSuffix: count =>
       ` 的分組將從 ${count} 個機器人中移除，並清空共享房間日誌。機器人本身及其各群組工作階段都會保留。`,
     stopped: group => `已停止 ${group} — 其餘回合將保留到你恢復為止`,
+    openChat: '開啟群組聊天',
+    pinToTop: '置頂',
+    unpin: '取消置頂',
+    pinnedToast: (room: string) => `${room} 已置頂`,
+    unpinnedToast: (room: string) => `${room} 已取消置頂`,
+    stoppedWithQueued: (room: string, queued: number) => `已停止 ${room} — 仍有 ${queued} 則排隊訊息會保留到你恢復為止`,
     removeAttachment: '移除附件',
     threadFallback: '討論串',
     replyCount: replies => `${replies} 則回覆`,
@@ -1912,6 +1967,10 @@ const zhHant: BotsMessages = {
     stopRound: '停止',
     unreachable: '目前無法連結到這個機器人——其閘道離線，傳送已暫停。',
     updatedNow: '剛剛更新'
+  },
+  errors: {
+    title: 'Bot Mode 發生錯誤',
+    body: '此介面渲染失敗。Bot Mode 的其他部分仍可正常使用——重試即可重建。'
   }
 }
 

@@ -83,5 +83,5 @@ it('surfaces a discovery error as styled alert text, not raw foreground copy', a
   render(<CanonicalGroupList onOpen={() => {}} />)
   const alert = await screen.findByRole('alert')
   expect(alert.textContent).toBe('Hermes gateway is not connected')
-  expect(alert.className).toContain('text-(--ui-text-tertiary)')
+  expect(alert.className).toContain('text-(--ui-text-secondary)')
 })

@@ -148,10 +148,10 @@ function TaskRow({ run }: { run: PanelTaskRun }) {
       <div className="min-w-0 flex-1">
         <div className="truncate text-xs font-medium text-(--ui-text-primary)">{run.title}</div>
         {run.detail ? (
-          <div className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">{run.detail}</div>
+          <div className="truncate text-[0.6875rem] text-(--ui-text-secondary)">{run.detail}</div>
         ) : null}
       </div>
-      <span className="shrink-0 text-[0.6875rem] text-(--ui-text-tertiary)">{relativeTime(run.at)}</span>
+      <span className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)">{relativeTime(run.at)}</span>
     </div>
   )
 }
@@ -309,7 +309,7 @@ const selected = useValue($selectedBot)
               working
                 ? 'border border-(--ui-green)/25 bg-(--ui-green)/12 text-(--ui-green)'
                 : reachable
-                  ? 'border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay) text-(--ui-text-tertiary)'
+                  ? 'border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay) text-(--ui-text-secondary)'
                   : 'border border-destructive/25 bg-destructive/10 text-destructive'
             )}
           >
@@ -370,7 +370,7 @@ const selected = useValue($selectedBot)
                     <span className="font-medium text-(--ui-text-primary)">@{prompt.member}</span>
                     {' '}{question || b.group.needsYourInput}
                   </span>
-                  <Codicon className="shrink-0 text-(--ui-text-quaternary)" name="arrow-right" size="0.8125rem" />
+                  <Codicon className="shrink-0 text-(--ui-text-secondary)" name="arrow-right" size="0.8125rem" />
                 </button>
                 {prompt.kind === 'approval'
                   ? (prompt.choices || []).slice(0, 2).map(choice => (
@@ -386,7 +386,7 @@ const selected = useValue($selectedBot)
                   : null}
                 <button
                   aria-label={b.panel.dismissPrompt}
-                  className="flex min-h-7 min-w-7 shrink-0 items-center justify-center rounded text-(--ui-text-quaternary) hover:text-(--ui-text-primary) focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
+                  className="flex min-h-7 min-w-7 shrink-0 items-center justify-center rounded text-(--ui-text-secondary) hover:text-(--ui-text-primary) focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
                   onClick={() => dismissGroupPrompt(prompt)}
                   type="button"
                 >
@@ -448,7 +448,7 @@ const selected = useValue($selectedBot)
         ) : (
           <div className="group flex min-h-7 items-center gap-1">
             <span className="max-h-16 min-w-0 flex-1 overflow-hidden text-xs leading-relaxed text-(--ui-text-secondary)">
-              {goal || <span className="text-(--ui-text-quaternary)">{b.panel.goalEmpty}</span>}
+              {goal || <span className="text-(--ui-text-secondary)">{b.panel.goalEmpty}</span>}
             </span>
             {owner ? (
               <Button
@@ -469,14 +469,14 @@ const selected = useValue($selectedBot)
       </div>
       {feed.length ? (
         <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/50 px-2 py-2 shadow-2xs" data-slot="bot-live-activity">
-          <div className="px-1 pb-1 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-text-tertiary)">
+          <div className="px-1 pb-1 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-text-secondary)">
             {b.panel.liveActivity}
           </div>
           <ul className="grid gap-0.5">
             {feed.slice(0, 6).map((event, i) => (
               <li className="flex min-w-0 items-center gap-2 px-1 py-1 text-[0.6875rem]" key={`${event.group}:${event.at}:${i}`}>
                 <Codicon
-                  className={event.kind === 'failed' ? 'shrink-0 text-destructive' : event.kind === 'stopped' || event.kind === 'cancelled' ? 'shrink-0 text-(--ui-icon-attention)' : 'shrink-0 text-(--ui-text-quaternary)'}
+                  className={event.kind === 'failed' ? 'shrink-0 text-destructive' : event.kind === 'stopped' || event.kind === 'cancelled' ? 'shrink-0 text-(--ui-icon-attention)' : 'shrink-0 text-(--ui-text-secondary)'}
                   name={event.kind === 'failed' ? 'error' : event.kind === 'queued' ? 'watch' : 'check'}
                   size="0.8125rem"
                 />
@@ -485,7 +485,7 @@ const selected = useValue($selectedBot)
                   {(event as { count?: number }).count && (event as { count?: number }).count! > 1 ? ` ×${(event as { count?: number }).count}` : ''}
                   {(event as { reason?: string }).reason ? ` — ${(event as { reason?: string }).reason}` : ''}
                 </span>
-                <span className="shrink-0 text-[0.625rem] tabular-nums text-(--ui-text-quaternary)">{relativeTime(event.at || 0)}</span>
+                <span className="shrink-0 text-[0.625rem] tabular-nums text-(--ui-text-secondary)">{relativeTime(event.at || 0)}</span>
               </li>
             ))}
           </ul>
@@ -506,7 +506,7 @@ const selected = useValue($selectedBot)
             ) : null}
             {runs.length === 0 && !isLoading ? (
               <div className="grid gap-2" data-testid="panel-empty-live">
-                <span className="flex items-center gap-2 px-2 text-[0.6875rem] text-(--ui-text-tertiary)">
+                <span className="flex items-center gap-2 px-2 text-[0.6875rem] text-(--ui-text-secondary)">
                   <GlyphSpinner className="text-(--ui-accent)" spinner="breathe" />
                   <span className="truncate">{statusText}</span>
                 </span>
@@ -519,7 +519,7 @@ const selected = useValue($selectedBot)
                     <span className="text-xs font-semibold text-(--ui-text-primary)" data-testid="panel-day">
                       {panelDayLabel(group.runs[0].at, p)}
                     </span>
-                    <span className="text-[0.6875rem] text-(--ui-text-tertiary)">
+                    <span className="text-[0.6875rem] text-(--ui-text-secondary)">
                       {p.tasksCompleted(group.runs.length)}
                     </span>
                   </div>
@@ -541,7 +541,7 @@ const selected = useValue($selectedBot)
               </Tip>
             </div>
             {staleNotice ? (
-              <div className="mx-1.5 mt-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
+              <div className="mx-1.5 mt-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-secondary)">
                 {staleNotice}
               </div>
             ) : null}
@@ -600,11 +600,11 @@ const selected = useValue($selectedBot)
                 onClick={() => void openBotRecentSession(owner)}
                 type="button"
               >
-                <Codicon className="shrink-0 text-(--ui-text-tertiary)" name="history" size="0.9375rem" />
+                <Codicon className="shrink-0 text-(--ui-text-secondary)" name="history" size="0.9375rem" />
                 <span className="min-w-0 flex-1 truncate text-xs font-medium text-(--ui-text-primary)">
                   {recent.title || recent.id}
                 </span>
-                <Codicon className="shrink-0 text-(--ui-text-quaternary)" name="arrow-right" size="0.8125rem" />
+                <Codicon className="shrink-0 text-(--ui-text-secondary)" name="arrow-right" size="0.8125rem" />
               </button>
             ) : (
               <PanelEmpty description={p.noHistory} icon="history" title={p.history} />
@@ -613,7 +613,7 @@ const selected = useValue($selectedBot)
         ) : null}
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-(--ui-stroke-tertiary) px-3 py-2">
-        <span className="truncate text-[0.6875rem] text-(--ui-text-tertiary)">
+        <span className="truncate text-[0.6875rem] text-(--ui-text-secondary)">
           {dataUpdatedAt ? relativeTime(dataUpdatedAt) : p.updatedNow}
         </span>
         <div className="flex items-center gap-1">

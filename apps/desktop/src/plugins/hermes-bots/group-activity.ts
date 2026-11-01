@@ -197,5 +197,5 @@ export function groupActivityTone(kind: GroupActivityKind) {
     return 'text-(--ui-accent)'
   }
 
-  return 'text-(--ui-text-tertiary)'
+  return 'text-(--ui-text-secondary)'
 }

@@ -455,7 +455,7 @@ export function RoutineDetailDialog({ job, onClose, open }: RoutineDetailDialogP
           <div className="grid gap-1.5">
             {rows.map(row => (
               <div className="flex items-baseline justify-between gap-3 text-xs" key={row.label}>
-                <span className="shrink-0 text-(--ui-text-tertiary)">{row.label}</span>
+                <span className="shrink-0 text-(--ui-text-secondary)">{row.label}</span>
                 <span className="min-w-0 truncate text-right">{row.value}</span>
               </div>
             ))}
@@ -559,7 +559,7 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
             aria-hidden
             className={cn('size-1.5 shrink-0 rounded-full', active ? 'bg-(--ui-success)' : 'bg-(--ui-text-quaternary)')}
           />
-          <span className={cn('min-w-0 flex-1 truncate text-xs font-medium', !active && 'text-(--ui-text-tertiary)')}>
+          <span className={cn('min-w-0 flex-1 truncate text-xs font-medium', !active && 'text-(--ui-text-secondary)')}>
             {routineTitle(job, b.cron)}
           </span>
         </RowButton>
@@ -585,11 +585,11 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
           pane can't fit both on one line the next-run label wraps to a second
           line instead of being cut to "next in 4" (#89534). */}
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-3.5 text-[0.625rem]">
-        <span className="inline-flex min-w-0 items-center gap-1 whitespace-nowrap text-(--ui-text-tertiary)">
+        <span className="inline-flex min-w-0 items-center gap-1 whitespace-nowrap text-(--ui-text-secondary)">
           <Codicon className="shrink-0 text-[0.6875rem]" name="calendar" />
           {scheduleLabel(job.schedule)}
         </span>
-        <span className="ml-auto shrink-0 whitespace-nowrap text-(--ui-text-quaternary)">
+        <span className="ml-auto shrink-0 whitespace-nowrap text-(--ui-text-secondary)">
           {active && job.next_run_at
             ? `${nextRunOverdueMs(job) === null ? c.next : c.overdueSince} ${relativeTime(new Date(job.next_run_at).getTime())}`
             : c.states.paused}
@@ -907,7 +907,7 @@ function SchedulePicker({ state, setState }: SchedulePickerProps) {
       ) : null}
       {state.freq !== 'once' && state.freq !== 'advanced' ? (
         <div className="flex items-center gap-2">
-          <span className="text-xs text-(--ui-text-tertiary)">{b.cron.stopAfter}</span>
+          <span className="text-xs text-(--ui-text-secondary)">{b.cron.stopAfter}</span>
           <Input
             className="h-7 w-16 text-xs"
             onChange={event =>
@@ -918,10 +918,10 @@ function SchedulePicker({ state, setState }: SchedulePickerProps) {
             placeholder="∞"
             value={state.repeatN}
           />
-          <span className="text-xs text-(--ui-text-tertiary)">{b.cron.runsHint}</span>
+          <span className="text-xs text-(--ui-text-secondary)">{b.cron.runsHint}</span>
         </div>
       ) : null}
-      <div className="text-[0.625rem] text-(--ui-text-quaternary)">{`${scheduleSummary(state, b.cron, timeLabel)} \u00b7 ${composeSchedule(state) || '\u2014'}`}</div>
+      <div className="text-[0.625rem] text-(--ui-text-secondary)">{`${scheduleSummary(state, b.cron, timeLabel)} \u00b7 ${composeSchedule(state) || '\u2014'}`}</div>
     </div>
   )
 }
@@ -1100,7 +1100,7 @@ export function CreateRoutineDialog({ bot, open, onClose }: CreateRoutineDialogP
               }
             ])
           )}
-          <label className="flex items-center gap-2 text-xs text-(--ui-text-tertiary) cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-xs text-(--ui-text-secondary) cursor-pointer select-none">
             <Checkbox checked={continuity} onCheckedChange={value => setContinuity(Boolean(value))} />
             {b.cron.continuity}
           </label>
@@ -1269,10 +1269,10 @@ export function RoutinesPane() {
               )}
             </div>
             {showsHandle(bot, meta, owner) ? (
-              <span className="shrink-0 font-mono text-[0.625rem] text-(--ui-text-quaternary)">{`@${botHandle(bot, owner)}`}</span>
+              <span className="shrink-0 font-mono text-[0.625rem] text-(--ui-text-secondary)">{`@${botHandle(bot, owner)}`}</span>
             ) : null}
           </div>
-          <div className="text-[0.625rem] uppercase tracking-wider text-(--ui-text-quaternary)">{c.title}</div>
+          <div className="text-[0.625rem] uppercase tracking-wider text-(--ui-text-secondary)">{c.title}</div>
         </div>
         <Tip label={c.newCron}>
           <Button aria-label={c.newCron} onClick={openCreate} size="icon-xs" variant="ghost">
@@ -1282,13 +1282,13 @@ export function RoutinesPane() {
       </div>
       <div className="mx-3 border-t border-(--ui-stroke-tertiary)" />
       {staleNotice ? (
-        <div className="mx-3 mt-2 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-tertiary)">
+        <div className="mx-3 mt-2 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-secondary)">
           {staleNotice}
         </div>
       ) : null}
       {isLoading && !view.all.length ? (
         <div className="flex flex-1 items-center justify-center">
-          <GlyphSpinner className="text-(--ui-text-tertiary)" spinner="breathe" />
+          <GlyphSpinner className="text-(--ui-text-secondary)" spinner="breathe" />
         </div>
       ) : error && !view.all.length ? (
         <PanelEmpty

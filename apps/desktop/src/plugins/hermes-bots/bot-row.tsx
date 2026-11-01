@@ -64,7 +64,7 @@ import { $activeGroupMemberKeys } from './group-presence'
 import { fallbackSelectionAfterHide, isBotHidden, isBotPinned } from './hidden-bots'
 import { useBots } from './i18n'
 import { displayName, stripPreviewMarkdown } from './labels'
-import { duplicateBot } from './profile-ops'
+import { duplicateBot, DuplicateBotError } from './profile-ops'
 import { botRecentSession, openBotRecentSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
 import { botRosterMeta, botWorkspaceOwnerKey, setBotsWorkspaceOwner } from './routing'
@@ -308,11 +308,11 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
             <span className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
               {pinned ? (
                 <Tip label={b.roster.pinned}>
-                  <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
+                  <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)" name="pinned" />
                 </Tip>
               ) : null}
               {rowAgeTs ? (
-                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)">
                   {rowAge(rowAgeTs * 1000, t.sidebar.row)}
                 </span>
               ) : null}
@@ -320,11 +320,11 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
           ) : null}
         </div>
         {showDetailsRow ? (
-          <div className="flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-tertiary)">
+          <div className="flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-secondary)">
             {showHandle ? (
-              <span className="shrink-0 font-mono text-[0.6875rem] text-(--ui-text-quaternary)">{`@${handle}`}</span>
+              <span className="shrink-0 font-mono text-[0.6875rem] text-(--ui-text-secondary)">{`@${handle}`}</span>
             ) : null}
-            {showHandle && displayPreview ? <span className="shrink-0 text-(--ui-text-quaternary)">·</span> : null}
+            {showHandle && displayPreview ? <span className="shrink-0 text-(--ui-text-secondary)">·</span> : null}
             {displayPreview ? (
               <span className={cn('min-w-0 truncate', fromBot && 'italic')}>{displayPreview}</span>
             ) : null}
@@ -429,7 +429,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
           onSelect={() => {
             host.notify({
               kind: 'info',
-              message: `Duplicating ${displayName(bot, meta)}…`
+              message: b.bot.duplicating(displayName(bot, meta))
             })
             duplicateBot(bot, $lastRoster.get())
               .then(name => {
@@ -438,10 +438,15 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
                 })
                 host.notify({
                   kind: 'success',
-                  message: `Created ${name} — full copy of ${bot.name}`
+                  message: b.bot.duplicated(name, bot.name)
                 })
               })
-              .catch(err => host.notifyError(err, b.bot.duplicateFailed))
+              .catch(err =>
+                host.notifyError(
+                  err,
+                  err instanceof DuplicateBotError ? b.bot.duplicateNoFreeName : b.bot.duplicateFailed
+                )
+              )
           }}
         >
           {b.bot.duplicate}
@@ -460,7 +465,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
             a delegated job, a side thread — without moving the row click off
             the canonical Bot Chat. */}
         <ContextMenuItem disabled={!botRecentSession(bot)} onSelect={() => void openBotRecentSession(bot)}>
-          Open recent session
+          {b.bot.openRecentSession}
         </ContextMenuItem>
         <ContextMenuSeparator />
         {/* Filing. Membership is one field on the bot's meta (`sectionId`), so
@@ -586,7 +591,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
         ) : (
           <span
             className={cn(
-              'flex size-8 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-tertiary)',
+              'flex size-8 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-secondary)',
               availableMembers === 0 && 'opacity-60'
             )}
           >
@@ -617,18 +622,18 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             <span className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
               {room.pinned ? (
                 <Tip label={b.roster.pinned}>
-                  <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)" name="pinned" />
+                  <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)" name="pinned" />
                 </Tip>
               ) : null}
               {lastAt ? (
-                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)">
                   {rowAge(lastAt, t.sidebar.row)}
                 </span>
               ) : null}
             </span>
           ) : null}
         </div>
-        <div className="min-w-0 truncate text-xs text-(--ui-text-tertiary)">{preview}</div>
+        <div className="min-w-0 truncate text-xs text-(--ui-text-secondary)">{preview}</div>
       </div>
     </RowButton>
   )
@@ -637,7 +642,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
     <ContextMenu>
       <ContextMenuTrigger asChild>{row}</ContextMenuTrigger>
       <ContextMenuContent>
-        <ContextMenuItem onSelect={() => onOpen(group)}>Open Group Chat</ContextMenuItem>
+        <ContextMenuItem onSelect={() => onOpen(group)}>{b.group.openChat}</ContextMenuItem>
         <ContextMenuSeparator />
         {/* Same affordance as a bot row's pin; pinned rooms lead the roster
             band, and the flag lives on the room record. */}
@@ -646,11 +651,14 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             const pinned = toggleGroupChatPinned(group)
 
             if (pinned !== null) {
-              host.notify({ kind: 'info', message: `${group} ${pinned ? 'pinned to top' : 'unpinned'}` })
+              host.notify({
+                kind: 'info',
+                message: pinned ? b.group.pinnedToast(group) : b.group.unpinnedToast(group)
+              })
             }
           }}
         >
-          {room.pinned ? 'Unpin' : 'Pin to top'}
+          {room.pinned ? b.group.unpin : b.group.pinToTop}
         </ContextMenuItem>
         {/* Filing — the same submenu a bot row gets, driving the room-record
             assignment instead of profile meta. */}

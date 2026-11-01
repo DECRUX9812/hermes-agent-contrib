@@ -1499,6 +1499,51 @@ describe('stopGroupThread (#91868/#94569)', () => {
     }
   })
 
+  // DESK-035: Stop used to `pending.clear()` the room, so a stop issued from
+  // one thread threw away every other thread's queued sends with no toast,
+  // while the log still showed them as sent. Scoped: the stopped thread's
+  // entry goes, the rest stay, and the caller is told how many survived so a
+  // receipt can name the number instead of the user finding out later.
+  it('drops only the stopped thread and reports what is still queued', async () => {
+    const room = await loadRoom()
+    seedRoom(room)
+
+    const pending = new Map([
+      ['t1', STOP_MEMBERS],
+      ['t2', STOP_MEMBERS]
+    ])
+
+    room.rounds.groupChatDrivesForTest.set(
+      room.chat.groupChatRoomKey('Room', room.chat.$groupChats.get().Room),
+      { binding: { dispose: () => {}, isLive: () => true }, failedMembers: new Set<string>(), pending }
+    )
+
+    const outcome = await room.rounds.stopGroupThread('Room', 't1', STOP_MEMBERS)
+
+    expect(outcome).toEqual({ dropped: true, survivors: 1 })
+    expect([...pending.keys()]).toEqual(['t2'])
+  })
+
+  it('brakes the whole queue when no thread is named', async () => {
+    const room = await loadRoom()
+    seedRoom(room)
+
+    const pending = new Map([
+      ['t1', STOP_MEMBERS],
+      ['t2', STOP_MEMBERS]
+    ])
+
+    room.rounds.groupChatDrivesForTest.set(
+      room.chat.groupChatRoomKey('Room', room.chat.$groupChats.get().Room),
+      { binding: { dispose: () => {}, isLive: () => true }, failedMembers: new Set<string>(), pending }
+    )
+
+    const outcome = await room.rounds.stopGroupThread('Room', null, STOP_MEMBERS)
+
+    expect(outcome).toEqual({ dropped: true, survivors: 0 })
+    expect(pending.size).toBe(0)
+  })
+
   it('interrupts the exact on-turn owner even when same-name members are reordered', async () => {
     const room = await loadRoom()
     const local: GroupMember = { name: 'default', connectionId: 'local', sourceScoped: true }
