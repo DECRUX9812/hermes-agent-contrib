@@ -30,6 +30,7 @@
   "src/app/shell/titlebar-controls.test.tsx > titlebar app-action cluster > hides a review-only right sidebar instead of opening files",
   "src/app/shell/titlebar-controls.test.tsx > titlebar app-action cluster > names and toggles the sides from docked state in a narrow native window, as on main",
   "src/components/assistant-ui/thread/assistant-message.test.tsx > message timeline timestamps > always renders precise user and assistant lifecycle times",
+  "src/components/assistant-ui/thread/list-auto-show-earlier.test.tsx > top-edge auto Show earlier > pages older turns in when the reader wheels up at the clamped top, not mid-transcript",
   "src/components/assistant-ui/thread/list-session-scroll.test.tsx",
   "src/components/assistant-ui/thread/list-session-scroll.test.tsx > list session-scroll restore > applies the load target in the commit that prepends rows, before another animation frame",
   "src/components/assistant-ui/thread/list-session-scroll.test.tsx > list session-scroll restore > captures the current reader at async page arrival and ignores an outgoing page after switching",
