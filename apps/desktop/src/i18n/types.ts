@@ -397,6 +397,9 @@ catalog: CatalogTranslations
     tryHint: (term: string) => string
     on: string
     off: string
+    /** A reaction the agent left on your message. */
+    reactedByHermes: string
+    removeReaction: (emoji: string) => string
   }
 
   fileMenu: {

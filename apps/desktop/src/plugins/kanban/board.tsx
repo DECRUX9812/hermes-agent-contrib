@@ -83,6 +83,7 @@ import {
   useKanbanScope
 } from './api'
 import { BoardSwitcher } from './board-switcher'
+import { adjacentStatus } from './card-keyboard'
 import { TaskDrawer } from './drawer'
 import { EMPTY_OVERRIDE, ModelOverrideField, overrideCreateFields, type TaskModelOverride } from './model-override'
 import { OrchestrationPanel } from './orchestration'
@@ -283,9 +284,11 @@ function Card({
             // Hover matches the provider-picker rows: a quiet primary fill;
             // selected = the theme's focus color (same as a focused input).
             'transition-colors hover:bg-primary/[0.06] active:cursor-grabbing',
+            'outline-none focus-visible:ring-2 focus-visible:ring-(--dt-composer-ring)',
             selected && 'border-(--dt-composer-ring) bg-[color-mix(in_srgb,var(--dt-composer-ring)_7%,transparent)]',
             dragging && 'opacity-40'
           )}
+          data-kanban-card={task.id}
           draggable
           onClick={event => (event.metaKey || event.ctrlKey ? onToggleSelect(task.id) : onOpen(task.id))}
           onDragEnd={() => setDragging(false)}
@@ -297,7 +300,38 @@ function Card({
             event.dataTransfer.setDragImage(event.currentTarget, event.nativeEvent.offsetX, event.nativeEvent.offsetY)
             setDragging(true)
           }}
+          onKeyDown={event => {
+            // Drag-and-drop is pointer-only; this is the keyboard path to the
+            // same `onMove`. Enter/Space opens, Alt+Arrow moves the card one
+            // column — the board hands the adjacent status through `columns`.
+            if (event.key === 'Enter' || event.key === ' ') {
+              event.preventDefault()
+              onOpen(task.id)
+
+              return
+            }
+
+            if (!event.altKey || (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight')) {
+              return
+            }
+
+            const next = adjacentStatus(columns, task.status, event.key === 'ArrowLeft' ? -1 : 1)
+
+            if (!next) {
+              return
+            }
+
+            event.preventDefault()
+            onMove(task.id, next)
+            // The card remounts inside the new column, so focus would fall to
+            // <body>; put it back on this card by id to keep moving possible.
+            requestAnimationFrame(() => {
+              document.querySelector<HTMLElement>(`[data-kanban-card="${CSS.escape(task.id)}"]`)?.focus()
+            })
+          }}
+          role="button"
           style={{ '--kanban-tone': meta.tone, borderLeftColor: meta.tone } as CSSProperties}
+          tabIndex={0}
         >
           {/* Machine-activity arc: animates ONLY while an agent is actually on
               the card (claimed + working; amber when the heartbeat is gone).

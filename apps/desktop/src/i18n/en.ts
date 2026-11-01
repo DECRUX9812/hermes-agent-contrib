@@ -366,7 +366,11 @@ export const en: Translations = {
     update: 'Update',
     tryHint: term => `Try “${term}”`,
     on: 'On',
-    off: 'Off'
+    off: 'Off',
+    /** A reaction the agent left on your message: the emoji alone reads as a
+     *  bare glyph, so the chip carries a name for AT and a hover tip. */
+    reactedByHermes: 'Reacted by Hermes',
+    removeReaction: (emoji: string) => `Remove ${emoji} reaction`
   },
 
   fileMenu: {

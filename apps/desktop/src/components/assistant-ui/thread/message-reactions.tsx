@@ -3,6 +3,8 @@ import { type FC, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { Popover, PopoverAnchor, PopoverContent } from '@/components/ui/popover'
+import { Tip } from '@/components/ui/tooltip'
+import { useI18n } from '@/i18n'
 import { triggerHaptic } from '@/lib/haptics'
 import { Plus } from '@/lib/icons'
 import { cn } from '@/lib/utils'
@@ -164,6 +166,8 @@ export const ReactionBadge: FC<{
   onRetract?: () => void
   reactions: MessageReaction[]
 }> = ({ className, onRetract, reactions }) => {
+  const { t } = useI18n()
+
   if (!reactions.length) {
     return null
   }
@@ -176,7 +180,7 @@ export const ReactionBadge: FC<{
       {reactions.map(reaction =>
         reaction.author === 'user' && onRetract ? (
           <button
-            aria-label={`Remove ${reaction.emoji} reaction`}
+            aria-label={t.common.removeReaction(reaction.emoji)}
             className="reaction-pop cursor-pointer leading-none transition-[transform,opacity] hover:opacity-70 active:scale-95"
             key={`${reaction.author}-${reaction.emoji}`}
             onClick={event => {
@@ -194,13 +198,11 @@ export const ReactionBadge: FC<{
             {reaction.emoji}
           </button>
         ) : (
-          <span
-            className="reaction-pop leading-none"
-            key={`${reaction.author}-${reaction.emoji}`}
-            title="Reacted by Hermes"
-          >
-            {reaction.emoji}
-          </span>
+          <Tip key={`${reaction.author}-${reaction.emoji}`} label={t.common.reactedByHermes}>
+            <span aria-label={t.common.reactedByHermes} className="reaction-pop leading-none" role="img">
+              {reaction.emoji}
+            </span>
+          </Tip>
         )
       )}
     </span>
