@@ -545,6 +545,7 @@ export function ChatSidebar({
     () => (currentView === 'extension' ? contributedShown.find(row => row.route && row.route === pathname) : undefined),
     [contributedShown, currentView, pathname]
   )
+
   const sessions = useStore($sessions)
   const cronSessions = useStore($cronSessions)
   const cronJobs = useStore($cronJobs)
