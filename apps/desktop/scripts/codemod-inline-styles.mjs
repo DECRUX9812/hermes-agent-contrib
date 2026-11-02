@@ -32,6 +32,11 @@ const MAP = {
   backgroundColor: ['bg-(', 'var'],
   display: ['', ['flex', 'grid', 'inline-flex', 'block', 'inline-block', 'none']],
   flex: ['flex-', ['none', '1', 'auto']],
+  flexWrap: ['flex-', ['wrap', 'nowrap']],
+  cursor: ['cursor-', ['pointer', 'default', 'text', 'move', 'not-allowed']],
+  objectFit: ['object-', ['cover', 'contain', 'fill', 'none']],
+  background: ['bg-(', 'var'],
+  borderColor: ['border-(', 'var'],
   fontSize: ['text-[', 'px'],
   gap: ['gap-[', 'px'],
   justifyContent: ['justify-', ['flex-start', 'center', 'flex-end', 'space-between', 'space-around']],
@@ -66,6 +71,11 @@ const FAMILY = {
   alignItems: ['items-'],
   color: ['text-'],
   backgroundColor: ['bg-'],
+  background: ['bg-'],
+  borderColor: ['border-'],
+  cursor: ['cursor-'],
+  objectFit: ['object-'],
+  flexWrap: ['flex-'],
   borderRadius: ['rounded-'],
   display: ['flex', 'grid', 'block', 'hidden', 'inline-'],
   flex: ['flex-'],
@@ -127,11 +137,10 @@ function toClass(property, rawValue) {
   }
 
   if (kind === 'px') {
-    if (!/^\d+$/.test(value)) {
-      return null
-    }
+    // `12` and `'12px'` are the same length; both become max-h-[12px].
+    const pixels = /^\d+$/.test(value) ? value : value.match(/^['"](\d+)px['"]$/)?.[1]
 
-    return `${prefix}${value}px]`
+    return pixels ? `${prefix}${pixels}px]` : null
   }
 
   const quoted = value.match(QUOTED)?.[1]
@@ -143,8 +152,19 @@ function toClass(property, rawValue) {
   return `${prefix}${quoted}`
 }
 
-const familiesPresent = className => family =>
-  FAMILY[family].some(prefix => new RegExp(`(^|\\s)${prefix.replace('[', '\\[')}`).test(className))
+/** Colour utilities need a narrower conflict test: `text-sm` is a size, and
+ *  treating it as "text colour already set" blocked every colour conversion. */
+const COLOUR_FAMILIES = new Set(['color', 'backgroundColor'])
+
+const COLOUR_IN_CLASS = /(^|\s)(text|bg)-(\(--|[a-z]+-?\d{2,3}\b|white\b|black\b|transparent\b|current\b)/
+
+const familiesPresent = className => family => {
+  if (COLOUR_FAMILIES.has(family)) {
+    return COLOUR_IN_CLASS.test(className)
+  }
+
+  return FAMILY[family].some(prefix => new RegExp(`(^|\\s)${prefix.replace('[', '\\[')}`).test(className))
+}
 
 const report = []
 let converted = 0
@@ -211,9 +231,43 @@ function walk(dir) {
         continue
       }
 
-      // The owning element must already have a literal className right before.
-      const before = next.slice(0, next.indexOf(whole))
-      const classNameAt = before.lastIndexOf('className="')
+      // The owning element must already have a literal className. It may sit
+      // either side of the style attribute — JSX does not fix the order, and
+      // only looking backwards silently refused most of the file set.
+      const at = next.indexOf(whole)
+      const windowStart = Math.max(0, at - 600)
+      const before = next.slice(0, at)
+      const after = next.slice(at + whole.length, at + whole.length + 600)
+      const backAt = before.lastIndexOf('className="')
+      const forwardAt = after.indexOf('className="')
+
+      let classNameAt = -1
+
+      if (backAt >= windowStart) {
+        classNameAt = backAt
+      } else if (forwardAt >= 0) {
+        const abs = at + whole.length + forwardAt
+        const close = next.indexOf('"', abs + 11)
+        const existing = next.slice(abs + 11, close)
+        const hasForward = familiesPresent(existing)
+
+        if (close < 0) {
+          continue
+        }
+
+        const parts2 = classes.filter(({ property }) => !hasForward(property)).map(({ cls }) => cls)
+
+        if (parts2.length !== classes.length) {
+          continue
+        }
+
+        next = next.slice(0, close) + ` ${parts2.join(' ')}` + next.slice(close) + next.slice(at + whole.length + forwardAt)
+        next = next.replace(whole, '')
+
+        converted += 1
+        report.push(`${rel}: +${parts2.join(' ')} (forward)`)
+        continue
+      }
 
       if (classNameAt < 0) {
         continue

@@ -192,8 +192,8 @@ export function Intro({ personality, seed, withStarters = true }: IntroProps) {
           one-line promise, then straight into the composer. */}
       <h1
         aria-label={WORDMARK}
-        className="wordmark m-0 mb-1.5 text-[22px] font-semibold tracking-tight"
-        style={{ color: 'var(--ui-accent)' }}
+        className="wordmark m-0 mb-1.5 text-[22px] font-semibold tracking-tight text-(--ui-accent)"
+        
       >
         {WORDMARK}
       </h1>
