@@ -1,5 +1,6 @@
 export interface CanonicalGroupMessages {
   members: string
+  moreActions: string
   roomStopped: string
   roomDisbanded: string
   authorityLost: string
@@ -43,6 +44,7 @@ export interface CanonicalGroupMessages {
 
 export const CANONICAL_GROUP_LOCALES = {
   en: {
+    moreActions: 'More actions',
     roomStopped: 'Group stopped',
     roomDisbanded: 'Group disbanded',
     authorityLost: 'Group ownership changed',
@@ -86,6 +88,7 @@ export const CANONICAL_GROUP_LOCALES = {
     dayYesterday: 'Yesterday'
   },
   ja: {
+    moreActions: 'その他の操作',
     roomStopped: 'グループが停止しました',
     roomDisbanded: 'グループが解散しました',
     authorityLost: 'グループの管理元が変更されました',
@@ -129,6 +132,7 @@ export const CANONICAL_GROUP_LOCALES = {
     dayYesterday: '昨日'
   },
   zh: {
+    moreActions: '更多操作',
     roomStopped: '群组已停止',
     roomDisbanded: '群组已解散',
     authorityLost: '群组管理端已更改',
@@ -171,6 +175,7 @@ export const CANONICAL_GROUP_LOCALES = {
     dayYesterday: '昨天'
   },
   'zh-hant': {
+    moreActions: '更多操作',
     roomStopped: '群組已停止',
     roomDisbanded: '群組已解散',
     authorityLost: '群組管理端已變更',
@@ -213,6 +218,7 @@ export const CANONICAL_GROUP_LOCALES = {
     dayYesterday: '昨天'
   },
   ar: {
+    moreActions: 'مزيد من الإجراءات',
     roomStopped: 'أُوقفت المجموعة',
     roomDisbanded: 'حُلّت المجموعة',
     authorityLost: 'تغيّر مالك المجموعة',
@@ -256,6 +262,7 @@ export const CANONICAL_GROUP_LOCALES = {
     dayYesterday: 'أمس'
   },
   ru: {
+    moreActions: 'Ещё',
     roomStopped: 'Группа остановлена',
     roomDisbanded: 'Группа распущена',
     authorityLost: 'Владелец группы изменился',
@@ -302,6 +309,7 @@ export const CANONICAL_GROUP_LOCALES = {
     dayYesterday: 'Вчера'
   },
   fr: {
+    moreActions: 'Plus d’actions',
     roomStopped: 'Groupe arrêté',
     roomDisbanded: 'Groupe dissous',
     authorityLost: 'Gestionnaire du groupe modifié',
@@ -347,6 +355,7 @@ export const CANONICAL_GROUP_LOCALES = {
     dayYesterday: 'Hier'
   },
   de: {
+    moreActions: 'Weitere Aktionen',
     roomStopped: 'Gruppe angehalten',
     roomDisbanded: 'Gruppe aufgelöst',
     authorityLost: 'Gruppenverwaltung gewechselt',
@@ -393,6 +402,7 @@ export const CANONICAL_GROUP_LOCALES = {
     dayYesterday: 'Gestern'
   },
   es: {
+    moreActions: 'Más acciones',
     roomStopped: 'Grupo detenido',
     roomDisbanded: 'Grupo disuelto',
     authorityLost: 'Propietario del grupo cambiado',

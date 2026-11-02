@@ -464,6 +464,11 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
   const { ContextMenu, ContextMenuContent, ContextMenuItem, ContextMenuSeparator, ContextMenuTrigger } =
     await import('@/components/ui/context-menu')
 
+  // The room header's overflow menu needs the real family too: a partial mock
+  // without it cannot even import the workspace (my kebab move surfaced this).
+  const { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } =
+    await import('@/components/ui/dropdown-menu')
+
   return {
     Textarea,
     ContextMenu,
@@ -471,6 +476,11 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
     ContextMenuItem,
     ContextMenuSeparator,
     ContextMenuTrigger,
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
     cn,
     // Real value: approval.respond forwards it as its client deadline (#60654).
     APPROVAL_RESPOND_TIMEOUT_MS: 300_000,

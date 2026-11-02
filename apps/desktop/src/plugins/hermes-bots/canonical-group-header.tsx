@@ -1,4 +1,4 @@
-import { Button, ConfirmDialog, Input } from '@hermes/plugin-sdk'
+import { Button, Codicon, ConfirmDialog, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
 import { CanonicalGroupRoster, type CanonicalMemberPhase } from './canonical-group-activity'
@@ -36,8 +36,29 @@ export function CanonicalGroupHeader({ busy, canStop, onBack, onDisband, onRenam
       </div>
       <div className="flex shrink-0 items-center gap-1">
         <Button disabled={busy || !canStop} onClick={onStop} size="sm" variant="secondary">{labels.stop}</Button>
-        <Button disabled={busy || !room} onClick={() => setRenaming(room?.name ?? '')} size="sm" variant="ghost">{labels.rename}</Button>
-        <Button className="text-destructive hover:text-destructive" disabled={busy || !room} onClick={() => setEnding(true)} size="sm" variant="ghost">{labels.disband}</Button>
+        {/* Rename and Disband live behind the overflow: a destructive action
+            sitting shoulder-to-shoulder with Stop is one slipped click from a
+            lost room, and the local-room header already hides them here. */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button aria-label={labels.moreActions} disabled={!room} size="sm" variant="ghost">
+              <Codicon name="kebab-horizontal" size="0.875rem" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem disabled={busy} onSelect={() => setRenaming(room?.name ?? '')}>
+              {labels.rename}
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              className="text-destructive focus:text-destructive"
+              disabled={busy}
+              onSelect={() => setEnding(true)}
+            >
+              {labels.disband}
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
     {renaming !== null && <form className="flex items-center gap-2" onSubmit={event => { event.preventDefault(); rename(renaming.trim()) }}>

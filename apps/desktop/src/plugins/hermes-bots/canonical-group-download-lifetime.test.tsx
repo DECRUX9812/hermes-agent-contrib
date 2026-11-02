@@ -13,8 +13,11 @@ vi.mock('./avatar', () => ({
 vi.mock('@hermes/plugin-sdk', async () => {
   const { en } = await import('@/i18n/en')
   const { Textarea } = await import('@/components/ui/textarea')
+  // The room header's overflow menu is real UI now, and this bespoke mock has
+  // to stand the family up or the workspace cannot even import.
+  const dropdown = await import('@/components/ui/dropdown-menu')
 
-  return { Textarea, atom: (await import('nanostores')).atom, cn: (await import('@/lib/utils')).cn, DAY: (await import('@/lib/time')).DAY, MessageTextContent: undefined, nominalDayStart: (await import('@/lib/time')).nominalDayStart, relativeTime: () => 'a moment ago', Streamdown: undefined, host: { requestProfile: request }, useI18n: () => ({ locale: 'en', t: en }),
+  return { ...dropdown, Textarea, atom: (await import('nanostores')).atom, cn: (await import('@/lib/utils')).cn, DAY: (await import('@/lib/time')).DAY, MessageTextContent: undefined, nominalDayStart: (await import('@/lib/time')).nominalDayStart, relativeTime: () => 'a moment ago', Streamdown: undefined, host: { requestProfile: request }, useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
     Codicon: () => <span />, Tip: ({ children }: { children: ReactNode }) => <>{children}</> }
 })

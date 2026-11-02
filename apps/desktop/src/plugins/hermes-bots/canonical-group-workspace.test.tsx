@@ -63,12 +63,16 @@ it('an empty room paints its empty state inside the scaled transcript, under qui
   expect(await screen.findByText('No messages yet')).toBeTruthy()
   // The transcript joins the chat-text-scale contract like every room surface.
   expect(screen.getByRole('log').getAttribute('data-slot')).toBe('group-chat-transcript')
-  // Actions read as chrome, not four primary slabs: Stop is the soft action,
-  // Rename is ghost, and Disband — the destructive intent — reads destructive.
+  // Actions read as chrome, not primary slabs: Stop is the soft action, and the
+  // destructive Disband is no longer a header neighbor of it — it lives behind
+  // the overflow trigger and reads destructive once opened.
   expect(screen.getByRole('button', { name: 'Stop' }).getAttribute('variant')).toBe('secondary')
-  expect(screen.getByRole('button', { name: 'Rename' }).getAttribute('variant')).toBe('ghost')
-  const disband = screen.getByRole('button', { name: /disband/i })
-  expect(disband.getAttribute('variant')).toBe('ghost')
+  expect(screen.queryByRole('button', { name: 'Rename' })).toBeNull()
+  const more = screen.getByRole('button', { name: 'More actions' })
+  expect(more.getAttribute('variant')).toBe('ghost')
+  fireEvent.pointerDown(more, { button: 0, ctrlKey: false, pointerType: 'mouse' })
+  fireEvent.click(more)
+  const disband = await screen.findByRole('menuitem', { name: /disband/i })
   expect(disband.className).toContain('text-destructive')
 })
 
@@ -277,12 +281,30 @@ it('renames the room and disbands it only through ConfirmDialog, which stays ope
   request.mockImplementation(async (_route, method) => roomReads()(method)
     ?? (method === 'groups.disband' && ++disbands === 1 ? Promise.reject(new Error('disband failed')) : {}))
   render(<CanonicalGroupWorkspace binding={{ connectionId: 'remote', profile: 'team', roomId: 'controls' }} onBack={onBack} />)
-  fireEvent.click(await screen.findByRole('button', { name: 'Rename' }))
+  // Rename and Disband moved behind the header's overflow trigger, so the flow
+  // opens it first — same path a pointer user takes. One element handle is
+  // reused for both opens: while the menu is open Radix hands the trigger's
+  // name to the menu, so re-querying it by name mid-open finds nothing.
+  const trigger = await screen.findByRole('button', { name: 'More actions' })
+  await waitFor(() => expect((trigger as HTMLButtonElement).disabled).toBe(false))
+
+  const openMenu = () => {
+    fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' })
+    fireEvent.pointerUp(trigger)
+  }
+
+  openMenu()
+  // Radix selects a menu item on pointerup (a bare click is not enough in
+  // jsdom), which is also the path a mouse user takes.
+  const renameItem = await screen.findByRole('menuitem', { name: 'Rename' })
+  fireEvent.pointerUp(renameItem)
+  fireEvent.click(renameItem)
   fireEvent.change(screen.getByRole('textbox', { name: 'New name' }), { target: { value: ' Renamed ' } })
   fireEvent.click(screen.getByRole('button', { name: 'Save' }))
   await waitFor(() => expect(request.mock.calls.find(c => c[1] === 'groups.rename')?.[2]).toMatchObject({ room_id: 'controls', name: 'Renamed' }))
-  const disband = screen.getByRole('button', { name: /disband/i }) as HTMLButtonElement
-  await waitFor(() => expect(disband.disabled).toBe(false))
+  openMenu()
+  const disband = await screen.findByRole('menuitem', { name: /disband/i })
+  fireEvent.pointerUp(disband)
   fireEvent.click(disband)
   expect(request.mock.calls.some(c => c[1] === 'groups.disband')).toBe(false)
   const dialog = await screen.findByRole('dialog')
@@ -300,8 +322,10 @@ it('leaves the in-panel room after a disband even though no tab supplies onBack'
   const group = registerCanonicalGroup({ connectionId: 'local', profile: 'default' }, { room_id: 'panel', name: 'Room', members: [] })
   $groupChatWorkspace.set(group)
   render(<GroupChatWorkspace group={group} members={[]} origin="key" />)
-  const disband = await screen.findByRole('button', { name: /disband/i }) as HTMLButtonElement
-  await waitFor(() => expect(disband.disabled).toBe(false))
+  const more = await screen.findByRole('button', { name: 'More actions' })
+  fireEvent.pointerDown(more, { button: 0, ctrlKey: false, pointerType: 'mouse' })
+  fireEvent.click(more)
+  const disband = await screen.findByRole('menuitem', { name: /disband/i })
   fireEvent.click(disband)
   fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /disband/i }))
   await waitFor(() => expect($groupChatWorkspace.get()).toBeNull())
@@ -319,9 +343,10 @@ it('drops a disbanded room from the sidebar list and its bindings, with the disb
   const binding = { connectionId: 'remote', profile: 'team', roomId: 'gone', roomName: 'Doomed' }
   const key = registerCanonicalGroup(binding, room)
   render(<CanonicalGroupWorkspace binding={binding} onBack={vi.fn()} />)
-  const disband = await screen.findByRole('button', { name: /disband/i }) as HTMLButtonElement
-  await waitFor(() => expect(disband.disabled).toBe(false))
-  fireEvent.click(disband)
+  const more = await screen.findByRole('button', { name: 'More actions' })
+  fireEvent.pointerDown(more, { button: 0, ctrlKey: false, pointerType: 'mouse' })
+  fireEvent.click(more)
+  fireEvent.click(await screen.findByRole('menuitem', { name: /disband/i }))
   fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /disband/i }))
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Doomed' })).toBeNull())
   expect($canonicalGroupBindings.get()[key]).toBeUndefined()

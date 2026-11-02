@@ -9,8 +9,9 @@ vi.mock('@hermes/plugin-sdk', async () => {
   const { en } = await import('@/i18n/en')
   const { PanelEmpty } = await import('@/app/overlays/panel')
   const { Textarea } = await import('@/components/ui/textarea')
+  const dropdown = await import('@/components/ui/dropdown-menu')
 
-  return { PanelEmpty, Textarea, atom: (await import('nanostores')).atom, host: { requestProfile: request }, randomUuid: (await import('@hermes/shared')).randomUuid,
+  return { ...dropdown, PanelEmpty, Textarea, atom: (await import('nanostores')).atom, host: { requestProfile: request }, randomUuid: (await import('@hermes/shared')).randomUuid,
     useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
     DAY: (await import('@/lib/time')).DAY,
