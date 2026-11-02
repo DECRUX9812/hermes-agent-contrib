@@ -19,11 +19,12 @@ import {
   DialogTitle,
   host,
   RowButton,
+  useI18n,
   useValue
 } from '@hermes/plugin-sdk'
 import { useEffect, useMemo, useState } from 'react'
 
-import { $botMeta, $lastRoster, botHandle, botRosterKey, saveBotMeta } from './data'
+import { $botMeta, $lastRoster, botHandle, botRosterKey, botSourceStatus, saveBotMeta } from './data'
 import { $groupChats, GROUP_CHAT_MAX_MEMBERS, updateGroupChat } from './group-chat'
 import type { GroupChatRoom } from './group-chat'
 import {
@@ -35,6 +36,7 @@ import {
   groupSessionMemberKey
 } from './group-membership'
 import { harvestStrandedGroupReply } from './group-turns'
+import { useBots } from './i18n'
 import { displayName } from './labels'
 import { botRosterMeta } from './routing'
 import type { BotMeta, RosterRow } from './types'
@@ -135,6 +137,8 @@ interface GroupMemberPickerProps {
  *  checklist, pre-checked with the room's current seats. Nothing is written
  *  until Save; Cancel leaves membership untouched. */
 export function GroupMemberPicker({ group, members, open, onClose }: GroupMemberPickerProps) {
+  const b = useBots()
+  const { t } = useI18n()
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
   const liveRoster: RosterRow[] = useValue($lastRoster)
 
@@ -168,10 +172,10 @@ export function GroupMemberPicker({ group, members, open, onClose }: GroupMember
       )
       onClose()
     } catch (error) {
-      host.notify({
-        kind: 'error',
-        message: String(error instanceof Error ? error.message : error)
-      })
+      // A raw `String(error.message)` here would ship server text into a
+      // localized dialog with no next step; notifyError names the failure and
+      // keeps the underlying message in the trace.
+      host.notifyError?.(error, b.group.membersSaveFailed)
     }
   }
 
@@ -179,8 +183,8 @@ export function GroupMemberPicker({ group, members, open, onClose }: GroupMember
     <Dialog onOpenChange={value => !value && onClose()} open={open}>
       <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle>Manage members</DialogTitle>
-          <DialogDescription>{`Pick 2–${GROUP_CHAT_MAX_MEMBERS} bots for “${group}”. The room, its history and its member sessions stay as they are.`}</DialogDescription>
+          <DialogTitle>{b.group.membersTitle}</DialogTitle>
+          <DialogDescription>{b.group.membersDesc(GROUP_CHAT_MAX_MEMBERS, group)}</DialogDescription>
         </DialogHeader>
         <div className="grid max-h-80 gap-0.5 overflow-y-auto" data-testid="group-member-picker">
           {roster.map(bot => {
@@ -188,6 +192,7 @@ export function GroupMemberPicker({ group, members, open, onClose }: GroupMember
             const checked = selected.has(key)
             const disabled = !checked && atCap
             const meta = botRosterMeta(bot, allMeta)
+            const reachable = botSourceStatus(bot).available
 
             return (
               <RowButton
@@ -223,16 +228,24 @@ export function GroupMemberPicker({ group, members, open, onClose }: GroupMember
                     {`@${botHandle(bot.name, bot)}${bot.remoteSource && bot.connectionLabel ? ` · ${bot.connectionLabel}` : ''}`}
                   </div>
                 </div>
+                {/* An offline seat stays listed (removing it silently would
+                    drop the member on save) — but it must SAY so, or the room
+                    looks staffed by a bot that will never answer. */}
+                {reachable ? null : (
+                  <span className="shrink-0 text-[0.625rem] font-medium text-(--ui-text-secondary)">
+                    {b.panel.offline}
+                  </span>
+                )}
               </RowButton>
             )
           })}
         </div>
         <DialogFooter>
           <Button onClick={onClose} variant="secondary">
-            Cancel
+            {t.common.cancel}
           </Button>
           <Button disabled={selected.size < 2 || selected.size > GROUP_CHAT_MAX_MEMBERS} onClick={() => void save()}>
-            Save members
+            {b.group.membersSave}
           </Button>
         </DialogFooter>
       </DialogContent>

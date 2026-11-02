@@ -233,6 +233,11 @@ export type BotsMessages = {
     newTitle: string
     manageDesc: string
     manageTitle: string
+    /** The room's "Manage members" picker: title, capped-count hint, save. */
+    membersTitle: string
+    membersDesc: (max: number, group: string) => string
+    membersSave: string
+    membersSaveFailed: string
     settingsTitle: string
     settingsDesc: string
     nameLabel: string

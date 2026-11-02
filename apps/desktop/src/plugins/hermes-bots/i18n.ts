@@ -254,6 +254,11 @@ const en: BotsMessages = {
   group: {
     newTitle: 'New group chat',
     manageDesc: 'A bot can join multiple group chats. Memberships sync to every machine.',
+    membersTitle: 'Manage members',
+    membersDesc: (max: number, group: string) =>
+      `Pick 2–${max} bots for “${group}”. The room, its history and its member sessions stay as they are.`,
+    membersSave: 'Save members',
+    membersSaveFailed: 'Could not save the room members',
     manageTitle: 'Manage groups',
     settingsTitle: 'Group settings',
     settingsDesc: 'Rename the group or set a room picture. Members and history are kept.',
@@ -751,6 +756,11 @@ const ja: BotsMessages = {
   group: {
     newTitle: '新しいグループチャット',
     manageDesc: 'ボットは複数のグループチャットに参加できます。メンバーシップはすべてのマシンに同期されます。',
+    membersTitle: 'メンバーを管理',
+    membersDesc: (max: number, group: string) =>
+      `「${group}」に参加するボットを 2〜${max} 体選んでください。ルーム・履歴・メンバーのセッションはそのまま残ります。`,
+    membersSave: 'メンバーを保存',
+    membersSaveFailed: 'ルームのメンバーを保存できませんでした',
     manageTitle: 'グループを管理',
     settingsTitle: 'グループ設定',
     settingsDesc: 'グループ名の変更や部屋の画像の設定ができます。メンバーと履歴は保持されます。',
@@ -1238,6 +1248,11 @@ const zh: BotsMessages = {
   group: {
     newTitle: '新建群聊',
     manageDesc: '一个机器人可以加入多个群聊。成员关系会同步到每台设备。',
+    membersTitle: '管理成员',
+    membersDesc: (max: number, group: string) =>
+      `为「${group}」选择 2–${max} 个机器人。房间、历史记录和成员会话都会保留。`,
+    membersSave: '保存成员',
+    membersSaveFailed: '无法保存房间成员',
     manageTitle: '管理群组',
     settingsTitle: '群组设置',
     settingsDesc: '重命名群组或设置房间图片。成员和历史都会保留。',
@@ -1718,6 +1733,11 @@ const zhHant: BotsMessages = {
   group: {
     newTitle: '新增群組聊天',
     manageDesc: '一個機器人可以加入多個群組聊天。成員關係會同步到每台裝置。',
+    membersTitle: '管理成員',
+    membersDesc: (max: number, group: string) =>
+      `為「${group}」選擇 2–${max} 個機器人。房間、歷史記錄和成員會話都會保留。`,
+    membersSave: '儲存成員',
+    membersSaveFailed: '無法儲存房間成員',
     manageTitle: '管理群組',
     settingsTitle: '群組設定',
     settingsDesc: '重新命名群組或設定房間圖片。成員和歷史都會保留。',
