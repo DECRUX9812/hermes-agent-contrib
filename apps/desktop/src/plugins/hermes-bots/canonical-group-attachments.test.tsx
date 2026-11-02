@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import type { ComponentProps } from 'react'
+import type { ComponentProps, ReactNode } from 'react'
 import { afterEach, expect, it, vi } from 'vitest'
 
 import { expectDownloaded, observeDownloads } from './canonical-download-test-utils'
@@ -8,7 +8,10 @@ const request = vi.hoisted(() => vi.fn())
 vi.mock('@hermes/plugin-sdk', async () => ({
   randomUuid: (await import('@hermes/shared')).randomUuid,
   host: { requestProfile: request },
-  Button: (props: ComponentProps<'button'>) => <button {...props} />
+  Button: (props: ComponentProps<'button'>) => <button {...props} />,
+  // The shared chip row imports these; a partial mock breaks on any new import.
+  Codicon: () => null,
+  Tip: ({ children }: { children: ReactNode }) => children
 }))
 vi.mock('./canonical-group-labels', () => ({
   useCanonicalGroupLabels: () => ({ attachFiles: 'Attach files', download: 'Download',

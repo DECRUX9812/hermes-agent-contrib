@@ -1,7 +1,6 @@
 import {
   cn,
   Codicon,
-  ConfirmDialog,
   ContextMenu,
   ContextMenuContent,
   ContextMenuItem,
@@ -12,6 +11,7 @@ import { useState } from 'react'
 
 import { useCanonicalGroupLabels } from './canonical-group-labels'
 import { useBots } from './i18n'
+import { RoomDisbandDialog } from './room-disband-dialog'
 
 interface CanonicalGroupRowProps {
   active?: boolean
@@ -80,18 +80,14 @@ export function CanonicalGroupRow({ active = false, memberCount, name, needsYou 
         </ContextMenuContent>
       </ContextMenu>
       {confirming && (
-        <ConfirmDialog
+        <RoomDisbandDialog
           busyLabel={labels.disbanding}
           confirmLabel={labels.disband}
-          description={
-            <span>
-              {labels.disbandDescPrefix}
-              <span className="font-medium text-foreground">{name}</span>
-              {labels.disbandDescSuffix(memberCount)}
-            </span>
-          }
-          destructive
+          descPrefix={labels.disbandDescPrefix}
+          descSuffix={labels.disbandDescSuffix}
           doneLabel={labels.disbandDone}
+          memberCount={memberCount}
+          name={name}
           onClose={() => setConfirming(false)}
           onConfirm={onDelete}
           open

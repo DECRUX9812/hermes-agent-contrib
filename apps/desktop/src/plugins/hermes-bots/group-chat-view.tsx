@@ -16,7 +16,6 @@ import {
   Button,
   cn,
   Codicon,
-  ConfirmDialog,
   CopyButton,
   Dialog,
   DialogContent,
@@ -122,6 +121,8 @@ import { groupReplyMentionTag, sendToGroupChat, stopGroupThread } from './group-
 import { clearGroupClarify, renameGroupClarify } from './group-turns'
 import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
+import { RoomAttachmentChips } from './room-attachment-chips'
+import { RoomDisbandDialog } from './room-disband-dialog'
 import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
 import { bumpBotOpenGeneration, getPluginCtx, ID } from './shared'
 import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage, RosterRow } from './types'
@@ -1295,32 +1296,17 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
 
     return (
       <div className="flex flex-wrap items-center gap-1.5 px-1 pb-1">
-        {images.map((img, index) => (
-          <div
-            className="flex items-center gap-1 rounded-md border border-(--ui-stroke-secondary) bg-(--ui-bg-secondary) px-1 py-0.5"
-            key={`${img.name || 'img'}:${index}`}
-          >
-            {img.kind === 'pdf' || img.kind === 'file' ? (
-              <Codicon
-                className="text-[0.875rem] text-(--ui-text-secondary)"
-                name={img.kind === 'pdf' ? 'file-pdf' : 'file'}
-              />
-            ) : (
-              <img alt="" className="size-6 rounded object-cover" src={img.data} />
-            )}
-            <span className="max-w-32 truncate text-[0.625rem] text-(--ui-text-secondary)">{img.name || b.group.attachmentFallback}</span>
-            <Tip label={b.group.removeAttachment}>
-              <Button
-                aria-label={img.name ? `${b.group.removeAttachment}: ${img.name}` : b.group.removeAttachment}
-                onClick={() => removeImage(thread, index)}
-                size="icon-xs"
-                variant="ghost"
-              >
-                <Codicon name="close" />
-              </Button>
-            </Tip>
-          </div>
-        ))}
+        <RoomAttachmentChips
+          chips={images.map((img, index) => ({
+            key: `${img.name || 'img'}:${index}`,
+            kind: img.kind,
+            name: img.name,
+            onRemove: () => removeImage(thread, index),
+            previewSrc: img.kind === 'image' ? img.data : undefined
+          }))}
+          dense
+          fallbackName={b.group.attachmentFallback}
+          removeLabel={b.group.removeAttachment} />
       </div>
     )
   }
@@ -1757,22 +1743,18 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         onClose={() => setMemberPickerOpen(false)}
         open={memberPickerOpen}
       />
-      <ConfirmDialog
+      {/* New rooms title member sessions by roomId, legacy rooms by name —
+          so the copy names the concept, not a literal session title. The name
+          is bolded mid-sentence, so the copy splits around it and the prefix
+          goes empty where the name leads (core's deleteDesc* shape). */}
+      <RoomDisbandDialog
         busyLabel={b.group.disbanding}
         confirmLabel={b.group.disbandAction}
-        description={
-          /* New rooms title member sessions by roomId, legacy rooms by name — */
-          /* so the copy names the concept, not a literal session title. The */
-          /* name is bolded mid-sentence, so the copy splits around it and the */
-          /* prefix goes empty where the name leads (core's deleteDesc* shape). */
-          <span>
-            {b.group.disbandDescPrefix}
-            <span className="font-medium text-foreground">{group}</span>
-            {b.group.disbandDescSuffix(members.length)}
-          </span>
-        }
-        destructive
+        descPrefix={b.group.disbandDescPrefix}
+        descSuffix={b.group.disbandDescSuffix}
         doneLabel={b.group.disbandDone}
+        memberCount={members.length}
+        name={group}
         onClose={() => setConfirmDisband(false)}
         onConfirm={async () => {
           clearGroupComposerDraft(composerKeyRef.current)

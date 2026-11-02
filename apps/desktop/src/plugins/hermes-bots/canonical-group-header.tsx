@@ -1,9 +1,10 @@
-import { Button, Codicon, ConfirmDialog, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input } from '@hermes/plugin-sdk'
+import { Button, Codicon, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger, Input } from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
 import { CanonicalGroupRoster, type CanonicalMemberPhase } from './canonical-group-activity'
 import { useCanonicalGroupLabels } from './canonical-group-labels'
 import type { CanonicalRoom } from './canonical-groups'
+import { RoomDisbandDialog } from './room-disband-dialog'
 
 interface CanonicalGroupHeaderProps {
   busy: boolean
@@ -66,8 +67,9 @@ export function CanonicalGroupHeader({ busy, canStop, onBack, onDisband, onRenam
       <Button disabled={busy || !renaming.trim()} size="sm" type="submit" variant="secondary">{labels.save}</Button>
       <Button onClick={() => setRenaming(null)} size="sm" type="button" variant="ghost">{labels.cancel}</Button>
     </form>}
-    {ending && <ConfirmDialog busyLabel={labels.disbanding} confirmLabel={labels.disband}
-      description={<span>{labels.disbandDescPrefix}<span className="font-medium text-foreground">{room?.name}</span>{labels.disbandDescSuffix(room?.members?.length ?? 0)}</span>}
-      destructive doneLabel={labels.disbandDone} onClose={() => setEnding(false)} onConfirm={onDisband} open title={labels.disbandTitle} />}
+    {ending && <RoomDisbandDialog busyLabel={labels.disbanding} confirmLabel={labels.disband}
+      descPrefix={labels.disbandDescPrefix} descSuffix={labels.disbandDescSuffix} doneLabel={labels.disbandDone}
+      memberCount={room?.members?.length ?? 0} name={room?.name ?? ''} onClose={() => setEnding(false)}
+      onConfirm={onDisband} open title={labels.disbandTitle} />}
   </>
 }

@@ -4,6 +4,7 @@ import { type Ref, useImperativeHandle, useLayoutEffect, useRef, useState } from
 import { downloadCanonicalAttachment } from './canonical-attachment-download'
 import { useCanonicalGroupLabels } from './canonical-group-labels'
 import { type CanonicalGroupBinding, canonicalGroupRequest } from './canonical-groups'
+import { RoomAttachmentChips } from './room-attachment-chips'
 
 export interface CanonicalGroupAttachment { attachment_id?: string; event_id?: string; kind: string; name: string; mime: string; size?: number }
 type Attachment = CanonicalGroupAttachment
@@ -110,10 +111,17 @@ export function CanonicalGroupAttachments({ binding, attachments, onChange, onUp
 
  if (file) {void upload([file]);} e.currentTarget.value = '' }} ref={input} type="file" />
     <Button disabled={disabled || busy} onClick={() => input.current?.click()} size="sm" type="button" variant="ghost">{labels.attachFiles}</Button></>}
-    {attachments.map((a, index) => <span className="flex items-center gap-1 rounded bg-(--ui-bg-quaternary) px-1.5 py-0.5 text-xs" key={a.attachment_id ?? a.name ?? `attachment-${index}`}>
-      <span className="max-w-40 truncate">{a.name}</span><Button aria-label={`${labels.download}: ${a.name}`} disabled={disabled || busy} onClick={() => void download(a)} size="micro" type="button" variant="text">{labels.download}</Button>
-      {!readOnly && <Button aria-label={`${labels.removeAttachment}: ${a.name}`} disabled={disabled || busy} onClick={() => onChange?.(attachments.filter(item => item !== a))} size="micro" type="button" variant="text">{labels.removeAttachment}</Button>}
-    </span>)}
+    <RoomAttachmentChips
+      chips={attachments.map((a, index) => ({
+        key: a.attachment_id ?? a.name ?? `attachment-${index}`,
+        kind: (a.kind === 'image' || a.kind === 'pdf' ? a.kind : 'file'),
+        name: a.name,
+        onDownload: () => void download(a),
+        onRemove: readOnly ? undefined : () => onChange?.(attachments.filter(item => item !== a))
+      }))}
+      disabled={disabled || busy}
+      downloadLabel={labels.download}
+      removeLabel={labels.removeAttachment} />
     {error && <span className="text-(--ui-text-secondary)" role="alert">{labels.uploadFailed}: {error}</span>}
   </div>
 }
