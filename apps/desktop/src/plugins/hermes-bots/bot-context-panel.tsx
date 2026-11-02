@@ -227,6 +227,14 @@ const selected = useValue($selectedBot)
   const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
   // Same owner ladder as the routines pane: an authoritative focused owner
   // wins through its exact roster row, otherwise the roster-clicked bot.
+  //
+  // Known limitation, measured rather than assumed: opening a group room leaves
+  // host.state.focusedStoredSessionId pointing at the PREVIOUS bot chat (it does
+  // not clear), so this pane keeps describing that bot while a room owns the
+  // workspace. Nothing in the host currently distinguishes "a room tab exists"
+  // from "a room tab is focused", so the fix is a focused-tab signal from the
+  // host — not a heuristic here. Do not paper over it by hiding the pane on
+  // some other state; that would hide it during ordinary bot chats too.
   const owner = resolveRoutineOwner(useValue($lastRoster), focusedOwner, selected)
   const bot = String(owner?.name || focusedOwner?.name || 'default').trim() || 'default'
   const allMeta = useValue($botMeta)
