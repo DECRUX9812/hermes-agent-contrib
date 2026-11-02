@@ -2,7 +2,7 @@
  *  failed-or-never-run discovery recovers on reconnect instead of sticking a
  *  stale alert at the pane top; an empty healthy list paints no chrome at all. */
 import type * as HermesSdk from '@hermes/plugin-sdk'
-import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { atom, type WritableAtom } from 'nanostores'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
@@ -82,6 +82,22 @@ it('surfaces a discovery error as styled alert text, not raw foreground copy', a
   fail = 'Hermes gateway is not connected'
   render(<CanonicalGroupList onOpen={() => {}} />)
   const alert = await screen.findByRole('alert')
-  expect(alert.textContent).toBe('Hermes gateway is not connected')
-  expect(alert.className).toContain('text-(--ui-text-secondary)')
+  // The gateway detail still shows, but behind a sentence that says what it is.
+  expect(alert.textContent).toContain('Couldn’t load gateway rooms.')
+  expect(alert.textContent).toContain('Hermes gateway is not connected')
+  expect(alert.querySelector('p')?.className).toContain('text-(--ui-text-secondary)')
+})
+
+it('offers a way back from a discovery failure', async () => {
+  fail = 'Hermes gateway is not connected'
+  render(<CanonicalGroupList onOpen={() => {}} />)
+  const alert = await screen.findByRole('alert')
+
+  rooms = [room]
+  fail = ''
+  fireEvent.click(within(alert).getByRole('button', { name: 'Refresh gateway groups' }))
+
+  // Retry must actually re-run discovery, not just dismiss the message.
+  await screen.findByRole('button', { name: /Launch crew/ })
+  expect(screen.queryByRole('alert')).toBeNull()
 })

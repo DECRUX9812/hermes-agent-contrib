@@ -180,13 +180,19 @@ export function CanonicalGroupList({ onOpen }: { onOpen: (key: string, origin: C
     return null
   }
 
+  const retry = () => setRefresh(value => value + 1)
+
+  if (error) {
+    // A raw gateway message with no sentence around it reads like a stack
+    // trace: the user cannot tell what failed, and nothing offers a way back.
+    return <div className="grid gap-1.5 px-2 py-1" role="alert">
+      <p className="text-[0.6875rem] leading-relaxed text-(--ui-text-secondary)">{labels.listLoadFailed} {error}</p>
+      <div><Button onClick={retry} size="sm" variant="secondary">{labels.refreshGroups}</Button></div>
+    </div>
+  }
+
   return <div className="grid gap-1 px-2">
-    <Button onClick={() => setRefresh(value => value + 1)} variant="ghost">{labels.refreshGroups}</Button>
-    {error ? (
-      <p className="px-2 text-[0.6875rem] leading-relaxed text-(--ui-text-secondary)" role="alert">
-        {error}
-      </p>
-    ) : null}
+    <Button onClick={retry} variant="ghost">{labels.refreshGroups}</Button>
     {rooms.map(room => <CanonicalGroupRow key={room.key} memberCount={room.memberCount} name={room.name}
         needsYou={clarifyRooms.has(room.name)}
       onDelete={() => disbandListedRoom(room, labels.disbanded(room.name))} onOpen={() => onOpen(room.key, 'key')} />)}

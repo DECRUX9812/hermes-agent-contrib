@@ -1,6 +1,7 @@
 export interface CanonicalGroupMessages {
   members: string
   moreActions: string
+  listLoadFailed: string
   roomStopped: string
   roomDisbanded: string
   authorityLost: string
@@ -45,6 +46,7 @@ export interface CanonicalGroupMessages {
 export const CANONICAL_GROUP_LOCALES = {
   en: {
     moreActions: 'More actions',
+    listLoadFailed: 'Couldn’t load gateway rooms.',
     roomStopped: 'Group stopped',
     roomDisbanded: 'Group disbanded',
     authorityLost: 'Group ownership changed',
@@ -89,6 +91,7 @@ export const CANONICAL_GROUP_LOCALES = {
   },
   ja: {
     moreActions: 'その他の操作',
+    listLoadFailed: 'ゲートウェイのルームを読み込めませんでした。',
     roomStopped: 'グループが停止しました',
     roomDisbanded: 'グループが解散しました',
     authorityLost: 'グループの管理元が変更されました',
@@ -133,6 +136,7 @@ export const CANONICAL_GROUP_LOCALES = {
   },
   zh: {
     moreActions: '更多操作',
+    listLoadFailed: '无法加载网关房间。',
     roomStopped: '群组已停止',
     roomDisbanded: '群组已解散',
     authorityLost: '群组管理端已更改',
@@ -176,6 +180,7 @@ export const CANONICAL_GROUP_LOCALES = {
   },
   'zh-hant': {
     moreActions: '更多操作',
+    listLoadFailed: '無法載入閘道房間。',
     roomStopped: '群組已停止',
     roomDisbanded: '群組已解散',
     authorityLost: '群組管理端已變更',
@@ -219,6 +224,7 @@ export const CANONICAL_GROUP_LOCALES = {
   },
   ar: {
     moreActions: 'مزيد من الإجراءات',
+    listLoadFailed: 'تعذّر تحميل غرف البوابة.',
     roomStopped: 'أُوقفت المجموعة',
     roomDisbanded: 'حُلّت المجموعة',
     authorityLost: 'تغيّر مالك المجموعة',
@@ -263,6 +269,7 @@ export const CANONICAL_GROUP_LOCALES = {
   },
   ru: {
     moreActions: 'Ещё',
+    listLoadFailed: 'Не удалось загрузить комнаты шлюза.',
     roomStopped: 'Группа остановлена',
     roomDisbanded: 'Группа распущена',
     authorityLost: 'Владелец группы изменился',
@@ -310,6 +317,7 @@ export const CANONICAL_GROUP_LOCALES = {
   },
   fr: {
     moreActions: 'Plus d’actions',
+    listLoadFailed: 'Impossible de charger les salons de la passerelle.',
     roomStopped: 'Groupe arrêté',
     roomDisbanded: 'Groupe dissous',
     authorityLost: 'Gestionnaire du groupe modifié',
@@ -356,6 +364,7 @@ export const CANONICAL_GROUP_LOCALES = {
   },
   de: {
     moreActions: 'Weitere Aktionen',
+    listLoadFailed: 'Gateway-Räume konnten nicht geladen werden.',
     roomStopped: 'Gruppe angehalten',
     roomDisbanded: 'Gruppe aufgelöst',
     authorityLost: 'Gruppenverwaltung gewechselt',
@@ -403,6 +412,7 @@ export const CANONICAL_GROUP_LOCALES = {
   },
   es: {
     moreActions: 'Más acciones',
+    listLoadFailed: 'No se pudieron cargar las salas de la puerta de enlace.',
     roomStopped: 'Grupo detenido',
     roomDisbanded: 'Grupo disuelto',
     authorityLost: 'Propietario del grupo cambiado',
