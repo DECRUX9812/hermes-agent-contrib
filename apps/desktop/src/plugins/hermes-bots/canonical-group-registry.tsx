@@ -186,7 +186,7 @@ export function CanonicalGroupList({ onOpen }: { onOpen: (key: string, origin: C
     // A raw gateway message with no sentence around it reads like a stack
     // trace: the user cannot tell what failed, and nothing offers a way back.
     return <div className="grid gap-1.5 px-2 py-1" role="alert">
-      <p className="text-[0.6875rem] leading-relaxed text-(--ui-text-secondary)">{labels.listLoadFailed} {error}</p>
+      <p className="text-11 leading-relaxed text-(--ui-text-secondary)">{labels.listLoadFailed} {error}</p>
       <div><Button onClick={retry} size="sm" variant="secondary">{labels.refreshGroups}</Button></div>
     </div>
   }

@@ -57,13 +57,13 @@ export function CanonicalGroupRow({ active = false, memberCount, name, needsYou 
           />
         ) : null}
       </span>
-      <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">{name}</span>
+      <span className="min-w-0 flex-1 truncate text-13 font-medium text-(--ui-text-primary)">{name}</span>
       {/* State dots are decoration; the words are what a screen reader needs.
           No `aria-label` on the row: it would replace the name + member count
           the row already shows. */}
       {running ? <span className="sr-only">{labels.memberWorking}</span> : null}
       {needsYou ? <span className="sr-only">{group.needsYourInput}</span> : null}
-      <span className="shrink-0 rounded-full bg-(--ui-surface-overlay) px-1.5 py-0.5 text-[0.625rem] tabular-nums font-medium text-(--ui-text-secondary) group-hover:bg-(--chrome-action-hover)">{group.memberCount(memberCount)}</span>
+      <span className="shrink-0 rounded-full bg-(--ui-surface-overlay) px-1.5 py-0.5 text-10 tabular-nums font-medium text-(--ui-text-secondary) group-hover:bg-(--chrome-action-hover)">{group.memberCount(memberCount)}</span>
     </button>
   )
 

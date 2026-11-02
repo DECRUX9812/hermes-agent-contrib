@@ -44,7 +44,7 @@ function EventTime({ short, timestamp }: { short?: boolean; timestamp?: number }
 
   if (!Number.isFinite(at.getTime())) {return null}
 
-  return <time className={short ? 'text-[0.5625rem]' : 'text-[length:var(--conversation-caption-font-size)]'} dateTime={at.toISOString()}>
+  return <time className={short ? 'text-9' : 'text-[length:var(--conversation-caption-font-size)]'} dateTime={at.toISOString()}>
     {short ? at.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) : sdk.relativeTime(at.getTime())}
   </time>
 }
@@ -166,7 +166,7 @@ function eventFaceSeed(event: CanonicalGroupEvent, member?: CanonicalRoomMember)
 
 function SpeakerFace({ event, member }: { event: CanonicalGroupEvent; member?: CanonicalRoomMember }) {
   if (event.actor?.kind === 'user') {
-    return <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-(--ui-bg-quaternary) text-[0.625rem] text-(--ui-text-secondary)">
+    return <span aria-hidden="true" className="flex size-5 items-center justify-center rounded-full bg-(--ui-bg-quaternary) text-10 text-(--ui-text-secondary)">
       <sdk.Codicon name="account" />
     </span>
   }
@@ -213,7 +213,7 @@ function EventRow({ author, binding, continuation, disabled, event, member }: Ev
 
 function NoticeRow({ detail, event, notice, who }: { detail?: string; event: CanonicalGroupEvent; notice: string; who?: string }) {
   return <div className="flex items-baseline gap-2 px-2 py-1" data-seq={event.seq}>
-    <sdk.Codicon aria-hidden className="shrink-0 self-center text-[0.625rem] text-(--ui-text-secondary)" name="info" />
+    <sdk.Codicon aria-hidden className="shrink-0 self-center text-10 text-(--ui-text-secondary)" name="info" />
     <p className="min-w-0 flex-1 text-[length:var(--conversation-tool-font-size)] text-(--ui-text-secondary)" data-selectable-text="true">
       <strong className="font-medium">{notice}</strong>
       {who && <> — <span className="text-(--ui-text-secondary)">{who}</span></>}
@@ -230,7 +230,7 @@ const GROUP_WINDOW_S = 300
 function DayDivider({ label }: { label: string }) {
   return <div className="flex items-center gap-2 px-2 pt-2" role="separator">
     <span aria-hidden="true" className="h-px flex-1 bg-(--ui-bg-quaternary)" />
-    <span className="text-[0.6875rem] font-semibold tracking-wide text-(--ui-text-secondary)" data-testid="history-day">{label}</span>
+    <span className="text-11 font-semibold tracking-wide text-(--ui-text-secondary)" data-testid="history-day">{label}</span>
     <span aria-hidden="true" className="h-px flex-1 bg-(--ui-bg-quaternary)" />
   </div>
 }

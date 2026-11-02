@@ -287,7 +287,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
                 under the pane's own labeled "Hidden" disclosure, and the row's
                 context menu names the Unhide action. */}
             <Tip label={rowTooltip}>
-              <span className="min-w-0 truncate text-[0.8125rem] font-medium">{displayName(bot, meta)}</span>
+              <span className="min-w-0 truncate text-13 font-medium">{displayName(bot, meta)}</span>
             </Tip>
           </div>
           {/* Transient high-signal marks stay painted; secondary metadata
@@ -297,7 +297,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
             <Tip label={botAttentionHint(attention.reason)}>
               <Codicon
                 aria-label={b.roster.needsAttention}
-                className="shrink-0 text-[0.6875rem] text-(--ui-yellow) dark:text-(--ui-yellow)"
+                className="shrink-0 text-11 text-(--ui-yellow) dark:text-(--ui-yellow)"
                 name="warning"
               />
             </Tip>
@@ -309,11 +309,11 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
             <span className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
               {pinned ? (
                 <Tip label={b.roster.pinned}>
-                  <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)" name="pinned" />
+                  <Codicon className="shrink-0 text-11 text-(--ui-text-secondary)" name="pinned" />
                 </Tip>
               ) : null}
               {rowAgeTs ? (
-                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)">
+                <span className="shrink-0 text-11 text-(--ui-text-secondary)">
                   {rowAge(rowAgeTs * 1000, t.sidebar.row)}
                 </span>
               ) : null}
@@ -323,7 +323,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
         {showDetailsRow ? (
           <div className="flex min-w-0 items-center gap-1.5 text-xs text-(--ui-text-secondary)">
             {showHandle ? (
-              <span className="shrink-0 font-mono text-[0.6875rem] text-(--ui-text-secondary)">{`@${handle}`}</span>
+              <span className="shrink-0 font-mono text-11 text-(--ui-text-secondary)">{`@${handle}`}</span>
             ) : null}
             {showHandle && displayPreview ? <span className="shrink-0 text-(--ui-text-secondary)">·</span> : null}
             {displayPreview ? (
@@ -604,7 +604,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
           <Tip label={availabilityLabel}>
             <span
               aria-label={availabilityLabel}
-              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-[0.625rem] text-(--ui-yellow) ring-1 ring-(--ui-stroke-tertiary) dark:text-(--ui-yellow)"
+              className="absolute -bottom-0.5 -right-0.5 flex size-4 items-center justify-center rounded-full bg-(--ui-bg-primary) text-10 text-(--ui-yellow) ring-1 ring-(--ui-stroke-tertiary) dark:text-(--ui-yellow)"
             >
               <Codicon name="debug-disconnect" />
             </span>
@@ -613,7 +613,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-2">
-          <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium">{group}</span>
+          <span className="min-w-0 flex-1 truncate text-13 font-medium">{group}</span>
           {/* needsYou is the row's one high-signal mark; pin + age tuck. */}
           {needsYou ? (
             <Tip label={b.group.needsYourInput}>
@@ -624,11 +624,11 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
             <span className="flex shrink-0 items-center gap-1.5 opacity-0 transition-opacity group-hover:opacity-100 group-focus-within:opacity-100">
               {room.pinned ? (
                 <Tip label={b.roster.pinned}>
-                  <Codicon className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)" name="pinned" />
+                  <Codicon className="shrink-0 text-11 text-(--ui-text-secondary)" name="pinned" />
                 </Tip>
               ) : null}
               {lastAt ? (
-                <span className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)">
+                <span className="shrink-0 text-11 text-(--ui-text-secondary)">
                   {rowAge(lastAt, t.sidebar.row)}
                 </span>
               ) : null}

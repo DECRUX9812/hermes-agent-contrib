@@ -168,7 +168,7 @@ export function AvatarPicker({ shape, color, image, onShape, onColor, onImage, g
                             size={32}
                           />
                         ) : (
-                          <span className="text-[0.625rem] text-(--ui-text-secondary)">{b.editor.auto}</span>
+                          <span className="text-10 text-(--ui-text-secondary)">{b.editor.auto}</span>
                         )}
                       </RowButton>
                     </Tip>
@@ -184,7 +184,7 @@ export function AvatarPicker({ shape, color, image, onShape, onColor, onImage, g
                     type="button"
                     variant="ghost"
                   >
-                    <Codicon className="mr-1 text-[0.8125rem]" name="refresh" />
+                    <Codicon className="mr-1 text-13" name="refresh" />
                     {b.avatar.randomize}
                   </Button>
                   <Button
@@ -193,11 +193,11 @@ export function AvatarPicker({ shape, color, image, onShape, onColor, onImage, g
                     type="button"
                     variant="ghost"
                   >
-                    <Codicon className="mr-1 text-[0.8125rem]" name={locked ? 'unlock' : 'lock'} />
+                    <Codicon className="mr-1 text-13" name={locked ? 'unlock' : 'lock'} />
                     {locked ? b.editor.unlock : b.editor.lockFace}
                   </Button>
                 </div>
-                <div className="text-center text-[0.625rem] text-(--ui-text-secondary)">
+                <div className="text-center text-10 text-(--ui-text-secondary)">
                   {locked ? b.editor.lockedHint : b.editor.unlockedHint}
                 </div>
                 <Button
@@ -259,14 +259,14 @@ export function AvatarPicker({ shape, color, image, onShape, onColor, onImage, g
               variant="secondary"
             >
               {genBusy ? (
-                <GlyphSpinner className="mr-1 text-[0.8125rem]" spinner="breathe" />
+                <GlyphSpinner className="mr-1 text-13" spinner="breathe" />
               ) : (
-                <Codicon className="mr-1 text-[0.8125rem]" name="sparkle" />
+                <Codicon className="mr-1 text-13" name="sparkle" />
               )}
               {genBusy ? b.avatar.generating : b.avatar.generate}
             </Button>
             {describe.trim() ? null : (
-              <div className="text-center text-[0.625rem] text-(--ui-text-secondary)">{b.bot.descriptionHint}</div>
+              <div className="text-center text-10 text-(--ui-text-secondary)">{b.bot.descriptionHint}</div>
             )}
           </div>
         ) : (
@@ -277,7 +277,7 @@ export function AvatarPicker({ shape, color, image, onShape, onColor, onImage, g
       ) : null}
       {tab === 'upload' ? (
         <Button className="w-full justify-center" onClick={upload} type="button" variant="secondary">
-          <Codicon className="mr-1 text-[0.8125rem]" name="device-camera" />
+          <Codicon className="mr-1 text-13" name="device-camera" />
           {b.editor.chooseImage}
         </Button>
       ) : null}

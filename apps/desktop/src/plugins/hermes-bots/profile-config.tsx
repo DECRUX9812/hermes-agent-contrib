@@ -86,7 +86,7 @@ export function CheckList({ items, onToggle, columns = 2 }: CheckListProps) {
           <Checkbox checked={item.enabled} onCheckedChange={value => onToggle(item.name, Boolean(value))} />
           <span className="truncate">{item.name}</span>
           {item.tool_count ? (
-            <span className="shrink-0 text-[0.625rem] text-(--ui-text-secondary)">{`${item.tool_count}`}</span>
+            <span className="shrink-0 text-10 text-(--ui-text-secondary)">{`${item.tool_count}`}</span>
           ) : null}
         </label>
       ))}
@@ -452,7 +452,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
                       <span className="min-w-0">
                         <span>{m.name}</span>
                         {m.fromCatalog && !needsSetup ? (
-                          <span className="ml-1.5 text-[0.625rem] text-(--ui-text-secondary)">
+                          <span className="ml-1.5 text-10 text-(--ui-text-secondary)">
                             {m.installed ? b.editor.catalogInstalled : b.editor.catalog}
                           </span>
                         ) : null}
@@ -460,7 +460,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
                           <McpSetupButton entry={m} onDone={() => toggleMcp(m.name, true)} profile={backendScope} />
                         ) : null}
                         {m.description ? (
-                          <div className="truncate text-[0.625rem] leading-4 text-(--ui-text-secondary)">
+                          <div className="truncate text-10 leading-4 text-(--ui-text-secondary)">
                             {m.description}
                           </div>
                         ) : null}

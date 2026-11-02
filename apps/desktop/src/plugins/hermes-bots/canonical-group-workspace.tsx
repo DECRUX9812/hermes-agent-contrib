@@ -218,7 +218,7 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
         <Codicon className={cn('shrink-0 text-xs', tone)} name={icon} />
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-(--ui-text-primary)">{title}</p>
-          <p className="truncate text-[0.6875rem] text-(--ui-text-secondary)">{who}</p>
+          <p className="truncate text-11 text-(--ui-text-secondary)">{who}</p>
         </div>
         {action.kind === 'discard' && <Button disabled={busy} onClick={() => setDiscard({ ...action })} size="xs" variant="secondary">{labels.discard}</Button>}
         {action.kind === 'retry' && <Button disabled={busy} onClick={() => void act({ ...action })} size="xs" variant="secondary">{labels.retry}</Button>}
@@ -232,7 +232,7 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
         <Button onClick={() => setDiscard(null)} size="sm" variant="ghost">{labels.cancel}</Button>
       </div>
     </div>}
-    {restoredPending && <p className="px-1 text-[0.6875rem] text-(--ui-text-secondary)" role="status">{labels.restoredPendingSend}</p>}
+    {restoredPending && <p className="px-1 text-11 text-(--ui-text-secondary)" role="status">{labels.restoredPendingSend}</p>}
     <form className="flex shrink-0 items-center gap-2 border-t border-(--ui-stroke-tertiary) pt-3 pb-1" onDragOver={event => { if (event.dataTransfer.types.includes('Files')) {event.preventDefault()} }}
       onDrop={event => attachTransfer(event, event.dataTransfer)} onPaste={event => attachTransfer(event, event.clipboardData)} onSubmit={event => { event.preventDefault(); send() }}>
       <CanonicalGroupAttachments attachments={attachments} binding={binding} disabled={composerLocked} onChange={setAttachments} onUploadingChange={setUploading} ref={uploader} />

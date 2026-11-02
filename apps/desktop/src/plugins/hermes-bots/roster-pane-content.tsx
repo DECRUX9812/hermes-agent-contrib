@@ -74,7 +74,7 @@ export function renderRosterContent({
   return (
     <>
       {staleNotice ? (
-        <div className="mx-2.5 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-secondary)">
+        <div className="mx-2.5 mb-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-11 text-(--ui-text-secondary)">
           {staleNotice}
         </div>
       ) : null}
@@ -146,7 +146,7 @@ export function renderRosterContent({
                 ref={hiddenSectionRef}
               >
                 {hasRosterConstraint ? (
-                  <div className="flex w-full items-center gap-1 px-2 py-1.5 text-[0.6875rem] font-medium text-(--ui-text-secondary)">
+                  <div className="flex w-full items-center gap-1 px-2 py-1.5 text-11 font-medium text-(--ui-text-secondary)">
                     <Codicon name="eye-closed" />
                     <span>{b.roster.hidden}</span>
                     <span className="text-(--ui-text-secondary)">{matchingHiddenBots.length}</span>
@@ -154,7 +154,7 @@ export function renderRosterContent({
                 ) : (
                   <RowButton
                     aria-expanded={hiddenExpanded}
-                    className="flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-[0.6875rem] font-medium text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground"
+                    className="flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-11 font-medium text-(--ui-text-secondary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground"
                     onClick={() => $showHiddenBots.set(!hiddenExpanded)}
                   >
                     <DisclosureCaret open={hiddenExpanded} />

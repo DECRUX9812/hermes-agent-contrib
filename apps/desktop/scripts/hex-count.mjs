@@ -60,6 +60,9 @@ export function countDebt(root) {
   // class and is not debt. One whose values are all literals can, and is.
   let inline = 0
   let inlineDynamic = 0
+  // Arbitrary font sizes are the type-scale equivalent of a hex literal: a value
+  // chosen at the call site instead of a step chosen from the ramp.
+  let textArbitrary = 0
   const offenders = []
 
   const walk = dir => {
@@ -96,6 +99,8 @@ export function countDebt(root) {
         offenders.push({ count: hits.length, file: rel })
       }
 
+      textArbitrary += (source.match(/text-\[(?:length:)?[\d.]+(?:px|rem)\]/g) ?? []).length
+
       if (/\.tsx$/.test(entry.name)) {
         for (const style of source.matchAll(/style=\{\{([\s\S]{0,400}?)\}\}/g)) {
           inline += 1
@@ -111,7 +116,7 @@ export function countDebt(root) {
   walk(src)
   offenders.sort((a, b) => b.count - a.count)
 
-  return { hex, inline, inlineDynamic, inlineStatic: inline - inlineDynamic, offenders }
+  return { hex, inline, inlineDynamic, inlineStatic: inline - inlineDynamic, textArbitrary, offenders }
 }
 
 // CLI: `node scripts/hex-count.mjs <apps/desktop>` prints the JSON the audit

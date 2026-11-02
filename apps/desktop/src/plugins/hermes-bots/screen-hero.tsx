@@ -166,7 +166,7 @@ function ScreenHeroContent({ bot, meta }: { bot: RosterRow; meta?: BotMeta | nul
       ) : (
         <span className="absolute inset-0 grid place-items-center bg-[radial-gradient(ellipse_at_center,rgba(255,255,255,0.08),transparent_70%)]">
           <Codicon
-            className="text-[2.25rem] text-white/30"
+            className="text-4xl text-white/30"
             name={running ? 'loading' : tone === 'missing' ? 'cloud-download' : 'vm'}
           />
         </span>
@@ -178,10 +178,10 @@ function ScreenHeroContent({ bot, meta }: { bot: RosterRow; meta?: BotMeta | nul
         />
         <span className="min-w-0 flex-1">
           <span className="block truncate text-xs font-medium">{t.screen.portalTitle}</span>
-          <span className="block truncate text-[0.625rem] text-white/70">{caption}</span>
+          <span className="block truncate text-10 text-white/70">{caption}</span>
         </span>
         {cta ? (
-          <span className="flex shrink-0 items-center gap-1 rounded-md bg-white/15 px-2 py-1 text-[0.625rem] font-medium backdrop-blur-sm transition-colors group-hover:bg-white/25">
+          <span className="flex shrink-0 items-center gap-1 rounded-md bg-white/15 px-2 py-1 text-10 font-medium backdrop-blur-sm transition-colors group-hover:bg-white/25">
             {cta} <Codicon name="arrow-right" />
           </span>
         ) : null}

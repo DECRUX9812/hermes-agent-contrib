@@ -127,6 +127,18 @@
 }
 
 @theme inline {
+  /* Size steps named by their pixel value, because the app's real distribution
+     is 10/11/12/13/14/15/16 — not the xs/sm/base ladder Tailwind ships. Named by
+     number so nobody has to remember which of 3xs/2xs/1xs is which, and so a new
+     size is a decision rather than a guess. No line-height modifier: these must
+     be pixel-identical to the arbitrary classes they replace. */
+  --text-9: 0.5625rem;
+  --text-10: 0.625rem;
+  --text-11: 0.6875rem;
+  --text-13: 0.8125rem;
+  --text-15: 0.9375rem;
+  --text-22: 1.375rem;
+
   --color-background: var(--dt-background);
   --color-foreground: var(--dt-foreground);
   --color-card: var(--dt-card);

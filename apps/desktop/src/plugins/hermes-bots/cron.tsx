@@ -580,9 +580,9 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
       {/* The schedule and the next-run label keep their words: when the
           pane can't fit both on one line the next-run label wraps to a second
           line instead of being cut to "next in 4" (#89534). */}
-      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-3.5 text-[0.625rem]">
+      <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5 pl-3.5 text-10">
         <span className="inline-flex min-w-0 items-center gap-1 whitespace-nowrap text-(--ui-text-secondary)">
-          <Codicon className="shrink-0 text-[0.6875rem]" name="calendar" />
+          <Codicon className="shrink-0 text-11" name="calendar" />
           {scheduleLabel(job.schedule)}
         </span>
         <span className="ml-auto shrink-0 whitespace-nowrap text-(--ui-text-secondary)">
@@ -592,7 +592,7 @@ export function RoutineRow({ job, onOpen, owner }: RoutineRowProps) {
         </span>
       </div>
       {legacyUnsafe ? (
-        <div className="flex items-center gap-1.5 pl-3.5 pt-0.5 text-[0.625rem] leading-4 text-(--ui-accent)">
+        <div className="flex items-center gap-1.5 pl-3.5 pt-0.5 text-10 leading-4 text-(--ui-accent)">
           <Codicon className="shrink-0" name="warning" />
           {b.cron.legacyUnsafe}
         </div>
@@ -917,7 +917,7 @@ function SchedulePicker({ state, setState }: SchedulePickerProps) {
           <span className="text-xs text-(--ui-text-secondary)">{b.cron.runsHint}</span>
         </div>
       ) : null}
-      <div className="text-[0.625rem] text-(--ui-text-secondary)">{`${scheduleSummary(state, b.cron, timeLabel)} \u00b7 ${composeSchedule(state) || '\u2014'}`}</div>
+      <div className="text-10 text-(--ui-text-secondary)">{`${scheduleSummary(state, b.cron, timeLabel)} \u00b7 ${composeSchedule(state) || '\u2014'}`}</div>
     </div>
   )
 }

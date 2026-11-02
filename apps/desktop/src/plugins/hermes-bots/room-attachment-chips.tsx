@@ -105,9 +105,9 @@ export function RoomAttachmentChips({
             {chip.kind === 'image' && chip.previewSrc ? (
               <img alt="" className="size-6 rounded object-cover" src={chip.previewSrc} />
             ) : chip.kind === 'image' ? null : (
-              <Codicon className="text-[0.875rem] text-(--ui-text-secondary)" name={KIND_ICON[chip.kind]} />
+              <Codicon className="text-sm text-(--ui-text-secondary)" name={KIND_ICON[chip.kind]} />
             )}
-            <span className={dense ? 'max-w-32 truncate text-[0.625rem] text-(--ui-text-secondary)' : 'max-w-40 truncate'}>{name}</span>
+            <span className={dense ? 'max-w-32 truncate text-10 text-(--ui-text-secondary)' : 'max-w-40 truncate'}>{name}</span>
             {download}
             {dense && remove ? <Tip label={removeLabel}>{remove}</Tip> : remove}
           </div>

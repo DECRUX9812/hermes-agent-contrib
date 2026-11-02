@@ -199,10 +199,10 @@ function TaskRow({ onOpen, run }: { onOpen?: () => void; run: PanelTaskRun }) {
       <div className="min-w-0 flex-1">
         <div className="truncate text-xs font-medium text-(--ui-text-primary)">{run.title}</div>
         {run.detail ? (
-          <div className="truncate text-[0.6875rem] text-(--ui-text-secondary)">{run.detail}</div>
+          <div className="truncate text-11 text-(--ui-text-secondary)">{run.detail}</div>
         ) : null}
       </div>
-      <span className="shrink-0 text-[0.6875rem] text-(--ui-text-secondary)">{relativeTime(run.at)}</span>
+      <span className="shrink-0 text-11 text-(--ui-text-secondary)">{relativeTime(run.at)}</span>
     </>
   )
 
@@ -284,7 +284,7 @@ function RoomRail({ group }: { group: string }) {
             members server-side, and "0 bots" would be a wrong fact, not a
             missing one. */}
         {room ? (
-          <div className="mt-0.5 text-[0.6875rem] text-(--ui-text-secondary)">{b.group.memberCount(members.length)}</div>
+          <div className="mt-0.5 text-11 text-(--ui-text-secondary)">{b.group.memberCount(members.length)}</div>
         ) : null}
       </div>
       <ul className="mt-4 grid gap-1 px-3">
@@ -505,7 +505,7 @@ const selected = useValue($selectedBot)
         <div className="mt-0.5 flex min-w-0 items-center">
           <span
             className={cn(
-              'inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-[0.6875rem] font-medium',
+              'inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-11 font-medium',
               working
                 ? 'border border-(--ui-green)/25 bg-(--ui-green)/12 text-(--ui-green)'
                 : reachable
@@ -549,7 +549,7 @@ const selected = useValue($selectedBot)
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain" key={bot}>
         {needsYou.length ? (
         <div className="mx-1.5 mb-1 grid gap-1 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-2 shadow-2xs" data-slot="bots-needs-you">
-          <div className="px-1 pb-0.5 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-icon-attention)">
+          <div className="px-1 pb-0.5 text-10 font-semibold uppercase tracking-wider text-(--ui-icon-attention)">
             {b.group.needsYourInput} · {needsYou.length}
           </div>
           {needsYou.map(prompt => {
@@ -566,7 +566,7 @@ const selected = useValue($selectedBot)
                   type="button"
                 >
                   <Codicon className="shrink-0 text-(--ui-icon-attention)" name="info" size="0.9375rem" />
-                  <span className="min-w-0 flex-1 truncate text-[0.6875rem] text-(--ui-text-secondary)">
+                  <span className="min-w-0 flex-1 truncate text-11 text-(--ui-text-secondary)">
                     <span className="font-medium text-(--ui-text-primary)">@{prompt.member}</span>
                     {' '}{question || b.group.needsYourInput}
                   </span>
@@ -575,7 +575,7 @@ const selected = useValue($selectedBot)
                 {prompt.kind === 'approval'
                   ? (prompt.choices || []).slice(0, 2).map(choice => (
                       <button
-                        className="flex min-h-7 shrink-0 items-center rounded border border-(--ui-stroke-tertiary) px-2 text-[0.625rem] font-medium text-(--ui-text-primary) hover:bg-(--chrome-action-hover) focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
+                        className="flex min-h-7 shrink-0 items-center rounded border border-(--ui-stroke-tertiary) px-2 text-10 font-medium text-(--ui-text-primary) hover:bg-(--chrome-action-hover) focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
                         key={choice}
                         onClick={() => void answerGroupClarify(prompt, { name: bot }, choice)}
                         type="button"
@@ -599,7 +599,7 @@ const selected = useValue($selectedBot)
       ) : null}
       {runningRoom ? (
         <div className="mx-1.5 mb-1 flex items-center justify-between gap-2 rounded-lg border border-(--ui-green)/35 bg-(--ui-green)/8 px-2 py-2 shadow-2xs" data-slot="bot-live-round">
-          <span className="inline-flex min-w-0 items-center gap-1.5 text-[0.6875rem] font-medium text-(--ui-green)">
+          <span className="inline-flex min-w-0 items-center gap-1.5 text-11 font-medium text-(--ui-green)">
             <span aria-hidden="true" className="size-1.5 shrink-0 animate-pulse rounded-full bg-(--ui-green)" />
             <span className="truncate">{b.panel.runningRound} · {runningRoom[0]}</span>
           </span>
@@ -614,7 +614,7 @@ const selected = useValue($selectedBot)
         </div>
       ) : null}
       {!reachable ? (
-        <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-2 text-[0.6875rem] leading-snug text-(--ui-text-secondary) shadow-2xs" data-slot="bot-unreachable" role="status">
+        <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-2 text-11 leading-snug text-(--ui-text-secondary) shadow-2xs" data-slot="bot-unreachable" role="status">
           {b.panel.unreachable}
         </div>
       ) : null}
@@ -669,12 +669,12 @@ const selected = useValue($selectedBot)
       </div>
       {feed.length ? (
         <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/50 px-2 py-2 shadow-2xs" data-slot="bot-live-activity">
-          <div className="px-1 pb-1 text-[0.625rem] font-semibold uppercase tracking-wider text-(--ui-text-secondary)">
+          <div className="px-1 pb-1 text-10 font-semibold uppercase tracking-wider text-(--ui-text-secondary)">
             {b.panel.liveActivity}
           </div>
           <ul className="grid gap-0.5">
             {feed.slice(0, 6).map((event, i) => (
-              <li className="flex min-w-0 items-center gap-2 px-1 py-1 text-[0.6875rem]" key={`${event.group}:${event.at}:${i}`}>
+              <li className="flex min-w-0 items-center gap-2 px-1 py-1 text-11" key={`${event.group}:${event.at}:${i}`}>
                 <Codicon
                   className={event.kind === 'failed' ? 'shrink-0 text-destructive' : event.kind === 'stopped' || event.kind === 'cancelled' ? 'shrink-0 text-(--ui-icon-attention)' : 'shrink-0 text-(--ui-text-secondary)'}
                   name={event.kind === 'failed' ? 'error' : event.kind === 'queued' ? 'watch' : 'check'}
@@ -685,7 +685,7 @@ const selected = useValue($selectedBot)
                   {(event as { count?: number }).count && (event as { count?: number }).count! > 1 ? ` ×${(event as { count?: number }).count}` : ''}
                   {(event as { reason?: string }).reason ? ` — ${(event as { reason?: string }).reason}` : ''}
                 </span>
-                <span className="shrink-0 text-[0.625rem] tabular-nums text-(--ui-text-secondary)">{relativeTime(event.at || 0)}</span>
+                <span className="shrink-0 text-10 tabular-nums text-(--ui-text-secondary)">{relativeTime(event.at || 0)}</span>
               </li>
             ))}
           </ul>
@@ -706,7 +706,7 @@ const selected = useValue($selectedBot)
             ) : null}
             {runs.length === 0 && !isLoading && !sessionsQuery.isLoading ? (
               <div className="grid gap-2" data-testid="panel-empty-live">
-                <span className="flex items-center gap-2 px-2 text-[0.6875rem] text-(--ui-text-secondary)">
+                <span className="flex items-center gap-2 px-2 text-11 text-(--ui-text-secondary)">
                   <GlyphSpinner className="text-(--ui-accent)" spinner="breathe" />
                   <span className="truncate">{statusText}</span>
                 </span>
@@ -728,7 +728,7 @@ const selected = useValue($selectedBot)
                     <span className="text-xs font-semibold text-(--ui-text-primary)" data-testid="panel-day">
                       {panelDayLabel(group.runs[0].at, p)}
                     </span>
-                    <span className="text-[0.6875rem] text-(--ui-text-secondary)">
+                    <span className="text-11 text-(--ui-text-secondary)">
                       {p.tasksCompleted(group.runs.length)}
                     </span>
                   </div>
@@ -754,7 +754,7 @@ const selected = useValue($selectedBot)
               </Tip>
             </div>
             {staleNotice ? (
-              <div className="mx-1.5 mt-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-[0.6875rem] text-(--ui-text-secondary)">
+              <div className="mx-1.5 mt-1 rounded-md bg-(--chrome-action-hover) px-2 py-1.5 text-11 text-(--ui-text-secondary)">
                 {staleNotice}
               </div>
             ) : null}
@@ -825,10 +825,10 @@ const selected = useValue($selectedBot)
                     <span className="min-w-0 flex-1">
                       <span className="block truncate text-xs font-medium text-(--ui-text-primary)">{run.title}</span>
                       {run.detail ? (
-                        <span className="block truncate text-[0.625rem] text-(--ui-text-secondary)">{run.detail}</span>
+                        <span className="block truncate text-10 text-(--ui-text-secondary)">{run.detail}</span>
                       ) : null}
                     </span>
-                    <span className="shrink-0 text-[0.625rem] tabular-nums text-(--ui-text-secondary)">
+                    <span className="shrink-0 text-10 tabular-nums text-(--ui-text-secondary)">
                       {relativeTime(run.at)}
                     </span>
                   </button>
@@ -843,7 +843,7 @@ const selected = useValue($selectedBot)
       <div className="flex items-center justify-between gap-2 border-t border-(--ui-stroke-tertiary) px-3 py-2">
         {/* A bare "now" is not a fact: it names no subject and reads as a
             control. The footer says what is fresh. */}
-        <span className="truncate text-[0.6875rem] text-(--ui-text-secondary)">
+        <span className="truncate text-11 text-(--ui-text-secondary)">
           {dataUpdatedAt ? p.updatedAt(relativeTime(dataUpdatedAt)) : p.updatedNow}
         </span>
         {/* The actions keep their width; the timestamp is the text that
