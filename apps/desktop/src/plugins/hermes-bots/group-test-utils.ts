@@ -453,6 +453,22 @@ export function createGroupGateway(options: GatewayOptions = {}): ScriptedGatewa
  *  `atom` must be the real nanostores one — the room store IS its atoms — and
  *  it has to come from the CURRENT module generation, so this is built inside
  *  the `vi.mock` factory rather than hoisted alongside it. */
+/** The surface contract's components, in one place.
+ *
+ *  Every new SDK export used to be discovered by a wave of
+ *  `No "X" export is defined on the @hermes/plugin-sdk mock` failures — twice in
+ *  this session (47 tests, then 11) — because bespoke mocks build their own
+ *  objects. They spread this instead, so the next contract addition costs one
+ *  line here rather than a hunt through the suite. */
+export async function surfaceContractMock() {
+  const [{ SurfaceHeader }, { SurfaceComposer }] = await Promise.all([
+    import('@/components/surface/surface-header'),
+    import('@/components/surface/surface-composer')
+  ])
+
+  return { SurfaceComposer, SurfaceHeader }
+}
+
 export async function pluginSdkMock(host: Record<string, unknown>) {
   const nanostores = await import('nanostores')
   const { Textarea } = await import('@/components/ui/textarea')
@@ -471,12 +487,10 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
 
   // The surface contract lives in the shell now; a mock without it fails on
   // import the moment a component uses it (the trap this file exists to close).
-  const { SurfaceHeader } = await import('@/components/surface/surface-header')
-  const { SurfaceComposer } = await import('@/components/surface/surface-composer')
+  const contract = await surfaceContractMock()
 
   return {
-    SurfaceHeader,
-    SurfaceComposer,
+    ...contract,
     Textarea,
     ContextMenu,
     ContextMenuContent,
