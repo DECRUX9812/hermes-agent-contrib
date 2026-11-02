@@ -254,6 +254,7 @@ export function BotRow({ bot, onDelete, onEdit, onGroup, onNewSection, showHandl
         dragging && 'opacity-40'
       )}
       data-roster-key={rosterKey}
+      data-roster-row
       draggable
       onClick={open}
       onDragEnd={() => $draggingBot.set(null)}
@@ -566,6 +567,7 @@ export function GroupRow({ active, group, members, needsYou, onOpen, onDisband, 
         active && 'bg-(--ui-row-active-background)',
         dragging && 'opacity-40'
       )}
+      data-roster-row
       draggable
       onClick={() => {
         haptic('tap')

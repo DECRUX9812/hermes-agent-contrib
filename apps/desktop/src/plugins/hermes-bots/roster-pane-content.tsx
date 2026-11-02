@@ -4,6 +4,7 @@ import type { ReactNode, RefObject } from 'react'
 import type { useRoster } from './data'
 import { $showHiddenBots } from './hidden-bots'
 import type { useBots } from './i18n'
+import { handleRosterArrowKey } from './roster-keyboard'
 import type { deriveRosterPresentation, deriveRosterRows } from './roster-pane-derivation'
 import type { rosterSectionRenderers } from './roster-pane-sections'
 import type { rosterGatewayOptions } from './roster-sections'
@@ -126,7 +127,11 @@ export function renderRosterContent({
           />
         </div>
       ) : (
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain" data-slot="bots-roster">
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+          data-slot="bots-roster"
+          onKeyDown={handleRosterArrowKey}
+        >
           <div className="grid w-full min-w-0 gap-0.5 px-1.5 pb-2">
             {showGatewaySections
               ? [

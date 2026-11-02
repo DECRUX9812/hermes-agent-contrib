@@ -489,7 +489,6 @@ export type BotsMessages = {
     workingNow: string
     offline: string
     tasksCompleted: (count: number) => string
-    noRuns: string
     noSaved: string
     noHistory: string
     /** The first tab: routine runs AND conversations — not just tasks, so the
