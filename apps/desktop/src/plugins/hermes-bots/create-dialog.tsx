@@ -985,12 +985,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                       placeholder={b.tools.filterSkills}
                       value={capFilter}
                     />
-                    <div
-                      className="overflow-y-auto overscroll-contain"
-                      style={{
-                        maxHeight: 200
-                      }}
-                    >
+                    <div className="max-h-[200px] overflow-y-auto overscroll-contain">
                       <CheckList
                         columns={2}
                         items={
@@ -1026,12 +1021,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                 )
               ) : advTab === 'toolsets' ? (
                 <div className="grid gap-1.5">
-                  <div
-                    className="overflow-y-auto overscroll-contain"
-                    style={{
-                      maxHeight: 200
-                    }}
-                  >
+                  <div className="max-h-[200px] overflow-y-auto overscroll-contain">
                     <CheckList
                       columns={2}
                       items={caps.toolsets}
@@ -1046,12 +1036,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
                 <div className="px-2 py-3 text-center text-xs text-(--ui-text-secondary)">{b.tools.noMcpServers}</div>
               ) : (
                 <div className="grid gap-1.5">
-                  <div
-                    className="overflow-y-auto overscroll-contain"
-                    style={{
-                      maxHeight: 200
-                    }}
-                  >
+                  <div className="max-h-[200px] overflow-y-auto overscroll-contain">
                     <div className="grid gap-1">
                       {caps.mcp.map(m => {
                         const needsSetup =

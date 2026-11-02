@@ -364,10 +364,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
             value={skillFilter}
           />
           <div
-            className="overflow-y-auto overscroll-contain"
-            style={{
-              maxHeight: 180
-            }}
+            className="overflow-y-auto overscroll-contain max-h-[180px]"
           >
             <CheckList columns={2} items={visibleSkills} onToggle={toggleSkill} />
           </div>
@@ -396,10 +393,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
         b.editor.toolsetsEnabled(enabledToolsets, state.toolsets.length),
         <div className="rounded-md border border-(--ui-stroke-secondary) p-2">
           <div
-            className="overflow-y-auto overscroll-contain"
-            style={{
-              maxHeight: 320
-            }}
+            className="overflow-y-auto overscroll-contain max-h-[320px]"
           >
             <div className="grid gap-1.5">
               {state.toolsets.map(tset => (
@@ -430,11 +424,7 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
         <div className="overflow-hidden rounded-md border border-(--ui-stroke-secondary)">
           {ConnectorsTab && typeof host.getGateway === 'function' ? (
             <div
-              className="overflow-y-auto overscroll-contain"
-              style={{
-                minHeight: 220,
-                maxHeight: 360
-              }}
+              className="overflow-y-auto overscroll-contain min-h-[220px] max-h-[360px]"
             >
               <ConnectorsTab gateway={host.getGateway()} profile={backendScope} />
             </div>

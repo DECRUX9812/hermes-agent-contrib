@@ -56,7 +56,10 @@ const VAR_FALLBACK = /(?:var\(--[\w-]+,\s*|--[\w-]+,\s*)#[0-9a-fA-F]{3,8}\)/g
 export function countDebt(root) {
   const src = join(root, 'src')
   let hex = 0
+  // An inline style whose values are computed (`width: ${pct}%`) cannot be a
+  // class and is not debt. One whose values are all literals can, and is.
   let inline = 0
+  let inlineDynamic = 0
   const offenders = []
 
   const walk = dir => {
@@ -94,7 +97,13 @@ export function countDebt(root) {
       }
 
       if (/\.tsx$/.test(entry.name)) {
-        inline += (source.match(/style=\{\{/g) ?? []).length
+        for (const style of source.matchAll(/style=\{\{([\s\S]{0,400}?)\}\}/g)) {
+          inline += 1
+
+          if (/[\$]\{/.test(style[1])) {
+            inlineDynamic += 1
+          }
+        }
       }
     }
   }
@@ -102,7 +111,7 @@ export function countDebt(root) {
   walk(src)
   offenders.sort((a, b) => b.count - a.count)
 
-  return { hex, inline, offenders }
+  return { hex, inline, inlineDynamic, inlineStatic: inline - inlineDynamic, offenders }
 }
 
 // CLI: `node scripts/hex-count.mjs <apps/desktop>` prints the JSON the audit
