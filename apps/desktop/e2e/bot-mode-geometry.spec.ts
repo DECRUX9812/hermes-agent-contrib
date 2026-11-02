@@ -204,6 +204,58 @@ test('bot chat + context rail: no clipped or truncated controls', async () => {
   await expectNothingClipped(page, 'bot chat + context rail')
 })
 
+test('narrow window (1024x768): the chat and rail still fit', async () => {
+  test.setTimeout(240_000)
+  const { app, page } = fixture!
+
+  // The audit's render capture was 1024x768 and reported the centre column
+  // clipping under the composer. Nothing in the suite has ever measured it.
+  await app.evaluate(({ BrowserWindow }) => {
+    const window = BrowserWindow.getAllWindows()[0]
+
+    window?.setSize(1024, 768)
+  })
+  await page.waitForTimeout(600)
+
+  await openBots(page)
+  await rosterRow(page, 'local::alpha').click()
+  await expect(page.getByText('Hello alpha', { exact: true }).filter({ visible: true }).first())
+    .toBeVisible({ timeout: 60_000 })
+
+  await expectNothingClipped(page, 'chat at 1024x768')
+
+  // The audit's C7 was about CONTENT, not controls: the last message clipped
+  // under the composer at this width. Nothing in the probe covers text boxes,
+  // so assert the transcript's last row ends above the composer's top edge.
+  const lastMessage = page
+    .getByText('Hello from the mock inference server! The full boot chain is working.')
+    .last()
+
+  const composer = page.getByRole('textbox').last()
+
+  const [messageBox, composerBox] = await Promise.all([
+    lastMessage.boundingBox(),
+    composer.boundingBox()
+  ])
+
+  expect(messageBox, 'last message box').toBeTruthy()
+  expect(composerBox, 'composer box').toBeTruthy()
+
+  const overlap = messageBox!.y + messageBox!.height - composerBox!.y
+
+  expect(
+    overlap,
+    `last message ends ${Math.round(overlap)}px past the composer top ` +
+      `(message ${JSON.stringify(messageBox)}, composer ${JSON.stringify(composerBox)})`
+  ).toBeLessThanOrEqual(1)
+
+  // Leave the window the size the other surfaces measure at.
+  await app.evaluate(({ BrowserWindow }) => {
+    BrowserWindow.getAllWindows()[0]?.setSize(1220, 800)
+  })
+  await page.waitForTimeout(300)
+})
+
 test('probe self-check: every detection mode still fires', async () => {
   test.setTimeout(180_000)
   const { page } = fixture!
