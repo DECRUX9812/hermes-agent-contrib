@@ -10,6 +10,7 @@
  */
 
 import {
+  atom,
   Button,
   cn,
   Codicon,
@@ -30,6 +31,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { avatarColor, botAppearance, BotFace } from './avatar'
 import { $focusedBotOwner, $selectedBot, focusedRosterOwner } from './bot-state'
+import { $canonicalGroupBindings } from './canonical-group-registry'
 import {
   CreateRoutineDialog,
   loadRoutines,
@@ -52,11 +54,12 @@ import { $activeGroupMemberKeys } from './group-presence'
 import { stopGroupThread } from './group-rounds'
 import { answerGroupClarify } from './group-turns'
 import { type BotsText, useBots } from './i18n'
-import { displayName } from './labels'
+import { displayName, slugifyProfileName } from './labels'
 import { openBotSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
 import { botConnectionRoute, botRosterMeta } from './routing'
 import { ScreenHero } from './screen-hero'
+import { ID } from './shared'
 import type { RosterRow, RoutineJob } from './types'
 
 type PanelView = 'history' | 'scheduled' | 'tasks'
@@ -221,6 +224,80 @@ function TaskRow({ onOpen, run }: { onOpen?: () => void; run: PanelTaskRun }) {
   return <div className="flex min-w-0 items-start gap-2 px-2 py-1.5">{body}</div>
 }
 
+
+/** Stable stand-in for shells that predate `host.state.activePaneId`. */
+const NO_PANE = atom<null | string | undefined>(undefined)
+
+/** `plugin-workspace:<id>` is what openWorkspace turns a plugin tab into. */
+const PANE_PREFIX = 'plugin-workspace:'
+
+/** The room whose tab owns the workspace, or null. Room tabs are opened with
+ *  `${ID}:group:${slug}`, so the pane suffix is the whole mapping. */
+function roomForPane(paneId: null | string | undefined): null | string {
+  if (!paneId || !paneId.startsWith(PANE_PREFIX)) {
+    return null
+  }
+
+  const key = paneId.slice(PANE_PREFIX.length)
+  const prefix = `${ID}:group:`
+
+  if (!key.startsWith(prefix)) {
+    return null
+  }
+
+  const slug = key.slice(prefix.length)
+
+  // A gateway room is keyed by its canonical key (`canonical:<conn>:<profile>:<id>`),
+  // not by its display name, so search both registries — the local rooms and the
+  // canonical bindings — before giving up.
+  const candidates = [...Object.keys($groupChats.get()), ...Object.keys($canonicalGroupBindings.get())]
+
+  return candidates.find(candidate => slugifyProfileName(candidate) === slug) ?? null
+}
+
+/** The name to show for a room key: its gateway display name when the binding
+ *  knows one, otherwise the key itself (the legacy local rooms do that today). */
+function roomDisplayName(key: string): string {
+  return $canonicalGroupBindings.get()[key]?.roomName || key
+}
+
+/** What the rail shows while a room owns the workspace. The bot panel's
+ *  Activity/Scheduled/History tabs are bot-scoped, so leaving them on screen
+ *  would describe the wrong object — the room gets identity, and its routines
+ *  live in the room's own "Scheduled jobs" pane. */
+function RoomRail({ group }: { group: string }) {
+  const b = useBots()
+  const bindings = useValue($canonicalGroupBindings)
+  const room = useValue($groupChats)[group]
+  const binding = bindings[group]
+  const members = room?.members ?? []
+  const name = binding?.roomName || group
+
+  return (
+    <div className="flex h-full flex-col">
+      <div className="flex flex-col items-center px-4 pt-4 text-center">
+        <span className="flex size-14 items-center justify-center rounded-xl bg-(--chrome-action-hover) text-(--ui-text-secondary)">
+          <Codicon name="organization" size="1.25rem" />
+        </span>
+        <div className="mt-2 max-w-full truncate text-sm font-semibold text-(--ui-text-primary)">{name}</div>
+        {/* Only when the roster is actually known: a gateway room keeps its
+            members server-side, and "0 bots" would be a wrong fact, not a
+            missing one. */}
+        {room ? (
+          <div className="mt-0.5 text-[0.6875rem] text-(--ui-text-secondary)">{b.group.memberCount(members.length)}</div>
+        ) : null}
+      </div>
+      <ul className="mt-4 grid gap-1 px-3">
+        {members.map(member => (
+          <li className="truncate rounded-md px-2 py-1 text-xs text-(--ui-text-secondary)" key={member.name}>
+            {member.name}
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
+
 export function BotContextPanel() {
     const [editing, setEditing] = useState<null | RosterRow>(null)
 const selected = useValue($selectedBot)
@@ -253,6 +330,13 @@ const selected = useValue($selectedBot)
   const [createOpen, setCreateOpen] = useState(false)
   const [createOwner, setCreateOwner] = useState<RosterRow | null>(null)
   const working = useValue($activeGroupMemberKeys).has(owner ? botRosterKey(owner) : '')
+
+  // A room owns the workspace as a plugin tab. `focusedStoredSessionId` does not
+  // clear for it (measured), so the bot panel went on describing the previous
+  // bot chat inside the room; the raw active pane id is the only thing that
+  // answers "is the room's tab the one on screen".
+  const activePaneId = useValue(host.state.activePaneId ?? NO_PANE)
+  const focusedRoom = roomForPane(activePaneId)
 
   // Needs-you strip (parity with the reference bot pane): pending clarify and
   // approval prompts where THIS bot is the blocked member, or that sit in a
@@ -400,6 +484,10 @@ const selected = useValue($selectedBot)
   const openCreate = () => {
     setCreateOwner(owner)
     setCreateOpen(true)
+  }
+
+  if (focusedRoom) {
+    return <RoomRail group={focusedRoom} />
   }
 
   return (

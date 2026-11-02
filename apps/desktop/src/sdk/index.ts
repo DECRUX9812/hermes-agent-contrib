@@ -92,7 +92,7 @@ import {
   setResumeExhaustedSessionId,
   setSessionOwnerHint
 } from '@/store/session'
-import { $focusedStoredSessionId } from '@/store/session-focus'
+import { $activePaneId, $focusedStoredSessionId } from '@/store/session-focus'
 import {
   $focusedRuntimeId,
   $focusedSessionState,
@@ -589,6 +589,14 @@ export const host = {
     /** Stored (durable) id of the focused session — for navigation and
      *  session-list matching, where runtime ids don't survive reloads. */
     focusedStoredSessionId: readonlyAtom<null | string>($focusedStoredSessionId),
+    /** The workspace group's active pane id, raw — no "keep the last chat"
+     *  substitution. A plugin's own tab is `plugin-workspace:<id>` (the id it
+     *  passed to openWorkspace), so this is how a consumer asks "is MY pane the
+     *  one on screen" rather than "which chat was last focused". */
+    activePaneId: readonlyAtom<null | string>($activePaneId),
+    /** Non-React shorthand for the same comparison; subscribe to
+     *  `activePaneId` when the answer has to repaint. */
+    isFocused: (paneId: string) => $activePaneId.get() === paneId,
     /** Live usage snapshot of the focused session (`context_used` /
      *  `context_max` / `context_percent`, token counts, `cost_usd`) —
      *  streamed by the backend, no RPC needed. Null while unresolved.

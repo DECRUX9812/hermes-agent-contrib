@@ -214,6 +214,14 @@ test('a group room opens, and its destructive action is behind the overflow', as
   // only inside a room, so it is the proof that the room itself painted.
   const more = page.getByRole('button', { name: 'More actions' }).first()
   await expect(more).toBeVisible({ timeout: 45_000 })
+
+  // Focus the room's own tab, as a user does. Creating the group leaves focus in
+  // the sidebar, and the rail answers "which tab owns the workspace" — without
+  // this click the screenshot would show the previous bot's rail, which is the
+  // bug the room rail exists to fix.
+  await page.getByRole('tab', { name: /Design Room/ }).first().click()
+  await expect(page.locator('[aria-label="Design Room"], :text("Design Room")').first()).toBeVisible()
+
   await expectVisualSnapshot(page, { app, name: 'bot-mode-room' })
 
   // The whole point of the header change: nothing destructive sits on the row.

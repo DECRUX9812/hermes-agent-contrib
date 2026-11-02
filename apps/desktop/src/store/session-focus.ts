@@ -43,6 +43,13 @@ const rememberContentPane = () => {
 $activeTreeGroup.subscribe(rememberContentPane)
 $layoutTree.listen(rememberContentPane)
 
+/** The group's active pane id, raw. Unlike `$focusedTreePaneId` this keeps a
+ *  plugin workspace tab (`plugin-workspace:<id>`) instead of substituting the
+ *  last chat pane, so a consumer can tell which tab actually owns the workspace. */
+export const $activePaneId = computed([$activeTreeGroup, $layoutTree], (groupId, tree) =>
+  groupId && tree ? (findGroup(tree, groupId)?.active ?? null) : null
+)
+
 export const $focusedTreePaneId = computed(
   [$activeTreeGroup, $layoutTree, $workspaceMode, $lastContentPane],
   (groupId, tree, workspaceMode, lastContentPane) => {
