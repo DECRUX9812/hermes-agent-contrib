@@ -179,3 +179,37 @@ test('a bot chat opens from its roster row', async () => {
 
   await expectVisualSnapshot(page, { app, name: 'bot-mode-chat' })
 })
+
+test('a group room opens, and its destructive action is behind the overflow', async () => {
+  test.setTimeout(240_000)
+  const { app, page } = fixture!
+
+  await openBots(page)
+  await page.getByRole('button', { name: 'New bot or group chat' }).click()
+  await page.getByRole('menuitem', { name: 'New group chat' }).click()
+
+  const dialog = page.getByRole('dialog').first()
+  await expect(dialog).toBeVisible({ timeout: 15_000 })
+
+  // Two members is the minimum the dialog will create with. Each row's
+  // checkbox is named "<display name> <@handle>", so select by that.
+  await dialog.getByRole('checkbox', { name: /^Beta / }).check()
+  await dialog.getByRole('checkbox', { name: /^alpha / }).check()
+  await dialog.getByLabel('Group name').fill('Design Room')
+
+  await dialog.getByRole('button', { name: /^Create Group/ }).click()
+
+  // A room opens as its own main-window tab (openGroupChat), so the Bots stage
+  // stays behind it in the sidebar — but the header's overflow trigger exists
+  // only inside a room, so it is the proof that the room itself painted.
+  const more = page.getByRole('button', { name: 'More actions' }).first()
+  await expect(more).toBeVisible({ timeout: 45_000 })
+  await expectVisualSnapshot(page, { app, name: 'bot-mode-room' })
+
+  // The whole point of the header change: nothing destructive sits on the row.
+  await expect(page.getByRole('button', { name: /^Disband/ })).toHaveCount(0)
+  await more.click()
+  await expect(page.getByRole('menuitem', { name: /Disband/ })).toBeVisible({ timeout: 10_000 })
+  await expectVisualSnapshot(page, { app, name: 'bot-mode-room-menu' })
+  await page.keyboard.press('Escape')
+})

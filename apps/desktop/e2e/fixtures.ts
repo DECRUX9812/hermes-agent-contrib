@@ -235,9 +235,16 @@ export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}
 // ─── Electron launch ────────────────────────────────────────────────────
 
 /**
- * Verify that the desktop app has been built (dist/ exists). Playwright
- * tests can't run without it — the Electron main process loads
- * dist/electron-main.mjs and the renderer loads dist/index.html.
+ * Verify that the desktop app has been built (dist/ exists) — and that the
+ * build is NEWER than the sources it renders. Playwright tests can't run without
+ * dist/: the Electron main process loads dist/electron-main.mjs and the renderer
+ * loads dist/index.html.
+ *
+ * The freshness half is not pedantry. Existence alone let a two-day-old bundle
+ * drive a whole Bot Mode run: a test timed out waiting for a header control that
+ * the source had gained hours earlier, and the failure read as a product
+ * regression. The old bundle also still shipped the pre-fix layout, so the run
+ * was asserting about code that no longer existed.
  */
 function assertDistBuilt(): void {
   const distDir = path.join(DESKTOP_ROOT, 'dist')
@@ -257,6 +264,70 @@ function assertDistBuilt(): void {
         `Missing: ${indexHtml}`,
     )
   }
+
+  const builtAt = fs.statSync(indexHtml).mtimeMs
+  const newest = newestSource(builtAt)
+
+  if (newest) {
+    throw new Error(
+      `Desktop dist is stale: ${path.relative(DESKTOP_ROOT, newest.file)} is newer than the build.\n` +
+        `  built:  ${new Date(builtAt).toISOString()}\n` +
+        `  source: ${new Date(newest.mtimeMs).toISOString()}\n` +
+        `Run 'cd apps/desktop && npm run build' first — a stale bundle makes the suite assert about code that no longer exists.`,
+    )
+  }
+}
+
+/** Newest renderer/main-process source file, or null when the build is current.
+ *  Test files are excluded: they change constantly and never enter the bundle. */
+function newestSource(builtAt: number): null | { file: string; mtimeMs: number } {
+  const roots = ['src', 'electron'].map(dir => path.join(DESKTOP_ROOT, dir))
+  const sourceExt = new Set(['.ts', '.tsx', '.css', '.mjs', '.cjs'])
+  const skipDir = new Set(['node_modules', '__snapshots__', 'dist'])
+  let newest: null | { file: string; mtimeMs: number } = null
+
+  const walk = (dir: string): void => {
+    let entries: Array<{ name: string; isDirectory: () => boolean; isFile: () => boolean }>
+
+    try {
+      entries = fs.readdirSync(dir, { withFileTypes: true })
+    } catch {
+      return
+    }
+
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name)
+
+      if (entry.isDirectory()) {
+        if (!skipDir.has(entry.name)) {
+          walk(full)
+        }
+
+        continue
+      }
+
+      if (!entry.isFile() || /\.test\.[cm]?tsx?$/.test(entry.name) || entry.name.endsWith('.d.ts')) {
+        continue
+      }
+
+      if (!sourceExt.has(path.extname(entry.name))) {
+        continue
+      }
+
+      const { mtimeMs } = fs.statSync(full)
+
+      // 1s of slack: build output and source can share a coarse filesystem clock.
+      if (mtimeMs > builtAt + 1000 && (!newest || mtimeMs > newest.mtimeMs)) {
+        newest = { file: full, mtimeMs }
+      }
+    }
+  }
+
+  for (const root of roots) {
+    walk(root)
+  }
+
+  return newest
 }
 
 /**
