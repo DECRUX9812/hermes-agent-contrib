@@ -113,6 +113,25 @@ export async function measureClipping(page: Page): Promise<GeometryProblem[]> {
           detail: `scrollWidth ${el.scrollWidth} > clientWidth ${el.clientWidth}`
         })
       }
+
+      // The label usually lives in a child span, so the control's own box can
+      // fit while the text inside it is cut to "Open chat …" — the rail footer
+      // shipped exactly that. The own-box check above cannot see it.
+      for (const child of Array.from(el.querySelectorAll<HTMLElement>('span, div'))) {
+        if (getComputedStyle(child).textOverflow !== 'ellipsis' || !child.textContent?.trim()) {
+          continue
+        }
+
+        if (child.scrollWidth > child.clientWidth + 1) {
+          problems.push({
+            kind: 'truncated-label',
+            target: label || child.textContent.trim().slice(0, 48),
+            detail: `inner label clipped: scrollWidth ${child.scrollWidth} > clientWidth ${child.clientWidth}`
+          })
+
+          break
+        }
+      }
     }
 
     return Array.from(new Map(problems.map(p => [`${p.kind}|${p.target}|${p.detail}`, p])).values())

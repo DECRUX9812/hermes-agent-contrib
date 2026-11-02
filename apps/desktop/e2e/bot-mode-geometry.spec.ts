@@ -188,6 +188,22 @@ test('New bot dialog: no clipped or truncated controls', async () => {
  *  these labels is ours, not the product's. */
 const isCanary = (problem: { target: string }) => problem.target.startsWith('Canary')
 
+test('bot chat + context rail: no clipped or truncated controls', async () => {
+  test.setTimeout(240_000)
+  const { page } = fixture!
+
+  await openBots(page)
+  await rosterRow(page, 'local::alpha').click()
+  await expect(page.getByText('Hello alpha', { exact: true }).filter({ visible: true }).first())
+    .toBeVisible({ timeout: 60_000 })
+
+  // The rail is the surface the earlier rounds never measured. Its footer is
+  // where a label was already found clipped by hand ("Open chat …").
+  await expect(page.getByRole('button', { name: /Open chat/ })).toBeVisible({ timeout: 30_000 })
+
+  await expectNothingClipped(page, 'bot chat + context rail')
+})
+
 test('probe self-check: every detection mode still fires', async () => {
   test.setTimeout(180_000)
   const { page } = fixture!
@@ -229,6 +245,21 @@ test('probe self-check: every detection mode still fires', async () => {
       overflow: 'hidden',
       whiteSpace: 'nowrap'
     })
+
+    // The control's own box fits; the label is cut inside a child span. That is
+    // the "Open chat …" shape in the rail footer, invisible to the own-box rule.
+    const wrapper = document.createElement('button')
+
+    wrapper.id = 'canary-inner'
+    wrapper.style.cssText =
+      'position:fixed;left:800px;top:700px;width:200px;height:30px;opacity:1;visibility:visible'
+
+    const inner = document.createElement('span')
+
+    inner.textContent = 'Canary inner-clipped label'
+    inner.style.cssText = 'display:block;width:60px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis'
+    wrapper.appendChild(inner)
+    document.body.appendChild(wrapper)
   })
 
   let canaries: Awaited<ReturnType<typeof measureClipping>> = []
@@ -239,14 +270,14 @@ test('probe self-check: every detection mode still fires', async () => {
     expect(
       canaries.map(problem => problem.kind).sort(),
       `probe missed a detection mode:\n${describeGeometry(canaries)}`
-    ).toEqual(['offscreen', 'offscreen', 'truncated-label', 'truncated-label'])
+    ).toEqual(['offscreen', 'offscreen', 'truncated-label', 'truncated-label', 'truncated-label'])
 
     // Both horizontal directions must be named, not just the right edge.
     expect(canaries.some(problem => problem.kind === 'offscreen' && problem.detail.includes('at left'))).toBe(true)
     expect(canaries.some(problem => problem.kind === 'offscreen' && problem.detail.includes('at right'))).toBe(true)
   } finally {
     await page.evaluate(() => {
-      for (const id of ['canary-right', 'canary-left', 'canary-ellipsis', 'canary-clip']) {
+      for (const id of ['canary-right', 'canary-left', 'canary-ellipsis', 'canary-clip', 'canary-inner']) {
         document.getElementById(id)?.remove()
       }
     })
