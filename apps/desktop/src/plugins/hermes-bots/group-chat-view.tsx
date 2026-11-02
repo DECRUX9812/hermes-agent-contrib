@@ -123,6 +123,7 @@ import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
 import { RoomAttachmentChips } from './room-attachment-chips'
 import { RoomDisbandDialog } from './room-disband-dialog'
+import { RoomHeader } from './room-header'
 import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
 import { bumpBotOpenGeneration, getPluginCtx, ID } from './shared'
 import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage, RosterRow } from './types'
@@ -723,6 +724,7 @@ function GroupExecutionGate(props: GroupChatWorkspaceProps) {
 
 function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: GroupChatWorkspaceProps) {
   const b = useBots()
+  const { t } = useI18n()
   const rooms: Record<string, GroupChatRoom> = useValue($groupChats)
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
   const queuedCount = useValue($groupQueueDepths)[group] ?? 0
@@ -1025,76 +1027,52 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
     .sort((a, b) => (a.at || 0) - (b.at || 0))
 
   const availableMembers = members.filter(member => botSourceStatus(member).available).length
-  const availabilityLabel = `${availableMembers} of ${members.length} available`
+  const availabilityLabel = b.group.availableCount(availableMembers, members.length)
 
   const memberNames =
-    members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || 'No bots in this group chat'
+    members.map(b => displayName(b, botRosterMeta(b, allMeta))).join(', ') || b.group.noMembers
 
+  // One header frame for both rooms (room-header.tsx): the local room used to
+  // keep Disband as a bare trash button beside Settings and Manage members,
+  // which is the exact hazard the gateway header was fixed for. Destruction
+  // now lives behind the overflow in both.
   const header = (
-    <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-2">
-      <Button onClick={() => (onBack ? onBack() : $groupChatWorkspace.set(null))} size="sm" variant="ghost">
-        Back
-      </Button>
-      {/* Room picture (set via Group settings) leads the title when present. */}
-      {room.image ? (
-        <img
-          alt=""
-          className="size-6 shrink-0 rounded-md object-cover ring-1 ring-(--ui-stroke-secondary)"
-          src={room.image}
-        />
-      ) : (
-        <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-(--chrome-action-hover) text-(--ui-text-secondary)">
-          <Codicon name="organization" />
-        </span>
-      )}
-      <div className="min-w-0 flex-1 truncate text-sm font-semibold">{group}</div>
-      <Tip label={memberNames}>
-        <span
-          aria-label={availabilityLabel}
-          className={cn(
-            'shrink-0 text-[0.625rem] text-(--ui-text-secondary)',
-            members.length > 0 && availableMembers < members.length && 'text-(--ui-yellow) dark:text-(--ui-yellow)'
-          )}
-        >
-          {members.length > 0 && availableMembers < members.length
-            ? availabilityLabel
-            : b.group.memberCount(members.length)}
-        </span>
-      </Tip>
-      <Tip label={b.group.settingsHint(group)}>
-        <Button
-          aria-label={b.group.settingsLabel(group)}
-          className="shrink-0 text-(--ui-text-secondary) hover:text-foreground"
-          onClick={() => setSettingsOpen(true)}
-          size="sm"
-          variant="ghost"
-        >
-          <Codicon name="gear" />
-        </Button>
-      </Tip>
-      <Tip label="Manage members">
-        <Button
-          aria-label="Manage group members"
-          className="shrink-0 text-(--ui-text-secondary) hover:text-foreground"
-          onClick={() => setMemberPickerOpen(true)}
-          size="sm"
-          variant="ghost"
-        >
-          <Codicon name="organization" />
-        </Button>
-      </Tip>
-      <Tip label={b.group.disbandHint(group)}>
-        <Button
-          aria-label={b.group.disbandLabel(group)}
-          className="shrink-0 text-(--ui-text-secondary) hover:text-destructive"
-          onClick={() => setConfirmDisband(true)}
-          size="sm"
-          variant="ghost"
-        >
-          <Codicon name="trash" />
-        </Button>
-      </Tip>
-    </div>
+    <RoomHeader
+      back={{ label: t.common.back, onClick: () => (onBack ? onBack() : $groupChatWorkspace.set(null)) }}
+      imageSrc={room.image ?? undefined}
+      menuItems={[
+        [
+          { label: b.group.settingsLabel(group), onSelect: () => setSettingsOpen(true) },
+          { label: b.group.manageMembers, onSelect: () => setMemberPickerOpen(true) }
+        ],
+        [{ destructive: true, label: b.group.disbandLabel(group), onSelect: () => setConfirmDisband(true) }]
+      ]}
+      menuLabel={b.group.moreActions}
+      primary={room.running ? (
+        <Tip label={b.group.stopHint}>
+          <Button className="shrink-0 text-(--ui-accent)" onClick={() => void stopRoomRun()} size="sm" variant="secondary">
+            <Codicon name="debug-stop" />
+            {b.group.stop}
+          </Button>
+        </Tip>
+      ) : undefined}
+      subtitle={
+        <Tip label={memberNames}>
+          <span
+            aria-label={availabilityLabel}
+            className={cn(
+              'text-[0.625rem] text-(--ui-text-secondary)',
+              members.length > 0 && availableMembers < members.length && 'text-(--ui-yellow) dark:text-(--ui-yellow)'
+            )}
+          >
+            {members.length > 0 && availableMembers < members.length
+              ? availabilityLabel
+              : b.group.memberCount(members.length)}
+          </span>
+        </Tip>
+      }
+      title={group}
+    />
   )
 
   // Seat from the live sources at send time, not from the painted `members`
@@ -1166,19 +1144,6 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
             >{`${groupActivityLabel(summaryActivity, group)} · ${relativeTime(summaryActivity.at)}`}</span>
           ) : null}
         </RowButton>
-        {room.running ? (
-          <Tip label={b.group.stopHint}>
-            <Button
-              className="shrink-0 text-(--ui-accent)"
-              onClick={() => void stopRoomRun()}
-              size="xs"
-              variant="ghost"
-            >
-              <Codicon name="debug-stop" />
-              {b.group.stop}
-            </Button>
-          </Tip>
-        ) : null}
       </div>
       {activityOpen ? (
         <div className="grid gap-0.5 px-2.5 pb-1.5" id={`group-activity:${group}`}>
@@ -1193,19 +1158,6 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
                   {groupActivityLabel(event, group)}
                 </span>
                 <span className="shrink-0 text-[0.625rem] text-(--ui-text-secondary)">{relativeTime(event.at)}</span>
-                {room.running && event.kind === 'working' ? (
-                  <Tip label={b.group.stopHint}>
-                    <Button
-                      className="shrink-0 text-(--ui-accent)"
-                      onClick={() => void stopRoomRun()}
-                      size="micro"
-                      variant="ghost"
-                    >
-                      <Codicon name="debug-stop" />
-                      {b.group.stop}
-                    </Button>
-                  </Tip>
-                ) : null}
               </div>
             ))
           ) : (
@@ -1622,7 +1574,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
           {replyThread ? b.group.dropToThread : b.group.dropToRoom}
         </div>
       ) : null}
-      {header}
+      <div className="px-2.5 pt-2.5 pb-2">{header}</div>
       <GroupHoldStatus
         holds={room.holds}
         memberLabel={member => displayName(member, botRosterMeta(member, allMeta))}

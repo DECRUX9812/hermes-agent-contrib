@@ -1,4 +1,5 @@
-import { cleanup, fireEvent, render, waitFor } from '@testing-library/react'
+import type * as HermesSdk from '@hermes/plugin-sdk'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 
@@ -14,31 +15,18 @@ import { translateBots } from './i18n-test-helper'
 const { host } = vi.hoisted(() => ({ host: {} as Record<string, unknown> }))
 const state = { gateway: null as null | ScriptedGateway }
 
-vi.mock('@hermes/plugin-sdk', async () => {
+vi.mock('@hermes/plugin-sdk', async importOriginal => {
+  const sdk = await importOriginal<typeof HermesSdk>()
   const { pluginSdkMock } = await import('./group-test-utils')
   const base = await pluginSdkMock(host)
   const Passthrough = ({ children }: { children?: ReactNode }) => <>{children}</>
 
-  const Button = ({
-    children,
-    disabled,
-    onClick,
-    'aria-label': label
-  }: {
-    'aria-label'?: string
-    children?: ReactNode
-    disabled?: boolean
-    onClick?: () => void
-  }) => (
-    <button aria-label={label} disabled={disabled} onClick={onClick}>
-      {children}
-    </button>
-  )
-
   return {
     ...base,
-    Button,
-    RowButton: Button,
+    // The real Button forwards refs; the room header's overflow trigger is a
+    // Radix `asChild`, so a stub leaves the menu unable to anchor and open.
+    Button: sdk.Button,
+    RowButton: sdk.RowButton,
     cn: (...values: unknown[]) => values.filter(Boolean).join(' '),
     Codicon: () => null,
     CopyButton: () => null,
@@ -134,9 +122,15 @@ it('the room settings dialog offers Compress history per member and reports the 
   const members = [{ name: 'mason' }, { name: 'critic' }] as never
 
   const { getByLabelText } = render(<GroupChatWorkspace group="Build" members={members} />)
-  // The room paints once the async group-driver gate resolves to the legacy workspace.
-  await waitFor(() => expect(getByLabelText('Group settings for Build')).toBeTruthy())
-  fireEvent.click(getByLabelText('Group settings for Build'))
+  // The room paints once the async group-driver gate resolves to the legacy
+  // workspace. Settings moved behind the header's overflow when the local room
+  // adopted the gateway layout, so the flow opens it first.
+  const trigger = await screen.findByRole('button', { name: 'More actions' })
+  fireEvent.pointerDown(trigger, { button: 0, ctrlKey: false, pointerType: 'mouse' })
+  fireEvent.click(trigger)
+  const settings = await screen.findByRole('menuitem', { name: 'Group settings for Build' })
+  fireEvent.pointerUp(settings)
+  fireEvent.click(settings)
   fireEvent.click(getByLabelText('Compress history: mason'))
 
   await waitFor(() => expect(state.gateway!.rpcFor('session.compress')).toHaveLength(1))

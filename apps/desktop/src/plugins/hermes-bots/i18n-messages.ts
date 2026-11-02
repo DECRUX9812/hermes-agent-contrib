@@ -290,6 +290,12 @@ export type BotsMessages = {
     you: string
     /** How many of a room's members are reachable right now. */
     availableCount: (available: number, total: number) => string
+    /** Opens the member picker — not a settings sub-page. */
+    manageMembers: string
+    /** Tooltip fallback when the room has no members yet. */
+    noMembers: string
+    /** Accessible name of the header's icon-only overflow trigger. */
+    moreActions: string
     settingsHint: (group: string) => string
     settingsLabel: (group: string) => string
     disbandHint: (group: string) => string
