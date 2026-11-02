@@ -20,6 +20,7 @@
  * Prerequisite: `npm run build` must have been run so that `dist/` exists.
  */
 
+import { execFileSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
@@ -246,10 +247,11 @@ export function buildAppEnv(sandbox: Sandbox, extra: Record<string, string> = {}
  * regression. The old bundle also still shipped the pre-fix layout, so the run
  * was asserting about code that no longer existed.
  */
-function assertDistBuilt(): void {
+async function assertDistBuilt(): Promise<void> {
   const distDir = path.join(DESKTOP_ROOT, 'dist')
   const electronMain = path.join(distDir, 'electron-main.mjs')
   const indexHtml = path.join(distDir, 'index.html')
+  const receipt = path.join(distDir, 'hermes-build.json')
 
   if (!fs.existsSync(electronMain)) {
     throw new Error(
@@ -265,69 +267,47 @@ function assertDistBuilt(): void {
     )
   }
 
-  const builtAt = fs.statSync(indexHtml).mtimeMs
-  const newest = newestSource(builtAt)
+  // Two questions, both about content rather than timestamps: is anything under
+  // src/ or electron/ dirty (uncommitted), and was dist built before the last
+  // commit that touched them? mtime alone was wrong in both directions — it
+  // demanded a rebuild after `git checkout` restored identical bytes, and it
+  // could not see a committed change that was never built.
+  let dirty = ''
+  let lastCommitSeconds = 0
 
-  if (newest) {
+  try {
+    dirty = execFileSync('git', ['status', '--porcelain', '--', 'src', 'electron'], {
+      cwd: DESKTOP_ROOT,
+      encoding: 'utf8'
+    })
+    lastCommitSeconds = Number(
+      execFileSync('git', ['log', '-1', '--format=%ct', '--', 'src', 'electron'], {
+        cwd: DESKTOP_ROOT,
+        encoding: 'utf8'
+      }).trim(),
+    ) || 0
+  } catch {
+    // No git (packaged checkout): fall back to the existence check only.
+    return
+  }
+
+  const builtAtSeconds = Math.floor(fs.statSync(indexHtml).mtimeMs / 1000)
+
+  if (dirty.trim()) {
     throw new Error(
-      `Desktop dist is stale: ${path.relative(DESKTOP_ROOT, newest.file)} is newer than the build.\n` +
-        `  built:  ${new Date(builtAt).toISOString()}\n` +
-        `  source: ${new Date(newest.mtimeMs).toISOString()}\n` +
+      `Desktop dist is stale: the renderer sources have uncommitted changes.\n` +
+        dirty.trim().split('\n').slice(0, 5).join('\n') +
+        `\nRun 'cd apps/desktop && npm run build' first — a stale bundle makes the suite assert about code that no longer exists.`,
+    )
+  }
+
+  if (lastCommitSeconds && builtAtSeconds < lastCommitSeconds) {
+    throw new Error(
+      `Desktop dist is stale: built ${new Date(builtAtSeconds * 1000).toISOString()}, ` +
+        `but the sources changed at ${new Date(lastCommitSeconds * 1000).toISOString()}.\n` +
         `Run 'cd apps/desktop && npm run build' first — a stale bundle makes the suite assert about code that no longer exists.`,
     )
   }
-}
-
-/** Newest renderer/main-process source file, or null when the build is current.
- *  Test files are excluded: they change constantly and never enter the bundle. */
-function newestSource(builtAt: number): null | { file: string; mtimeMs: number } {
-  const roots = ['src', 'electron'].map(dir => path.join(DESKTOP_ROOT, dir))
-  const sourceExt = new Set(['.ts', '.tsx', '.css', '.mjs', '.cjs'])
-  const skipDir = new Set(['node_modules', '__snapshots__', 'dist'])
-  let newest: null | { file: string; mtimeMs: number } = null
-
-  const walk = (dir: string): void => {
-    let entries: Array<{ name: string; isDirectory: () => boolean; isFile: () => boolean }>
-
-    try {
-      entries = fs.readdirSync(dir, { withFileTypes: true })
-    } catch {
-      return
-    }
-
-    for (const entry of entries) {
-      const full = path.join(dir, entry.name)
-
-      if (entry.isDirectory()) {
-        if (!skipDir.has(entry.name)) {
-          walk(full)
-        }
-
-        continue
-      }
-
-      if (!entry.isFile() || /\.test\.[cm]?tsx?$/.test(entry.name) || entry.name.endsWith('.d.ts')) {
-        continue
-      }
-
-      if (!sourceExt.has(path.extname(entry.name))) {
-        continue
-      }
-
-      const { mtimeMs } = fs.statSync(full)
-
-      // 1s of slack: build output and source can share a coarse filesystem clock.
-      if (mtimeMs > builtAt + 1000 && (!newest || mtimeMs > newest.mtimeMs)) {
-        newest = { file: full, mtimeMs }
-      }
-    }
-  }
-
-  for (const root of roots) {
-    walk(root)
-  }
-
-  return newest
 }
 
 /**
@@ -356,7 +336,7 @@ export function findElectron(): string {
 export async function launchDesktop(
   env: Record<string, string>,
 ): Promise<{ app: ElectronApplication; page: Page }> {
-  assertDistBuilt()
+  await assertDistBuilt()
 
   const electronBin = findElectron()
 

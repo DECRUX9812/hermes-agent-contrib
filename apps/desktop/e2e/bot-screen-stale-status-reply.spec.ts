@@ -234,14 +234,17 @@ test.afterAll(async () => {
   fixture = null
 })
 
-// FIXME — Bot Screen has no host. <ScreenHero> is rendered only by
-// RoutinesPane (cron.tsx), and nothing mounts RoutinesPane: when the rail
-// absorbed the routines view it kept the rows and dropped the hero. Measured,
-// not inferred: with the rail open, zero display.status frames were sent and
-// no button[aria-label^="Screen:"] existed. Mounting the hero into the rail
-// makes it appear, but fires TWO display.status requests where this test
-// expects one — BotContextPanel is rendered twice — so the surface needs a
-// single owner before these can pass. See bot-context-panel.tsx / cron.tsx.
+// FIXME — Bot Screen has no host.
+// Measured: with the Screen pane open, zero display.status frames were sent and
+// no button[aria-label^="Screen:"] existed in the DOM. <ScreenHero> is rendered
+// only by RoutinesPane (cron.tsx), and nothing mounts RoutinesPane — when the
+// rail absorbed the routines view it kept the rows and dropped the hero.
+// Also measured: mounting the hero into the rail makes it appear, but TWO
+// display.status frames go out where this test expects one. The second sender
+// was not identified (StrictMode is off, and <BotContextPanel /> is registered
+// once), so treat "two instances" as a hypothesis, not a finding. Either way
+// the surface needs one owner before these tests can pass.
+// See bot-context-panel.tsx / cron.tsx / plugin.tsx registerRoutinesPane.
 test.fixme('a stale portal display.status reply does not roll back the newer stopped state', async () => {
   test.setTimeout(300_000)
   const page = fixture!.page
@@ -275,14 +278,17 @@ test.fixme('a stale portal display.status reply does not roll back the newer sto
   expect(pageErrors).toEqual([])
 })
 
-// FIXME — Bot Screen has no host. <ScreenHero> is rendered only by
-// RoutinesPane (cron.tsx), and nothing mounts RoutinesPane: when the rail
-// absorbed the routines view it kept the rows and dropped the hero. Measured,
-// not inferred: with the rail open, zero display.status frames were sent and
-// no button[aria-label^="Screen:"] existed. Mounting the hero into the rail
-// makes it appear, but fires TWO display.status requests where this test
-// expects one — BotContextPanel is rendered twice — so the surface needs a
-// single owner before these can pass. See bot-context-panel.tsx / cron.tsx.
+// FIXME — Bot Screen has no host.
+// Measured: with the Screen pane open, zero display.status frames were sent and
+// no button[aria-label^="Screen:"] existed in the DOM. <ScreenHero> is rendered
+// only by RoutinesPane (cron.tsx), and nothing mounts RoutinesPane — when the
+// rail absorbed the routines view it kept the rows and dropped the hero.
+// Also measured: mounting the hero into the rail makes it appear, but TWO
+// display.status frames go out where this test expects one. The second sender
+// was not identified (StrictMode is off, and <BotContextPanel /> is registered
+// once), so treat "two instances" as a hypothesis, not a finding. Either way
+// the surface needs one owner before these tests can pass.
+// See bot-context-panel.tsx / cron.tsx / plugin.tsx registerRoutinesPane.
 test.fixme('pushed display.status / display.lease events keep updating the shipped listeners without a page error', async () => {
   test.setTimeout(120_000)
   const page = fixture!.page
