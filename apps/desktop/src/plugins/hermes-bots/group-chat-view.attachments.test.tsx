@@ -89,3 +89,29 @@ it('names each pending attachment in its own remove button', async () => {
   await waitFor(() => expect(screen.queryByRole('button', { name: 'Remove attachment: spec.pdf' })).toBeNull())
   expect(screen.getByRole('button', { name: 'Remove attachment: shot.png' })).toBeTruthy()
 })
+
+it('announces the queued-send count as a live region', async () => {
+  Element.prototype.scrollIntoView = vi.fn()
+  const { $groupChats, $groupQueueDepths } = await import('./group-chat')
+  const { GroupChatWorkspace } = await import('./group-chat-view')
+
+  $groupChats.set({ Room: { log: [], sessions: {}, watermarks: {} } })
+  $groupQueueDepths.set({ Room: 2 })
+
+  const { container } = render(<GroupChatWorkspace group="Room" members={[]} />)
+
+  // Sends typed while the room is working queue behind the running turn; the
+  // count changes with no focus move, so it must be announced rather than only
+  // painted. `role=status` implies aria-live=polite; assert both, because the
+  // attribute is what a screen reader actually reads off the element.
+  const pill = await waitFor(() => {
+    const found = container.querySelector('[data-slot="group-queued-count"]')
+    expect(found).toBeTruthy()
+
+    return found as HTMLElement
+  })
+
+  expect(pill.getAttribute('role')).toBe('status')
+  expect(pill.getAttribute('aria-live')).toBe('polite')
+  expect(pill.textContent).toBe('2 queued')
+})
