@@ -267,19 +267,25 @@ async function assertDistBuilt(): Promise<void> {
     )
   }
 
-  // Two questions, both about content rather than timestamps: is anything under
-  // src/ or electron/ dirty (uncommitted), and was dist built before the last
-  // commit that touched them? mtime alone was wrong in both directions — it
-  // demanded a rebuild after `git checkout` restored identical bytes, and it
-  // could not see a committed change that was never built.
-  let dirty = ''
+  // Content, not dirtiness: an edited file that was rebuilt is fresh, and a
+  // committed change that was never built is stale. So compare the build
+  // against the newest of (last commit touching src/electron) and (mtime of
+  // each still-dirty source file). `git checkout` restoring identical bytes
+  // leaves nothing dirty, so it no longer demands a pointless rebuild.
+  let dirtyPaths: string[] = []
   let lastCommitSeconds = 0
 
   try {
-    dirty = execFileSync('git', ['status', '--porcelain', '--', 'src', 'electron'], {
+    const dirty = execFileSync('git', ['status', '--porcelain', '--', 'src', 'electron'], {
       cwd: DESKTOP_ROOT,
       encoding: 'utf8'
     })
+
+    dirtyPaths = dirty
+      .split('\n')
+      .map(line => line.slice(3).trim())
+      .filter(Boolean)
+
     lastCommitSeconds = Number(
       execFileSync('git', ['log', '-1', '--format=%ct', '--', 'src', 'electron'], {
         cwd: DESKTOP_ROOT,
@@ -287,25 +293,32 @@ async function assertDistBuilt(): Promise<void> {
       }).trim(),
     ) || 0
   } catch {
-    // No git (packaged checkout): fall back to the existence check only.
+    // No git (packaged checkout): fall back to the existence checks only.
     return
   }
 
-  const builtAtSeconds = Math.floor(fs.statSync(indexHtml).mtimeMs / 1000)
+  let newestDirtySeconds = 0
 
-  if (dirty.trim()) {
-    throw new Error(
-      `Desktop dist is stale: the renderer sources have uncommitted changes.\n` +
-        dirty.trim().split('\n').slice(0, 5).join('\n') +
-        `\nRun 'cd apps/desktop && npm run build' first — a stale bundle makes the suite assert about code that no longer exists.`,
-    )
+  for (const file of dirtyPaths) {
+    try {
+      newestDirtySeconds = Math.max(
+        newestDirtySeconds,
+        Math.floor(fs.statSync(path.join(DESKTOP_ROOT, file)).mtimeMs / 1000),
+      )
+    } catch {
+      // Deleted files have no mtime; the commit timestamp still covers them.
+    }
   }
 
-  if (lastCommitSeconds && builtAtSeconds < lastCommitSeconds) {
+  const builtAtSeconds = Math.floor(fs.statSync(indexHtml).mtimeMs / 1000)
+  const newestChangeSeconds = Math.max(lastCommitSeconds, newestDirtySeconds)
+
+  if (newestChangeSeconds && builtAtSeconds < newestChangeSeconds) {
     throw new Error(
       `Desktop dist is stale: built ${new Date(builtAtSeconds * 1000).toISOString()}, ` +
-        `but the sources changed at ${new Date(lastCommitSeconds * 1000).toISOString()}.\n` +
-        `Run 'cd apps/desktop && npm run build' first — a stale bundle makes the suite assert about code that no longer exists.`,
+        `but the sources changed at ${new Date(newestChangeSeconds * 1000).toISOString()}` +
+        (dirtyPaths.length ? ` (${dirtyPaths.length} uncommitted source file(s))` : '') +
+        `.\nRun 'cd apps/desktop && npm run build' first — a stale bundle makes the suite assert about code that no longer exists.`,
     )
   }
 }

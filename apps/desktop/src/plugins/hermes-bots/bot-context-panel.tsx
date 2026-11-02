@@ -56,6 +56,7 @@ import { displayName } from './labels'
 import { openBotSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
 import { botConnectionRoute, botRosterMeta } from './routing'
+import { ScreenHero } from './screen-hero'
 import type { RosterRow, RoutineJob } from './types'
 
 type PanelView = 'history' | 'scheduled' | 'tasks'
@@ -395,6 +396,11 @@ const selected = useValue($selectedBot)
 
   return (
     <div className="flex h-full flex-col">
+      {owner ? (
+        <div className="px-3 pt-3">
+          <ScreenHero bot={owner} meta={meta} />
+        </div>
+      ) : null}
       <div className="flex flex-col items-center px-4 pt-4 text-center">
         <BotFace color={avatarColor(color, bot)} image={image} name={bot} shape={shape} size={56} />
         <div className="mt-2 max-w-full truncate text-sm font-semibold text-(--ui-text-primary)">

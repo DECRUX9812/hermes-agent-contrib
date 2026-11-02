@@ -181,6 +181,12 @@ test('a bot chat opens from its roster row', async () => {
   await expect(page.getByText('Hello alpha', { exact: true }).filter({ visible: true }).first())
     .toBeVisible({ timeout: 60_000 })
 
+  // The Screen hero lives at the top of the rail. It had no host for a while —
+  // <ScreenHero> is rendered only by RoutinesPane, which nothing mounts — so a
+  // Bot Screen could not be reached from the UI at all. This is the regression
+  // guard for that: the surface must be on screen, named for assistive tech.
+  await expect(page.locator('button[aria-label^="Screen:"]').first()).toBeVisible({ timeout: 30_000 })
+
   await expectVisualSnapshot(page, { app, name: 'bot-mode-chat' })
 })
 

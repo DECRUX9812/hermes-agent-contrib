@@ -234,17 +234,15 @@ test.afterAll(async () => {
   fixture = null
 })
 
-// FIXME — Bot Screen has no host.
-// Measured: with the Screen pane open, zero display.status frames were sent and
-// no button[aria-label^="Screen:"] existed in the DOM. <ScreenHero> is rendered
-// only by RoutinesPane (cron.tsx), and nothing mounts RoutinesPane — when the
-// rail absorbed the routines view it kept the rows and dropped the hero.
-// Also measured: mounting the hero into the rail makes it appear, but TWO
-// display.status frames go out where this test expects one. The second sender
-// was not identified (StrictMode is off, and <BotContextPanel /> is registered
-// once), so treat "two instances" as a hypothesis, not a finding. Either way
-// the surface needs one owner before these tests can pass.
-// See bot-context-panel.tsx / cron.tsx / plugin.tsx registerRoutinesPane.
+// FIXME — needs rewriting for a remounting rail.
+// The Screen hero had no host and is now restored (bot-context-panel renders
+// it at the top of the rail; bot-mode-visual asserts it is on screen).
+// These two tests still assume exactly ONE display.status fetch before the
+// pane opens — they answer held[0] and held[1] by index. Measured: the rail
+// remounts as panes re-register (11 mounts in a single run), and each mount
+// re-issues the fetch, so the indices no longer point at the replies the test
+// means. Rewriting around "the newest reply wins" instead of fixed indices is
+// the fix; the race itself is still worth covering.
 test.fixme('a stale portal display.status reply does not roll back the newer stopped state', async () => {
   test.setTimeout(300_000)
   const page = fixture!.page
@@ -278,17 +276,10 @@ test.fixme('a stale portal display.status reply does not roll back the newer sto
   expect(pageErrors).toEqual([])
 })
 
-// FIXME — Bot Screen has no host.
-// Measured: with the Screen pane open, zero display.status frames were sent and
-// no button[aria-label^="Screen:"] existed in the DOM. <ScreenHero> is rendered
-// only by RoutinesPane (cron.tsx), and nothing mounts RoutinesPane — when the
-// rail absorbed the routines view it kept the rows and dropped the hero.
-// Also measured: mounting the hero into the rail makes it appear, but TWO
-// display.status frames go out where this test expects one. The second sender
-// was not identified (StrictMode is off, and <BotContextPanel /> is registered
-// once), so treat "two instances" as a hypothesis, not a finding. Either way
-// the surface needs one owner before these tests can pass.
-// See bot-context-panel.tsx / cron.tsx / plugin.tsx registerRoutinesPane.
+// FIXME — needs rewriting for a remounting rail (same cause as above).
+// The pushed-event listener itself is still exercised by the screen-portal unit
+// suites; what this test adds is end-to-end proof, which needs the same index
+// rework as the first test.
 test.fixme('pushed display.status / display.lease events keep updating the shipped listeners without a page error', async () => {
   test.setTimeout(120_000)
   const page = fixture!.page
