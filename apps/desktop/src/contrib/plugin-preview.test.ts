@@ -239,7 +239,7 @@ describe('ctx.preview.executeJavaScript', () => {
 
     grantPreviewScript(id, 'https://mail.example.com')
 
-    const setItem = vi.spyOn(window.localStorage, 'setItem').mockImplementation(() => {
+    const setItem = vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
       throw new DOMException('quota', 'QuotaExceededError')
     })
 

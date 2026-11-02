@@ -25,8 +25,8 @@ test('discontinued retirement shows the uninstall notice and persists dismissal 
     setItem: window.localStorage.setItem.bind(window.localStorage)
   }
 
-  vi.spyOn(window.localStorage, 'getItem').mockImplementation((key: string) => stored.get(key) ?? original.getItem(key))
-  vi.spyOn(window.localStorage, 'setItem').mockImplementation((key: string, value: string) => {
+  vi.spyOn(Storage.prototype, 'getItem').mockImplementation((key: string) => stored.get(key) ?? original.getItem(key))
+  vi.spyOn(Storage.prototype, 'setItem').mockImplementation((key: string, value: string) => {
     stored.set(key, value)
   })
 

@@ -267,7 +267,7 @@ it('tracking a submission reads its own record without enumerating other session
   }
 
   window.localStorage.setItem('hermes.desktop.pendingSubmissions.v1', JSON.stringify({ solo: { old: { id: 'old', text: 'legacy', displayText: '/old' } } }))
-  const enumerate = vi.spyOn(window.localStorage, 'key')
+  const enumerate = vi.spyOn(Storage.prototype, 'key')
 
   try {
     trackPendingSubmission('solo', { id: 'mine', text: 'hi', displayText: '/hi' })
