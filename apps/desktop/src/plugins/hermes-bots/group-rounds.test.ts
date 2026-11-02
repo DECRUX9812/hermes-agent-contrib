@@ -1544,6 +1544,42 @@ describe('stopGroupThread (#91868/#94569)', () => {
     expect(pending.size).toBe(0)
   })
 
+  // The composer's "N queued" chip reads this atom, so it has to move with the
+  // engine and not with a render: enqueue, scoped stop, room brake.
+  it('publishes the queue depth the composer chip reads', async () => {
+    const room = await loadRoom()
+    seedRoom(room)
+
+    const pending = new Map([
+      ['t1', STOP_MEMBERS],
+      ['t2', STOP_MEMBERS]
+    ])
+
+    room.rounds.groupChatDrivesForTest.set(
+      room.chat.groupChatRoomKey('Room', room.chat.$groupChats.get().Room),
+      { binding: { dispose: () => {}, isLive: () => true }, failedMembers: new Set<string>(), pending }
+    )
+
+    // A scoped stop leaves one thread behind and says so.
+    await room.rounds.stopGroupThread('Room', 't1', STOP_MEMBERS)
+    expect(room.chat.$groupQueueDepths.get().Room).toBe(1)
+
+    // The room brake empties it.
+    await room.rounds.stopGroupThread('Room', null, STOP_MEMBERS)
+    expect(room.chat.$groupQueueDepths.get().Room).toBe(0)
+  })
+
+  it('counts a second send while the room is working', async () => {
+    const room = await loadRoom()
+
+    // First send starts the round; the second arrives while the turn is still
+    // in flight, so it queues — which is exactly what the chip has to show.
+    room.rounds.sendToGroupChat('Busy room', STOP_MEMBERS, 'first')
+    room.rounds.sendToGroupChat('Busy room', STOP_MEMBERS, 'second')
+
+    expect(room.chat.$groupQueueDepths.get()['Busy room']).toBe(1)
+  })
+
   it('interrupts the exact on-turn owner even when same-name members are reordered', async () => {
     const room = await loadRoom()
     const local: GroupMember = { name: 'default', connectionId: 'local', sourceScoped: true }

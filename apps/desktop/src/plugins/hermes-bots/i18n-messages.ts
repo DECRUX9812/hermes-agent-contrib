@@ -303,6 +303,8 @@ export type BotsMessages = {
     unpinnedToast: (room: string) => string
     /** A scoped stop that left other threads' sends in the queue says so. */
     stoppedWithQueued: (room: string, queued: number) => string
+    /** Composer chip: sends waiting behind the room's running turn. */
+    queued: (count: number) => string
     removeAttachment: string
     threadFallback: string
     replyCount: (replies: number) => string

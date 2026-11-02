@@ -328,6 +328,7 @@ const en: BotsMessages = {
       queued === 1
         ? `Stopped ${room} — 1 queued message is held until you resume`
         : `Stopped ${room} — ${queued} queued messages are held until you resume`,
+    queued: (count: number) => (count === 1 ? '1 queued' : `${count} queued`),
     removeAttachment: 'Remove attachment',
     threadFallback: 'Thread',
     replyCount: replies => `${replies} ${replies === 1 ? 'reply' : 'replies'}`,
@@ -821,6 +822,7 @@ const ja: BotsMessages = {
     pinnedToast: (room: string) => `${room} を上部に固定しました`,
     unpinnedToast: (room: string) => `${room} の固定を解除しました`,
     stoppedWithQueued: (room: string, queued: number) => `${room} を停止しました — 待機中のメッセージ ${queued} 件は再開するまで保留されます`,
+    queued: (count: number) => `${count} 件待機中`,
     removeAttachment: '添付を削除',
     threadFallback: 'スレッド',
     replyCount: replies => `返信${replies}件`,
@@ -1304,6 +1306,7 @@ const zh: BotsMessages = {
     pinnedToast: (room: string) => `${room} 已置顶`,
     unpinnedToast: (room: string) => `${room} 已取消置顶`,
     stoppedWithQueued: (room: string, queued: number) => `已停止 ${room} — 仍有 ${queued} 条排队消息会保留到你恢复为止`,
+    queued: (count: number) => `${count} 条排队中`,
     removeAttachment: '移除附件',
     threadFallback: '讨论串',
     replyCount: replies => `${replies} 条回复`,
@@ -1783,6 +1786,7 @@ const zhHant: BotsMessages = {
     pinnedToast: (room: string) => `${room} 已置頂`,
     unpinnedToast: (room: string) => `${room} 已取消置頂`,
     stoppedWithQueued: (room: string, queued: number) => `已停止 ${room} — 仍有 ${queued} 則排隊訊息會保留到你恢復為止`,
+    queued: (count: number) => `${count} 則排隊中`,
     removeAttachment: '移除附件',
     threadFallback: '討論串',
     replyCount: replies => `${replies} 則回覆`,

@@ -10,6 +10,7 @@ import { groupFailureReason, recordGroupActivity } from './group-activity'
 import {
   $groupChats,
   $groupNeedsYou,
+  $groupQueueDepths,
   appendGroupChatEntry,
   GROUP_CHAT_MAX_CONTINUATIONS,
   GROUP_CHAT_MAX_MESSAGES,
@@ -567,6 +568,8 @@ export async function stopGroupThread(group: string, thread: null | string, memb
   const survivors = drive?.pending.size ?? 0
   const dropped = queuedBefore > survivors
 
+  publishQueueDepth(group)
+
   if (dropped) {
     recordGroupActivity(group, { kind: 'stopped', member: null, thread: thread || null })
   }
@@ -1015,6 +1018,20 @@ const groupChatDrives = new Map<string, GroupChatDrive>()
  *  driving a full round. */
 export const groupChatDrivesForTest = groupChatDrives
 
+/** Publish how many sends are waiting behind this room's running turn.
+ *  Called from every mutation of a drive's pending map — enqueue, drain, stop,
+ *  and teardown — so the composer's "N queued" chip can never drift from the
+ *  engine's own count. */
+function publishQueueDepth(group: string) {
+  const room = $groupChats.get()[group]
+  const depth = groupChatDrives.get(groupChatRoomKey(group, room))?.pending.size ?? 0
+  const current = $groupQueueDepths.get()
+
+  if ((current[group] ?? 0) !== depth) {
+    $groupQueueDepths.set({ ...current, [group]: depth })
+  }
+}
+
 function queueGroupChatDrive(group: string, members: GroupMember[], thread: string) {
   let key = groupChatRoomKey(group, $groupChats.get()[group])
   const active = groupChatDrives.get(key)
@@ -1023,6 +1040,7 @@ function queueGroupChatDrive(group: string, members: GroupMember[], thread: stri
     // Only a new user action AFTER failure authorizes another attempt.
     active.failedMembers.clear()
     active.pending.set(thread, members)
+    publishQueueDepth(group)
 
     return
   }
@@ -1036,6 +1054,7 @@ function queueGroupChatDrive(group: string, members: GroupMember[], thread: stri
 
   const drive: GroupChatDrive = { pending: new Map([[thread, members]]), failedMembers: new Set(), binding }
   groupChatDrives.set(key, drive)
+  publishQueueDepth(group)
   // Queued threads share the activity epoch, so draining one cannot hide
   // unresolved failures from the preceding thread. Stop still invalidates it.
   updateGroupChat(group, room => ({ ...room, epoch: (room.epoch || 0) + 1 }))
@@ -1048,6 +1067,7 @@ function queueGroupChatDrive(group: string, members: GroupMember[], thread: stri
         const [nextThread, nextMembers] = drive.pending.entries().next().value!
         currentThread = nextThread
         drive.pending.delete(nextThread)
+        publishQueueDepth(group)
         updateGroupChat(group, room => ({ ...room, running: true }))
         await runGroupChatRounds(group, nextMembers, nextThread, drive.failedMembers)
       }
@@ -1068,6 +1088,8 @@ function queueGroupChatDrive(group: string, members: GroupMember[], thread: stri
       if (groupChatDrives.get(key) === drive) {
         groupChatDrives.delete(key)
       }
+
+      publishQueueDepth(group)
     }
   })()
 }

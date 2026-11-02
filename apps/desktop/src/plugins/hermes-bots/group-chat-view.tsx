@@ -79,6 +79,7 @@ import {
   $groupChatWorkspace,
   $groupClarify,
   $groupNeedsYou,
+  $groupQueueDepths,
   groupThreadOf,
   rememberGroupChatTombstone,
   scheduleGroupChatServerSync,
@@ -723,6 +724,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
   const b = useBots()
   const rooms: Record<string, GroupChatRoom> = useValue($groupChats)
   const allMeta: Record<string, BotMeta> = useValue($botMeta)
+  const queuedCount = useValue($groupQueueDepths)[group] ?? 0
 
   const room: GroupChatRoom = rooms[group] || {
     log: [],
@@ -1723,6 +1725,16 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
               value={draft}
             />
             {attachButton(null)}
+            {queuedCount > 0 ? (
+              // Sends typed while the room is working queue behind the running
+              // turn; without this the composer looked like it ate them.
+              <span
+                className="shrink-0 rounded-full bg-(--ui-inline-code-background) px-2 py-0.5 text-[0.625rem] font-medium tabular-nums text-(--ui-text-secondary)"
+                data-slot="group-queued-count"
+              >
+                {b.group.queued(queuedCount)}
+              </span>
+            ) : null}
             <Button disabled={!draft.trim() && !imagesFor(null).length} size="sm" type="submit">
               {b.group.newThread}
             </Button>

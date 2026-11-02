@@ -37,6 +37,11 @@ export const $groupChats = atom<Record<string, GroupChatRoom>>({})
 export const $groupChatWorkspace = atom<null | string>(null)
 /** Groups whose latest room activity mentions @user — the needs-you badge. */
 export const $groupNeedsYou = atom<Record<string, boolean>>({})
+/** How many sends are waiting behind a room's running turn, keyed by room.
+ *  A second message typed while the room is working used to vanish into the
+ *  log with nothing on screen saying it was queued (`group-rounds` publishes
+ *  this from every mutation of the drive's pending map). */
+export const $groupQueueDepths = atom<Record<string, number>>({})
 // Pending prompts (clarify questions AND command approvals) raised inside
 // hidden group-member sessions, keyed `${group}::${memberKey}` (#90694).
 // Members run in invisible plumbing sessions, so a member's blocking prompt
