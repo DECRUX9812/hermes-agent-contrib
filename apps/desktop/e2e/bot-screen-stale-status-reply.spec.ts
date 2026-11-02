@@ -168,12 +168,19 @@ const pushEvent = (page: Page, type: string, payload: unknown) =>
 const hero = (page: Page) => page.locator('button[aria-label^="Screen:"]').first()
 
 async function revealScreenHero(page: Page): Promise<void> {
-  const tab = page
-    .getByRole('button', { name: 'Bots', exact: true })
-    .or(page.getByRole('tab', { name: 'Bots', exact: true }))
-    .first()
+  // The stage switch disappears once Bots is active (the sidebar header becomes
+  // "BOTS"), so entering twice must not look for it. The second test in this
+  // file starts from wherever the first one left the app.
+  const roster = page.locator('[data-slot="bots-roster"]')
 
-  await tab.click()
+  if (!(await roster.isVisible().catch(() => false))) {
+    await page
+      .getByRole('button', { name: 'Bots', exact: true })
+      .or(page.getByRole('tab', { name: 'Bots', exact: true }))
+      .first()
+      .click()
+  }
+
   await expect(page.getByRole('button', { name: 'New bot or group chat' })).toBeVisible()
 
   const row = page.locator('[data-slot="bots-roster"] [data-roster-key="local::alpha"]')
@@ -234,35 +241,34 @@ test.afterAll(async () => {
   fixture = null
 })
 
-// FIXME — needs rewriting for a remounting rail.
-// The Screen hero had no host and is now restored (bot-context-panel renders
-// it at the top of the rail; bot-mode-visual asserts it is on screen).
-// These two tests still assume exactly ONE display.status fetch before the
-// pane opens — they answer held[0] and held[1] by index. Measured: the rail
-// remounts as panes re-register (11 mounts in a single run), and each mount
-// re-issues the fetch, so the indices no longer point at the replies the test
-// means. Rewriting around "the newest reply wins" instead of fixed indices is
-// the fix; the race itself is still worth covering.
-test.fixme('a stale portal display.status reply does not roll back the newer stopped state', async () => {
+test('a stale portal display.status reply does not roll back the newer stopped state', async () => {
   test.setTimeout(300_000)
   const page = fixture!.page
 
   await installScreenProbe(page)
-  // Reveal the routines pane: the Screen hero mounts and fires the portal's one-shot fetch.
+  // Reveal the routines pane: the Screen hero mounts and fires its status fetch.
   await revealScreenHero(page)
 
   await expect(hero(page)).toHaveAttribute('aria-label', 'Screen: Checking the screen…', { timeout: 15_000 })
-  await expect.poll(async () => (await probe(page)).held, { timeout: 15_000 }).toBe(1)
+  await expect.poll(async () => (await probe(page)).held, { timeout: 15_000 }).toBeGreaterThanOrEqual(1)
   await capture(page, '1-hero-fetch-in-flight')
 
-  // Open the pane: its own (newer) display.status request goes out while the portal's is still open.
+  // Open the pane: its own (newer) display.status request joins the in-flight ones.
   await hero(page).click()
-  await expect.poll(async () => (await probe(page)).held, { timeout: 15_000 }).toBe(2)
+  await expect.poll(async () => (await probe(page)).held, { timeout: 15_000 }).toBeGreaterThanOrEqual(2)
 
-  // The portal's older reply lands first and describes a screen that has since been
-  // stopped; the pane's newer reply says so. Only the newer one may win.
-  await answer(page, 0, snapshot(true))
-  await answer(page, 1, snapshot(false))
+  // The rail remounts as panes re-register, and each mount re-issues the fetch,
+  // so the number of in-flight requests is not fixed. The invariant is order,
+  // not count: answer the NEWEST first (the screen has stopped), then every
+  // older one with a stale "running" truth. Only the newest may win.
+  const held = (await probe(page)).held
+
+  await answer(page, held - 1, snapshot(false))
+
+  for (let index = 0; index < held - 1; index += 1) {
+    await answer(page, index, snapshot(true))
+  }
+
   await page.waitForTimeout(1000)
   await capture(page, '2-after-stale-reply')
 
@@ -276,11 +282,8 @@ test.fixme('a stale portal display.status reply does not roll back the newer sto
   expect(pageErrors).toEqual([])
 })
 
-// FIXME — needs rewriting for a remounting rail (same cause as above).
-// The pushed-event listener itself is still exercised by the screen-portal unit
-// suites; what this test adds is end-to-end proof, which needs the same index
-// rework as the first test.
-test.fixme('pushed display.status / display.lease events keep updating the shipped listeners without a page error', async () => {
+
+test('pushed display.status / display.lease events keep updating the shipped listeners without a page error', async () => {
   test.setTimeout(120_000)
   const page = fixture!.page
 

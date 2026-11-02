@@ -20,7 +20,6 @@
  * Prerequisite: `npm run build` must have been run so that `dist/` exists.
  */
 
-import { execFileSync } from 'node:child_process'
 import * as fs from 'node:fs'
 import * as os from 'node:os'
 import * as path from 'node:path'
@@ -267,60 +266,73 @@ async function assertDistBuilt(): Promise<void> {
     )
   }
 
-  // Content, not dirtiness: an edited file that was rebuilt is fresh, and a
-  // committed change that was never built is stale. So compare the build
-  // against the newest of (last commit touching src/electron) and (mtime of
-  // each still-dirty source file). `git checkout` restoring identical bytes
-  // leaves nothing dirty, so it no longer demands a pointless rebuild.
-  let dirtyPaths: string[] = []
-  let lastCommitSeconds = 0
+  // Compare the build against the newest source FILE mtime. A commit does not
+  // touch file mtimes, so this still catches "edited, committed, never rebuilt"
+  // — the bug this guard exists for — while ignoring commit order entirely.
+  // Known false positive: `git checkout -- <file>` rewrites identical bytes and
+  // bumps the mtime, which then asks for one rebuild that changes nothing.
+  const builtAt = fs.statSync(indexHtml).mtimeMs
+  const newest = newestSource(builtAt + 1000)
 
-  try {
-    const dirty = execFileSync('git', ['status', '--porcelain', '--', 'src', 'electron'], {
-      cwd: DESKTOP_ROOT,
-      encoding: 'utf8'
-    })
-
-    dirtyPaths = dirty
-      .split('\n')
-      .map(line => line.slice(3).trim())
-      .filter(Boolean)
-
-    lastCommitSeconds = Number(
-      execFileSync('git', ['log', '-1', '--format=%ct', '--', 'src', 'electron'], {
-        cwd: DESKTOP_ROOT,
-        encoding: 'utf8'
-      }).trim(),
-    ) || 0
-  } catch {
-    // No git (packaged checkout): fall back to the existence checks only.
-    return
+  if (newest) {
+    throw new Error(
+      `Desktop dist is stale: ${path.relative(DESKTOP_ROOT, newest.file)} is newer than the build.\n` +
+        `  built:  ${new Date(builtAt).toISOString()}\n` +
+        `  source: ${new Date(newest.mtimeMs).toISOString()}\n` +
+        `Run 'cd apps/desktop && npm run build' first — a stale bundle makes the suite assert about code that no longer exists.`,
+    )
   }
+}
 
-  let newestDirtySeconds = 0
+/** Newest renderer/main-process source file newer than the build, or null.
+ *  Test files are excluded: they change constantly and never enter the bundle. */
+function newestSource(afterMs: number): null | { file: string; mtimeMs: number } {
+  const roots = ['src', 'electron'].map(dir => path.join(DESKTOP_ROOT, dir))
+  const sourceExt = new Set(['.ts', '.tsx', '.css', '.mjs', '.cjs'])
+  const skipDir = new Set(['node_modules', '__snapshots__', 'dist'])
+  let newest: null | { file: string; mtimeMs: number } = null
 
-  for (const file of dirtyPaths) {
+  const walk = (dir: string): void => {
+    let entries: Array<{ name: string; isDirectory: () => boolean; isFile: () => boolean }>
+
     try {
-      newestDirtySeconds = Math.max(
-        newestDirtySeconds,
-        Math.floor(fs.statSync(path.join(DESKTOP_ROOT, file)).mtimeMs / 1000),
-      )
+      entries = fs.readdirSync(dir, { withFileTypes: true })
     } catch {
-      // Deleted files have no mtime; the commit timestamp still covers them.
+      return
+    }
+
+    for (const entry of entries) {
+      const full = path.join(dir, entry.name)
+
+      if (entry.isDirectory()) {
+        if (!skipDir.has(entry.name)) {
+          walk(full)
+        }
+
+        continue
+      }
+
+      if (!entry.isFile() || /\.test\.[cm]?tsx?$/.test(entry.name) || entry.name.endsWith('.d.ts')) {
+        continue
+      }
+
+      if (!sourceExt.has(path.extname(entry.name))) {
+        continue
+      }
+
+      const { mtimeMs } = fs.statSync(full)
+
+      if (mtimeMs > afterMs && (!newest || mtimeMs > newest.mtimeMs)) {
+        newest = { file: full, mtimeMs }
+      }
     }
   }
 
-  const builtAtSeconds = Math.floor(fs.statSync(indexHtml).mtimeMs / 1000)
-  const newestChangeSeconds = Math.max(lastCommitSeconds, newestDirtySeconds)
-
-  if (newestChangeSeconds && builtAtSeconds < newestChangeSeconds) {
-    throw new Error(
-      `Desktop dist is stale: built ${new Date(builtAtSeconds * 1000).toISOString()}, ` +
-        `but the sources changed at ${new Date(newestChangeSeconds * 1000).toISOString()}` +
-        (dirtyPaths.length ? ` (${dirtyPaths.length} uncommitted source file(s))` : '') +
-        `.\nRun 'cd apps/desktop && npm run build' first — a stale bundle makes the suite assert about code that no longer exists.`,
-    )
+  for (const root of roots) {
+    walk(root)
   }
+
+  return newest
 }
 
 /**
