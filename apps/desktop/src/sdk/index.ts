@@ -1698,6 +1698,7 @@ export { Wordmark } from '@/components/chat/wordmark'
  *  `width`/`height`. */
 export type { FloatingAnchor } from '@/components/pane-shell/tree/renderer/floating-rect'
 export { StatusDot, type StatusTone } from '@/components/status-dot'
+export { SurfaceComposer } from '@/components/surface/surface-composer'
 /** The surface contract: one header (and, next, one composer) that plugins and
  *  the shell share, so a fix cannot land in two implementations and diverge. */
 export { SurfaceHeader, type SurfaceHeaderAction } from '@/components/surface/surface-header'

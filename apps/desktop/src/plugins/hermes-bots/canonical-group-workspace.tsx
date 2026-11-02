@@ -1,4 +1,5 @@
-import { Button, cn, Codicon, host, PanelEmpty, randomUuid } from '@hermes/plugin-sdk'
+import { Button, cn, Codicon, host, PanelEmpty, randomUuid,
+  SurfaceComposer} from '@hermes/plugin-sdk'
 import { type ClipboardEvent, type DragEvent, useEffect, useRef, useState } from 'react'
 
 import { type CanonicalDriverActivity, CanonicalGroupWorkingLine, canonicalMemberPhases } from './canonical-group-activity'
@@ -233,14 +234,19 @@ function CanonicalRoomView({ binding: initialBinding, visible, onBack }: {
       </div>
     </div>}
     {restoredPending && <p className="px-1 text-11 text-(--ui-text-secondary)" role="status">{labels.restoredPendingSend}</p>}
-    <form className="flex shrink-0 items-center gap-2 border-t border-(--ui-stroke-tertiary) pt-3 pb-1" onDragOver={event => { if (event.dataTransfer.types.includes('Files')) {event.preventDefault()} }}
-      onDrop={event => attachTransfer(event, event.dataTransfer)} onPaste={event => attachTransfer(event, event.clipboardData)} onSubmit={event => { event.preventDefault(); send() }}>
-      <CanonicalGroupAttachments attachments={attachments} binding={binding} disabled={composerLocked} onChange={setAttachments} onUploadingChange={setUploading} ref={uploader} />
+    <SurfaceComposer
+      attachments={<CanonicalGroupAttachments attachments={attachments} binding={binding} disabled={composerLocked} onChange={setAttachments} onUploadingChange={setUploading} ref={uploader} />}
+      className="flex shrink-0 items-center gap-2 border-t border-(--ui-stroke-tertiary) pt-3 pb-1"
+      inline
+      onDrop={event => attachTransfer(event, event.dataTransfer as unknown as never)}
+      onPaste={event => attachTransfer(event, event.clipboardData as unknown as never)}
+      onSubmit={send}
+    >
       {/* A placeholder: the input shipped with none, so an empty room's composer
           read as a dead rectangle. Same string as the accessible name. */}
       <GroupMentionInput aria-label={labels.groupMessage} className="min-w-0 flex-1" disabled={composerLocked} handleFor={member => member.handle}
         members={mentionMembers} onChange={setDraft} onSubmitDraft={send} placeholder={labels.groupMessage} value={draft} />
       <Button disabled={!restored || busy || uploading || (!pending && !draft.trim() && !attachments.length) || !state?.driver_status} size="sm" type="submit">{pending ? labels.retry : labels.send}</Button>
-    </form>
+    </SurfaceComposer>
   </section>
 }

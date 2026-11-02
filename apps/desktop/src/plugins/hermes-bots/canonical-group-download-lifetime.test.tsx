@@ -20,6 +20,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
   return { ...dropdown, Textarea, atom: (await import('nanostores')).atom, cn: (await import('@/lib/utils')).cn, DAY: (await import('@/lib/time')).DAY, MessageTextContent: undefined, nominalDayStart: (await import('@/lib/time')).nominalDayStart, relativeTime: () => 'a moment ago', Streamdown: undefined, host: { requestProfile: request }, useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
     SurfaceHeader: (await import('@/components/surface/surface-header')).SurfaceHeader,
+    SurfaceComposer: (await import('@/components/surface/surface-composer')).SurfaceComposer,
     Codicon: () => <span />, Tip: ({ children }: { children: ReactNode }) => <>{children}</> }
 })
 vi.mock('./group-chat-parts', () => ({ GroupMentionInput: () => null }))

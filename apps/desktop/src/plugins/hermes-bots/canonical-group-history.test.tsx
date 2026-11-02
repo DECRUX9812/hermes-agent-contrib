@@ -15,6 +15,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
     useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
     SurfaceHeader: (await import('@/components/surface/surface-header')).SurfaceHeader,
+    SurfaceComposer: (await import('@/components/surface/surface-composer')).SurfaceComposer,
     DAY: (await import('@/lib/time')).DAY,
     nominalDayStart: (await import('@/lib/time')).nominalDayStart,
     cn: (await import('@/lib/utils')).cn,

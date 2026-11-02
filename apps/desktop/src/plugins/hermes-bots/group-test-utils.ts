@@ -472,9 +472,11 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
   // The surface contract lives in the shell now; a mock without it fails on
   // import the moment a component uses it (the trap this file exists to close).
   const { SurfaceHeader } = await import('@/components/surface/surface-header')
+  const { SurfaceComposer } = await import('@/components/surface/surface-composer')
 
   return {
     SurfaceHeader,
+    SurfaceComposer,
     Textarea,
     ContextMenu,
     ContextMenuContent,

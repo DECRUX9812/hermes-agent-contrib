@@ -29,6 +29,7 @@ import {
   queryClient,
   relativeTime,
   RowButton,
+  SurfaceComposer,
   SurfaceHeader,
   Tip,
   ToggleRow,
@@ -1643,43 +1644,39 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
         ) : null}
       </div>
       <div className="border-t border-(--ui-stroke-secondary) p-2 pb-[calc(0.5rem+env(safe-area-inset-bottom,0px))]">
-        <form
+        <SurfaceComposer
+          attachments={attachmentRow(null)}
           className="grid gap-0"
-          onSubmit={event => {
-            event.preventDefault()
-            submit()
-          }}
+          onPaste={event => pasteImages(null, event as never)}
+          onSubmit={submit}
+          rowClassName="flex items-center gap-1.5"
         >
-          {attachmentRow(null)}
-          <div className="flex items-center gap-1.5">
-            <GroupMentionInput
-              aria-label={b.group.messageRoom(group)}
-              members={members}
-              onChange={setDraft}
-              onPaste={event => pasteImages(null, event)}
-              onSubmitDraft={submit}
-              placeholder={b.group.newThreadPlaceholder(group)}
-              value={draft}
-            />
-            {attachButton(null)}
-            {queuedCount > 0 ? (
-              // Sends typed while the room is working queue behind the running
-              // turn; without this the composer looked like it ate them. Live
-              // region: the count changes with no focus move to carry it.
-              <span
-                aria-live="polite"
-                className="shrink-0 rounded-full bg-(--ui-inline-code-background) px-2 py-0.5 text-10 font-medium tabular-nums text-(--ui-text-secondary)"
-                data-slot="group-queued-count"
-                role="status"
-              >
-                {b.group.queued(queuedCount)}
-              </span>
-            ) : null}
-            <Button disabled={!draft.trim() && !imagesFor(null).length} size="sm" type="submit">
-              {b.group.newThread}
-            </Button>
-          </div>
-        </form>
+          <GroupMentionInput
+            aria-label={b.group.messageRoom(group)}
+            members={members}
+            onChange={setDraft}
+            onSubmitDraft={submit}
+            placeholder={b.group.newThreadPlaceholder(group)}
+            value={draft}
+          />
+          {attachButton(null)}
+          {queuedCount > 0 ? (
+            // Sends typed while the room is working queue behind the running
+            // turn; without this the composer looked like it ate them. Live
+            // region: the count changes with no focus move to carry it.
+            <span
+              aria-live="polite"
+              className="shrink-0 rounded-full bg-(--ui-inline-code-background) px-2 py-0.5 text-10 font-medium tabular-nums text-(--ui-text-secondary)"
+              data-slot="group-queued-count"
+              role="status"
+            >
+              {b.group.queued(queuedCount)}
+            </span>
+          ) : null}
+          <Button disabled={!draft.trim() && !imagesFor(null).length} size="sm" type="submit">
+            {b.group.newThread}
+          </Button>
+        </SurfaceComposer>
       </div>
       <GroupChatSettingsDialog
         group={group}
