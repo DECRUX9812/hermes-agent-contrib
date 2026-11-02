@@ -75,7 +75,7 @@ afterEach(() => {
 })
 
 async function openDeleteConfirm() {
-  fireEvent.contextMenu(await screen.findByRole('button', { name: 'Launch crew' }))
+  fireEvent.contextMenu(await screen.findByRole('button', { name: /Launch crew/ }))
   fireEvent.click(await screen.findByRole('menuitem', { name: 'Delete' }))
 
   return within(await screen.findByRole('dialog'))
@@ -89,9 +89,9 @@ it('deletes a gateway group from its row menu: confirm, disband on its gateway, 
   $groupChatWorkspace.set(key)
 
   expect(dialog.getByText('Launch crew')).toBeTruthy()
-  fireEvent.click(dialog.getByRole('button', { name: 'Disband' }))
+  fireEvent.click(dialog.getByRole('button', { name: /Disband/ }))
 
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Launch crew' })).toBeNull())
+  await waitFor(() => expect(screen.queryByRole('button', { name: /Launch crew/ })).toBeNull())
   const disband = requestProfile.mock.calls.filter(([, method]) => method === 'groups.disband')
   expect(disband).toHaveLength(1)
   expect(disband[0][0]).toMatchObject({ connectionId: 'local', profile: 'default' })
@@ -106,10 +106,10 @@ it('keeps the row and shows the gateway refusal when the disband fails', async (
   refuse = 'room is busy'
   render(<CanonicalGroupList onOpen={vi.fn()} />)
   const dialog = await openDeleteConfirm()
-  fireEvent.click(dialog.getByRole('button', { name: 'Disband' }))
+  fireEvent.click(dialog.getByRole('button', { name: /Disband/ }))
 
   expect(await dialog.findByText(/room is busy/)).toBeTruthy()
-  expect(screen.getByRole('button', { hidden: true, name: 'Launch crew' })).toBeTruthy()
+  expect(screen.getByRole('button', { hidden: true, name: /Launch crew/ })).toBeTruthy()
   expect(notify).not.toHaveBeenCalledWith(expect.objectContaining({ kind: 'success' }))
 })
 
@@ -126,9 +126,9 @@ it('closes the tab and selection opened under the room name, and leaves another 
   $groupChatWorkspace.set(room.name)
 
   render(<CanonicalGroupList onOpen={vi.fn()} />)
-  fireEvent.click((await openDeleteConfirm()).getByRole('button', { name: 'Disband' }))
+  fireEvent.click((await openDeleteConfirm()).getByRole('button', { name: /Disband/ }))
 
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Launch crew' })).toBeNull())
+  await waitFor(() => expect(screen.queryByRole('button', { name: /Launch crew/ })).toBeNull())
   expect(closeAlias).toHaveBeenCalledTimes(1)
   expect($groupChatWorkspace.get()).toBeNull()
   expect(closeOther).not.toHaveBeenCalled()

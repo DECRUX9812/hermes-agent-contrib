@@ -74,7 +74,7 @@ it('re-discovers on reconnect instead of sticking a stale alert', async () => {
     fail = ''
     gatewayState().set('open')
   })
-  await screen.findByRole('button', { name: 'Launch crew' })
+  await screen.findByRole('button', { name: /Launch crew/ })
   expect(screen.queryByRole('alert')).toBeNull()
 })
 

@@ -339,7 +339,7 @@ it('drops a disbanded room from the sidebar list and its bindings, with the disb
     : method === 'groups.capabilities' ? { driver: true } : method === 'groups.list' ? { rooms: disbanded ? [] : [room], next_offset: null }
       : roomReads()(method) ?? {})
   render(<CanonicalGroupList onOpen={vi.fn()} />)
-  await screen.findByRole('button', { name: 'Doomed' })
+  await screen.findByRole('button', { name: /Doomed/ })
   const binding = { connectionId: 'remote', profile: 'team', roomId: 'gone', roomName: 'Doomed' }
   const key = registerCanonicalGroup(binding, room)
   render(<CanonicalGroupWorkspace binding={binding} onBack={vi.fn()} />)
@@ -348,7 +348,7 @@ it('drops a disbanded room from the sidebar list and its bindings, with the disb
   fireEvent.click(more)
   fireEvent.click(await screen.findByRole('menuitem', { name: /disband/i }))
   fireEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: /disband/i }))
-  await waitFor(() => expect(screen.queryByRole('button', { name: 'Doomed' })).toBeNull())
+  await waitFor(() => expect(screen.queryByRole('button', { name: /Doomed/ })).toBeNull())
   expect($canonicalGroupBindings.get()[key]).toBeUndefined()
   // This fixture's plugin i18n mock answers with the key: the legacy view's `group.disbanded` toast.
   expect(host.notify).toHaveBeenCalledExactlyOnceWith({ kind: 'success', message: 'group.disbanded' })

@@ -37,7 +37,6 @@ export function CanonicalGroupRow({ active = false, memberCount, name, needsYou 
 
   const row = (
     <button
-      aria-label={name}
       className={cn(
         'group relative flex w-full min-w-0 max-w-full items-center gap-2.5 overflow-hidden rounded-md px-2 py-2 text-left transition-colors',
         'hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--dt-ring)',
@@ -52,13 +51,18 @@ export function CanonicalGroupRow({ active = false, memberCount, name, needsYou 
           <span
             aria-hidden="true"
             className={running
-              ? 'absolute -right-0.5 -top-0.5 size-2 animate-pulse rounded-full bg-(--ui-green) ring-2 ring-background'
+              ? 'absolute -right-0.5 -top-0.5 size-2 animate-pulse rounded-full bg-(--ui-green) ring-2 ring-background motion-reduce:animate-none'
               : 'absolute -right-0.5 -top-0.5 size-2 rounded-full bg-(--ui-icon-attention) ring-2 ring-background'}
             data-slot={running ? 'row-running-dot' : 'row-needs-you-dot'}
           />
         ) : null}
       </span>
       <span className="min-w-0 flex-1 truncate text-[0.8125rem] font-medium text-(--ui-text-primary)">{name}</span>
+      {/* State dots are decoration; the words are what a screen reader needs.
+          No `aria-label` on the row: it would replace the name + member count
+          the row already shows. */}
+      {running ? <span className="sr-only">{labels.memberWorking}</span> : null}
+      {needsYou ? <span className="sr-only">{group.needsYourInput}</span> : null}
       <span className="shrink-0 rounded-full bg-(--ui-surface-overlay) px-1.5 py-0.5 text-[0.625rem] tabular-nums font-medium text-(--ui-text-secondary) group-hover:bg-(--chrome-action-hover)">{group.memberCount(memberCount)}</span>
     </button>
   )
