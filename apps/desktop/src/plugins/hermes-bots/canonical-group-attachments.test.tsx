@@ -65,13 +65,31 @@ it('downloads only the selected committed attachment from its captured owner', a
   const submit = vi.fn(event => event.preventDefault())
   const changed = vi.fn()
   render(<form onSubmit={submit}><CanonicalGroupAttachments attachments={[attachment]} binding={binding} disabled={false} onChange={changed} /></form>)
-  fireEvent.click(screen.getByRole('button', { name: 'Download' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Download: report.bin' }))
   await waitFor(() => expect(observed.downloads).toHaveLength(1))
   await expectDownloaded(observed, new Uint8Array([0, 1, 2, 255]), attachment.name, attachment.mime)
   expect(save).not.toHaveBeenCalled()
   expect(request).toHaveBeenCalledTimes(1)
-  await waitFor(() => expect((screen.getByRole('button', { name: 'Remove' }) as HTMLButtonElement).disabled).toBe(false))
-  fireEvent.click(screen.getByRole('button', { name: 'Remove' }))
+  await waitFor(() => expect((screen.getByRole('button', { name: 'Remove: report.bin' }) as HTMLButtonElement).disabled).toBe(false))
+  fireEvent.click(screen.getByRole('button', { name: 'Remove: report.bin' }))
   expect(changed).toHaveBeenCalledWith([])
   expect(submit).not.toHaveBeenCalled()
+})
+
+it('names each attachment in its own actions, so two chips are distinguishable', () => {
+  // Visible text is "Download"/"Remove" on every chip: the accessible name is
+  // the only thing that says which attachment the button acts on.
+  const attachments = [
+    { attachment_id: 'a1', event_id: 'e1', kind: 'file', name: 'spec.pdf', mime: 'application/pdf' },
+    { attachment_id: 'a2', event_id: 'e2', kind: 'image', name: 'shot.png', mime: 'image/png' }
+  ]
+
+  render(<CanonicalGroupAttachments attachments={attachments} binding={binding} disabled={false} onChange={vi.fn()} />)
+
+  expect(screen.getByRole('button', { name: 'Download: spec.pdf' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Download: shot.png' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Remove: spec.pdf' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: 'Remove: shot.png' })).toBeTruthy()
+  // Both chips keep the same visible label — the fix must not rewrite the UI.
+  expect(screen.getAllByRole('button', { name: /^Download: / })).toHaveLength(2)
 })

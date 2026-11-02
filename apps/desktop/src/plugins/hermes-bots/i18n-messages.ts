@@ -311,6 +311,7 @@ export type BotsMessages = {
     /** Composer chip: sends waiting behind the room's running turn. */
     queued: (count: number) => string
     removeAttachment: string
+    attachmentFallback: string
     threadFallback: string
     replyCount: (replies: number) => string
     dropToThread: string

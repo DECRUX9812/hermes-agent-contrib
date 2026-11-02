@@ -1308,10 +1308,10 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
             ) : (
               <img alt="" className="size-6 rounded object-cover" src={img.data} />
             )}
-            <span className="max-w-32 truncate text-[0.625rem] text-(--ui-text-secondary)">{img.name || 'image'}</span>
+            <span className="max-w-32 truncate text-[0.625rem] text-(--ui-text-secondary)">{img.name || b.group.attachmentFallback}</span>
             <Tip label={b.group.removeAttachment}>
               <Button
-                aria-label={b.group.removeAttachment}
+                aria-label={img.name ? `${b.group.removeAttachment}: ${img.name}` : b.group.removeAttachment}
                 onClick={() => removeImage(thread, index)}
                 size="icon-xs"
                 variant="ghost"
@@ -1727,10 +1727,13 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
             {attachButton(null)}
             {queuedCount > 0 ? (
               // Sends typed while the room is working queue behind the running
-              // turn; without this the composer looked like it ate them.
+              // turn; without this the composer looked like it ate them. Live
+              // region: the count changes with no focus move to carry it.
               <span
+                aria-live="polite"
                 className="shrink-0 rounded-full bg-(--ui-inline-code-background) px-2 py-0.5 text-[0.625rem] font-medium tabular-nums text-(--ui-text-secondary)"
                 data-slot="group-queued-count"
+                role="status"
               >
                 {b.group.queued(queuedCount)}
               </span>

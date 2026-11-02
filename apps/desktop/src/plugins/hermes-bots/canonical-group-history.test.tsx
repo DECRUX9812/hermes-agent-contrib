@@ -79,7 +79,7 @@ it('keeps a committed file downloadable in history after Send clears the compose
   expect(history.queryByRole('button', { name: 'Attach files' })).toBeNull()
   expect(history.queryByRole('button', { name: 'Remove attachment' })).toBeNull()
   expect(view.container.querySelector('form')?.textContent).not.toContain(manifest.name)
-  fireEvent.click(history.getByRole('button', { name: 'Download' }))
+  fireEvent.click(history.getByRole('button', { name: /^Download: / }))
   await waitFor(() => expect(observed.downloads).toHaveLength(1))
   await expectDownloaded(observed, new Uint8Array([65]), manifest.name, manifest.mime)
   expect(save).not.toHaveBeenCalled()
@@ -112,8 +112,8 @@ it('binds user/member history downloads to their real event and refuses missing 
   })
   render(<CanonicalGroupWorkspace binding={binding} />)
   const history = within(screen.getByRole('log'))
-  await waitFor(() => expect(history.getAllByRole('button', { name: 'Download' })).toHaveLength(4))
-  const buttons = history.getAllByRole('button', { name: 'Download' }) as HTMLButtonElement[]
+  await waitFor(() => expect(history.getAllByRole('button', { name: /^Download: / })).toHaveLength(4))
+  const buttons = history.getAllByRole('button', { name: /^Download: / }) as HTMLButtonElement[]
   expect(buttons.map(button => button.disabled)).toEqual([false, false, true, true])
   fireEvent.click(buttons[0])
   await waitFor(() => expect(observed.downloads).toHaveLength(1))

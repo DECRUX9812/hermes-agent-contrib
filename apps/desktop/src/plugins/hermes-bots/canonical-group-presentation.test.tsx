@@ -93,7 +93,7 @@ it('keeps attachment-only messages and rows without optional display metadata re
   expect(screen.getByText('helper')).toBeTruthy()
   expect(container.querySelector('time')?.dateTime).toBe(new Date(0).toISOString())
   expect(container.querySelectorAll('time')).toHaveLength(1)
-  expect(screen.getByRole('button', { name: 'Download' })).toBeTruthy()
+  expect(screen.getByRole('button', { name: /^Download: / })).toBeTruthy()
 })
 
 it('keeps failed, cancelled, deferred and unavailable work visible without printing transport markers', () => {

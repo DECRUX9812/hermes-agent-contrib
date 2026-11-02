@@ -58,7 +58,7 @@ it('initiates the real user-facing download with exact bytes/name, never the com
   const { observed, cache, release } = setup()
   render(<CanonicalGroupWorkspace binding={binding} />)
   const history = within(screen.getByRole('log'))
-  fireEvent.click(await history.findByRole('button', { name: 'Download' }))
+  fireEvent.click(await history.findByRole('button', { name: /^Download: / }))
   await act(async () => release())
   await waitFor(() => expect(observed.downloads).toHaveLength(1), { timeout: 2000 })
   await expectDownloaded(observed, new Uint8Array([65]), attachment.name, attachment.mime)
@@ -71,7 +71,7 @@ it('initiates the real user-facing download with exact bytes/name, never the com
 it.each(['unmount', 'hidden', 'profile', 'connection', 'room'])('does not initiate a late download or cache write after %s', async change => {
   const { observed, cache, release } = setup()
   const view = render(<CanonicalGroupWorkspace binding={binding} />)
-  fireEvent.click(await within(screen.getByRole('log')).findByRole('button', { name: 'Download' }))
+  fireEvent.click(await within(screen.getByRole('log')).findByRole('button', { name: /^Download: / }))
   await waitFor(() => expect(request.mock.calls.some(call => call[1] === 'groups.attachment.download')).toBe(true))
 
   if (change === 'unmount') {view.unmount()}
