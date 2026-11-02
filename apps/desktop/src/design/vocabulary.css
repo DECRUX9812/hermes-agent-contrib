@@ -3,22 +3,31 @@
  *
  * Hermes ships 266 design tokens. A vocabulary that large constrains nothing:
  * when no existing name is quite right, the component writes a literal instead,
- * which is how 2,078 production hex values accumulated. DSH — the harness this
- * app is measured against — gives components fourteen colour aliases, and its
- * components therefore have nowhere to put a literal.
+ * which is how hundreds of colour literals accumulated. So this file declares a
+ * much smaller one — fourteen colour aliases over tokens Hermes already has,
+ * plus a type ramp, six radii, three elevations and a single focus ring.
  *
- * So this file is not a palette. It is a *smaller vocabulary*: fourteen aliases
- * that map onto tokens Hermes already has, plus one type ramp, six radii, three
- * elevations and a single focus ring. Nothing here introduces a new colour;
- * every alias points at the existing token so a theme change still lands.
+ * Measured against the reference rather than assumed (2026-11-02):
+ *   grep -oE '--dsw-alias-[a-z0-9-]+' index-BNyAYEM7.css | sort -u | wc -l
+ *     → 55
+ * Fifty-five, not the "fourteen" an earlier hand-off stated: fourteen are the
+ * core palette roles (bg / border / label / brand / state / sidebar) and the
+ * rest are component-level aliases (button-fill, toast-bg, scrollbar-hover-l2,
+ * menu-icon …). The direction still holds — 55 role-named aliases versus 266
+ * free-form tokens — but the number above is the measured one.
  *
- * The rule that makes it enforceable: `#hex` outside this file and `styles.css`
- * fails `npm run lint:hex` (scripts/lint-hex-tokens.mjs). The count can only
- * fall, and the lint is the enforcement `!important` never had.
+ * The type ramp below is OURS, not copied: the reference does not ship one as
+ * variables. It has `--dsw-font-family`, a set of markdown role tokens and a
+ * single size token (`--dsw-font-xs-13`). An earlier hand-off listed an eight
+ * step ramp of `--dsw-font-xxxs-11` … `--dsw-font-xl-24`; none of those eight
+ * names exists in the shipped CSS. Ours is labelled as ours.
  *
- * Deliberately NOT here: a spacing scale. DSH does not publish one either —
- * density is component-local over 4/6/8/12/16/20/24 — so promoting it to tokens
- * would be an inference dressed as a fact.
+ * The rule that makes it enforceable: `#hex` outside this file, `styles.css` and
+ * `src/themes/` fails `npm run lint:hex` (scripts/lint-hex-tokens.mjs).
+ *
+ * Deliberately NOT here: a spacing scale. The reference does not publish one
+ * either — density is component-local — so promoting it to tokens would be an
+ * inference dressed as a fact.
  */
 
 :root {
@@ -51,7 +60,7 @@
   --alias-state-warn: var(--ui-yellow);
   --alias-state-idle: var(--ui-text-tertiary);
 
-  /* ── type: one ramp, eight steps ───────────────────────────────────────── */
+  /* ── type: one ramp, eight steps — ours, not the reference's ───────────── */
   /* size / line-height. Each step has exactly one `-strong` sibling at 500;
      600 exists only on the 24px display step. Nothing bolds by reaching for
      700 at a call site. */
