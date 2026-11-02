@@ -211,10 +211,10 @@ export function renderRosterToolbar({
               </Button>
             </Tip>
           ) : null}
-          <Tip
-            label={activityToasts ? 'Activity toasts on — click to silence' : 'Activity toasts off — click to enable'}
-          >
+          <Tip label={activityToasts ? b.roster.activityToastsOn : b.roster.activityToastsOff}>
+            {/* Icon-only: a Tip is not an accessible name (WCAG 4.1.2). */}
             <Button
+              aria-label={activityToasts ? b.roster.activityToastsOn : b.roster.activityToastsOff}
               className="rounded-md text-(--ui-text-secondary) hover:text-foreground"
               onClick={() => setActivityToasts(!activityToasts)}
               size="icon-xs"

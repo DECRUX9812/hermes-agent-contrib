@@ -104,6 +104,9 @@ export type BotsMessages = {
     /** Section header above the roster list itself (the list is bots; group
      *  chats sit in their own section). */
     botsHeading: string
+    /** Accessible name of the activity-toast toggle (icon-only). */
+    activityToastsOn: string
+    activityToastsOff: string
     /** The gateway filter's "every source" option. */
     allGateways: string
     /** The activity filter's four options, in menu order. */
@@ -540,6 +543,8 @@ export type BotsMessages = {
     sessionMessages: (count: number) => string
     openChat: string
     updatedNow: string
+    /** Footer freshness with the time attached, so a bare "now" is never the whole story. */
+    updatedAt: (time: string) => string
     /** Inline dismiss × on a needs-you card. */
     dismissPrompt: string
     /** Live round/activity feed header. */

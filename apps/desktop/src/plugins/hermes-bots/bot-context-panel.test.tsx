@@ -324,4 +324,21 @@ describe('bot context panel', () => {
     expect(await screen.findByText(/Runs and conversations for this bot appear here/)).toBeTruthy()
     expect(screen.getByRole('button', { name: 'New cron' })).toBeTruthy()
   })
+
+  // The footer used to print relativeTime() alone, so it read "now" — a word
+  // with no subject that looks like a control. It now names what is fresh.
+  it('names the footer timestamp instead of printing a bare "now"', async () => {
+    request.mockResolvedValue({ jobs: [], scoped: 'research' })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    // Wait for the first fetch to land: until then the footer shows the
+    // "just now" fallback and both branches would look identical to a bare
+    // relativeTime. The assertion is about the timestamp branch.
+    await vi.waitFor(() => expect(screen.queryByText('Updated just now')).toBeNull())
+
+    expect(screen.getByText(/^Updated \S/)).toBeTruthy()
+    expect(screen.queryByText(/^now$/)).toBeNull()
+  })
 })

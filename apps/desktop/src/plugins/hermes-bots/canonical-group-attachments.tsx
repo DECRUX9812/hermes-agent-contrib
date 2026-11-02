@@ -1,4 +1,4 @@
-import { Button, randomUuid } from '@hermes/plugin-sdk'
+import { Button, Codicon, randomUuid } from '@hermes/plugin-sdk'
 import { type Ref, useImperativeHandle, useLayoutEffect, useRef, useState } from 'react'
 
 import { downloadCanonicalAttachment } from './canonical-attachment-download'
@@ -110,7 +110,9 @@ export function CanonicalGroupAttachments({ binding, attachments, onChange, onUp
     {!readOnly && <><input hidden onChange={e => { const file = e.target.files?.[0];
 
  if (file) {void upload([file]);} e.currentTarget.value = '' }} ref={input} type="file" />
-    <Button disabled={disabled || busy} onClick={() => input.current?.click()} size="sm" type="button" variant="ghost">{labels.attachFiles}</Button></>}
+    {/* Icon, not the words "Attach files": a text button at the head of the
+        composer competed with Send for the eye. The accessible name is kept. */}
+    <Button aria-label={labels.attachFiles} disabled={disabled || busy} onClick={() => input.current?.click()} size="icon-xs" type="button" variant="ghost"><Codicon name="attach" /></Button></>}
     <RoomAttachmentChips
       chips={attachments.map((a, index) => ({
         key: a.attachment_id ?? a.name ?? `attachment-${index}`,

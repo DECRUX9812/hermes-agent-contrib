@@ -739,10 +739,15 @@ const selected = useValue($selectedBot)
         ) : null}
       </div>
       <div className="flex items-center justify-between gap-2 border-t border-(--ui-stroke-tertiary) px-3 py-2">
+        {/* A bare "now" is not a fact: it names no subject and reads as a
+            control. The footer says what is fresh. */}
         <span className="truncate text-[0.6875rem] text-(--ui-text-secondary)">
-          {dataUpdatedAt ? relativeTime(dataUpdatedAt) : p.updatedNow}
+          {dataUpdatedAt ? p.updatedAt(relativeTime(dataUpdatedAt)) : p.updatedNow}
         </span>
-        <div className="flex items-center gap-1">
+        {/* The actions keep their width; the timestamp is the text that
+            truncates. Without shrink-0 the buttons compressed first, so the
+            footer read "Open chat …" — a label clipped by its own row. */}
+        <div className="flex shrink-0 items-center gap-1">
           {owner ? (
             <Button onClick={() => setEditing(owner)} size="sm" variant="ghost">
               {b.bot.editMenu}

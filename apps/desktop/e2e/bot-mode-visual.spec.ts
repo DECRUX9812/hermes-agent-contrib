@@ -128,6 +128,10 @@ test('the roster paints every bot, and nothing blank', async () => {
   // the cheapest proof that the roster's data path ran.
   await expect(page.locator('[data-slot="bots-roster"]')).toContainText('alpha')
 
+  // Icon-only controls need a name, not just a tooltip (WCAG 4.1.2). The toast
+  // toggle had a Tip and nothing else, so it was nameless to assistive tech.
+  await expect(page.getByRole('button', { name: /^Activity toasts/ })).toBeVisible()
+
   await expectVisualSnapshot(page, { app, name: 'bot-mode-roster' })
 })
 
