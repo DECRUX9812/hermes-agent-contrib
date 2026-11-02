@@ -1,0 +1,99 @@
+/**
+ * The vocabulary a component is allowed to speak.
+ *
+ * Hermes ships 266 design tokens. A vocabulary that large constrains nothing:
+ * when no existing name is quite right, the component writes a literal instead,
+ * which is how 2,078 production hex values accumulated. DSH — the harness this
+ * app is measured against — gives components fourteen colour aliases, and its
+ * components therefore have nowhere to put a literal.
+ *
+ * So this file is not a palette. It is a *smaller vocabulary*: fourteen aliases
+ * that map onto tokens Hermes already has, plus one type ramp, six radii, three
+ * elevations and a single focus ring. Nothing here introduces a new colour;
+ * every alias points at the existing token so a theme change still lands.
+ *
+ * The rule that makes it enforceable: `#hex` outside this file and `styles.css`
+ * fails `npm run lint:hex` (scripts/lint-hex-tokens.mjs). The count can only
+ * fall, and the lint is the enforcement `!important` never had.
+ *
+ * Deliberately NOT here: a spacing scale. DSH does not publish one either —
+ * density is component-local over 4/6/8/12/16/20/24 — so promoting it to tokens
+ * would be an inference dressed as a fact.
+ */
+
+:root {
+  /* ── colour: fourteen aliases ──────────────────────────────────────────── */
+
+  /* Backgrounds. base < layer-1 < layer-2 < overlay: the nesting order, not a
+     brightness scale. */
+  --alias-bg-base: var(--ui-bg-primary);
+  --alias-bg-layer-1: var(--ui-bg-secondary);
+  --alias-bg-layer-2: var(--ui-bg-tertiary);
+  --alias-bg-overlay: var(--ui-bg-elevated);
+  --alias-sidebar-fill: var(--ui-bg-sidebar);
+
+  /* Borders. l1 is the hairline every surface gets; l2 is for something that
+     needs to read as a real edge. There is no l3/l4 — elevation and focus own
+     those, exactly as DSH does. */
+  --alias-border-l1: var(--ui-stroke-tertiary);
+  --alias-border-l2: var(--ui-stroke-secondary);
+
+  /* Text. Two labels, not four: if a component needs "tertiary", it is a
+     disabled state or a hint, and both have a state colour. */
+  --alias-label-primary: var(--ui-text-primary);
+  --alias-label-secondary: var(--ui-text-secondary);
+
+  /* One accent, and four states. State colours are for status only — never for
+     decoration, never for a brand moment. */
+  --alias-brand-primary: var(--ui-accent);
+  --alias-state-error: var(--ui-red);
+  --alias-state-success: var(--ui-green);
+  --alias-state-warn: var(--ui-yellow);
+  --alias-state-idle: var(--ui-text-tertiary);
+
+  /* ── type: one ramp, eight steps ───────────────────────────────────────── */
+  /* size / line-height. Each step has exactly one `-strong` sibling at 500;
+     600 exists only on the 24px display step. Nothing bolds by reaching for
+     700 at a call site. */
+  --font-xxxs-11: 11px;
+  --font-xxxs-11-line: 14px;
+  --font-xxs-12: 12px;
+  --font-xxs-12-line: 18px;
+  --font-xs-13: 13px;
+  --font-xs-13-line: 20px;
+  --font-s-14: 14px;
+  --font-s-14-line: 22px;
+  --font-base-16: 16px;
+  --font-base-16-line: 24px;
+  --font-m-18: 18px;
+  --font-m-18-line: 28px;
+  --font-l-20: 20px;
+  --font-l-20-line: 28px;
+  --font-xl-24: 24px;
+  --font-xl-24-line: 32px;
+
+  --weight-body: 400;
+  --weight-strong: 500;
+  --weight-display: 600;
+
+  /* ── radius: five steps plus the panel ─────────────────────────────────── */
+  --alias-radius-xs: 4px;
+  --alias-radius-sm: 8px;
+  --alias-radius-md: 12px;
+  --alias-radius-lg: 16px;
+  --alias-radius-xl: 20px;
+  --alias-radius-panel: 28px;
+
+  /* ── elevation: three levels, each a hairline plus two shadows ─────────── */
+  /* Never a bare box-shadow at a call site: pick a level. */
+  --alias-elevation-soft: 0 4px 16px color-mix(in srgb, black 3%, transparent),
+    0 0 24px color-mix(in srgb, black 2%, transparent);
+  --alias-elevation-panel: 0 3px 8px color-mix(in srgb, black 3%, transparent),
+    0 0 16px color-mix(in srgb, black 2%, transparent);
+  --alias-elevation-prominent: 0 3px 8px color-mix(in srgb, black 4%, transparent),
+    0 0 20px color-mix(in srgb, black 3%, transparent);
+
+  /* ── focus: one ring, app-wide ─────────────────────────────────────────── */
+  --alias-focus-ring-width: 2px;
+  --alias-focus-ring-color: var(--ui-accent);
+}

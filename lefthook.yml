@@ -27,6 +27,14 @@ pre-commit:
       glob: "*src/plugins/hermes-bots/*.{ts,tsx}"
       run: node ./scripts/i18n-bots-literals.mjs {staged_files}
 
+    # A ratchet, not a cliff: the count of colour literals outside the token
+    # layer may only fall. It is repo-wide (no staged-file filter) because the
+    # baseline is one number, and a per-file check would let a commit that adds
+    # hex to an untouched file through.
+    - name: lint hex tokens
+      root: apps/desktop/
+      run: node ./scripts/lint-hex-tokens.mjs
+
     - name: lint tui
       root: ui-tui/
       glob: "*.{js,ts,tsx}"
