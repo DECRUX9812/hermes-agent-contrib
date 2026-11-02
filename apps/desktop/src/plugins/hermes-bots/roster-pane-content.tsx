@@ -148,7 +148,7 @@ export function renderRosterContent({
                 {hasRosterConstraint ? (
                   <div className="flex w-full items-center gap-1 px-2 py-1.5 text-[0.6875rem] font-medium text-(--ui-text-secondary)">
                     <Codicon name="eye-closed" />
-                    <span>Hidden</span>
+                    <span>{b.roster.hidden}</span>
                     <span className="text-(--ui-text-secondary)">{matchingHiddenBots.length}</span>
                   </div>
                 ) : (
@@ -158,7 +158,7 @@ export function renderRosterContent({
                     onClick={() => $showHiddenBots.set(!hiddenExpanded)}
                   >
                     <DisclosureCaret open={hiddenExpanded} />
-                    <span>Hidden</span>
+                    <span>{b.roster.hidden}</span>
                     <span className="text-(--ui-text-secondary)">{hiddenBots.length}</span>
                   </RowButton>
                 )}

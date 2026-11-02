@@ -68,7 +68,7 @@ import {
   knownGroups,
   liveGroupChatNames
 } from './group-membership'
-import { useBots } from './i18n'
+import { botsText, useBots } from './i18n'
 import { botProfileIdentity, displayName } from './labels'
 import { McpSetupButton } from './mcp-setup'
 import { ModelPicker } from './model-picker'
@@ -172,13 +172,16 @@ function requestOnTarget<T>(target: string, method: string, params: Record<strin
  *  that flight itself (the dialog's draftGenRef), since the draft is only
  *  recorded once the RPC returns (#141623). */
 function discardDraftProfile(draft: string, target: string) {
+  // Module scope: no hooks here, so resolve labels through the hook-free text.
+  const b = botsText()
+
   const discard = target
     ? requestOnTarget(target, 'cli.exec', { argv: ['profile', 'delete', draft, '--yes'] })
     : deleteBot({ name: draft })
 
   void Promise.resolve(discard)
-    .then(() => host.notify({ kind: 'success', message: `Draft agent "${draft}" discarded` }))
-    .catch(err => host.notifyError(err, `Could not clean up draft profile "${draft}"`))
+    .then(() => host.notify({ kind: 'success', message: b.bot.draftDiscarded(draft) }))
+    .catch(err => host.notifyError(err, b.bot.draftCleanupFailed(draft)))
 }
 
 /** The live Capabilities surface needs a real profile. Materialize it whenever

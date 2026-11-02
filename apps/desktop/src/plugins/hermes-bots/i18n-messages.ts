@@ -87,6 +87,7 @@ export type BotsMessages = {
     noMatchFilters: string
     clearFilters: string
     allHidden: string
+    hidden: string
     allHiddenDesc: string
     showHidden: string
     hideHidden: string
@@ -182,6 +183,8 @@ export type BotsMessages = {
     removeFromAllGroups: string
     createFirstHint: string
     createFailed: string
+    draftDiscarded: (name: string) => string
+    draftCleanupFailed: (name: string) => string
     advanced: string
     advancedHint: string
     advancedFailed: string
