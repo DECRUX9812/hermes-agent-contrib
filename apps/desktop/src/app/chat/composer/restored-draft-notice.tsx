@@ -34,10 +34,10 @@ export function RestoredDraftNotice({ freshDraft, onUndone, readLiveText }: Rest
       data-slot="composer-restored-draft"
       role="status"
     >
-      <div className="min-w-0 text-[0.6875rem] text-muted-foreground/88">{t.composer.restoredDraftNotice}</div>
+      <div className="min-w-0 text-11 text-muted-foreground/88">{t.composer.restoredDraftNotice}</div>
       <div className="flex shrink-0 items-center gap-1">
         <Button
-          className="h-6 rounded-md px-2 text-[0.6875rem]"
+          className="h-6 rounded-md px-2 text-11"
           onClick={() => {
             if (undoRestoredDraft(readLiveText())) {
               onUndone()
@@ -50,7 +50,7 @@ export function RestoredDraftNotice({ freshDraft, onUndone, readLiveText }: Rest
         </Button>
         <Button
           aria-label={t.common.close}
-          className="h-6 rounded-md px-2 text-[0.6875rem]"
+          className="h-6 rounded-md px-2 text-11"
           onClick={dismissRestoredDraftNotice}
           type="button"
           variant="ghost"

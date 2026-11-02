@@ -32,7 +32,7 @@ const HERE = import.meta.dirname
 const DESKTOP_ROOT = resolve(HERE, '..')
 const BASELINE = join(HERE, 'hex-baseline.json')
 
-const { hex: total, offenders } = countDebt(DESKTOP_ROOT)
+const { hex: total, offenders, textArbitrary } = countDebt(DESKTOP_ROOT)
 const update = process.argv.includes('--update')
 
 if (update) {
@@ -42,9 +42,13 @@ if (update) {
 }
 
 let baseline = 0
+let typeBaseline = 0
 
 try {
-  baseline = JSON.parse(readFileSync(BASELINE, 'utf8')).count ?? 0
+  const saved = JSON.parse(readFileSync(BASELINE, 'utf8'))
+
+  baseline = saved.count ?? 0
+  typeBaseline = saved.textArbitrary ?? 0
 } catch {
   console.error('lint:hex — no baseline at scripts/hex-baseline.json; run with --update once')
   process.exit(1)
@@ -73,4 +77,15 @@ if (delta < 0) {
   process.exit(0)
 }
 
-console.log(`lint:hex — ${total} colour literals outside the token layer, at the baseline.`)
+if (textArbitrary > typeBaseline) {
+  console.error(
+    `lint:type — ${textArbitrary} arbitrary font size(s), baseline ${typeBaseline} (+${textArbitrary - typeBaseline}).\n` +
+      `Use a ramp step (text-9/10/11/13/15/20/22, or Tailwind's xs/sm/base/lg/xl/2xl). Half-step optical corrections are exempt in scripts/hex-count.mjs.`,
+  )
+  process.exit(1)
+}
+
+console.log(
+  `lint:hex — ${total} colour literals outside the token layer, at the baseline.\n` +
+    `lint:type — ${textArbitrary} arbitrary font size(s), at the baseline.`,
+)

@@ -292,7 +292,7 @@ function ScopedSkillsTab({
                 id="skill-editor"
                 onClose={closeSkillEditor}
                 title={
-                  <span className="text-[0.6875rem] font-normal text-muted-foreground/60">
+                  <span className="text-11 font-normal text-muted-foreground/60">
                     {skillEditor.name}/SKILL.md
                   </span>
                 }

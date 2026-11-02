@@ -302,7 +302,7 @@ function ReviewDirRow({
         <span className="min-w-0 flex-1 truncate" title={node.name}>
           {node.name}
         </span>
-        {!open && <DiffCount added={node.added} className="text-[0.625rem] leading-4" removed={node.removed} />}
+        {!open && <DiffCount added={node.added} className="text-10 leading-4" removed={node.removed} />}
       </div>
       {!leaf && open && node.children && <ReviewNodeList animate={animate} depth={depth + 1} nodes={node.children} />}
     </>
@@ -414,7 +414,7 @@ function ReviewFileRow({ node, depth }: { node: ReviewTreeNode; depth: number })
             {node.name}
           </span>
           {node.dir && (
-            <span className="min-w-0 shrink-[9999] truncate text-[0.6875rem] text-(--ui-text-tertiary)" title={node.dir}>
+            <span className="min-w-0 shrink-[9999] truncate text-11 text-(--ui-text-tertiary)" title={node.dir}>
               {node.dir}
             </span>
           )}
@@ -453,7 +453,7 @@ function ReviewFileRow({ node, depth }: { node: ReviewTreeNode; depth: number })
 
         <DiffCount
           added={node.added}
-          className="text-[0.625rem] leading-4 group-hover/review-row:hidden"
+          className="text-10 leading-4 group-hover/review-row:hidden"
           removed={node.removed}
         />
         {file.staged && (

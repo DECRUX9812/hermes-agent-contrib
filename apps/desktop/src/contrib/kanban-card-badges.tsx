@@ -254,13 +254,13 @@ export function KanbanCardBadges({ card, tenants }: KanbanCardBadgesProps): null
           label={
             <span className="flex flex-col gap-0.5">
               {badge.tooltip && <span>{badge.tooltip}</span>}
-              <span className="text-[0.625rem] opacity-70">{pluginName(badge.source, records)}</span>
+              <span className="text-10 opacity-70">{pluginName(badge.source, records)}</span>
             </span>
           }
         >
           <span
             className={cn(
-              'inline-flex max-w-full items-center truncate rounded-[3px] px-1.5 py-0.5 text-[0.625rem] font-medium leading-none',
+              'inline-flex max-w-full items-center truncate rounded-[3px] px-1.5 py-0.5 text-10 font-medium leading-none',
               badge.tone === 'neutral' ? 'bg-muted text-muted-foreground' : HUE_STYLE
             )}
             data-slot="kanban-card-badge"

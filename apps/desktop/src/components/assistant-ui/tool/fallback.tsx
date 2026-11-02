@@ -114,7 +114,7 @@ const TOOL_HEADER_GLYPH_WRAP_CLASS = cn(SCAFFOLD_GLYPH_CLASS, 'self-center')
 // Glass-style section label that sits above any pre/JSON/output block.
 // Lowercase tracking + tiny size so it reads as a quiet field label rather
 // than a chrome heading. Used for "stdout", "stderr", "Search results", etc.
-const TOOL_SECTION_LABEL_CLASS = 'mb-1 text-[0.625rem] font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)'
+const TOOL_SECTION_LABEL_CLASS = 'mb-1 text-10 font-medium uppercase tracking-[0.08em] text-(--ui-text-tertiary)'
 
 // Inset scroll surface for any detail body. The expanded tool row owns the
 // border; the payload itself is just clipped raw text.
@@ -123,10 +123,10 @@ const TOOL_SECTION_SURFACE_CLASS =
 
 const TOOL_EXPANDED_SHELL_CLASS = 'rounded-[6px] border border-(--ui-stroke-tertiary)'
 
-const TOOL_SECTION_PRE_CLASS = cn(TOOL_SECTION_SURFACE_CLASS, 'font-mono text-[0.6875rem] leading-relaxed')
+const TOOL_SECTION_PRE_CLASS = cn(TOOL_SECTION_SURFACE_CLASS, 'font-mono text-11 leading-relaxed')
 
 // Raw args/result dump — reference material, so a notch smaller than a body.
-const TOOL_PAYLOAD_PRE_CLASS = cn(TOOL_SECTION_SURFACE_CLASS, 'font-mono text-[0.625rem] leading-relaxed')
+const TOOL_PAYLOAD_PRE_CLASS = cn(TOOL_SECTION_SURFACE_CLASS, 'font-mono text-10 leading-relaxed')
 
 /**
  * Technical-mode raw payload, behind a chevron disclosure.
@@ -210,7 +210,7 @@ function statusGlyph(status: ToolStatus, copy: ToolStatusCopy): ReactNode {
     return (
       <GlyphSpinner
         ariaLabel={copy.statusRunning}
-        className="size-3.5 shrink-0 text-[0.9375rem] text-(--ui-text-tertiary)"
+        className="size-3.5 shrink-0 text-15 text-(--ui-text-tertiary)"
         spinner="breathe"
       />
     )
@@ -670,7 +670,7 @@ function ToolEntry({ part }: ToolEntryProps) {
               <span className={cn(SCAFFOLD_META_CLASS, memoryMetaClass)}>{view.countLabel}</span>
             )}
             {showDiffStats && diffStats && (
-              <span className="flex shrink-0 items-center gap-1 font-mono text-[0.625rem] tabular-nums">
+              <span className="flex shrink-0 items-center gap-1 font-mono text-10 tabular-nums">
                 {diffStats.added > 0 && (
                   <span className="text-emerald-600 dark:text-emerald-400">+{diffStats.added}</span>
                 )}
@@ -733,7 +733,7 @@ function ToolEntry({ part }: ToolEntryProps) {
                   {detailSections.body && (
                     <pre
                       className={cn(
-                        'max-h-56 overflow-auto whitespace-pre-wrap wrap-anywhere font-mono text-[0.6875rem] leading-[1.55] text-(--ui-text-secondary)',
+                        'max-h-56 overflow-auto whitespace-pre-wrap wrap-anywhere font-mono text-11 leading-[1.55] text-(--ui-text-secondary)',
                         detailSections.summary && 'mt-1.5'
                       )}
                     >
@@ -811,7 +811,7 @@ function TerminalTranscript({ command, exitCode }: TerminalTranscriptProps) {
   }
 
   return (
-    <div className="flex min-w-0 items-center gap-2 rounded-[0.25rem] border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) px-2 py-1.5 font-mono text-[0.6875rem] leading-relaxed">
+    <div className="flex min-w-0 items-center gap-2 rounded-[0.25rem] border border-(--ui-stroke-tertiary) bg-(--ui-bg-quinary) px-2 py-1.5 font-mono text-11 leading-relaxed">
       {command && (
         <code className="min-w-0 flex-1 whitespace-pre-wrap wrap-anywhere text-(--ui-text-secondary)">
           <span aria-hidden className="select-none text-(--ui-accent-secondary)">
@@ -823,7 +823,7 @@ function TerminalTranscript({ command, exitCode }: TerminalTranscriptProps) {
       {exitCode !== undefined && (
         <span
           className={cn(
-            'shrink-0 rounded bg-(--ui-bg-tertiary) px-1 py-px text-[0.625rem] tabular-nums',
+            'shrink-0 rounded bg-(--ui-bg-tertiary) px-1 py-px text-10 tabular-nums',
             exitCode === 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-amber-600 dark:text-amber-400'
           )}
         >
@@ -1053,17 +1053,21 @@ const ToolRun: FC<PropsWithChildren<{ endIndex: number; startIndex: number }>> =
   // so this fires only on the running -> settled transition, never re-closing a
   // section the user opened afterwards.
   const settledHandled = useRef(false)
+  // eslint-disable-next-line no-restricted-syntax -- transition guard, not a store mirror: this fires once per running -> settled edge and never re-reads the atom in a callback
   useEffect(() => {
     if (messageRunning) {
       settledHandled.current = false
 
       return
     }
+
     if (settledHandled.current || count < 2) {
       return
     }
+
     settledHandled.current = true
-    if (persistedOpen === true) setToolDisclosureOpen(disclosureId, false)
+
+    if (persistedOpen === true) {setToolDisclosureOpen(disclosureId, false)}
   }, [messageRunning, count, disclosureId, persistedOpen])
 
   // The original runtime stays mounted while its summary owns the activity.

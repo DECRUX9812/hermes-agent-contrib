@@ -21,9 +21,9 @@ const badgeVariants = cva(
         solid: 'bg-primary text-primary-foreground'
       },
       size: {
-        default: 'px-1.5 py-0.5 text-[0.625rem] [&_svg]:size-3',
-        xs: 'px-1 py-px text-[0.625rem] [&_svg]:size-2.5',
-        overlay: 'h-2 min-w-2 justify-center rounded-[2px] px-px text-[7px] font-semibold tabular-nums'
+        default: 'px-1.5 py-0.5 text-10 [&_svg]:size-3',
+        xs: 'px-1 py-px text-10 [&_svg]:size-2.5',
+        overlay: 'h-2 min-w-2 justify-center rounded-[2px] px-px text-7 font-semibold tabular-nums'
       }
     },
     defaultVariants: { variant: 'default', size: 'default' }

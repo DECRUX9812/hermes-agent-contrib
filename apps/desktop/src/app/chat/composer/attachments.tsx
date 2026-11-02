@@ -65,6 +65,7 @@ function AttachmentPill({ attachment, onRemove }: { attachment: ComposerAttachme
       (attachment.detail === attachment.stagedUpload?.path ||
         /(?:^|\/)uploads\/|\.hermes/.test(attachment.detail))
   )
+
   const detail =
     attachment.detail && attachment.detail !== attachment.label && !detailIsInternalPath
       ? attachment.detail
@@ -192,13 +193,13 @@ function AttachmentPill({ attachment, onRemove }: { attachment: ComposerAttachme
               )}
             </span>
             <span className="min-w-0">
-              <span className="block truncate text-[0.6875rem] font-medium leading-4 text-foreground/90">
+              <span className="block truncate text-11 font-medium leading-4 text-foreground/90">
                 {attachment.label}
               </span>
               {detail && (
                 <span
                   className={cn(
-                    'block truncate text-[0.625rem] leading-3.5',
+                    'block truncate text-10 leading-3.5',
                     hasUploadError ? 'text-destructive/80' : 'text-muted-foreground/65'
                   )}
                 >

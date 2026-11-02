@@ -195,7 +195,7 @@ export function SharedMetricsConsentDialog({ enabled, profile, requestGateway }:
           </button>
           {expanded ? (
             <div
-              className="rounded-lg bg-(--ui-bg-tertiary)/40 px-3 py-2.5 text-[0.8125rem] leading-5 text-(--ui-text-secondary)"
+              className="rounded-lg bg-(--ui-bg-tertiary)/40 px-3 py-2.5 text-13 leading-5 text-(--ui-text-secondary)"
               id={detailsId}
             >
               <ul className="list-disc space-y-0.5 pl-5">
@@ -211,7 +211,7 @@ export function SharedMetricsConsentDialog({ enabled, profile, requestGateway }:
           ) : null}
         </div>
 
-        <div className="grid gap-2 text-[0.8125rem] leading-5 text-(--ui-text-secondary)">
+        <div className="grid gap-2 text-13 leading-5 text-(--ui-text-secondary)">
           <p>{copy.sending}</p>
           <div>
             <DocsLink href={SHARED_METRICS_DOCS_URL}>{copy.readDocs}</DocsLink>

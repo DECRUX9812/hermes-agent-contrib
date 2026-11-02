@@ -35,7 +35,7 @@ import {
 // `overflow-x-clip` clips whole trailing items instead of letting flexbox
 // compress siblings into each other's bounds.
 const STATUSBAR_ACTION_CLASS =
-  'inline-flex h-full shrink-0 items-center gap-1 whitespace-nowrap rounded-none px-1.5 text-[0.6875rem] text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground disabled:cursor-default disabled:opacity-45'
+  'inline-flex h-full shrink-0 items-center gap-1 whitespace-nowrap rounded-none px-1.5 text-11 text-(--ui-text-tertiary) transition-colors hover:bg-(--chrome-action-hover) hover:text-foreground disabled:cursor-default disabled:opacity-45'
 
 export interface StatusbarMenuItem {
   id: string
@@ -243,7 +243,7 @@ function StatusbarOverflowMenu({
               {item.icon}
               <span className="min-w-0 truncate">{itemMenuLabel(item)}</span>
               {pluginName && (
-                <span className="ml-auto shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">{pluginName}</span>
+                <span className="ml-auto shrink-0 text-11 text-(--ui-text-quaternary)">{pluginName}</span>
               )}
             </DropdownMenuItem>
           )
@@ -490,7 +490,7 @@ const StatusbarItemView = memo(function StatusbarItemView({
       <Tip label={tooltipLabel}>
         <div
           className={cn(
-            'inline-flex h-full shrink-0 items-center gap-1 whitespace-nowrap px-1.5 text-[0.6875rem] text-(--ui-text-tertiary)',
+            'inline-flex h-full shrink-0 items-center gap-1 whitespace-nowrap px-1.5 text-11 text-(--ui-text-tertiary)',
             item.className
           )}
         >

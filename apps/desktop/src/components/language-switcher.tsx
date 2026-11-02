@@ -177,7 +177,7 @@ function LanguageCommand({
               value={option.id}
             >
               <span className="min-w-0 flex-1 truncate">{option.endonym}</span>
-              <span className="font-mono text-[0.625rem] uppercase text-(--ui-text-tertiary)">{option.id}</span>
+              <span className="font-mono text-10 uppercase text-(--ui-text-tertiary)">{option.id}</span>
               <CommandItemCheck checked={selected} />
             </CommandItem>
           )

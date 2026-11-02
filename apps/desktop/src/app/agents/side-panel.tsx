@@ -1,8 +1,8 @@
 import { useStore } from '@nanostores/react'
 import { type DragEvent, useMemo, useState } from 'react'
 
-import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { useElapsedSeconds } from '@/components/chat/activity-timer'
+import { ActivityTimerText } from '@/components/chat/activity-timer-text'
 import { Codicon } from '@/components/ui/codicon'
 import { GlyphSpinner } from '@/components/ui/glyph-spinner'
 import { useI18n } from '@/i18n'
@@ -37,6 +37,7 @@ export function AgentsSidePanel() {
     () => buildSubagentTree(subagentsForPanel(bySession, activeSessionId)),
     [bySession, activeSessionId]
   )
+
   const tiles = useMemo(() => orderTiles(nodes, savedOrder), [nodes, savedOrder])
 
   const [expanded, setExpanded] = useState<string | null>(null)
@@ -89,6 +90,7 @@ export function AgentsSidePanel() {
               if (!Number.isNaN(from)) {
                 moveTile(from, index)
               }
+
               setDragIndex(null)
             }}
             onToggle={() => setExpanded(expanded === node.id ? null : node.id)}
@@ -146,29 +148,29 @@ function AgentTile({ expanded, index, node, onDragEnd, onDragStart, onDrop, onTo
         </span>
         <span className="mt-0.5 flex h-[1.05rem] shrink-0 items-center">{statusGlyph(node.status, t.agents)}</span>
         <span className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="wrap-anywhere text-[0.75rem] font-medium leading-[1rem] text-foreground/90">
+          <span className="wrap-anywhere text-xs font-medium leading-[1rem] text-foreground/90">
             {node.goal}
           </span>
           <span className="flex min-w-0 flex-wrap items-center gap-1.5">
-            <span className="text-[0.625rem] font-medium text-muted-foreground/60">#{index + 1}</span>
+            <span className="text-10 font-medium text-muted-foreground/60">#{index + 1}</span>
             {isCustom ? (
-              <span className="rounded bg-(--ui-purple)/12 px-1 py-px text-[0.5625rem] font-medium text-(--ui-purple)">
+              <span className="rounded bg-(--ui-purple)/12 px-1 py-px text-9 font-medium text-(--ui-purple)">
                 {t.agents.title}
               </span>
             ) : (
-              <span className="rounded bg-muted/60 px-1 py-px text-[0.5625rem] font-medium text-muted-foreground/80">
+              <span className="rounded bg-muted/60 px-1 py-px text-9 font-medium text-muted-foreground/80">
                 {t.agents.delegation(node.taskCount)}
               </span>
             )}
             {node.model ? (
-              <span className="max-w-24 truncate rounded bg-muted/60 px-1 py-px font-mono text-[0.5625rem] text-muted-foreground/70">
+              <span className="max-w-24 truncate rounded bg-muted/60 px-1 py-px font-mono text-9 text-muted-foreground/70">
                 {node.model}
               </span>
             ) : null}
           </span>
         </span>
         <span className="mt-0.5 flex shrink-0 flex-col items-end gap-0.5">
-          {running ? <ActivityTimerText className="text-[0.625rem]" seconds={elapsed} /> : null}
+          {running ? <ActivityTimerText className="text-10" seconds={elapsed} /> : null}
           <Codicon
             className={cn('text-muted-foreground/50 transition-transform', expanded && 'rotate-90')}
             name="chevron-right"
@@ -179,24 +181,24 @@ function AgentTile({ expanded, index, node, onDragEnd, onDragStart, onDrop, onTo
 
       {expanded ? (
         <div className="grid min-w-0 gap-2 border-t border-(--ui-stroke-quaternary) px-3 py-2">
-          <div className="flex items-center gap-2 text-[0.6875rem]">
+          <div className="flex items-center gap-2 text-11">
             <span className="font-medium text-foreground/80">{statusLabel(node.status, t.agents)}</span>
             {node.currentTool ? (
               <span className="min-w-0 flex-1 truncate font-mono text-muted-foreground/70">{node.currentTool}</span>
             ) : null}
           </div>
           {latest ? (
-            <p className={cn('wrap-anywhere text-[0.6875rem] leading-relaxed', latest.isError ? 'text-destructive' : 'text-muted-foreground/80')}>
+            <p className={cn('wrap-anywhere text-11 leading-relaxed', latest.isError ? 'text-destructive' : 'text-muted-foreground/80')}>
               {latest.text}
               {running ? (
                 <GlyphSpinner ariaLabel={t.agents.streaming} className="ml-1 inline-block size-2 align-middle" spinner="breathe" />
               ) : null}
             </p>
           ) : (
-            <p className="text-[0.6875rem] text-muted-foreground/60">{t.agents.waitingActivity}</p>
+            <p className="text-11 text-muted-foreground/60">{t.agents.waitingActivity}</p>
           )}
-          {node.summary ? <p className="wrap-anywhere text-[0.6875rem] leading-relaxed text-foreground/85">{node.summary}</p> : null}
-          <p className="text-[0.625rem] text-muted-foreground/60">
+          {node.summary ? <p className="wrap-anywhere text-11 leading-relaxed text-foreground/85">{node.summary}</p> : null}
+          <p className="text-10 text-muted-foreground/60">
             {[
               node.toolCount ? t.agents.toolsCount(node.toolCount) : '',
               node.filesRead.length + node.filesWritten.length ? t.agents.filesCount(node.filesRead.length + node.filesWritten.length) : '',
@@ -215,11 +217,15 @@ function statusLabel(status: SubagentNode['status'], a: ReturnType<typeof useI18
   switch (status) {
     case 'completed':
       return a.done
+
     case 'failed':
+
     case 'interrupted':
       return a.failed
+
     case 'queued':
       return a.queued
+
     default:
       return a.running
   }

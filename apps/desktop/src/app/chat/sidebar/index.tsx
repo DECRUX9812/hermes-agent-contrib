@@ -1690,7 +1690,7 @@ export function ChatSidebar({
                       // resolved region has been observed to swallow clicks on the
                       // top rows. Same carve-out as USER_BUBBLE_BASE_CLASS in
                       // thread.tsx.
-                      'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-[0.8125rem] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
+                      'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-13 font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
                       active &&
                         'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!',
                       !isInteractive &&
@@ -1760,7 +1760,7 @@ export function ChatSidebar({
                     {item.badge && (
                       <span
                         aria-label={`${item.badge} need attention`}
-                        className="ml-auto min-w-4 rounded-full bg-primary px-1 text-center text-[0.6875rem] font-medium leading-4 text-primary-foreground tabular-nums"
+                        className="ml-auto min-w-4 rounded-full bg-primary px-1 text-center text-11 font-medium leading-4 text-primary-foreground tabular-nums"
                         data-slot="sidebar-nav-badge"
                       >
                         {item.badge}
@@ -1832,7 +1832,7 @@ export function ChatSidebar({
                       <SidebarMenuButton
                         aria-current={activeExtension ? 'page' : undefined}
                         className={cn(
-                          'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-[0.8125rem] font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
+                          'flex h-7 w-full justify-start gap-2 rounded-md border border-transparent px-2 text-left text-13 font-medium text-(--ui-text-secondary) transition-colors duration-100 ease-out [-webkit-app-region:no-drag] hover:bg-(--ui-control-hover-background) hover:text-foreground hover:transition-none',
                           activeExtension &&
                             'border-(--ui-stroke-tertiary) bg-(--ui-control-active-background) text-foreground shadow-none hover:border-(--ui-stroke-tertiary)!'
                         )}
@@ -1852,7 +1852,7 @@ export function ChatSidebar({
                           {activeExtension ? (s.nav[activeExtension.id] ?? activeExtension.label) : 'Extensions'}
                         </span>
                         {!activeExtension && (
-                          <span className="ml-auto min-w-4 rounded-full bg-(--ui-control-hover-background) px-1 text-center text-[0.6875rem] font-medium leading-4 tabular-nums">
+                          <span className="ml-auto min-w-4 rounded-full bg-(--ui-control-hover-background) px-1 text-center text-11 font-medium leading-4 tabular-nums">
                             {contributedShown.length}
                           </span>
                         )}
@@ -1864,7 +1864,7 @@ export function ChatSidebar({
                           <row.icon className="size-4 shrink-0" />
                           <span className="min-w-0 truncate">{s.nav[row.id] ?? row.label}</span>
                           {row.pluginId && (
-                            <span className="ml-auto shrink-0 text-[0.6875rem] text-(--ui-text-quaternary)">
+                            <span className="ml-auto shrink-0 text-11 text-(--ui-text-quaternary)">
                               {pluginDisplayName(row.pluginId, pluginRecords[row.pluginId]?.name)}
                             </span>
                           )}
@@ -2120,7 +2120,7 @@ export function ChatSidebar({
                 labelMeta={
                   worktreeGroupingActive ? (
                     reposScanning && !projectsSkeletonVisible ? (
-                      <GlyphSpinner ariaLabel={s.loading} className="text-[0.6875rem] text-(--ui-text-quaternary)" />
+                      <GlyphSpinner ariaLabel={s.loading} className="text-11 text-(--ui-text-quaternary)" />
                     ) : undefined
                   ) : undefined
                 }
@@ -2197,7 +2197,7 @@ export function ChatSidebar({
                     label={group.label}
                     labelIcon={
                       <PlatformAvatar
-                        className="size-4 rounded-[4px] text-[0.5625rem] [&_svg]:size-3"
+                        className="size-4 rounded-[4px] text-9 [&_svg]:size-3"
                         platformId={group.sourceId}
                         platformName={group.label}
                       />
@@ -2237,13 +2237,13 @@ export function ChatSidebar({
             stack on top of this one is gone: Settings and Layout live in the
             window's top-right titlebar, so each renders exactly once. */}
         <div
-          className="mt-auto flex h-9 shrink-0 items-center justify-between gap-2 border-t border-(--ui-stroke-quaternary) px-1.5 text-[12px]"
+          className="mt-auto flex h-9 shrink-0 items-center justify-between gap-2 border-t border-(--ui-stroke-quaternary) px-1.5 text-xs"
           data-slot="sidebar-footer"
         >
           {profileRailVisible ? (
             <ProfileRail />
           ) : (
-            <span className="min-w-0 truncate px-1 text-[11px] font-medium text-(--ui-text-muted)">
+            <span className="min-w-0 truncate px-1 text-11 font-medium text-(--ui-text-muted)">
               {showAllProfiles ? 'All profiles' : (messagingProfile ?? profileScope)}
             </span>
           )}

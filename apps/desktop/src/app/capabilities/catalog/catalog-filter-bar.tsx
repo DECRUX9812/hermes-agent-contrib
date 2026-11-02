@@ -72,7 +72,7 @@ export function CatalogFilterBar(props: CatalogFilterBarProps) {
           </Popover>}
         </div>
         <div className="catalog-filter-trigger">
-          <span className="text-[0.625rem] font-medium uppercase tracking-wider text-(--ui-text-tertiary)" id={`${panelId}-label`}>{c.filters}{activeCount > 0 && ` · ${activeCount}`}</span>
+          <span className="text-10 font-medium uppercase tracking-wider text-(--ui-text-tertiary)" id={`${panelId}-label`}>{c.filters}{activeCount > 0 && ` · ${activeCount}`}</span>
           <Popover onOpenChange={setExpanded} open={expanded}>
             <PopoverTrigger asChild>
               <Button aria-labelledby={`${panelId}-label`} size="icon-xs" variant={expanded ? 'default' : 'secondary'}>

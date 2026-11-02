@@ -106,7 +106,7 @@ export function AuxTaskRouteSummary({
   const autoLine = inheritLabel ? `${m.inheritsFrom(inheritLabel)} · ${effectiveRoute}` : m.autoUseMain
 
   return (
-    <span className="font-mono text-[0.6875rem]">
+    <span className="font-mono text-11">
       {isAuto ? autoLine : `${current.provider} · ${current.model || m.providerDefault}`}
       {!isAuto && current.base_url && <span className="text-muted-foreground"> · {current.base_url}</span>}
       {effort && (

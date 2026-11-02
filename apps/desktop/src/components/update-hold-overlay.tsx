@@ -95,10 +95,10 @@ export function UpdateHoldOverlay() {
         <div className="flex items-start gap-3 px-5 py-4">
           <AlertTriangle className="mt-0.5 size-5 shrink-0 text-(--ui-yellow)0" />
           <div>
-            <h2 className="text-[0.9375rem] font-semibold tracking-tight" id={titleId}>
+            <h2 className="text-15 font-semibold tracking-tight" id={titleId}>
               {confirming ? copy.confirmTitle : unverified ? copy.titleUnverified : copy.title}
             </h2>
-            <p className="mt-1 text-[0.8125rem] leading-5 text-(--ui-text-tertiary)">
+            <p className="mt-1 text-13 leading-5 text-(--ui-text-tertiary)">
               {confirming ? copy.confirmBody : copy.description}
             </p>
           </div>

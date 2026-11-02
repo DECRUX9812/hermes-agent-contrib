@@ -22,7 +22,7 @@ const TAB =
 // Full height of the padded row: the strip's own vertical padding is the gap.
 // h-7 + self-center, not h-full: a stretched tab inside a padded rail sat flush
 // against the band's top edge and lost its top radii (0px above, 5px below).
-const TAB_HORIZONTAL = 'h-7 min-w-0 max-w-56 self-center rounded-md px-2.5 text-[12px] font-medium'
+const TAB_HORIZONTAL = 'h-7 min-w-0 max-w-56 self-center rounded-md px-2.5 text-xs font-medium'
 
 // Room for the close chip at the right edge — a floor, so a short label pays
 // nothing and a long one ellipsizes before it reaches the chip.
@@ -51,7 +51,7 @@ const TAB_SELECTED =
 // Segmented control (a sidebar's mode switcher): a small inset pill on a
 // recessed track. Same primitive, quieter voice — so a view switcher never
 // reads as a second row of document tabs beside the real ones.
-const SEGMENT = 'h-6 min-w-0 flex-1 justify-center rounded-[6px] px-1.5 text-[12px] font-medium'
+const SEGMENT = 'h-6 min-w-0 flex-1 justify-center rounded-[6px] px-1.5 text-xs font-medium'
 const SEGMENT_ACTIVE = 'bg-(--ui-bg-elevated) text-(--ui-text-primary) shadow-[var(--shadow-xs)]'
 const SEGMENT_IDLE = 'text-(--ui-text-secondary) hover:text-(--ui-text-primary)'
 
@@ -109,6 +109,7 @@ export const PaneTab = React.forwardRef<HTMLDivElement, PaneTabProps>(function P
   if (vertical && segmented) {
     return null
   }
+
   const edge = vertical ? (side === 'right' ? 'border-l' : 'border-r') : undefined
   const middle = middleClickHandlers(onClose)
 

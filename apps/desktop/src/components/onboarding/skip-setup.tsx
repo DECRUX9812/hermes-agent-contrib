@@ -26,7 +26,7 @@ function SkipButton({ runtimeId }: { runtimeId: string }) {
   return (
     <Tip label={t.firstRun.skipTip}>
       <button
-        className="ml-auto text-[11px] text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)"
+        className="ml-auto text-11 text-(--ui-text-quaternary) transition-colors hover:text-(--ui-text-secondary)"
         onClick={() =>
           void skipOnboarding(requestGateway, runtimeId).then(skipIntro, error =>
             notifyError(error, t.firstRun.skipFailed)

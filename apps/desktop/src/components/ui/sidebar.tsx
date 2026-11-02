@@ -372,7 +372,7 @@ function SidebarGroupLabel({
   return (
     <Comp
       className={cn(
-        'flex shrink-0 items-center rounded-md px-2.5 pt-4 pb-1 text-[11px] font-medium tracking-normal text-(--ui-text-muted) ring-sidebar-ring outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:bg-sidebar-accent focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
+        'flex shrink-0 items-center rounded-md px-2.5 pt-4 pb-1 text-11 font-medium tracking-normal text-(--ui-text-muted) ring-sidebar-ring outline-hidden transition-[margin,opacity] duration-200 ease-linear focus-visible:bg-sidebar-accent focus-visible:text-sidebar-accent-foreground focus-visible:ring-2 [&>svg]:size-4 [&>svg]:shrink-0',
         'group-data-[collapsible=icon]:-mt-8 group-data-[collapsible=icon]:opacity-0',
         className
       )}
@@ -440,7 +440,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<'li'>) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  'peer/menu-button flex w-full items-center gap-2.5 overflow-hidden rounded-md px-2.5 text-left text-[13px] font-normal ring-sidebar-ring outline-hidden transition-colors group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! bg-transparent text-(--ui-text-secondary) hover:bg-black/[0.04] hover:text-(--ui-text-primary) focus-visible:bg-black/[0.05] focus-visible:text-(--ui-text-primary) focus-visible:ring-2 active:bg-black/[0.06] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-black/[0.07] data-[active=true]:font-medium data-[active=true]:text-(--ui-text-primary) dark:hover:bg-white/[0.05] dark:focus-visible:bg-white/[0.06] dark:active:bg-white/[0.07] dark:data-[active=true]:bg-white/[0.08] [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
+  'peer/menu-button flex w-full items-center gap-2.5 overflow-hidden rounded-md px-2.5 text-left text-13 font-normal ring-sidebar-ring outline-hidden transition-colors group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! bg-transparent text-(--ui-text-secondary) hover:bg-black/[0.04] hover:text-(--ui-text-primary) focus-visible:bg-black/[0.05] focus-visible:text-(--ui-text-primary) focus-visible:ring-2 active:bg-black/[0.06] disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 data-[active=true]:bg-black/[0.07] data-[active=true]:font-medium data-[active=true]:text-(--ui-text-primary) dark:hover:bg-white/[0.05] dark:focus-visible:bg-white/[0.06] dark:active:bg-white/[0.07] dark:data-[active=true]:bg-white/[0.08] [&>span:last-child]:truncate [&>svg]:size-4 [&>svg]:shrink-0',
   {
     variants: {
       variant: {

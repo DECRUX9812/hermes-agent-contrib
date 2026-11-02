@@ -45,6 +45,7 @@ export function groupReviewDetail(detail: string): { groups: ReviewGroup[]; note
 
     if (!match?.groups?.name) {
       notes.push(segment)
+
       continue
     }
 
@@ -52,6 +53,7 @@ export function groupReviewDetail(detail: string): { groups: ReviewGroup[]; note
 
     if (existing) {
       existing.writes.push({ verb: match.groups.verb, file: match.groups.file })
+
       continue
     }
 
@@ -227,7 +229,7 @@ export const SystemMessage: FC = () => {
   if (steerNote?.groups) {
     return (
       <MessagePrimitive.Root
-        className="flex max-w-[min(86%,44rem)] items-center gap-1.5 self-center px-2 py-0.5 text-[0.6875rem] leading-5 text-muted-foreground/60"
+        className="flex max-w-[min(86%,44rem)] items-center gap-1.5 self-center px-2 py-0.5 text-11 leading-5 text-muted-foreground/60"
         data-role="system"
         data-slot="aui_system-message-root"
       >
@@ -254,7 +256,7 @@ export const SystemMessage: FC = () => {
     return (
       <MessagePrimitive.Root
         className={cn(
-          'w-[60%] max-w-[44rem] self-center px-2 py-0.5 text-[0.6875rem] leading-5 text-muted-foreground/60',
+          'w-[60%] max-w-[44rem] self-center px-2 py-0.5 text-11 leading-5 text-muted-foreground/60',
           multiline ? 'text-left' : 'text-center'
         )}
         data-role="system"
@@ -263,7 +265,7 @@ export const SystemMessage: FC = () => {
         <span className="font-mono text-muted-foreground/55">{slashStatus.groups.command}</span>
         {multiline ? (
           <LinkifiedText
-            className={cn('mt-0.5 block whitespace-pre-wrap', tabular && 'font-mono text-[0.625rem] leading-[1.15rem]')}
+            className={cn('mt-0.5 block whitespace-pre-wrap', tabular && 'font-mono text-10 leading-[1.15rem]')}
             explicitOnly
             pretty={false}
             text={output}
@@ -284,7 +286,7 @@ export const SystemMessage: FC = () => {
   return (
     <MessagePrimitive.Root
       className={cn(
-        'w-[60%] max-w-[44rem] self-center px-2 py-0.5 text-[0.6875rem] leading-5 text-muted-foreground/55',
+        'w-[60%] max-w-[44rem] self-center px-2 py-0.5 text-11 leading-5 text-muted-foreground/55',
         multiline ? 'text-left' : 'text-center'
       )}
       data-role="system"

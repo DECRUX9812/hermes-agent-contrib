@@ -141,14 +141,14 @@ export function QueuePanel({
         <div className="min-w-0 flex-1">
           <p
             className={cn(
-              'text-[0.75rem] leading-4 text-foreground/92',
+              'text-xs leading-4 text-foreground/92',
               isExpanded ? 'max-h-40 overflow-y-auto whitespace-pre-wrap pr-1' : 'line-clamp-2 break-words'
             )}
           >
             {preview}
           </p>
           {(attachmentsCount > 0 || isEditing || lost) && (
-            <div className="mt-0.5 flex items-center gap-1.5 text-[0.625rem] text-muted-foreground/75">
+            <div className="mt-0.5 flex items-center gap-1.5 text-10 text-muted-foreground/75">
               {lost && <span data-slot="queue-lost-note">{c.queueLostNote}</span>}
               {attachmentsCount > 0 && <span>{c.attachments(attachmentsCount)}</span>}
               {isEditing && (
@@ -228,7 +228,7 @@ function renderEntryActions({
     <Tip label={c.queueLostDiscardTip}>
       <Button
         aria-label={c.queueLostDiscard}
-        className="h-5 rounded-md px-1.5 text-[0.6875rem]"
+        className="h-5 rounded-md px-1.5 text-11"
         data-slot="queue-lost-discard"
         onClick={() => onDiscardLost(entry.id)}
         size="micro"

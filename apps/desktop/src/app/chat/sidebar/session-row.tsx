@@ -20,10 +20,10 @@ import { pathLeaf } from '@/lib/display-path'
 import { triggerHaptic } from '@/lib/haptics'
 import { middleClickHandlers } from '@/lib/middle-click'
 import { displayModelName } from '@/lib/model-status-label'
+import { $nowMinute } from '@/lib/now-minute'
 import { sessionProjectLabel } from '@/lib/session-project-label'
 import { SESSION_ROW_AREAS } from '@/lib/session-row-slots'
 import { handoffOriginSource, sessionSourceLabel } from '@/lib/session-source'
-import { $nowMinute } from '@/lib/now-minute'
 import { coarseElapsed } from '@/lib/time'
 import { useStoreSelector } from '@/lib/use-session-slice'
 import { cn } from '@/lib/utils'
@@ -240,7 +240,7 @@ function SidebarSessionRowImpl({
     trailing.push({
       key: 'figures',
       node: (
-        <span className="pointer-events-none whitespace-nowrap text-[0.625rem] leading-none text-(--ui-text-tertiary)">
+        <span className="pointer-events-none whitespace-nowrap text-10 leading-none text-(--ui-text-tertiary)">
           {head}
           {/* The figures own their tail: the separator goes with it. */}
           <span className={cn('inline-block text-right', TAIL_HIDES)}>
@@ -546,7 +546,7 @@ function SidebarSessionRowImpl({
               handoffSource && handoffLabel ? (
                 <Tip label={r.handoffOrigin(handoffLabel)}>
                   <PlatformAvatar
-                    className="-mt-px size-4 shrink-0 rounded-[4px] text-[0.5625rem] [&_svg]:size-2.5"
+                    className="-mt-px size-4 shrink-0 rounded-[4px] text-9 [&_svg]:size-2.5"
                     platformId={handoffSource}
                     platformName={handoffLabel}
                   />
@@ -615,7 +615,7 @@ function SidebarSessionRowImpl({
                   <SessionRowSlot area={SESSION_ROW_AREAS.leading} sessionId={sessionPinId(session)} />
                   <span
                     className={cn(
-                      'min-w-0 flex-1 truncate text-[0.6875rem] text-(--ui-text-tertiary)',
+                      'min-w-0 flex-1 truncate text-11 text-(--ui-text-tertiary)',
                       SIDEBAR_TRUNCATED_LEADING
                     )}
                   >
@@ -636,7 +636,7 @@ function SidebarSessionRowImpl({
                     <OverflowTip label={title} placement="row">
                       <SidebarRowLabel
                         className={cn(
-                          'hover-marquee text-[0.8125rem] font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
+                          'hover-marquee text-13 font-medium text-(--ui-text-primary) group-data-[working=true]:text-foreground',
                           SIDEBAR_TRUNCATED_LEADING
                         )}
                         onPointerEnter={armMarquee}
@@ -649,7 +649,7 @@ function SidebarSessionRowImpl({
                   {session.preview && rowMeta.includes('preview') ? (
                     <span
                       className={cn(
-                        'min-w-0 truncate text-[0.625rem] text-(--ui-text-quaternary)',
+                        'min-w-0 truncate text-10 text-(--ui-text-quaternary)',
                         SIDEBAR_TRUNCATED_LEADING
                       )}
                     >
@@ -660,7 +660,7 @@ function SidebarSessionRowImpl({
                 {model || size || todoProgress ? (
                   <span
                     className={cn(
-                      'flex min-w-0 items-baseline gap-2 text-[0.625rem] text-(--ui-text-tertiary)',
+                      'flex min-w-0 items-baseline gap-2 text-10 text-(--ui-text-tertiary)',
                       SIDEBAR_TRUNCATED_LEADING
                     )}
                   >

@@ -46,7 +46,7 @@ export const SIDEBAR_ROW_INSET = cn(
 export const SIDEBAR_TRUNCATED_LEADING = 'leading-[1.35]' as const
 
 export const SIDEBAR_ROW_LABEL = cn(
-  'min-w-0 truncate text-[0.8125rem] text-(--ui-text-secondary)',
+  'min-w-0 truncate text-13 text-(--ui-text-secondary)',
   SIDEBAR_TRUNCATED_LEADING
 )
 

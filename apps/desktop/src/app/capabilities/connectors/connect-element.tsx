@@ -27,12 +27,12 @@ export function ConnectElement({ operation, onRetry, onStopWaiting, retrying = f
   }, [link, operation.opId, operation.settled])
 
   if (operation.settled) {
-    return <p className="text-[0.8125rem] text-(--ui-text-primary)">{copy.dialog.connectEnded}</p>
+    return <p className="text-13 text-(--ui-text-primary)">{copy.dialog.connectEnded}</p>
   }
 
   return (
     <div className="grid justify-items-start gap-2">
-      <p className="flex items-center gap-2 text-[0.8125rem] text-(--ui-text-primary)">
+      <p className="flex items-center gap-2 text-13 text-(--ui-text-primary)">
         <Loader2 aria-hidden className="size-3.5 shrink-0 animate-spin text-primary motion-reduce:animate-none" />
         {copy.card.reason.finishSignIn}
       </p>

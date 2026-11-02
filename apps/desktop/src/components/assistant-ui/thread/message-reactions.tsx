@@ -59,7 +59,7 @@ const FullEmojiPicker: FC<{ onSelect: (emoji: string) => void }> = ({ onSelect }
         components={{
           CategoryHeader: ({ category, ...props }) => (
             <div
-              className="bg-(--ui-bg-elevated) px-1.5 pt-2 pb-1 text-[0.6875rem] text-(--ui-text-tertiary)"
+              className="bg-(--ui-bg-elevated) px-1.5 pt-2 pb-1 text-11 text-(--ui-text-tertiary)"
               {...props}
             >
               {category.label}
@@ -174,7 +174,7 @@ export const ReactionBadge: FC<{
 
   return (
     <span
-      className={cn('flex items-center gap-1 text-[0.8125rem] leading-none', className)}
+      className={cn('flex items-center gap-1 text-13 leading-none', className)}
       data-slot="aui_msg-reactions"
     >
       {reactions.map(reaction =>

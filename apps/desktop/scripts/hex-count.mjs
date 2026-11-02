@@ -26,6 +26,11 @@ const PALETTE_DIRS = ['themes/']
  * that has none of our tokens. Each entry says why — an allowlist without reasons
  * becomes a place to hide things.
  */
+/** Literal sizes that stay literal, each with its reason. A half-step is a
+ *  deliberate optical correction; rounding it to a ramp value would be the gate
+ *  dictating design rather than recording it. */
+const TYPE_EXCEPTIONS = new Set(['0.8rem', '10.5px'])
+
 const PALETTE_FILES = new Map([
   ['app/right-sidebar/terminal/selection.ts', 'ANSI terminal palette: these ARE the terminal colours'],
   ['app/right-sidebar/terminal/use-agent-terminal.ts', 'ANSI terminal palette'],
@@ -99,7 +104,13 @@ export function countDebt(root) {
         offenders.push({ count: hits.length, file: rel })
       }
 
-      textArbitrary += (source.match(/text-\[(?:length:)?[\d.]+(?:px|rem)\]/g) ?? []).length
+      for (const hit of source.match(/text-\[(?:length:)?([\d.]+(?:px|rem))\]/g) ?? []) {
+        const value = hit.match(/\[([^\]]+)\]/)?.[1] ?? ''
+
+        if (!TYPE_EXCEPTIONS.has(value)) {
+          textArbitrary += 1
+        }
+      }
 
       if (/\.tsx$/.test(entry.name)) {
         for (const style of source.matchAll(/style=\{\{([\s\S]{0,400}?)\}\}/g)) {

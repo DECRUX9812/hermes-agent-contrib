@@ -192,13 +192,13 @@ export function Intro({ personality, seed, withStarters = true }: IntroProps) {
           one-line promise, then straight into the composer. */}
       <h1
         aria-label={WORDMARK}
-        className="wordmark m-0 mb-1.5 text-[22px] font-semibold tracking-tight text-(--ui-accent)"
+        className="wordmark m-0 mb-1.5 text-22 font-semibold tracking-tight text-(--ui-accent)"
         
       >
         {WORDMARK}
       </h1>
 
-      <p className="m-0 max-w-[34rem] text-[14px] leading-normal text-(--ui-text-secondary)">{body}</p>
+      <p className="m-0 max-w-[34rem] text-sm leading-normal text-(--ui-text-secondary)">{body}</p>
 
       {canConnectPortal && (
         <div className="pointer-events-auto mt-3 inline-flex items-center justify-center">

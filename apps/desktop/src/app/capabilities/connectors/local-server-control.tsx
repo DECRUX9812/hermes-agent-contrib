@@ -24,10 +24,10 @@ export function LocalInstall({
     <div className="grid justify-items-start gap-2">
       {installFields.length > 0 ? (
         <>
-          <p className="text-[0.6875rem] text-(--ui-text-tertiary)">{t.settings.mcp.catalogEnvRequired}</p>
+          <p className="text-11 text-(--ui-text-tertiary)">{t.settings.mcp.catalogEnvRequired}</p>
           {installFields.map(field => (
             <label className="grid w-full gap-1" key={field.name}>
-              <span className="text-[0.625rem] text-(--ui-text-secondary)">
+              <span className="text-10 text-(--ui-text-secondary)">
                 {field.prompt || field.name}
                 {field.required ? ' *' : ''}
               </span>

@@ -34,17 +34,17 @@ export function QueuedEditBanner({ onExit }: { onExit: (action: 'cancel' | 'save
 
   return (
     <div className="flex items-center justify-between gap-2 rounded-lg border border-[color-mix(in_srgb,var(--dt-composer-ring)_32%,transparent)] bg-accent/18 px-2 py-1">
-      <div className="min-w-0 text-[0.6875rem] text-muted-foreground/88">{t.composer.editingQueuedInComposer}</div>
+      <div className="min-w-0 text-11 text-muted-foreground/88">{t.composer.editingQueuedInComposer}</div>
       <div className="flex shrink-0 items-center gap-1">
         <Button
-          className="h-6 rounded-md px-2 text-[0.6875rem]"
+          className="h-6 rounded-md px-2 text-11"
           onClick={() => onExit('cancel')}
           type="button"
           variant="ghost"
         >
           {t.common.cancel}
         </Button>
-        <Button className="h-6 rounded-md px-2 text-[0.6875rem]" onClick={() => onExit('save')} type="button">
+        <Button className="h-6 rounded-md px-2 text-11" onClick={() => onExit('save')} type="button">
           {t.common.save}
         </Button>
       </div>

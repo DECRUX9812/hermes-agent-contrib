@@ -310,7 +310,7 @@ function EditVeil({ label, onPointerDown, top, ...menu }: EditVeilProps) {
           outlineColor: 'color-mix(in srgb, var(--ui-accent) 55%, transparent)'
         }}
       >
-        <span className="flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-(--ui-stroke-secondary) bg-popover px-2 py-1 text-[0.625rem] font-semibold uppercase tracking-[0.16em] text-(--ui-text-secondary)">
+        <span className="flex max-w-[calc(100%-1rem)] items-center gap-1.5 rounded-md border border-(--ui-stroke-secondary) bg-popover px-2 py-1 text-10 font-semibold uppercase tracking-[0.16em] text-(--ui-text-secondary)">
           <Codicon className="shrink-0" name="gripper" size="0.8125rem" />
           <span className="min-w-0 truncate">{label}</span>
         </span>
@@ -427,6 +427,7 @@ export function TreeGroup({
 
   const active = paneFor(activeId)
   const isEmpty = shown.length === 0
+
   // A SIDEBAR column zone (all panes homed on the left rail) wears the
   // mode-switcher segmented control instead of document tabs. Any other
   // zone — terminal/logs bottom tools, right-rail panes — keeps the tab
@@ -754,7 +755,7 @@ export function TreeGroup({
                       <button
                         aria-pressed={isActive}
                         className={cn(
-                          'inline-flex h-6 min-w-0 items-center justify-center rounded-[6px] px-2 text-[12px] leading-none transition-colors',
+                          'inline-flex h-6 min-w-0 items-center justify-center rounded-[6px] px-2 text-xs leading-none transition-colors',
                           isActive
                             ? 'bg-white font-medium text-(--ui-text-primary) shadow-2xs dark:bg-zinc-800'
                             : 'text-(--ui-text-secondary) hover:text-(--ui-text-primary)'
@@ -1046,7 +1047,7 @@ export function TreeGroup({
                     </PaneGroupContext.Provider>
                   ) : (
                     isActive && (
-                      <div className="p-3 font-mono text-[11px] text-(--ui-text-quaternary)">
+                      <div className="p-3 font-mono text-11 text-(--ui-text-quaternary)">
                         {t.zones.missingPane(paneId)}
                       </div>
                     )

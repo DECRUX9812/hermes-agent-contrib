@@ -123,7 +123,7 @@ function UpdateChangeList({
       {shown.map((group, index) => (
         <div key={group.id}>
           <div className="flex items-center justify-between gap-2">
-            <p className="text-[0.625rem] font-semibold text-muted-foreground">{group.label}</p>
+            <p className="text-10 font-semibold text-muted-foreground">{group.label}</p>
             {index === 0 && copyText && (
               <CopyButton
                 appearance="icon"
@@ -632,7 +632,7 @@ function ApplyingView({
       />
 
       {recentLog.length > 1 ? (
-        <div className="max-h-24 overflow-hidden rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-left font-mono text-[11px] leading-4 text-muted-foreground">
+        <div className="max-h-24 overflow-hidden rounded-md border border-border/70 bg-muted/35 px-3 py-2 text-left font-mono text-11 leading-4 text-muted-foreground">
           {recentLog.map((entry, index) => (
             <div className="truncate" key={`${entry.at}-${index}`}>
               {entry.message}
