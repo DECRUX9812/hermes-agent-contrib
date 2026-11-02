@@ -218,13 +218,8 @@ export function HubSkillsSection({ bot, onInstalled }: HubSkillsSectionProps) {
           /* so the hub page starts zoomed out — we can't style the */
           /* cross-origin page itself, but scaling the frame is ours. */}
           <div
-            className="relative w-full max-w-full resize overflow-hidden border border-(--ui-stroke-secondary)"
-            style={{
-              height: 560,
-              minHeight: 240,
-              minWidth: 320,
-              borderRadius: 8
-            }}
+            className="relative w-full max-w-full resize overflow-hidden border border-(--ui-stroke-secondary) h-[560px] min-h-[240px] min-w-[320px] rounded-[8px]"
+            
           >
             <iframe
               // The hub page needs three capabilities beyond the bare sandbox
@@ -283,10 +278,8 @@ export function HubSkillsSection({ bot, onInstalled }: HubSkillsSectionProps) {
         <div className="px-1 py-1.5 text-[0.6875rem] text-(--ui-text-secondary)">{h.noResults}</div>
       ) : (
         <div
-          className="overflow-y-auto overscroll-contain"
-          style={{
-            maxHeight: 150
-          }}
+          className="overflow-y-auto overscroll-contain max-h-[150px]"
+          
         >
           <div className="grid gap-1">
             {results.map(r => (

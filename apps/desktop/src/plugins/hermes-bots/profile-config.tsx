@@ -432,10 +432,8 @@ export function AdvancedProfileConfig({ bot, state, setState }: AdvancedProfileC
             <div className="px-1 py-2 text-center text-xs text-(--ui-text-secondary)">{b.tools.noMcpServers}</div>
           ) : (
             <div
-              className="overflow-y-auto overscroll-contain"
-              style={{
-                maxHeight: 180
-              }}
+              className="overflow-y-auto overscroll-contain max-h-[180px]"
+              
             >
               <div className="grid gap-1 p-2">
                 {mcpList.map(m => {
