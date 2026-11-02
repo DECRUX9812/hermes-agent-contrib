@@ -158,9 +158,7 @@ export function PetTab({ image, onImage }: PetTabProps) {
 
   if (!pets.length) {
     return (
-      <div className="px-2 py-3 text-center text-xs text-(--ui-text-secondary)">
-        No pets in the petdex gallery. Run `hermes pets` to explore.
-      </div>
+      <div className="px-2 py-3 text-center text-xs text-(--ui-text-secondary)">{b.avatar.noPetsGallery}</div>
     )
   }
 
@@ -214,7 +212,7 @@ export function PetTab({ image, onImage }: PetTabProps) {
         </Button>
       ) : null}
       {filtered.length === 0 ? (
-        <div className="py-3 text-center text-xs text-(--ui-text-secondary)">No pets match.</div>
+        <div className="py-3 text-center text-xs text-(--ui-text-secondary)">{b.avatar.noPetsMatch}</div>
       ) : (
         <div
           className="overflow-y-auto"

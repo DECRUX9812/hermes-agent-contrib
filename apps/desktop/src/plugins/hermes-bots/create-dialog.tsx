@@ -837,7 +837,7 @@ export function CreateAgentDialog({ open, onClose, onConfigureModel, roster }: C
           ) : null}
           {labeled(
             b.editor.title,
-            <Input onChange={event => setTitle(event.target.value)} placeholder="Inbox Triage" value={title} />
+            <Input onChange={event => setTitle(event.target.value)} placeholder={b.editor.titleExample} value={title} />
           )}
           {labeled(
             b.editor.description,
@@ -1222,7 +1222,7 @@ export function GroupDialog({ bot, onClose }: GroupDialogProps) {
             value={name}
           />
           <Button disabled={!name.trim()} size="sm" type="submit">
-            Create & join
+            {b.group.createAndJoin}
           </Button>
         </form>
         {current.length ? (

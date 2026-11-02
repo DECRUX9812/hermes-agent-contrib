@@ -138,7 +138,7 @@ export function renderRosterToolbar({
         {gatewayOptions.length > 1 ? (
           <DropdownMenuItem onSelect={() => setGatewayFilter('all')}>
             <Codicon className="mr-1.5" name="globe" />
-            <span className="min-w-0 flex-1">All gateways</span>
+            <span className="min-w-0 flex-1">{b.roster.allGateways}</span>
             {gatewayFilter === 'all' ? <Codicon name="check" /> : null}
           </DropdownMenuItem>
         ) : null}
@@ -187,7 +187,7 @@ export function renderRosterToolbar({
     <>
       <div className="flex items-center justify-between gap-2 px-2.5 pt-2.5 pb-1.5">
         <span className="text-[0.6875rem] font-semibold uppercase tracking-wider text-(--ui-text-secondary)">
-          Bots
+          {b.roster.botsHeading}
         </span>
         <div className="flex items-center gap-0.5">
           {hiddenCount > 0 ? (

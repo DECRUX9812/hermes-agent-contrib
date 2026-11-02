@@ -19,6 +19,14 @@ pre-commit:
       glob: "*.{js,ts,tsx}"
       run: npx eslint {staged_files}
 
+    # Bot Mode has its own catalog (src/plugins/hermes-bots/i18n.ts): fail the
+    # commit when a staged file in that plugin adds a hardcoded English literal.
+    # Scoped to the plugin's paths so unrelated desktop commits pay nothing.
+    - name: lint bots i18n literals
+      root: apps/desktop/
+      glob: "*src/plugins/hermes-bots/*.{ts,tsx}"
+      run: node ./scripts/i18n-bots-literals.mjs {staged_files}
+
     - name: lint tui
       root: ui-tui/
       glob: "*.{js,ts,tsx}"

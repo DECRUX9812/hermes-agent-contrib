@@ -22,6 +22,8 @@ export type BotsMessages = {
     enterManually: string
     gatewayDefault: string
     modelNameExample: string
+    /** The Title field's example name, shown as its placeholder. */
+    titleExample: string
     modelSwitchFailed: string
     newDescription: string
     name: string
@@ -99,6 +101,11 @@ export type BotsMessages = {
     botsAndGroups: string
     botsOnly: string
     groupsOnly: string
+    /** Section header above the roster list itself (the list is bots; group
+     *  chats sit in their own section). */
+    botsHeading: string
+    /** The gateway filter's "every source" option. */
+    allGateways: string
     /** The activity filter's four options, in menu order. */
     anyActivity: string
     activeNow: string
@@ -180,6 +187,12 @@ export type BotsMessages = {
     /** Typed failure from `duplicateBot` — the caller translates this code. */
     duplicateNoFreeName: string
     deleteTitle: string
+    /** The delete confirmation's sentence around the bolded name and the
+     *  monospaced profile path: prefix + name + pathPrefix + path + suffix.
+     *  Split so a language can order the fragments it needs. */
+    deleteDescPrefix: string
+    deleteDescPathPrefix: string
+    deleteDescSuffix: string
     removeFromAllGroups: string
     createFirstHint: string
     createFailed: string
@@ -205,6 +218,10 @@ export type BotsMessages = {
     chatEmpty: string
     /** First line of a brand-new bot's forever-chat — see `kickoffText`. */
     kickoff: string
+    /** Composer `/new` (or `/reset`) inside a canonical bot chat: a toast
+     *  saying the turn became `/compact` instead of forking the chat. */
+    newBlockedTitle: string
+    newBlockedMessage: string
   }
   /** Avatar picker: shapes, blobs, pets, uploads, generation. */
   avatar: {
@@ -223,6 +240,10 @@ export type BotsMessages = {
     describeHint: string
     matchTheName: string
     pickPet: string
+    /** Empty pet gallery: says how to get a pet (`hermes pets` is a command,
+     *  so it stays as written in every locale). */
+    noPetsGallery: string
+    noPetsMatch: string
     petLoadFailed: string
     imageTooLarge: string
     generationFailed: string
@@ -236,6 +257,8 @@ export type BotsMessages = {
     newTitle: string
     manageDesc: string
     manageTitle: string
+    /** Submit of the manage-members form's "create a new group" row. */
+    createAndJoin: string
     /** The room's "Manage members" picker: title, capped-count hint, save. */
     membersTitle: string
     membersDesc: (max: number, group: string) => string

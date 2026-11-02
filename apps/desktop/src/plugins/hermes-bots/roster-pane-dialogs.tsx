@@ -108,10 +108,11 @@ export function renderRosterDialogs({
         description={
           deleting ? (
             <span>
-              {'This will permanently delete the bot '}
+              {b.bot.deleteDescPrefix}
               <span className="font-medium text-foreground">{deleting.name}</span>
-              {' and its associated Hermes profile at '}
-              <span className="font-mono text-xs">{deleting.path}</span>. This cannot be undone.
+              {b.bot.deleteDescPathPrefix}
+              <span className="font-mono text-xs">{deleting.path}</span>
+              {b.bot.deleteDescSuffix}
             </span>
           ) : null
         }
