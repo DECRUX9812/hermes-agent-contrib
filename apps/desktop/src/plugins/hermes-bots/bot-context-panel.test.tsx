@@ -111,7 +111,7 @@ describe('bot context panel', () => {
     expect(await screen.findByText('Research')).toBeTruthy()
 
     // Toolbar: all four views.
-    for (const tab of ['Tasks', 'Scheduled', 'History']) {
+    for (const tab of ['Activity', 'Scheduled', 'History']) {
       expect(screen.getByText(tab)).toBeTruthy()
     }
 
@@ -141,10 +141,46 @@ describe('bot context panel', () => {
     request.mockResolvedValue({ jobs: [], scoped: 'research' })
     renderPanel()
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
-    await screen.findByText('Tasks')
+    await screen.findByText('Activity')
 
     fireEvent.click(screen.getByText('History'))
     expect(await screen.findByText('No recent conversations')).toBeTruthy()
+  })
+
+  // The History tab used to render exactly one row (`last_session`) while the
+  // Activity timeline above already listed every conversation — the panel
+  // contradicting itself, and the single row duplicated the footer's "Open
+  // chat". History now lists what the timeline knows.
+  it('lists every recent conversation on the History tab', async () => {
+    request.mockResolvedValue({ jobs: [], scoped: 'research' })
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [
+        { id: 'sess-a', last_active: Math.floor((NOW - 60_000) / 1000), message_count: 4, title: 'Rail layout options' },
+        { id: 'sess-b', last_active: Math.floor((NOW - 3_600_000) / 1000), message_count: 9, title: 'Q3 planning notes' },
+        { id: 'sess-c', last_active: Math.floor((NOW - 90_000_000) / 1000), message_count: 1, title: 'Old thread' }
+      ],
+      total: 3
+    })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+    await screen.findByText('Activity')
+
+    fireEvent.click(screen.getByText('History'))
+
+    expect(await screen.findByText('Rail layout options')).toBeTruthy()
+    expect(screen.getByText('Q3 planning notes')).toBeTruthy()
+    expect(screen.getByText('Old thread')).toBeTruthy()
+    // Counts travel with each row, so the list is scannable without opening it.
+    expect(screen.getByText('4 messages')).toBeTruthy()
+    // Newest first, and the empty state stays away.
+    expect(screen.queryByText('No recent conversations')).toBeNull()
+
+    fireEvent.click(screen.getByText('Q3 planning notes'))
+    await vi.waitFor(() => expect(openSession).toHaveBeenCalled())
+    expect(openSession.mock.calls.at(-1)?.[0]).toBe('sess-b')
   })
 
   it('edits the bot goal inline — Enter commits, Esc cancels, Set stays disabled until non-blank', async () => {

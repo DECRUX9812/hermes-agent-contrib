@@ -492,6 +492,9 @@ export type BotsMessages = {
     noRuns: string
     noSaved: string
     noHistory: string
+    /** The first tab: routine runs AND conversations — not just tasks, so the
+     *  label says what the list actually contains. */
+    activity: string
     /** Empty-state body for the activity timeline, which lists routine runs
      *  AND listed conversations — the two things a bot actually does. */
     noActivityHint: string

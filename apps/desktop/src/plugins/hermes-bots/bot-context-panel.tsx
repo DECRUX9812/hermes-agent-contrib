@@ -53,7 +53,7 @@ import { stopGroupThread } from './group-rounds'
 import { answerGroupClarify } from './group-turns'
 import { type BotsText, useBots } from './i18n'
 import { displayName } from './labels'
-import { botRecentSession, openBotRecentSession, openBotSession } from './recent-session'
+import { openBotSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
 import { botConnectionRoute, botRosterMeta } from './routing'
 import type { RosterRow, RoutineJob } from './types'
@@ -355,11 +355,8 @@ const selected = useValue($selectedBot)
   }
 
   const jobs = jobsView.jobs
-
-  const runs = [...panelTaskRuns(jobs, b.cron), ...panelSessionRuns(sessionsQuery.data || [], p)].sort(
-    (a, z) => z.at - a.at
-  )
-
+  const sessionRuns = panelSessionRuns(sessionsQuery.data || [], p)
+  const runs = [...panelTaskRuns(jobs, b.cron), ...sessionRuns].sort((a, z) => z.at - a.at)
   const groups: Array<{ key: number; runs: PanelTaskRun[] }> = []
 
   for (const run of runs) {
@@ -378,7 +375,6 @@ const selected = useValue($selectedBot)
   const staleNotice = error && !jobsView.live && jobsView.all.length ? b.cron.staleNotice : null
   const reachable = owner.sourceReachable !== false && !owner.ghost && !owner.sourceMissing
   const statusText = working ? p.workingNow : reachable ? b.cron.active : p.offline
-  const recent = botRecentSession(owner)
 
   // A conversation row carries only what the timeline needs to draw; opening
   // it wants the stored counts too, so they ride along from the same query.
@@ -438,7 +434,7 @@ const selected = useValue($selectedBot)
           className="w-full"
           onChange={setView}
           options={[
-            { icon: TASKS_ICON, id: 'tasks', label: p.tasks },
+            { icon: TASKS_ICON, id: 'tasks', label: p.activity },
             { icon: SCHEDULED_ICON, id: 'scheduled', label: p.scheduled },
             { icon: HISTORY_ICON, id: 'history', label: p.history },
           ]}
@@ -620,7 +616,7 @@ const selected = useValue($selectedBot)
                   }
                   description={p.noActivityHint}
                   icon="pulse"
-                  title={p.tasks}
+                  title={p.activity}
                 />
               </div>
             ) : (
@@ -709,18 +705,33 @@ const selected = useValue($selectedBot)
         ) : null}
         {view === 'history' ? (
           <div className="px-1.5 py-1.5">
-            {recent ? (
-              <button
-                className="flex min-w-full items-center gap-2 rounded-md px-2 py-2 text-left hover:bg-(--chrome-action-hover)"
-                onClick={() => void openBotRecentSession(owner)}
-                type="button"
-              >
-                <Codicon className="shrink-0 text-(--ui-text-secondary)" name="history" size="0.9375rem" />
-                <span className="min-w-0 flex-1 truncate text-xs font-medium text-(--ui-text-primary)">
-                  {recent.title || recent.id}
-                </span>
-                <Codicon className="shrink-0 text-(--ui-text-secondary)" name="arrow-right" size="0.8125rem" />
-              </button>
+            {sessionRuns.length ? (
+              // Every listed conversation, not just the newest one. The
+              // timeline above already knows about all of them, so a History
+              // tab that showed exactly one row was the panel disagreeing with
+              // itself — and the one row was the row you could already reach
+              // from the footer's "Open chat".
+              <div className="grid gap-0.5">
+                {sessionRuns.map(run => (
+                  <button
+                    className="flex min-w-full items-center gap-2 rounded-md px-2 py-2 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)"
+                    key={run.id}
+                    onClick={() => openSessionRow(run)}
+                    type="button"
+                  >
+                    <Codicon className="shrink-0 text-(--ui-text-secondary)" name="history" size="0.9375rem" />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-xs font-medium text-(--ui-text-primary)">{run.title}</span>
+                      {run.detail ? (
+                        <span className="block truncate text-[0.625rem] text-(--ui-text-secondary)">{run.detail}</span>
+                      ) : null}
+                    </span>
+                    <span className="shrink-0 text-[0.625rem] tabular-nums text-(--ui-text-secondary)">
+                      {relativeTime(run.at)}
+                    </span>
+                  </button>
+                ))}
+              </div>
             ) : (
               <PanelEmpty description={p.noHistory} icon="history" title={p.history} />
             )}
