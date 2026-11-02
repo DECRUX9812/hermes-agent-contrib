@@ -32,23 +32,25 @@ const HERE = import.meta.dirname
 const DESKTOP_ROOT = resolve(HERE, '..')
 const BASELINE = join(HERE, 'hex-baseline.json')
 
-const { hex: total, offenders, textArbitrary } = countDebt(DESKTOP_ROOT)
+const { hex: total, inline, inlineDynamic, offenders, textArbitrary } = countDebt(DESKTOP_ROOT)
 const update = process.argv.includes('--update')
 
 if (update) {
-  writeFileSync(BASELINE, `${JSON.stringify({ count: total, updatedAt: new Date().toISOString() }, null, 2)}\n`)
-  console.log(`lint:hex — baseline updated to ${total} colour literal(s) outside the token layer`)
+  writeFileSync(BASELINE, `${JSON.stringify({ count: total, inline, textArbitrary, updatedAt: new Date().toISOString() }, null, 2)}\n`)
+  console.log(`lint:hex — baseline updated: ${total} colour literal(s), ${inline} inline style(s), ${textArbitrary} arbitrary type size(s)`)
   process.exit(0)
 }
 
 let baseline = 0
 let typeBaseline = 0
+let inlineBaseline = 0
 
 try {
   const saved = JSON.parse(readFileSync(BASELINE, 'utf8'))
 
   baseline = saved.count ?? 0
   typeBaseline = saved.textArbitrary ?? 0
+  inlineBaseline = saved.inline ?? 0
 } catch {
   console.error('lint:hex — no baseline at scripts/hex-baseline.json; run with --update once')
   process.exit(1)
@@ -85,7 +87,22 @@ if (textArbitrary > typeBaseline) {
   process.exit(1)
 }
 
+// Inline styles are a NO-GROWTH ratchet, not a ceiling to reach. Measured:
+// of 173, 38 are dynamic (a computed width cannot be a class), and of the 135
+// static ones 120 are structural geometry or theme previews. The 50 ceiling
+// cannot be met without changing layouts, so the gate's job here is to stop NEW
+// ones appearing while the convertible residue is worked off component by
+// component.
+if (inline > inlineBaseline) {
+  console.error(
+    `lint:inline — ${inline} inline style object(s), baseline ${inlineBaseline} (+${inline - inlineBaseline}).\n` +
+      'Prefer a utility class or a token; a computed value (width: ${pct}%) legitimately stays inline.',
+  )
+  process.exit(1)
+}
+
 console.log(
   `lint:hex — ${total} colour literals outside the token layer, at the baseline.\n` +
-    `lint:type — ${textArbitrary} arbitrary font size(s), at the baseline.`,
+    `lint:type — ${textArbitrary} arbitrary font size(s), at the baseline.\n` +
+    `lint:inline — ${inline} inline style object(s) (${inlineDynamic} dynamic), no growth.`,
 )
