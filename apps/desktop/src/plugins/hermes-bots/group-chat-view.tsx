@@ -29,12 +29,12 @@ import {
   queryClient,
   relativeTime,
   RowButton,
+  SurfaceHeader,
   Tip,
   ToggleRow,
   useGatewayActivationEpoch,
   useI18n,
-  useValue
-} from '@hermes/plugin-sdk'
+  useValue} from '@hermes/plugin-sdk'
 import type { ClipboardEvent, DragEvent, ReactNode } from 'react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
@@ -123,7 +123,6 @@ import { botsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
 import { RoomAttachmentChips } from './room-attachment-chips'
 import { RoomDisbandDialog } from './room-disband-dialog'
-import { RoomHeader } from './room-header'
 import { botRosterMeta, groupTranscriptSpeakerMeta, setBotsWorkspaceOwner } from './routing'
 import { bumpBotOpenGeneration, getPluginCtx, ID } from './shared'
 import type { Attachment, BotMeta, GroupChat, GroupMember, GroupMessage, RosterRow } from './types'
@@ -1037,7 +1036,7 @@ function LegacyGroupChatWorkspace({ group, members, onBack, visible = true }: Gr
   // which is the exact hazard the gateway header was fixed for. Destruction
   // now lives behind the overflow in both.
   const header = (
-    <RoomHeader
+    <SurfaceHeader
       back={{ label: t.common.back, onClick: () => (onBack ? onBack() : $groupChatWorkspace.set(null)) }}
       imageSrc={room.image ?? undefined}
       menuItems={[

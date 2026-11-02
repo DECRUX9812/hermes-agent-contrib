@@ -469,7 +469,12 @@ export async function pluginSdkMock(host: Record<string, unknown>) {
   const { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } =
     await import('@/components/ui/dropdown-menu')
 
+  // The surface contract lives in the shell now; a mock without it fails on
+  // import the moment a component uses it (the trap this file exists to close).
+  const { SurfaceHeader } = await import('@/components/surface/surface-header')
+
   return {
+    SurfaceHeader,
     Textarea,
     ContextMenu,
     ContextMenuContent,

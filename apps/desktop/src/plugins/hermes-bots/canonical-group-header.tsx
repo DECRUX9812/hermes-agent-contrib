@@ -1,11 +1,11 @@
-import { Button, Input } from '@hermes/plugin-sdk'
+import { Button, Input, SurfaceHeader} from '@hermes/plugin-sdk'
 import { useState } from 'react'
 
 import { CanonicalGroupRoster, type CanonicalMemberPhase } from './canonical-group-activity'
 import { useCanonicalGroupLabels } from './canonical-group-labels'
 import type { CanonicalRoom } from './canonical-groups'
 import { RoomDisbandDialog } from './room-disband-dialog'
-import { RoomHeader } from './room-header'
+
 
 interface CanonicalGroupHeaderProps {
   busy: boolean
@@ -33,7 +33,7 @@ export function CanonicalGroupHeader({ busy, canStop, onBack, onDisband, onRenam
     {/* Rename and Disband live behind the overflow: a destructive action
         sitting shoulder-to-shoulder with Stop is one slipped click from a
         lost room, and the local-room header does the same. */}
-    <RoomHeader
+    <SurfaceHeader
       back={onBack ? { label: labels.back, onClick: onBack } : undefined}
       busy={busy || !room}
       menuItems={[

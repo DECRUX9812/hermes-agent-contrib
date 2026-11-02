@@ -14,6 +14,7 @@ vi.mock('@hermes/plugin-sdk', async () => {
   return { ...dropdown, PanelEmpty, Textarea, atom: (await import('nanostores')).atom, host: { requestProfile: request }, randomUuid: (await import('@hermes/shared')).randomUuid,
     useI18n: () => ({ locale: 'en', t: en }),
     Button: (props: ComponentProps<'button'>) => <button {...props} />,
+    SurfaceHeader: (await import('@/components/surface/surface-header')).SurfaceHeader,
     DAY: (await import('@/lib/time')).DAY,
     nominalDayStart: (await import('@/lib/time')).nominalDayStart,
     cn: (await import('@/lib/utils')).cn,
