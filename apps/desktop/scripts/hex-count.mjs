@@ -11,10 +11,47 @@ export const HEX = /#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{4}|[0-9a-fA-F]
 
 /** Comments carry prose, issue ids and examples; none of it is a design value. */
 export const stripComments = source =>
-  source.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/.*$/gm, '$1')
+  source
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:])\/\/.*$/gm, '$1')
+    // HTML numeric entities look like colours: `&#039;` matched as `#039`.
+    .replace(/&#x?\d+;/gi, ' ')
 
 /** A theme preset IS the palette for its theme, so it holds literals by right. */
 const PALETTE_DIRS = ['themes/']
+
+/**
+ * Files whose literals are data, not styling: terminal protocols, third-party
+ * brand marks, syntax themes, canvas/draw colours, colours injected into a page
+ * that has none of our tokens. Each entry says why — an allowlist without reasons
+ * becomes a place to hide things.
+ */
+const PALETTE_FILES = new Map([
+  ['app/right-sidebar/terminal/selection.ts', 'ANSI terminal palette: these ARE the terminal colours'],
+  ['app/right-sidebar/terminal/use-agent-terminal.ts', 'ANSI terminal palette'],
+  ['app/right-sidebar/terminal/use-terminal-session.ts', 'ANSI terminal palette'],
+  ['lib/mcp-brands.tsx', 'third-party brand marks (Slack, Discord, GitHub …)'],
+  ['app/messaging/platform-icon.tsx', 'third-party brand marks'],
+  ['components/chat/code-editor-theme.ts', 'syntax-highlighting theme'],
+  ['components/chat/shiki-config.ts', 'syntax-highlighting theme'],
+  ['plugins/kanban/types.ts', 'label colour palette chosen per card'],
+  ['components/pane-shell/tree/zones-engine.ts', 'canvas draw colours, not DOM styles'],
+  ['debug/perf-live.ts', 'canvas overlay drawn outside the token system'],
+  ['components/pet/pet-star-shower.tsx', 'particle colours in a canvas animation'],
+  ['components/chat/vibe-hearts.tsx', 'particle colours in a canvas animation'],
+  ['lib/preview-annotate/tokens.ts', 'injected into the INSPECTED page, which has no Hermes tokens'],
+  ['lib/preview-annotate/in-page.ts', 'injected into the INSPECTED page'],
+  ['lib/preview-act/watch-in-page.ts', 'injected into the INSPECTED page'],
+  ['app/starmap/color.ts', 'data-visualisation colour scale'],
+  ['app/starmap/star-map.tsx', 'data-visualisation colour scale'],
+  ['app/settings/billing/tier-art.tsx', 'brand artwork'],
+  ['app/shell/wslg-window-controls.tsx', 'Windows close-button affordance, matched to the OS'],
+  ['plugins/hermes-bots/avatar.tsx', 'seeded identity colour for generated avatars'],
+])
+
+/** `var(--token, #fallback)` is a fallback, not a design value: the literal only
+ *  applies when the token is missing, which is the token layer's problem. */
+const VAR_FALLBACK = /(?:var\(--[\w-]+,\s*|--[\w-]+,\s*)#[0-9a-fA-F]{3,8}\)/g
 
 export function countDebt(root) {
   const src = join(root, 'src')
@@ -44,7 +81,11 @@ export function countDebt(root) {
         continue
       }
 
-      const source = stripComments(readFileSync(full, 'utf8'))
+      if (PALETTE_FILES.has(rel)) {
+        continue
+      }
+
+      const source = stripComments(readFileSync(full, 'utf8')).replace(VAR_FALLBACK, ' ')
       const hits = source.match(HEX) ?? []
 
       if (hits.length) {

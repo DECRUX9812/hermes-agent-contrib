@@ -10,7 +10,7 @@ import { $reviewMaxChurn } from '@/store/review'
 // (which must be `relative isolate overflow-hidden`) to revive it.
 const GLYPHS = 'ｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾅﾆﾇﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾚﾜ0123456789:=*+<>¦'
 
-const MASK = 'linear-gradient(to left, #000 45%, transparent)'
+const MASK = 'linear-gradient(to left, black 45%, transparent)'
 
 // Deterministic glyph run (FNV-1a seed → xorshift) so a file's rain is stable
 // across renders instead of reshuffling every paint.

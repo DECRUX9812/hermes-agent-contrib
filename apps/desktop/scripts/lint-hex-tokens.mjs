@@ -59,7 +59,7 @@ if (delta > 0) {
       `Use design/vocabulary.css aliases (--alias-bg-*, --alias-label-*, --alias-border-*, --alias-brand-primary, --alias-state-*).\n\n` +
       offenders
         .slice(0, 15)
-        .map(entry => `  ${String(entry.count).padStart(4)}  ${entry.rel}  (${entry.sample})`)
+        .map(entry => `  ${String(entry.count).padStart(4)}  ${entry.file}`)
         .join('\n') +
       '\n'
   )
