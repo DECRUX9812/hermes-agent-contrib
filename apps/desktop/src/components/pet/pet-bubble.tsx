@@ -190,7 +190,7 @@ export function PetBubble({ showStatus = true }: PetBubbleProps = {}) {
         </span>
         <span style={{ alignItems: 'flex-start', display: 'inline-flex', gap: 5, overflowWrap: 'anywhere' }}>
           {Glyph && (
-            <span style={{ display: 'inline-flex', flex: 'none', paddingTop: 1 }}>
+            <span className="inline-flex flex-none pt-[1px]" >
               <Glyph style={{ color: TONE_COLOR[pluginLine.tone], height: 12, width: 12 }} />
             </span>
           )}
@@ -223,7 +223,7 @@ export function PetBubble({ showStatus = true }: PetBubbleProps = {}) {
       }}
     >
       {Glyph && (
-        <span style={{ display: 'inline-flex' }}>
+        <span className="inline-flex" >
           <Glyph style={{ color: spec.tone ? TONE_COLOR[spec.tone] : 'currentColor', height: 13, width: 13 }} />
         </span>
       )}

@@ -432,10 +432,10 @@ export function PetOverlayApp() {
           touchAction: 'none'
         }}
       >
-        <div style={{ marginBottom: 4 }}>
+        <div className="mb-[4px]" >
           <PetBubble />
         </div>
-        <div style={{ lineHeight: 0, position: 'relative' }}>
+        <div className="leading-[0px] relative" >
           <PetSprite info={info} pauseWhenUnfocused={false} />
 
           {/* Hearts on the popped-out pet — identical to in-window. */}
@@ -473,7 +473,7 @@ export function PetOverlayApp() {
               }}
               type="button"
             >
-              <Mail style={{ height: 13, width: 13 }} />
+              <Mail className="h-[13px] w-[13px]"  />
             </button>
           )}
         </div>

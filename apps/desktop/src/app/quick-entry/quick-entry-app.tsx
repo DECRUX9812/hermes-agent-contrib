@@ -127,7 +127,7 @@ export function QuickEntryApp() {
           width: '100%'
         }}
       >
-        <div style={{ alignItems: 'center', display: 'flex', gap: 10 }}>
+        <div className="items-center flex gap-[10px]" >
           <span
             aria-hidden
             style={{
@@ -179,7 +179,7 @@ export function QuickEntryApp() {
             value={state.draft}
           />
         </div>
-        <div style={{ alignItems: 'center', display: 'flex', gap: 8 }}>
+        <div className="items-center flex gap-[8px]" >
           <label
             htmlFor="quick-entry-target"
             style={{

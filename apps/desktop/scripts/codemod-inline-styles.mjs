@@ -137,10 +137,11 @@ function toClass(property, rawValue) {
   }
 
   if (kind === 'px') {
-    // `12` and `'12px'` are the same length; both become max-h-[12px].
-    const pixels = /^\d+$/.test(value) ? value : value.match(/^['"](\d+)px['"]$/)?.[1]
+    // `12`, `'12px'`, `'100%'`, `'1.5rem'` are all exact CSS lengths and Tailwind
+    // takes any of them verbatim: max-h-[12px], h-[100%], p-[1.5rem].
+    const raw = /^\d+$/.test(value) ? `${value}px` : value.match(/^['"]([\d.]+(?:px|%|rem|em))['"]$/)?.[1]
 
-    return pixels ? `${prefix}${pixels}px]` : null
+    return raw ? `${prefix}${raw}]` : null
   }
 
   const quoted = value.match(QUOTED)?.[1]
@@ -231,9 +232,25 @@ function walk(dir) {
         continue
       }
 
-      // The owning element must already have a literal className. It may sit
-      // either side of the style attribute — JSX does not fix the order, and
-      // only looking backwards silently refused most of the file set.
+      // If the element has NO className at all, the mapped classes ARE the whole
+      // className — create it. Scoped to the owning tag (from the last `>` to the
+      // style attribute) so a sibling's className is never borrowed.
+      const at0 = next.indexOf(whole)
+      const tagStart = next.lastIndexOf('>', at0) + 1
+      const tagText = next.slice(tagStart, at0)
+      const hasOwnClass = /className\s*=/.test(tagText)
+
+      if (!hasOwnClass) {
+        const created = classes.map(({ cls }) => cls).join(' ')
+        next = next.slice(0, at0) + `className="${created}" ` + next.slice(at0)
+        next = next.replace(whole, '')
+        converted += 1
+        report.push(`${rel}: created className="${created}"`)
+        continue
+      }
+
+      // Otherwise append to the existing literal. It may sit either side of the
+      // style attribute — JSX does not fix the order.
       const at = next.indexOf(whole)
       const windowStart = Math.max(0, at - 600)
       const before = next.slice(0, at)
