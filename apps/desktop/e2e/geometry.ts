@@ -117,6 +117,15 @@ export async function measureClipping(page: Page): Promise<GeometryProblem[]> {
       // The label usually lives in a child span, so the control's own box can
       // fit while the text inside it is cut to "Open chat …" — the rail footer
       // shipped exactly that. The own-box check above cannot see it.
+      //
+      // Skip controls that carry an explicit aria-label: their accessible name
+      // is complete, and ellipsis there is the deliberate list-row treatment
+      // (roster rows truncate name + preview at narrow widths by design).
+      // Flagging those would manufacture a known-failure for intended behaviour.
+      if (el.getAttribute('aria-label')) {
+        continue
+      }
+
       for (const child of Array.from(el.querySelectorAll<HTMLElement>('span, div'))) {
         if (getComputedStyle(child).textOverflow !== 'ellipsis' || !child.textContent?.trim()) {
           continue
