@@ -32,6 +32,8 @@ export type SessionActivityMessages = {
   scheduledTasks: string
   seeAll: string
   subagents: string
+  showDetails: string
+  hideDetails: string
   answer: string
   answering: string
   approvalApproved: string

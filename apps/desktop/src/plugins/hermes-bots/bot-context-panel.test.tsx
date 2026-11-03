@@ -142,11 +142,24 @@ describe('bot context panel', () => {
         return {
           messages: [
             {
+              role: 'user',
+              text: session === 'sess-new' ? 'Ship the release' : 'Audit the nightly log',
+              timestamp: Math.floor(NOW / 1000) - (session === 'sess-new' ? 30 : 4010)
+            },
+            {
               context: session === 'sess-new' ? 'npm run release' : 'tail -f audit.log',
               name: session === 'sess-new' ? 'terminal' : 'fetch',
               role: 'tool',
               timestamp: Math.floor(NOW / 1000) - (session === 'sess-new' ? 20 : 4000),
               tool_call_id: session === 'sess-new' ? 'new-1' : 'old-1'
+            },
+            {
+              role: 'assistant',
+              text:
+                session === 'sess-new'
+                  ? 'Release checks passed and the PR is open.'
+                  : 'Audit found two denied events and one stale token.',
+              timestamp: Math.floor(NOW / 1000) - (session === 'sess-new' ? 10 : 3990)
             }
           ]
         }
@@ -169,15 +182,102 @@ describe('bot context panel', () => {
       expect(screen.getByText(tab)).toBeTruthy()
     }
 
-    // Newest session selected; only ITS tool row is on screen.
-    expect(await screen.findByText('npm run release')).toBeTruthy()
-    expect(screen.queryByText('tail -f audit.log')).toBeNull()
+    // Newest session selected; only ITS task and outcome are on screen.
+    expect(await screen.findByText('Ship the release')).toBeTruthy()
+    expect(screen.getByText('Release checks passed and the PR is open.')).toBeTruthy()
+    expect(screen.queryByText('Audit the nightly log')).toBeNull()
     expect(screen.getByText('Release check')).toBeTruthy()
 
     // Switching sessions replaces the feed rather than appending to it.
     fireEvent.click(screen.getByRole('option', { name: /Nightly audit/ }))
-    expect(await screen.findByText('tail -f audit.log')).toBeTruthy()
-    expect(screen.queryByText('npm run release')).toBeNull()
+    expect(await screen.findByText('Audit the nightly log')).toBeTruthy()
+    expect(screen.getByText('Audit found two denied events and one stale token.')).toBeTruthy()
+    expect(screen.queryByText('Ship the release')).toBeNull()
+  })
+
+  it('opens customization from the avatar itself, with one tab stop', async () => {
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+    await screen.findByText('Research')
+
+    const avatars = screen.getAllByRole('button', { name: 'Edit profile' })
+    expect(avatars).toHaveLength(1)
+
+    fireEvent.click(avatars[0])
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+  })
+
+  it('shows one meaningful task, hides housekeeping, and keeps the raw trace behind a toggle', async () => {
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [{ id: 'sess-a', last_active: Math.floor(NOW / 1000), resolved_id: 'rt-a', title: 'Release check' }],
+      total: 1
+    })
+    request.mockImplementation(async (method: string) => {
+      if (method === 'session.history') {
+        return {
+          messages: [
+            { role: 'user', text: 'Update the launch kit', timestamp: Math.floor(NOW / 1000) - 120 },
+            { context: 'Hook 3', name: 'todo_write', role: 'tool', timestamp: Math.floor(NOW / 1000) - 110 },
+            {
+              context: 'docs/launch-kit.md',
+              error: 'wrong interpreter',
+              name: 'read_file',
+              role: 'tool',
+              timestamp: Math.floor(NOW / 1000) - 100,
+              tool_call_id: 'r1'
+            },
+            {
+              context: 'docs/launch-kit.md',
+              name: 'read_file',
+              role: 'tool',
+              timestamp: Math.floor(NOW / 1000) - 90,
+              tool_call_id: 'r2'
+            },
+            { context: 'Hook 3', name: 'memory_search', role: 'tool', timestamp: Math.floor(NOW / 1000) - 80 },
+            {
+              context: 'docs/launch-kit.md',
+              name: 'read_file',
+              role: 'tool',
+              timestamp: Math.floor(NOW / 1000) - 70,
+              tool_call_id: 'r3'
+            },
+            {
+              role: 'assistant',
+              text: 'Launch kit now uses Hook 3 everywhere, synced to ~/Code. More detail follows.',
+              timestamp: Math.floor(NOW / 1000) - 60
+            }
+          ]
+        }
+      }
+
+      if (method === 'bot_context.activities' || method === 'bot_context.history') {
+        return method === 'bot_context.activities' ? { activities: [] } : { decisions: [] }
+      }
+
+      if (method === 'bot_context.subagents') {
+        return { subagents: [] }
+      }
+
+      return { jobs: [], scoped: 'research' }
+    })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText('Update the launch kit')).toBeTruthy()
+    expect(screen.getByText('Launch kit now uses Hook 3 everywhere, synced to ~/Code.')).toBeTruthy()
+    expect(screen.queryByText(/todo/i)).toBeNull()
+    expect(screen.queryByText(/memory/i)).toBeNull()
+    expect(screen.queryByText('Failed')).toBeNull()
+    expect(screen.queryByText('read_file')).toBeNull()
+
+    fireEvent.click(screen.getByText('Update the launch kit'))
+    fireEvent.click(screen.getByRole('button', { name: 'Show technical details' }))
+    expect(await screen.findByTestId('activity-trace')).toBeTruthy()
+    expect(screen.getAllByText('read_file · docs/launch-kit.md')).toHaveLength(1)
+    expect(screen.getByRole('button', { name: 'Hide technical details' })).toBeTruthy()
   })
 
   it('keeps the bot computer in its own Bot tab', async () => {

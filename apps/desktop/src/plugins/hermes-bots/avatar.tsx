@@ -791,6 +791,12 @@ export function startFaceClock() {
     return
   }
 
+  // The clock is decorative: reduced-motion users get a static face, not a
+  // slower one. The initial SVG positions are already a complete face.
+  if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+    return
+  }
+
   if (window.__hbFaceClock) {
     // Already initialized (possibly parked) — make sure it's awake. BotFace
     // renders route here, so a face mounting is what wakes a dormant clock.

@@ -65,16 +65,51 @@ describe('session activity model', () => {
     expect(afterLate[0].finishedAt).toBe(20)
   })
 
-  it('produces one chronological item per history tool row', () => {
+  it('groups history into user-meaningful tasks and hides housekeeping', () => {
     const items = activityFromHistory(atlas, [
-      { context: 'npm test', name: 'terminal', role: 'tool', timestamp: 1_700_000_000, tool_call_id: 't1' },
-      { text: 'hello', role: 'user', timestamp: 1_700_000_001 },
-      { context: 'api.github.com', name: 'fetch', role: 'tool', timestamp: 1_700_000_002, tool_call_id: 't2' }
+      { role: 'user', text: 'Summarize the Anthropic post and apply its implications', timestamp: 1_700_000_000 },
+      {
+        context: 'docs/post.md',
+        error: 'blocked by policy',
+        name: 'read_file',
+        role: 'tool',
+        timestamp: 1_700_000_001,
+        tool_call_id: 't1'
+      },
+      { context: 'docs/post.md', name: 'read_file', role: 'tool', timestamp: 1_700_000_002, tool_call_id: 't2' },
+      { context: 'launch kit', name: 'todo_write', role: 'tool', timestamp: 1_700_000_003, tool_call_id: 't3' },
+      { context: 'Hook 3', name: 'memory_search', role: 'tool', timestamp: 1_700_000_004, tool_call_id: 't4' },
+      { context: 'docs/residency.md', name: 'read_file', role: 'tool', timestamp: 1_700_000_005, tool_call_id: 't5' },
+      {
+        role: 'assistant',
+        text: 'Read the post and the residency page; the post was blocked, so the summary uses the residency page. More detail follows.',
+        timestamp: 1_700_000_006
+      }
     ])
 
-    expect(items.map(item => item.id)).toEqual(['tool:t1', 'tool:t2'])
-    expect(items[0].startedAt).toBe(1_700_000_000_000)
-    expect(items[0].summary).toBe('npm test')
+    expect(items).toHaveLength(1)
+    const task = items[0]
+    expect(task.id).toBe('task:sess-a:0')
+    expect(task.title).toBe('Summarize the Anthropic post and apply its implications')
+    expect(task.summary).toBe(
+      'Read the post and the residency page; the post was blocked, so the summary uses the residency page.'
+    )
+    expect(task.status).toBe('succeeded')
+    expect(task.steps?.map(step => `${step.tool}|${step.target}`)).toEqual([
+      'read_file|docs/post.md',
+      'read_file|docs/residency.md'
+    ])
+    expect(task.steps?.every(step => step.status === 'succeeded')).toBe(true)
+  })
+
+  it('does not surface a task made only of housekeeping', () => {
+    const items = activityFromHistory(atlas, [
+      { role: 'user', text: 'Tidy up', timestamp: 1_700_000_000 },
+      { context: 'launch kit', name: 'todo_write', role: 'tool', timestamp: 1_700_000_001 },
+      { context: 'Hook 3', name: 'memory_search', role: 'tool', timestamp: 1_700_000_002 }
+    ])
+
+    expect(items).toHaveLength(0)
   })
 
   it('maps live tool events and preserves the start of a late completion', () => {

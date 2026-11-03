@@ -109,7 +109,7 @@ const STATUS_GLYPH: Record<SessionActivity['status'], string> = {
 
 function statusTone(status: SessionActivity['status']): string {
   if (status === 'failed') {
-    return 'text-destructive'
+    return 'text-(--ui-icon-attention)'
   }
 
   if (status === 'waiting' || status === 'pending') {
@@ -327,6 +327,7 @@ function ActivityRow({
   sessionId: string
 }) {
   const took = duration(activity)
+  const [showTrace, setShowTrace] = useState(false)
 
   return (
     <li className="min-w-0" data-testid="session-activity-row">
@@ -365,6 +366,44 @@ function ActivityRow({
             <pre className="max-h-64 overflow-auto rounded-md bg-(--ui-inline-code-background) px-2 py-1.5 font-mono text-10 leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] text-(--ui-text-secondary)">
               {activity.detail}
             </pre>
+          ) : null}
+          {activity.steps?.length ? (
+            <div className="mt-1">
+              <Button onClick={() => setShowTrace(current => !current)} size="xs" variant="ghost">
+                {showTrace ? s.hideDetails : s.showDetails}
+              </Button>
+              {showTrace ? (
+                <ol
+                  className="mt-1 grid gap-1 border-l border-(--ui-stroke-tertiary) pl-2.5"
+                  data-testid="activity-trace"
+                >
+                  {activity.steps.map(step => {
+                    const failed = step.status === 'failed'
+
+                    return (
+                      <li className="flex min-w-0 items-start gap-1.5 text-10" key={step.id}>
+                        <Codicon
+                          className={
+                            failed
+                              ? 'mt-px shrink-0 text-(--ui-icon-attention)'
+                              : 'mt-px shrink-0 text-(--ui-text-tertiary)'
+                          }
+                          name={failed ? 'error' : step.status === 'running' ? 'sync' : 'pass'}
+                          size="0.65rem"
+                        />
+                        <span className="min-w-0 flex-1 truncate text-(--ui-text-secondary)">
+                          {step.tool}
+                          {step.target ? ` · ${step.target}` : ''}
+                        </span>
+                        <span className="shrink-0 tabular-nums text-(--ui-text-quaternary)">
+                          {relativeTime(step.at)}
+                        </span>
+                      </li>
+                    )
+                  })}
+                </ol>
+              ) : null}
+            </div>
           ) : null}
           {activity.approval ? (
             <ApprovalCard

@@ -269,6 +269,31 @@ describe('the SDK budgeted-loop path', () => {
     expect(calls.wake).toBeGreaterThanOrEqual(2)
   })
 
+  it('does not start a face clock under reduced motion', async () => {
+    const original = window.matchMedia
+    window.matchMedia = ((query: string) => ({
+      addEventListener: () => {},
+      addListener: () => {},
+      dispatchEvent: () => false,
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      onchange: null,
+      removeEventListener: () => {},
+      removeListener: () => {}
+    })) as typeof window.matchMedia
+
+    try {
+      const { startFaceClock } = await loadClock()
+      mountFace()
+      startFaceClock()
+
+      expect(frames.size).toBe(0)
+      expect(window.__hbFaceClock).toBeUndefined()
+    } finally {
+      window.matchMedia = original
+    }
+  })
+
   it('keeps a single clock across plugin loads', async () => {
     // Parked on `window` so a second load adopts the running clock instead of
     // starting a rival loop.

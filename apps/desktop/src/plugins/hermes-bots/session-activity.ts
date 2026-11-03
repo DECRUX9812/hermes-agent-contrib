@@ -17,7 +17,7 @@
 
 import { atom } from '@hermes/plugin-sdk'
 
-export type SessionActivityKind = 'tool' | 'approval' | 'session'
+export type SessionActivityKind = 'approval' | 'session' | 'task' | 'tool'
 export type SessionActivityStatus = 'running' | 'waiting' | 'pending' | 'succeeded' | 'failed' | 'cancelled' | 'expired'
 
 export type ApprovalStatus = 'pending' | 'approved' | 'denied' | 'expired' | 'unavailable'
@@ -33,6 +33,15 @@ export interface SessionApproval {
   decidedAt?: null | number
 }
 
+export interface SessionTraceStep {
+  at: number
+  detail?: string
+  id: string
+  status: 'running' | 'succeeded' | 'failed' | 'cancelled'
+  target: string
+  tool: string
+}
+
 export interface SessionActivity {
   id: string
   profile: string
@@ -45,6 +54,8 @@ export interface SessionActivity {
   summary: string
   detail?: string
   approval?: SessionApproval
+  /** Raw tool calls behind the collapsed "technical details" toggle. */
+  steps?: SessionTraceStep[]
 }
 
 export interface SessionRef {
@@ -103,53 +114,163 @@ function cleanToolName(value: unknown): string {
   return name || 'Tool'
 }
 
-/** One tool row from `session.history` as an activity item. */
-export function activityFromHistoryRow(
-  ref: SessionRef,
-  row: Record<string, unknown>,
-  index: number
-): SessionActivity | null {
-  const role = String(row.role ?? '')
+const HOUSEKEEPING = /^(todo|memory|reaction|react|add_reaction|set_reaction|clarify)/i
 
-  if (role !== 'tool') {
-    return null
-  }
+function oneSentence(value: unknown, max = 240): string {
+  const text = oneLine(value, 400)
+  const first = text.match(/^(.+?[.!?])(?:\s|$)/)?.[1] ?? text
 
-  const toolId = oneLine(row.tool_call_id ?? row.tool_id ?? row.id, 120)
-  const id = toolId ? `tool:${toolId}` : `tool:${ref.sessionId}:${index}`
-  const failed = isFailure(row.status) || Boolean(row.error)
-  const cancelled = isCancelled(row.status)
-  const at = timestampMs(row.timestamp) || timestampMs(row.started_at) || Date.now() + index
-
-  return {
-    detail: oneLine(row.result ?? row.text, 4000) || undefined,
-    finishedAt: at,
-    id,
-    kind: 'tool',
-    profile: ref.profile,
-    sessionId: ref.sessionId,
-    startedAt: at,
-    status: failed ? 'failed' : cancelled ? 'cancelled' : 'succeeded',
-    summary: oneLine(row.context, 200),
-    title: cleanToolName(row.name)
-  }
+  return first.length > max ? `${first.slice(0, max - 1)}…` : first
 }
 
-/** A session's persisted tool rows, oldest first, one item per tool call. */
+function stepTarget(row: Record<string, unknown>): string {
+  for (const key of ['context', 'target', 'path', 'command', 'query', 'pattern', 'url', 'input']) {
+    const value = oneLine(row[key], 120)
+
+    if (value) {
+      return value
+    }
+  }
+
+  return ''
+}
+
+function stepStatus(row: Record<string, unknown>): SessionTraceStep['status'] {
+  if (isFailure(row.status) || Boolean(row.error)) {
+    return 'failed'
+  }
+
+  if (isCancelled(row.status)) {
+    return 'cancelled'
+  }
+
+  return 'succeeded'
+}
+
+/** A session's persisted history grouped into user-meaningful tasks.
+ *
+ * A task starts at a user row and closes at the next one. Housekeeping tools
+ * (todo/memory/reactions/clarify) never become steps. Steps dedupe by
+ * (tool, target), so the same inspection twice — or a failure followed by a
+ * successful retry — is one row whose status is the LAST observation.
+ */
 export function activityFromHistory(ref: SessionRef, rows: unknown): SessionActivity[] {
   const out: SessionActivity[] = []
 
-  for (const [index, row] of (Array.isArray(rows) ? rows : []).entries()) {
-    if (!row || typeof row !== 'object') {
+  let current: {
+    id: string
+    lastAt: number
+    startedAt: number
+    steps: Map<string, SessionTraceStep>
+    summary: string
+    title: string
+  } | null = null
+
+  let taskIndex = 0
+
+  const flush = () => {
+    if (!current) {
+      return
+    }
+
+    const steps = [...current.steps.values()].sort(
+      (left, right) => left.at - right.at || left.id.localeCompare(right.id)
+    )
+
+    if (steps.length) {
+      const running = steps.some(step => step.status === 'running')
+      const failed = steps.some(step => step.status === 'failed')
+      const cancelled = steps.every(step => step.status === 'cancelled')
+
+      out.push({
+        detail: undefined,
+        finishedAt: running ? null : current.lastAt,
+        id: current.id,
+        kind: 'task',
+        profile: ref.profile,
+        sessionId: ref.sessionId,
+        startedAt: current.startedAt,
+        status: running ? 'running' : failed ? 'failed' : cancelled ? 'cancelled' : 'succeeded',
+        steps,
+        summary: current.summary,
+        title: current.title
+      })
+    }
+
+    current = null
+  }
+
+  const open = (title: string, at: number) => ({
+    id: `task:${ref.sessionId}:${taskIndex++}`,
+    lastAt: at,
+    startedAt: at,
+    steps: new Map<string, SessionTraceStep>(),
+    summary: '',
+    title: oneLine(title, 80) || 'Session activity'
+  })
+
+  for (const [index, raw] of (Array.isArray(rows) ? rows : []).entries()) {
+    if (!raw || typeof raw !== 'object') {
       continue
     }
 
-    const item = activityFromHistoryRow(ref, row as Record<string, unknown>, index)
+    const row = raw as Record<string, unknown>
+    const role = String(row.role ?? '')
+    const at = timestampMs(row.timestamp) || timestampMs(row.started_at) || Date.now() + index
 
-    if (item) {
-      out.push(item)
+    if (role === 'user') {
+      flush()
+      current = open(oneLine(row.text, 500), at)
+      current.lastAt = Math.max(current.lastAt, at)
+
+      continue
     }
+
+    if (role === 'assistant') {
+      const text = oneLine(row.text, 500)
+
+      if (text && current) {
+        current.summary = oneSentence(text)
+      }
+
+      continue
+    }
+
+    if (role !== 'tool') {
+      continue
+    }
+
+    const tool = cleanToolName(row.name)
+
+    if (HOUSEKEEPING.test(tool)) {
+      continue
+    }
+
+    if (!current) {
+      current = open('Session activity', at)
+    }
+
+    const target = stepTarget(row)
+    const key = `${tool}|${target}`
+
+    const step: SessionTraceStep = {
+      at,
+      detail: oneLine(row.result ?? row.text, 4000) || undefined,
+      id: oneLine(row.tool_call_id ?? row.tool_id ?? row.id, 120) || `${current.id}:${index}`,
+      status: stepStatus(row),
+      target,
+      tool
+    }
+
+    const previous = current.steps.get(key)
+
+    // Last observation wins: a retried failure that now succeeds is one
+    // successful step, and a duplicate probe never becomes two rows.
+    current.steps.set(key, previous ? { ...step, id: previous.id, at: Math.max(previous.at, at) } : step)
+    current.lastAt = Math.max(current.lastAt, at)
   }
+
+  flush()
 
   return sortActivity(out)
 }
@@ -191,6 +312,7 @@ export function mergeSessionActivity(
       ...winner,
       approval: winner.approval ?? loser.approval,
       detail: winner.detail ?? loser.detail,
+      steps: winner.steps ?? loser.steps,
       finishedAt: Math.max(current.finishedAt ?? 0, next.finishedAt ?? 0) || null,
       startedAt: Math.min(current.startedAt, next.startedAt),
       summary: winner.summary || loser.summary

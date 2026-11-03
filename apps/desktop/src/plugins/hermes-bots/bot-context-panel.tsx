@@ -498,20 +498,20 @@ export function BotContextPanel() {
                   : 'from-(--ui-accent)/18 to-(--ui-accent)/8'
             )}
           />
-          <BotFace color={avatarColor(color, bot)} image={image} mood={mood} name={bot} shape={shape} size={76} />
-          {owner ? (
-            <Tip label={b.bot.editTitle}>
-              <Button
-                aria-label={b.bot.editTitle}
-                className="absolute -bottom-1 -right-1 size-7 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) shadow-sm hover:bg-(--chrome-action-hover)"
-                onClick={() => setEditing(owner)}
-                size="icon-xs"
-                variant="ghost"
-              >
-                <Codicon className="text-(--ui-text-secondary)" name="symbol-color" size="0.8rem" />
-              </Button>
-            </Tip>
-          ) : null}
+          <button
+            aria-label={b.bot.editTitle}
+            className="relative block rounded-full transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent) focus-visible:ring-offset-2 focus-visible:ring-offset-(--ui-raised-background)"
+            onClick={() => setEditing(owner)}
+            type="button"
+          >
+            <BotFace color={avatarColor(color, bot)} image={image} mood={mood} name={bot} shape={shape} size={76} />
+            <span
+              aria-hidden="true"
+              className="absolute -bottom-1 -right-1 grid size-7 place-items-center rounded-full border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) text-(--ui-text-secondary) shadow-sm"
+            >
+              <Codicon name="symbol-color" size="0.8rem" />
+            </span>
+          </button>
         </div>
         <div className="mt-3 max-w-full truncate text-base font-semibold leading-tight text-(--ui-text-primary)">
           {displayName({ name: bot }, meta)}
@@ -532,7 +532,7 @@ export function BotContextPanel() {
           >
             {working || running ? (
               <span aria-hidden="true" className="relative flex size-1.5 shrink-0">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-60" />
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-60 motion-reduce:hidden" />
                 <span className="relative inline-flex size-1.5 rounded-full bg-current" />
               </span>
             ) : (
