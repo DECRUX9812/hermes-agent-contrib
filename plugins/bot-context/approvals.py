@@ -32,6 +32,7 @@ from .activities import (
     STATUS_RESOLVED_ELSEWHERE,
     Activity,
     host_choices,
+    local_request_id,
     outcome_status,
 )
 from .context import BotContext, is_launch_profile
@@ -52,6 +53,7 @@ E_INVALID_CHOICE = "invalid_choice"
 E_NOT_PENDING = "not_pending"
 E_RESOLUTION_FAILED = "resolution_failed"
 E_HOST_UNAVAILABLE = "host_unavailable"
+E_LOCAL_ONLY = "local_only"
 
 _MESSAGES = {
     E_UNKNOWN_ACTIVITY: (
@@ -76,6 +78,10 @@ _MESSAGES = {
     E_HOST_UNAVAILABLE: (
         "This Hermes process has no gateway approval queue (CLI-only install, or a different "
         "process owns the waiting bot), so the prompt cannot be answered from here."
+    ),
+    E_LOCAL_ONLY: (
+        "This prompt belongs to an interactive CLI session, where the answer is typed into "
+        "that terminal. No gateway queue holds it, so it cannot be answered remotely."
     ),
 }
 
@@ -135,6 +141,96 @@ def host_entry_data(session_key: str, request_id: str) -> Mapping[str, Any] | No
     except Exception as exc:  # pragma: no cover - host queue is defensive anyway
         logger.debug("bot-context: queue read failed for %s (%s)", session_key, exc)
     return None
+
+
+def _queue_entries(session_key: str) -> list[Mapping[str, Any]]:
+    if not session_key:
+        return []
+    try:
+        from tools.approval import list_gateway_approvals
+    except Exception:
+        return []
+    try:
+        return [entry for entry in (list_gateway_approvals(session_key) or ())
+                if isinstance(entry, Mapping)]
+    except Exception as exc:  # pragma: no cover - host queue is defensive anyway
+        logger.debug("bot-context: queue listing failed for %s (%s)", session_key, exc)
+        return []
+
+
+def _same_prompt(entry: Mapping[str, Any], payload: Mapping[str, Any]) -> bool:
+    """Match the hook payload to a queue entry by the fields the host always sends.
+
+    ``request_id`` is not on the stock ``pre_approval_request`` payload, so the
+    queue is the authority for it. Command + pattern-key set is the same pair
+    the host itself uses to coalesce identical prompts.
+    """
+    if str(entry.get("command") or "") != str(payload.get("command") or ""):
+        return False
+    entry_keys = tuple(entry.get("pattern_keys") or ())
+    payload_keys = tuple(payload.get("pattern_keys") or ())
+    if payload_keys and entry_keys and entry_keys != payload_keys:
+        return False
+    return True
+
+
+def discover_queue_entry(
+    payload: Mapping[str, Any],
+    *,
+    known_ids: set[str] | None = None,
+) -> Mapping[str, Any] | None:
+    """Find the live host entry behind a hook payload, or None for a local prompt.
+
+    Preference order matters when two identical prompts are coalesced: a request
+    id we have not indexed yet wins, so a second follower does not overwrite the
+    leader's row with itself.
+    """
+    session_key = str(payload.get("session_key") or "").strip()
+    if not session_key:
+        return None
+    candidates = [entry for entry in _queue_entries(session_key) if _same_prompt(entry, payload)]
+    if not candidates:
+        return None
+    known = known_ids or set()
+    for entry in candidates:
+        request_id = str(entry.get("request_id") or "")
+        if request_id and request_id not in known:
+            return entry
+    return candidates[0]
+
+
+def enrich_payload(
+    payload: Mapping[str, Any],
+    *,
+    known_ids: set[str] | None = None,
+) -> tuple[dict[str, Any], dict[str, Any] | None, bool]:
+    """Return ``(payload_with_request_id, live_entry, answerable)``.
+
+    * a payload that already names its request id is trusted (newer hosts);
+    * otherwise the live gateway queue supplies it, and the live ``allow_*``
+      flags become the choice authority;
+    * with no queue entry the prompt is local (interactive CLI): it gets a
+      ``local:`` id, the always-safe choices, and ``answerable=False``.
+    """
+    enriched = dict(payload)
+    explicit = str(payload.get("request_id") or payload.get("prompt_id") or "").strip()
+    if explicit:
+        return enriched, host_entry_data(
+            str(payload.get("session_key") or ""), explicit), True
+
+    entry = discover_queue_entry(payload, known_ids=known_ids)
+    if entry is not None:
+        enriched["request_id"] = str(entry.get("request_id") or "").strip()
+        # The live entry knows what the host will really accept.
+        enriched["allow_session"] = bool(entry.get("allow_session", True))
+        enriched["allow_permanent"] = bool(entry.get("allow_permanent", True))
+        if entry.get("smart_denied"):
+            enriched["smart_denied"] = True
+        return enriched, entry, True
+
+    enriched["request_id"] = local_request_id(payload)
+    enriched.setdefault("surface", "cli")
+    return enriched, None, False
 
 
 def permission_check(
@@ -205,6 +301,8 @@ def respond(
         }
     if not activity.context.session_key:
         return error(E_MISSING_CONTEXT, detail={"missing": list(activity.context.missing)})
+    if not activity.answerable:
+        return error(E_LOCAL_ONLY, detail={"activity": activity.to_dict()})
 
     allowed, why = permission_check(activity, caller, answer_scope=answer_scope)
     if not allowed:

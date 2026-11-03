@@ -19,12 +19,24 @@ approval actually waits:
 
 ## Install and enable
 
-Bundled with the repo (so `hermes plugins list` already shows it), disabled by
-default like every bundled plugin:
+`bot-context` is a normal directory plugin. It does not need a patched Hermes
+core, a particular branch, or a local checkout: the only requirement is the
+stock plugin API (manifest v2, `register_tool`, `register_hook`,
+`register_command`, and the public approval hooks).
+
+**Bundled install** (the copy that ships with Hermes):
 
 ```bash
 hermes plugins enable bot-context          # add to plugins.enabled
 hermes plugins disable bot-context         # back out, no residue
+```
+
+**Any stock install** — copy the one directory:
+
+```bash
+mkdir -p ~/.hermes/plugins
+cp -R plugins/bot-context ~/.hermes/plugins/
+hermes plugins enable bot-context
 ```
 
 Or by config:
@@ -35,10 +47,31 @@ plugins:
     - bot-context
 ```
 
-From a checkout or a fork it is a normal directory plugin — copy `plugins/bot-context/`
-into `~/.hermes/plugins/bot-context/` (or `hermes plugins install owner/repo`) and
-enable it there. Nothing outside the plugin directory is patched, so installing
-and removing it is the enable/disable step.
+The plugin stores decisions under `<hermes home>/plugin-data/bot-context/`
+through the public `plugin_data_dir()` helper. It never writes into
+`~/.hermes/plugins/bot-context/`, so updating or removing the plugin directory
+cannot destroy history.
+
+### What works on stock Nous main
+
+Stock Hermes does **not** put `request_id` on the `pre_approval_request` payload.
+The plugin reads the live gateway queue (`list_gateway_approvals`) for the
+approval that is actually waiting and uses its host id. That is also why an
+approval raised before the plugin loaded is not retroactively indexed: there is
+no public "list every prompt" surface, and guessing one would risk answering the
+wrong gate.
+
+An interactive CLI prompt has no cross-process queue. It is still listed (with a
+`local:` id and `answerable: false`) so the context is visible, but the plugin
+refuses to pretend it can answer it; type the answer in that terminal.
+
+| Host capability | If missing |
+|---|---|
+| `tools.approval.list_gateway_approvals` | Gateway approvals are indexed only when the host supplies `request_id`; CLI rows still work. |
+| `tools.approval.resolve_gateway_approval` | `bot_context_respond` returns `host_unavailable`; nothing is claimed. |
+| `tui_gateway.session_registry` | Profile falls back to `HERMES_PROFILE`/home; the miss is reported in `degraded`. |
+| `tui_gateway.server.register_method` | The optional `bot_context.*` RPC surface is absent; tools, hooks and `/bot-context` still work. |
+| `hermes_yaml` / `profile.yaml` | Bot title stays empty; presentation only. |
 
 Verify:
 
@@ -52,7 +85,7 @@ hermes bot-context status      # settings, store path, pending count
 | Tool | What it answers |
 |---|---|
 | `bot_context_resolve` | Context for a tracked approval id, an explicit session, or (with no arguments) the calling session. Returns every field it could *not* resolve instead of guessing one. |
-| `bot_context_activities` | What bots are blocked on: profile, title, session, room, the choices the host will accept, and a `legacy` projection in the Desktop group-chat wire shape. |
+| `bot_context_activities` | What bots are blocked on: profile, title, session, room, the choices the host will accept, and a `legacy` projection in the Desktop group-chat wire shape. Pass `session_key` or `session_id` to list one session only; the response also carries a `sessions` summary. |
 | `bot_context_respond` | Answer one activity — `once`, `session`, `always` or `deny` — through the host queue. |
 | `bot_context_history` | Settled decisions, newest first, one row per activity. |
 
@@ -67,6 +100,20 @@ In-session slash command:
 
 `reason` is relayed to the blocked bot verbatim, so it can adapt instead of only
 hearing "denied".
+
+## Session isolation
+
+An activity belongs to exactly one session. `bot_context_activities` accepts
+`session_key` or `session_id`; `bot_context_history` accepts the same filters;
+and `bot_context.sessions` returns one row per session with pending counts. The
+Desktop Bot Mode pane selects one session and renders only its rows, so
+switching sessions switches the whole feed. A bot that is blocked in two
+sessions produces two rows, not one merged row.
+
+The runtime session id is filled from `tui_gateway.session_registry` when the
+hook only carries a session key, which is what lets a pane address a waiting
+approval by the id its live events use. If that lookup is unavailable, the id is
+left empty and reported in `degraded`; the session key still isolates the row.
 
 ## Configuration
 
@@ -104,6 +151,7 @@ The codes are stable; branch on them, not on message text.
 | `insufficient_permission` | The caller is a bot, or a bot answering its own gate | Untouched, still pending |
 | `invalid_choice` | The host (or `allow_permanent_choices`) will not accept that decision | Untouched |
 | `not_pending` | The host queue no longer holds that id: answered elsewhere, withdrawn, expired | Nothing claimed; ledger records `resolved_elsewhere` |
+| `local_only` | The prompt belongs to an interactive CLI session, not a gateway queue | Untouched; answer it in that terminal |
 | `resolution_failed` | The host resolver raised | Untouched |
 | `host_unavailable` | This process has no gateway approval queue | Untouched |
 
@@ -151,6 +199,21 @@ not a failure). Each is behind `try/except` and degrades instead of raising:
 `hermes_yaml` (profile metadata) is in the same warning set: a miss leaves the
 title empty, which costs a label, not an answer.
 
+## Desktop RPC (optional)
+
+When the gateway server is already imported, `register()` installs five
+read/answer methods through the public `register_method` seam. They are what the
+Bot Mode pane uses; they are scoped to one session and never return another
+session's rows:
+
+| Method | Result |
+|---|---|
+| `bot_context.sessions` | One row per session with pending activity, profile, bot label and counts |
+| `bot_context.activities` | Pending (or `status: settled/all`) rows; filter with `session_key`, `session_id`, `profile`, `room` |
+| `bot_context.history` | Settled decisions, newest first |
+| `bot_context.resolve` | Resolved context for an id or session |
+| `bot_context.respond` | Answer through the host queue, same codes as the tool |
+
 ## Backward compatibility
 
 * No core file changed. The hooks the plugin listens to already existed; with the
@@ -175,4 +238,8 @@ python -m pytest tests/plugins/test_bot_context_plugin.py -q
 The suite covers registration and discovery gating, context precedence and
 degradation, an end-to-end answer against a real `_ApprovalEntry` in the host
 queue, permission refusals, every failure code, restart-safe history, and the
-compatibility guarantees above.
+compatibility guarantees above. It also runs the four portability cases: a
+clean user install, an existing `config.yaml`, missing optional settings, and
+the same plugin loaded with an unmodified Nous main checkout on `PYTHONPATH`
+(set `HERMES_STOCK_CHECKOUT` to point at it; it defaults to
+`~/Code/hermes-nous-main` and skips when absent).

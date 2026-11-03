@@ -68,11 +68,41 @@ class Ledger:
     def store_path(self) -> str | None:
         return str(self._decisions_path) if self._decisions_path else None
 
+    def configure(self, *, max_pending: int | None = None,
+                  retention_days: float | None = None) -> None:
+        """Apply settings re-read after a config edit, without losing pending rows."""
+        with self._lock:
+            if max_pending is not None:
+                self._max_pending = max(1, int(max_pending))
+                while len(self._pending) > self._max_pending:
+                    oldest = min(self._pending.values(), key=lambda a: a.requested_at)
+                    del self._pending[oldest.activity_id]
+            if retention_days is not None:
+                self._retention_s = max(0.0, float(retention_days)) * 86400.0
+
+    def rebind(self, store_dir: Path | None) -> bool:
+        """Follow the active profile's ``plugin-data`` directory.
+
+        Returns True when the store changed. Pending rows are dropped on a
+        profile switch: they address queues in the old profile's process and
+        must never leak into another profile's view.
+        """
+        target = Path(store_dir) if store_dir is not None else None
+        with self._lock:
+            if target == self._dir:
+                return False
+            self._dir = target
+            self._decisions_path = (target / "decisions.jsonl") if target else None
+            self._pending.clear()
+            self._settled.clear()
+            return True
+
     def get(self, activity_id: str) -> Activity | None:
         with self._lock:
             return self._pending.get(activity_id) or self._settled.get(activity_id)
 
-    def pending(self, *, profile: str | None = None, room: str | None = None) -> list[Activity]:
+    def pending(self, *, profile: str | None = None, room: str | None = None,
+                session_key: str | None = None, session_id: str | None = None) -> list[Activity]:
         now = self._now()
         with self._lock:
             rows = [a for a in self._pending.values() if not self._is_stale(a, now)]
@@ -80,10 +110,15 @@ class Ledger:
             rows = [a for a in rows if a.context.profile == profile]
         if room:
             rows = [a for a in rows if a.context.room == room]
+        if session_key:
+            rows = [a for a in rows if a.context.session_key == session_key]
+        if session_id:
+            rows = [a for a in rows if a.context.session_id == session_id]
         return sorted(rows, key=lambda a: a.requested_at)
 
     def recent(self, *, limit: int = 20, since_hours: float | None = None,
-               profile: str | None = None) -> list[Activity]:
+               profile: str | None = None, session_key: str | None = None,
+               session_id: str | None = None) -> list[Activity]:
         """Settled decisions from disk + memory, newest first."""
         cutoff = None
         if since_hours is not None:
@@ -101,6 +136,10 @@ class Ledger:
                 rows = [a for a in self._settled.values() if is_settled(a.status)]
         if profile:
             rows = [a for a in rows if a.context.profile == profile]
+        if session_key:
+            rows = [a for a in rows if a.context.session_key == session_key]
+        if session_id:
+            rows = [a for a in rows if a.context.session_id == session_id]
         # One row per activity: the answer path and the host's own post-hook both
         # settle the same id, and history must not read as two decisions.
         newest: dict[str, Activity] = {}
@@ -111,6 +150,41 @@ class Ledger:
         unique = list(newest.values())
         unique.sort(key=lambda a: a.settled_at or a.requested_at, reverse=True)
         return unique[: max(0, int(limit))]
+
+    def sessions(self) -> list[dict[str, Any]]:
+        """One row per session that currently owns pending activity (oldest first).
+
+        This is the session-isolation boundary for UIs: a caller selects a
+        session by key and never has to filter another session's rows itself.
+        """
+        rows = self.pending()
+        grouped: dict[str, dict[str, Any]] = {}
+        for activity in rows:
+            key = activity.context.session_key or activity.context.session_id or f"activity:{activity.activity_id}"
+            entry = grouped.setdefault(key, {
+                "session_key": activity.context.session_key,
+                "session_id": activity.context.session_id,
+                "profile": activity.context.profile,
+                "bot": {
+                    "profile": activity.context.profile,
+                    "title": activity.context.bot_title,
+                    "label": activity.context.label,
+                },
+                "room": activity.context.room,
+                "pending": 0,
+                "answerable": 0,
+                "oldest_requested_at": activity.requested_at,
+                "activity_ids": [],
+            })
+            entry["pending"] += 1
+            entry["answerable"] += 1 if activity.answerable else 0
+            entry["oldest_requested_at"] = min(entry["oldest_requested_at"], activity.requested_at)
+            entry["activity_ids"].append(activity.activity_id)
+        return sorted(grouped.values(), key=lambda row: row["oldest_requested_at"])
+
+    def pending_ids(self) -> set[str]:
+        with self._lock:
+            return set(self._pending)
 
     # ── writes ───────────────────────────────────────────────────────────────
     def record(self, activity: Activity) -> Activity:
@@ -282,6 +356,8 @@ def _from_record(record: dict[str, Any]) -> Activity:
         choices_source=str(record.get("choices_source") or "inferred"),
         requested_at=float(record.get("requested_at") or 0),
         context=ctx,
+        answerable=bool(record.get("answerable", True)),
+        source=str(record.get("source") or "gateway"),
         settled_at=(float(record["settled_at"]) if record.get("settled_at") else None),
         settled_choice=record.get("settled_choice"),
         settled_by=str(record.get("settled_by") or ""),

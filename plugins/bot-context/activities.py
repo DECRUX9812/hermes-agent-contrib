@@ -33,6 +33,12 @@ STATUS_DENIED = "denied"
 STATUS_EXPIRED = "expired"
 STATUS_RESOLVED_ELSEWHERE = "resolved_elsewhere"
 
+# Where the record came from. ``gateway`` prompts can be answered through the
+# host queue; ``local`` prompts (the interactive CLI's own input panel) cannot,
+# because no cross-process queue holds them.
+SOURCE_GATEWAY = "gateway"
+SOURCE_LOCAL = "local"
+
 _MAX_PREVIEW = 2000
 _MAX_ID = 256
 
@@ -70,6 +76,22 @@ def _request_id(payload: Mapping[str, Any]) -> str:
                 raise MalformedActivity(key, f"is longer than {_MAX_ID} chars")
             return value.strip()
     raise MalformedActivity("request_id", "is missing — the host must supply a prompt id")
+
+
+def local_request_id(payload: Mapping[str, Any]) -> str:
+    """A stable id for a prompt no gateway queue can address (the local CLI panel).
+
+    It is deliberately namespaced (``local:``) so it can never collide with a
+    host request id, and stable for the same prompt text so a duplicate hook
+    does not create two rows.
+    """
+    import hashlib
+
+    material = "\x1f".join(
+        str(payload.get(key) or "")
+        for key in ("session_key", "command", "description", "pattern_key", "surface")
+    )
+    return f"local:{hashlib.sha256(material.encode('utf-8')).hexdigest()[:24]}"
 
 
 def host_choices(data: Mapping[str, Any] | None, *, allow_permanent: bool) -> tuple[str, ...]:
@@ -129,6 +151,8 @@ class Activity:
     choices_source: str
     requested_at: float
     context: BotContext
+    answerable: bool = True
+    source: str = SOURCE_GATEWAY
     settled_at: float | None = None
     settled_choice: str | None = None
     settled_by: str = ""
@@ -150,6 +174,8 @@ class Activity:
             "settled_choice": self.settled_choice,
             "settled_by": self.settled_by,
             "note": self.note,
+            "answerable": self.answerable,
+            "source": self.source,
             "bot": {
                 "profile": self.context.profile,
                 "title": self.context.bot_title,
@@ -203,6 +229,8 @@ class Activity:
             choices_source=self.choices_source,
             requested_at=self.requested_at,
             context=self.context,
+            answerable=self.answerable,
+            source=self.source,
             settled_at=time.time() if status != STATUS_PENDING else None,
             settled_choice=choice,
             settled_by=by,
@@ -216,12 +244,26 @@ def build_activity(
     allow_permanent: bool = False,
     now: float | None = None,
     context: BotContext | None = None,
+    request_id: str | None = None,
+    answerable: bool = True,
+    source: str = SOURCE_GATEWAY,
+    choices: tuple[str, ...] | None = None,
+    choices_source: str | None = None,
 ) -> Activity:
-    """Validate a hook payload into an ``Activity``; raises ``MalformedActivity``."""
+    """Validate a hook payload into an ``Activity``; raises ``MalformedActivity``.
+
+    ``request_id`` is normally discovered by the caller from the host's live
+    queue, because stock Hermes does not include it on the hook payload. When
+    the prompt has no gateway queue (the interactive CLI panel), pass
+    ``answerable=False`` and a ``local:`` id so the row is still visible but
+    never offered as remotely answerable.
+    """
     if not isinstance(payload, Mapping):
         raise MalformedActivity("payload", f"must be a mapping, got {type(payload).__name__}")
 
-    activity_id = _request_id(payload)
+    activity_id = (request_id or "").strip() or _request_id(payload)
+    if len(activity_id) > _MAX_ID:
+        raise MalformedActivity("request_id", f"is longer than {_MAX_ID} chars")
     command = _text(payload.get("command"), "command")
     description = _text(payload.get("description"), "description")
     pattern_key = _text(payload.get("pattern_key"), "pattern_key", limit=_MAX_ID)
@@ -241,6 +283,7 @@ def build_activity(
         # not an approval request at all — refuse rather than record a blank card.
         raise MalformedActivity("command", "and description are both empty")
 
+    resolved_choices = choices or inferred_choices(payload, allow_permanent=allow_permanent)
     return Activity(
         activity_id=activity_id,
         kind=activity_kind(payload),
@@ -249,10 +292,12 @@ def build_activity(
         description=description,
         pattern_key=pattern_key,
         pattern_keys=pattern_keys,
-        choices=inferred_choices(payload, allow_permanent=allow_permanent),
-        choices_source="inferred",
+        choices=tuple(resolved_choices),
+        choices_source=choices_source or "inferred",
         requested_at=float(now if now is not None else time.time()),
         context=ctx,
+        answerable=bool(answerable),
+        source=source if source in (SOURCE_GATEWAY, SOURCE_LOCAL) else SOURCE_GATEWAY,
     )
 
 
@@ -280,5 +325,6 @@ def summarize(activities: Iterable[Activity], limit: int = 10) -> str:
     lines = []
     for a in rows:
         room = f" in room {a.context.room}" if a.context.room else ""
-        lines.append(f"{a.activity_id[:8]}  {a.context.label}{room}  {a.command or a.description}")
+        where = " (answer in its terminal)" if not a.answerable else ""
+        lines.append(f"{a.activity_id[:8]}  {a.context.label}{room}{where}  {a.command or a.description}")
     return "\n".join(lines)

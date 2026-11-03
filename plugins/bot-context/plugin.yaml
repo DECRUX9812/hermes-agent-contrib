@@ -1,9 +1,9 @@
 name: bot-context
-version: 0.1.0
+version: 0.2.0
 manifest_version: 2
 kind: standalone
-description: "Bot Mode context and activity approvals: resolve the bot profile, title, session and hosted room behind an approval, index what each bot is blocked on, and answer through the host's own approval queue."
-author: NousResearch
+description: "Bot Mode session activity and approvals: resolve the bot profile, title, session and hosted room behind an approval, list what each session is blocked on, and answer through the host's own approval queue."
+author: Hermes Plus Overlay contributors
 license: MIT
 platforms:
   - linux

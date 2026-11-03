@@ -31,6 +31,7 @@ from __future__ import annotations
 
 import json
 import logging
+import os
 import threading
 from typing import Any, Mapping
 
@@ -45,7 +46,7 @@ from .activities import (
     summarize,
 )
 from .context import BotContext, resolve_bot_context
-from .ledger import Ledger
+from .ledger import Ledger, _data_dir
 
 logger = logging.getLogger("plugins.bot-context")
 
@@ -66,24 +67,107 @@ def _setting(ctx, key: str, default: Any) -> Any:
     return default if value is None else value
 
 
+def _as_int(value: Any, default: int) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_float(value: Any, default: float) -> float:
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+def _as_bool(value: Any, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        lowered = value.strip().lower()
+        if lowered in ("1", "true", "yes", "on"):
+            return True
+        if lowered in ("0", "false", "no", "off", ""):
+            return False
+    return default
+
+
 def _settings(ctx) -> dict[str, Any]:
-    """Current settings, re-read on every use so a config edit applies without a restart."""
+    """Current settings, re-read on every use so a config edit applies without a restart.
+
+    Every conversion is defensive: a hand-edited ``config.yaml`` value of the
+    wrong type falls back to the safe default instead of breaking a tool call.
+    """
     return {
         "answer_scope": ap.normalize_scope(_setting(ctx, "answer_scope", ap.SCOPE_USER)),
-        "allow_permanent": bool(_setting(ctx, "allow_permanent_choices", False)),
-        "max_pending": int(_setting(ctx, "max_pending", DEFAULT_MAX_PENDING)),
-        "retention_days": float(_setting(ctx, "retention_days", DEFAULT_RETENTION_DAYS)),
-        "approval_ttl_seconds": float(_setting(ctx, "approval_ttl_seconds", DEFAULT_APPROVAL_TTL_SECONDS)),
+        "allow_permanent": _as_bool(_setting(ctx, "allow_permanent_choices", False), False),
+        "max_pending": _as_int(_setting(ctx, "max_pending", DEFAULT_MAX_PENDING), DEFAULT_MAX_PENDING),
+        "retention_days": _as_float(_setting(ctx, "retention_days", DEFAULT_RETENTION_DAYS),
+                                    DEFAULT_RETENTION_DAYS),
+        "approval_ttl_seconds": _as_float(_setting(ctx, "approval_ttl_seconds",
+                                                   DEFAULT_APPROVAL_TTL_SECONDS),
+                                          DEFAULT_APPROVAL_TTL_SECONDS),
     }
 
 
+def _config_settings() -> dict[str, Any]:
+    """Settings read from ``config.yaml`` for the standalone CLI process.
+
+    The CLI is a separate process with no ``PluginContext``; reading the same
+    ``plugins.entries.bot-context.settings`` subtree keeps it from inventing a
+    second, env-only configuration surface. Environment overrides exist only
+    for ad-hoc invocation and are documented in the README.
+    """
+    settings: dict[str, Any] = {}
+    try:
+        from hermes_cli.config import load_config_readonly
+        config = load_config_readonly() or {}
+        entry = (
+            (config.get("plugins") or {}).get("entries") or {}
+        ).get("bot-context") or {}
+        if isinstance(entry, Mapping):
+            value = entry.get("settings")
+            if isinstance(value, Mapping):
+                settings.update(value)
+            legacy = entry.get("config")
+            if isinstance(legacy, Mapping):
+                for key, item in legacy.items():
+                    settings.setdefault(key, item)
+    except Exception:  # pragma: no cover - config read must never fail the CLI
+        pass
+    env = {
+        "answer_scope": os.environ.get("HERMES_BOT_CONTEXT_ANSWER_SCOPE"),
+        "allow_permanent_choices": os.environ.get("HERMES_BOT_CONTEXT_ALLOW_PERMANENT"),
+        "max_pending": os.environ.get("HERMES_BOT_CONTEXT_MAX_PENDING"),
+        "retention_days": os.environ.get("HERMES_BOT_CONTEXT_RETENTION_DAYS"),
+        "approval_ttl_seconds": os.environ.get("HERMES_BOT_CONTEXT_APPROVAL_TTL_SECONDS"),
+    }
+    if env["allow_permanent_choices"] is not None:
+        env["allow_permanent_choices"] = env["allow_permanent_choices"] in ("1", "true", "yes", "on")
+    for key, value in env.items():
+        if value is not None and value != "":
+            settings[key] = value
+    return settings
+
+
 def _ledger(ctx) -> Ledger:
-    """One ledger per process, shared by hooks and tools."""
+    """One ledger per process, following the active profile and live settings."""
     global _LEDGER
+    settings = _settings(ctx)
+    store = _data_dir()
     with _LEDGER_LOCK:
         if _LEDGER is None:
-            settings = _settings(ctx)
             _LEDGER = Ledger(
+                store_dir=store,
+                max_pending=settings["max_pending"],
+                retention_days=settings["retention_days"],
+            )
+        else:
+            _LEDGER.rebind(store)
+            _LEDGER.configure(
                 max_pending=settings["max_pending"],
                 retention_days=settings["retention_days"],
             )
@@ -104,10 +188,21 @@ def _on_pre_approval_request(ctx, **payload: Any) -> None:
     """Index one approval the host is about to wait on. Never raises, never blocks."""
     try:
         settings = _settings(ctx)
-        activity = build_activity(payload, allow_permanent=settings["allow_permanent"])
         ledger = _ledger(ctx)
+        known = {activity.activity_id for activity in ledger.pending()}
+        enriched, live_entry, answerable = ap.enrich_payload(payload, known_ids=known)
+        activity = build_activity(
+            enriched,
+            allow_permanent=settings["allow_permanent"],
+            answerable=answerable,
+            source="gateway" if answerable else "local",
+            choices=(ap.host_choices(live_entry, allow_permanent=settings["allow_permanent"])
+                     if live_entry is not None else None),
+            choices_source=("live" if live_entry is not None else "safe"),
+        )
         ledger.record(activity)
-        logger.debug("bot-context: tracking %s for %s", activity.activity_id, activity.context.label)
+        logger.debug("bot-context: tracking %s for %s (%s)",
+                     activity.activity_id, activity.context.label, activity.source)
     except MalformedActivity as exc:
         logger.warning("bot-context: dropped malformed approval payload (%s %s)", exc.field, exc.reason)
         try:
@@ -131,11 +226,14 @@ def _on_session_end(ctx, **payload: Any) -> None:
     """Nothing can still be pending once its session ended: settle it, don't leave ghosts."""
     try:
         session_id = str(payload.get("session_id") or "").strip()
-        if not session_id:
+        session_key = str(payload.get("session_key") or "").strip()
+        if not session_id and not session_key:
             return
         ledger = _ledger(ctx)
         for activity in ledger.pending():
-            if activity.context.session_id == session_id:
+            matches = bool(session_key and activity.context.session_key == session_key) or bool(
+                session_id and activity.context.session_id == session_id)
+            if matches:
                 ledger.settle(activity.activity_id, status=STATUS_EXPIRED, by="session_end",
                               note="the session ended before the approval was answered")
     except Exception:  # pragma: no cover - defensive
@@ -214,16 +312,26 @@ def _handle_activities(ctx, params: Mapping[str, Any], **_: Any) -> str:
     ledger.expire_stale(settings["approval_ttl_seconds"])
 
     if status in ("settled", "history", "all"):
-        rows = ledger.recent(limit=limit, profile=params.get("profile") or None)
+        rows = ledger.recent(
+            limit=limit,
+            profile=params.get("profile") or None,
+            session_key=params.get("session_key") or None,
+            session_id=params.get("session_id") or None,
+        )
     else:
-        rows = ledger.pending(profile=params.get("profile") or None,
-                              room=params.get("room") or None)
+        rows = ledger.pending(
+            profile=params.get("profile") or None,
+            room=params.get("room") or None,
+            session_key=params.get("session_key") or None,
+            session_id=params.get("session_id") or None,
+        )
 
     return _json({
         "ok": True,
         "status": status,
         "count": len(rows),
         "activities": [a.to_dict() for a in rows],
+        "sessions": ledger.sessions() if status not in ("settled", "history", "all") else [],
         "store": ledger.diagnostics(),
     })
 
@@ -252,7 +360,13 @@ def _handle_history(ctx, params: Mapping[str, Any], **_: Any) -> str:
     except (TypeError, ValueError):
         since_hours = None
     ledger = _ledger(ctx)
-    rows = ledger.recent(limit=limit, since_hours=since_hours, profile=params.get("profile") or None)
+    rows = ledger.recent(
+        limit=limit,
+        since_hours=since_hours,
+        profile=params.get("profile") or None,
+        session_key=params.get("session_key") or None,
+        session_id=params.get("session_id") or None,
+    )
     return _json({
         "ok": True,
         "count": len(rows),
@@ -294,6 +408,8 @@ _TOOLS = (
                 "limit": {"type": "integer", "minimum": 1, "maximum": 200},
                 "profile": {"type": "string", "description": "Only activities for this bot profile."},
                 "room": {"type": "string", "description": "Only activities in this hosted room."},
+                "session_key": {"type": "string", "description": "Only activities for this session key."},
+                "session_id": {"type": "string", "description": "Only activities for this session id."},
             },
             "additionalProperties": False,
         },
@@ -324,6 +440,8 @@ _TOOLS = (
                 "limit": {"type": "integer", "minimum": 1, "maximum": 200},
                 "since_hours": {"type": "number", "minimum": 0},
                 "profile": {"type": "string"},
+                "session_key": {"type": "string"},
+                "session_id": {"type": "string"},
             },
             "additionalProperties": False,
         },
@@ -408,19 +526,15 @@ class _CliCtx:
 
 
 def _cli_handler(args) -> int:
-    import os
-    settings = {
-        "answer_scope": os.environ.get("HERMES_BOT_CONTEXT_ANSWER_SCOPE", ap.SCOPE_USER),
-        "allow_permanent": os.environ.get("HERMES_BOT_CONTEXT_ALLOW_PERMANENT", "") == "1",
-    }
-    ctx = _CliCtx(settings)
+    ctx = _CliCtx(_config_settings())
     ledger = _ledger(ctx)
     cmd = getattr(args, "bot_context_cmd", None) or "status"
+    settings = _settings(ctx)
 
     if cmd == "status":
         diag = ledger.diagnostics()
-        print("bot-context: installed (bundled)")
-        print(f"  answer_scope: {_settings(ctx)['answer_scope']}")
+        print("bot-context: installed")
+        print(f"  answer_scope: {settings['answer_scope']}")
         print(f"  pending:      {diag['pending']}")
         print(f"  store:        {diag['store_path'] or '(memory only — plugin-data unavailable)'}")
         print("  answers route through the live gateway queue; this CLI process holds none.")
@@ -474,11 +588,19 @@ def register(ctx) -> None:
         help="Bot activity approvals (status, pending, history)",
         setup_fn=_cli_setup,
         handler_fn=_cli_handler,
-        description="List and inspect bot activity approvals tracked by the bundled "
-                    "bot-context plugin. Answering happens in-session (/bot-context approve <id>) "
-                    "or through the bot_context_respond tool, because approvals live in the "
-                    "process that is holding the wait.",
+        description="List and inspect bot activity approvals tracked by the "
+                    "bot-context plugin. Answering happens in-session "
+                    "(/bot-context approve <id>) or through the bot_context_respond tool, "
+                    "because approvals live in the process that is holding the wait.",
     )
+
+    # The Desktop Bot Mode pane reads through these when a gateway is present.
+    # Optional by design: tools/hooks/commands work without it.
+    try:
+        from . import rpc
+        rpc.install_when_available(ctx)
+    except Exception:  # pragma: no cover - RPC is additive, never required
+        logger.debug("bot-context: RPC surface unavailable", exc_info=True)
 
     logger.info("bot-context: registered (scope=%s, tools=%d)",
                 _settings(ctx)["answer_scope"], len(_TOOLS))

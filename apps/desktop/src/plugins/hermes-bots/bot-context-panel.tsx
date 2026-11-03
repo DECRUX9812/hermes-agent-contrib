@@ -1,12 +1,13 @@
 /**
  * Bot Context Panel — the per-bot right rail from the bot-mode redesign: an
- * agent header (face, name, live status), a four-view segmented toolbar, and
- * a Now / Today / Yesterday activity timeline fed by the bot's own routine
- * runs, with the full routines list one tab over.
+ * agent header (face, name, live status), a segmented toolbar, and one
+ * session-scoped activity feed. The feed selects one conversation at a time
+ * and shows that session's tool calls and approvals in order; the full
+ * routines list stays one tab over, and History lists the bot's conversations.
  *
- * Every row is backend evidence: routine last-runs with their recorded
- * statuses, the bot's recent session, live group-turn presence. No derived
- * activity model, no invented tasks.
+ * Every row is backend evidence: persisted `session.history` tool rows, live
+ * `tool.*` events for the focused runtime, mirrored approval prompts, and
+ * routine last-runs. No cross-session merge, no invented tasks.
  */
 
 import {
@@ -15,10 +16,7 @@ import {
   cn,
   Codicon,
   codiconIcon,
-  DAY,
-  GlyphSpinner,
   host,
-  nominalDayStart,
   PanelEmpty,
   relativeTime,
   SegmentedControl,
@@ -48,17 +46,16 @@ import {
 import { $botMeta, $lastRoster, botRosterKey, saveBotMeta } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { $groupActivity } from './group-activity'
-import { $groupChats, $groupClarify, dismissGroupPrompt } from './group-chat'
-import { openGroupChat } from './group-chat-view'
+import { $groupChats } from './group-chat'
 import { $activeGroupMemberKeys } from './group-presence'
 import { stopGroupThread } from './group-rounds'
-import { answerGroupClarify } from './group-turns'
 import { type BotsText, useBots } from './i18n'
 import { displayName, slugifyProfileName } from './labels'
 import { openBotSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
 import { botConnectionRoute, botRosterMeta } from './routing'
 import { ScreenHero } from './screen-hero'
+import { SessionActivityPanel } from './session-activity-panel'
 import { ID } from './shared'
 import type { RosterRow, RoutineJob } from './types'
 
@@ -120,6 +117,7 @@ interface PanelSessionSource {
   id: string
   last_active?: null | number
   message_count?: null | number
+  resolved_id?: null | string
   title?: null | string
 }
 
@@ -152,78 +150,6 @@ export function panelSessionRuns(sessions: PanelSessionSource[], p: BotsText['pa
 
   return runs.sort((a, b) => b.at - a.at)
 }
-
-// "Today" / "Yesterday" / "Oct 24" — the timeline group label.
-function panelDayLabel(at: number, p: BotsText['panel']): string {
-  const key = nominalDayStart(at)
-  const now = Date.now()
-
-  if (key === nominalDayStart(now)) {
-    return p.today
-  }
-
-  if (key === nominalDayStart(now - DAY)) {
-    return p.yesterday
-  }
-
-  return new Date(at).toLocaleDateString(undefined, { day: 'numeric', month: 'short' })
-}
-
-function RunTile({ status }: { status: 'error' | 'ok' | 'running' | 'session' }) {
-  if (status === 'running') {
-    return (
-      <span className="grid size-6 shrink-0 place-items-center rounded-full bg-(--ui-accent)/12 text-(--ui-accent)">
-        <GlyphSpinner spinner="breathe" />
-      </span>
-    )
-  }
-
-  const tone =
-    status === 'error'
-      ? 'bg-destructive/10 text-destructive'
-      : 'bg-(--ui-inline-code-background) text-(--ui-text-secondary)'
-
-  const glyph = status === 'error' ? 'error' : status === 'session' ? 'comment-discussion' : 'check'
-
-  return (
-    <span className={cn('grid size-6 shrink-0 place-items-center rounded-full', tone)}>
-      <Codicon name={glyph} size="0.8125rem" />
-    </span>
-  )
-}
-
-function TaskRow({ onOpen, run }: { onOpen?: () => void; run: PanelTaskRun }) {
-  const body = (
-    <>
-      <RunTile status={run.status} />
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-xs font-medium text-(--ui-text-primary)">{run.title}</div>
-        {run.detail ? (
-          <div className="truncate text-11 text-(--ui-text-secondary)">{run.detail}</div>
-        ) : null}
-      </div>
-      <span className="shrink-0 text-11 text-(--ui-text-secondary)">{relativeTime(run.at)}</span>
-    </>
-  )
-
-  // A conversation row is a way back into that conversation; a routine run is
-  // history and stays inert. Same affordance the History tab and the roster
-  // preview use, so "click the row" means the same thing across the panel.
-  if (onOpen) {
-    return (
-      <button
-        className="flex w-full min-w-0 items-start gap-2 rounded-md px-2 py-1.5 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)"
-        onClick={onOpen}
-        type="button"
-      >
-        {body}
-      </button>
-    )
-  }
-
-  return <div className="flex min-w-0 items-start gap-2 px-2 py-1.5">{body}</div>
-}
-
 
 /** Stable stand-in for shells that predate `host.state.activePaneId`. */
 const NO_PANE = atom<null | string | undefined>(undefined)
@@ -299,8 +225,8 @@ function RoomRail({ group }: { group: string }) {
 }
 
 export function BotContextPanel() {
-    const [editing, setEditing] = useState<null | RosterRow>(null)
-const selected = useValue($selectedBot)
+  const [editing, setEditing] = useState<null | RosterRow>(null)
+  const selected = useValue($selectedBot)
   const focusedOwner = focusedRosterOwner(useValue($focusedBotOwner))
   // Same owner ladder as the routines pane: an authoritative focused owner
   // wins through its exact roster row, otherwise the roster-clicked bot.
@@ -338,20 +264,10 @@ const selected = useValue($selectedBot)
   const activePaneId = useValue(host.state.activePaneId ?? NO_PANE)
   const focusedRoom = roomForPane(activePaneId)
 
-  // Needs-you strip (parity with the reference bot pane): pending clarify and
-  // approval prompts where THIS bot is the blocked member, or that sit in a
-  // room it belongs to — who asked, what for, and a jump to the room.
-  const needsYou = Object.values(useValue($groupClarify) || {})
-    .filter(prompt => prompt && (prompt.member === bot || prompt.member === owner?.name || prompt.memberKey === botRosterKey(owner || ({} as RosterRow))))
-    .sort((a, b) => (a.at || 0) - (b.at || 0))
-
   // Rooms where this bot sits AND a round is live — the Running round strip.
   const runningRoom = Object.entries(useValue($groupChats) || {}).find(
     ([, room]) =>
-      room &&
-      room.running &&
-      Array.isArray(room.members) &&
-      room.members.some(member => member && member.name === bot)
+      room && room.running && Array.isArray(room.members) && room.members.some(member => member && member.name === bot)
   )
 
   // Inline goal editing (Homie Spot parity): the bot's working goal lives in
@@ -360,7 +276,9 @@ const selected = useValue($selectedBot)
   const activityByRoom = useValue($groupActivity)
 
   const activity = Object.entries(rooms || {})
-    .filter(([, room]) => room && Array.isArray(room.members) && room.members.some(member => member && member.name === bot))
+    .filter(
+      ([, room]) => room && Array.isArray(room.members) && room.members.some(member => member && member.name === bot)
+    )
     .flatMap(([group, room]) => (activityByRoom[group]?.events || []).map(event => ({ ...event, group })))
     .sort((a, b) => (b.at || 0) - (a.at || 0))
 
@@ -449,19 +367,6 @@ const selected = useValue($selectedBot)
 
   const jobs = jobsView.jobs
   const sessionRuns = panelSessionRuns(sessionsQuery.data || [], p)
-  const runs = [...panelTaskRuns(jobs, b.cron), ...sessionRuns].sort((a, z) => z.at - a.at)
-  const groups: Array<{ key: number; runs: PanelTaskRun[] }> = []
-
-  for (const run of runs) {
-    const key = nominalDayStart(run.at)
-    const last = groups[groups.length - 1]
-
-    if (last && last.key === key) {
-      last.runs.push(run)
-    } else {
-      groups.push({ key, runs: [run] })
-    }
-  }
 
   const detailJob = detailJobId ? jobs.find(job => job.job_id === detailJobId) || null : null
   const createTarget = routineCreateTarget(createOwner, bot)
@@ -538,7 +443,7 @@ const selected = useValue($selectedBot)
           options={[
             { icon: TASKS_ICON, id: 'tasks', label: p.activity },
             { icon: SCHEDULED_ICON, id: 'scheduled', label: p.scheduled },
-            { icon: HISTORY_ICON, id: 'history', label: p.history },
+            { icon: HISTORY_ICON, id: 'history', label: p.history }
           ]}
           value={view}
         />
@@ -547,202 +452,143 @@ const selected = useValue($selectedBot)
           cross-flashing the previous bot's routines and needs-you strip while
           the new owner's query is still loading (stale-flash defect). */}
       <div className="mt-1 min-h-0 flex-1 overflow-y-auto overscroll-contain" key={bot}>
-        {needsYou.length ? (
-        <div className="mx-1.5 mb-1 grid gap-1 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-2 shadow-2xs" data-slot="bots-needs-you">
-          <div className="px-1 pb-0.5 text-10 font-semibold uppercase tracking-wider text-(--ui-icon-attention)">
-            {b.group.needsYourInput} · {needsYou.length}
-          </div>
-          {needsYou.map(prompt => {
-            const question = prompt.kind === 'approval' ? prompt.question : (prompt.questions || []).map(q => q.question).filter(Boolean).join(' · ')
-
-            return (
-              <div
-                className="flex min-w-full items-center gap-0.5 rounded-md hover:bg-(--chrome-action-hover)"
-                key={`${prompt.group}:${prompt.requestId}`}
-              >
-                <button
-                  className="flex min-h-7 min-w-0 flex-1 items-center gap-2 rounded-md px-1.5 py-1.5 text-left focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
-                  onClick={() => openGroupChat(prompt.group, 'name')}
-                  type="button"
-                >
-                  <Codicon className="shrink-0 text-(--ui-icon-attention)" name="info" size="0.9375rem" />
-                  <span className="min-w-0 flex-1 truncate text-11 text-(--ui-text-secondary)">
-                    <span className="font-medium text-(--ui-text-primary)">@{prompt.member}</span>
-                    {' '}{question || b.group.needsYourInput}
-                  </span>
-                  <Codicon className="shrink-0 text-(--ui-text-secondary)" name="arrow-right" size="0.8125rem" />
-                </button>
-                {prompt.kind === 'approval'
-                  ? (prompt.choices || []).slice(0, 2).map(choice => (
-                      <button
-                        className="flex min-h-7 shrink-0 items-center rounded border border-(--ui-stroke-tertiary) px-2 text-10 font-medium text-(--ui-text-primary) hover:bg-(--chrome-action-hover) focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
-                        key={choice}
-                        onClick={() => void answerGroupClarify(prompt, { name: bot }, choice)}
-                        type="button"
-                      >
-                        {choice}
-                      </button>
-                    ))
-                  : null}
-                <button
-                  aria-label={b.panel.dismissPrompt}
-                  className="flex min-h-7 min-w-7 shrink-0 items-center justify-center rounded text-(--ui-text-secondary) hover:text-(--ui-text-primary) focus-visible:outline-2 focus-visible:outline-(--dt-ring)"
-                  onClick={() => dismissGroupPrompt(prompt)}
-                  type="button"
-                >
-                  <Codicon name="close" size="0.75rem" />
-                </button>
-              </div>
-            )
-          })}
-        </div>
-      ) : null}
-      {runningRoom ? (
-        <div className="mx-1.5 mb-1 flex items-center justify-between gap-2 rounded-lg border border-(--ui-green)/35 bg-(--ui-green)/8 px-2 py-2 shadow-2xs" data-slot="bot-live-round">
-          <span className="inline-flex min-w-0 items-center gap-1.5 text-11 font-medium text-(--ui-green)">
-            <span aria-hidden="true" className="size-1.5 shrink-0 animate-pulse rounded-full bg-(--ui-green)" />
-            <span className="truncate">{b.panel.runningRound} · {runningRoom[0]}</span>
-          </span>
-          <Button
-            className="min-h-7 shrink-0"
-            onClick={() => void stopGroupThread(runningRoom[0], null, runningRoom[1].members)}
-            size="sm"
-            variant="ghost"
+        {runningRoom ? (
+          <div
+            className="mx-1.5 mb-1 flex items-center justify-between gap-2 rounded-lg border border-(--ui-green)/35 bg-(--ui-green)/8 px-2 py-2 shadow-2xs"
+            data-slot="bot-live-round"
           >
-            {b.panel.stopRound}
-          </Button>
-        </div>
-      ) : null}
-      {!reachable ? (
-        <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-2 text-11 leading-snug text-(--ui-text-secondary) shadow-2xs" data-slot="bot-unreachable" role="status">
-          {b.panel.unreachable}
-        </div>
-      ) : null}
-      <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-stroke-tertiary) px-2 py-2 shadow-2xs transition-colors hover:border-(--ui-stroke-secondary) hover:bg-(--chrome-action-hover)" data-slot="bot-goal">
-        {editingGoal ? (
-          <form
-            className="flex items-center gap-1.5"
-            onSubmit={event => {
-              event.preventDefault()
-              commitGoal()
-            }}
-          >
-            <input
-              aria-label={b.panel.goalInput}
-              className="h-7 min-w-0 flex-1 rounded-md border border-(--ui-stroke-tertiary) bg-transparent px-2 text-xs outline-none transition-colors focus-visible:border-(--dt-ring) focus-visible:ring-1 focus-visible:ring-(--dt-ring)"
-              onChange={event => setGoalDraft(event.target.value)}
-              onKeyDown={event => {
-                if (event.key === 'Escape') {
-                  setEditingGoal(false)
-                  setGoalDraft('')
-                }
-              }}
-              placeholder={goal || b.panel.goalPlaceholder}
-              ref={goalInput}
-              value={goalDraft}
-            />
-            <Button className="min-h-7" disabled={!goalDraft.trim() || goalDraft.trim() === goal} size="sm" type="submit" variant="secondary">
-              {b.panel.goalSet}
-            </Button>
-          </form>
-        ) : (
-          <div className="group flex min-h-7 items-center gap-1">
-            <span className="max-h-16 min-w-0 flex-1 overflow-hidden text-xs leading-relaxed text-(--ui-text-secondary)">
-              {goal || <span className="text-(--ui-text-secondary)">{b.panel.goalEmpty}</span>}
+            <span className="inline-flex min-w-0 items-center gap-1.5 text-11 font-medium text-(--ui-green)">
+              <span aria-hidden="true" className="size-1.5 shrink-0 animate-pulse rounded-full bg-(--ui-green)" />
+              <span className="truncate">
+                {b.panel.runningRound} · {runningRoom[0]}
+              </span>
             </span>
-            {owner ? (
-              <Button
-                aria-label={b.panel.goalEdit}
-                className="min-h-7 shrink-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
-                onClick={() => {
-                  setGoalDraft(goal)
-                  setEditingGoal(true)
-                }}
-                size="sm"
-                variant="ghost"
-              >
-                <Codicon name="edit" size="0.6875rem" />
-              </Button>
-            ) : null}
+            <Button
+              className="min-h-7 shrink-0"
+              onClick={() => void stopGroupThread(runningRoom[0], null, runningRoom[1].members)}
+              size="sm"
+              variant="ghost"
+            >
+              {b.panel.stopRound}
+            </Button>
           </div>
-        )}
-      </div>
-      {feed.length ? (
-        <div className="mx-1.5 mb-1 rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/50 px-2 py-2 shadow-2xs" data-slot="bot-live-activity">
-          <div className="px-1 pb-1 text-10 font-semibold uppercase tracking-wider text-(--ui-text-secondary)">
-            {b.panel.liveActivity}
+        ) : null}
+        {!reachable ? (
+          <div
+            className="mx-1.5 mb-1 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2 py-2 text-11 leading-snug text-(--ui-text-secondary) shadow-2xs"
+            data-slot="bot-unreachable"
+            role="status"
+          >
+            {b.panel.unreachable}
           </div>
-          <ul className="grid gap-0.5">
-            {feed.slice(0, 6).map((event, i) => (
-              <li className="flex min-w-0 items-center gap-2 px-1 py-1 text-11" key={`${event.group}:${event.at}:${i}`}>
-                <Codicon
-                  className={event.kind === 'failed' ? 'shrink-0 text-destructive' : event.kind === 'stopped' || event.kind === 'cancelled' ? 'shrink-0 text-(--ui-icon-attention)' : 'shrink-0 text-(--ui-text-secondary)'}
-                  name={event.kind === 'failed' ? 'error' : event.kind === 'queued' ? 'watch' : 'check'}
-                  size="0.8125rem"
-                />
-                <span className="min-w-0 flex-1 truncate text-(--ui-text-secondary)">
-                  <span className="font-medium text-(--ui-text-primary)">@{event.member || '—'}</span> {event.kind}
-                  {(event as { count?: number }).count && (event as { count?: number }).count! > 1 ? ` ×${(event as { count?: number }).count}` : ''}
-                  {(event as { reason?: string }).reason ? ` — ${(event as { reason?: string }).reason}` : ''}
-                </span>
-                <span className="shrink-0 text-10 tabular-nums text-(--ui-text-secondary)">{relativeTime(event.at || 0)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-      {view === 'tasks' ? (
-          <div className="px-1.5 py-1.5">
-            {working ? (
-              <div>
-                <div className="px-2 pt-1 text-xs font-semibold text-(--ui-text-primary)">{p.now}</div>
-                <div className="flex min-w-0 items-start gap-2 px-2 py-1.5">
-                  <RunTile status="running" />
-                  <div className="min-w-0 flex-1">
-                    <div className="truncate text-xs font-medium text-(--ui-text-primary)">{p.workingNow}</div>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-            {runs.length === 0 && !isLoading && !sessionsQuery.isLoading ? (
-              <div className="grid gap-2" data-testid="panel-empty-live">
-                <span className="flex items-center gap-2 px-2 text-11 text-(--ui-text-secondary)">
-                  <GlyphSpinner className="text-(--ui-accent)" spinner="breathe" />
-                  <span className="truncate">{statusText}</span>
-                </span>
-                <PanelEmpty
-                  action={
-                    <Button onClick={openCreate} size="sm" variant="secondary">
-                      {c.newCron}
-                    </Button>
+        ) : null}
+        <div
+          className="mx-1.5 mb-1 rounded-lg border border-(--ui-stroke-tertiary) px-2 py-2 shadow-2xs transition-colors hover:border-(--ui-stroke-secondary) hover:bg-(--chrome-action-hover)"
+          data-slot="bot-goal"
+        >
+          {editingGoal ? (
+            <form
+              className="flex items-center gap-1.5"
+              onSubmit={event => {
+                event.preventDefault()
+                commitGoal()
+              }}
+            >
+              <input
+                aria-label={b.panel.goalInput}
+                className="h-7 min-w-0 flex-1 rounded-md border border-(--ui-stroke-tertiary) bg-transparent px-2 text-xs outline-none transition-colors focus-visible:border-(--dt-ring) focus-visible:ring-1 focus-visible:ring-(--dt-ring)"
+                onChange={event => setGoalDraft(event.target.value)}
+                onKeyDown={event => {
+                  if (event.key === 'Escape') {
+                    setEditingGoal(false)
+                    setGoalDraft('')
                   }
-                  description={p.noActivityHint}
-                  icon="pulse"
-                  title={p.activity}
-                />
-              </div>
-            ) : (
-              groups.map(group => (
-                <div key={group.key}>
-                  <div className="flex items-baseline gap-1.5 px-2 pt-2">
-                    <span className="text-xs font-semibold text-(--ui-text-primary)" data-testid="panel-day">
-                      {panelDayLabel(group.runs[0].at, p)}
-                    </span>
-                    <span className="text-11 text-(--ui-text-secondary)">
-                      {p.tasksCompleted(group.runs.length)}
-                    </span>
-                  </div>
-                  {group.runs.map(run => (
-                    <TaskRow
-                      key={`${run.kind}:${run.id}`}
-                      onOpen={run.kind === 'session' ? () => openSessionRow(run) : undefined}
-                      run={run}
-                    />
-                  ))}
-                </div>
-              ))
-            )}
+                }}
+                placeholder={goal || b.panel.goalPlaceholder}
+                ref={goalInput}
+                value={goalDraft}
+              />
+              <Button
+                className="min-h-7"
+                disabled={!goalDraft.trim() || goalDraft.trim() === goal}
+                size="sm"
+                type="submit"
+                variant="secondary"
+              >
+                {b.panel.goalSet}
+              </Button>
+            </form>
+          ) : (
+            <div className="group flex min-h-7 items-center gap-1">
+              <span className="max-h-16 min-w-0 flex-1 overflow-hidden text-xs leading-relaxed text-(--ui-text-secondary)">
+                {goal || <span className="text-(--ui-text-secondary)">{b.panel.goalEmpty}</span>}
+              </span>
+              {owner ? (
+                <Button
+                  aria-label={b.panel.goalEdit}
+                  className="min-h-7 shrink-0 opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100"
+                  onClick={() => {
+                    setGoalDraft(goal)
+                    setEditingGoal(true)
+                  }}
+                  size="sm"
+                  variant="ghost"
+                >
+                  <Codicon name="edit" size="0.6875rem" />
+                </Button>
+              ) : null}
+            </div>
+          )}
+        </div>
+        {feed.length ? (
+          <div
+            className="mx-1.5 mb-1 rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/50 px-2 py-2 shadow-2xs"
+            data-slot="bot-live-activity"
+          >
+            <div className="px-1 pb-1 text-10 font-semibold uppercase tracking-wider text-(--ui-text-secondary)">
+              {b.panel.liveActivity}
+            </div>
+            <ul className="grid gap-0.5">
+              {feed.slice(0, 6).map((event, i) => (
+                <li
+                  className="flex min-w-0 items-center gap-2 px-1 py-1 text-11"
+                  key={`${event.group}:${event.at}:${i}`}
+                >
+                  <Codicon
+                    className={
+                      event.kind === 'failed'
+                        ? 'shrink-0 text-destructive'
+                        : event.kind === 'stopped' || event.kind === 'cancelled'
+                          ? 'shrink-0 text-(--ui-icon-attention)'
+                          : 'shrink-0 text-(--ui-text-secondary)'
+                    }
+                    name={event.kind === 'failed' ? 'error' : event.kind === 'queued' ? 'watch' : 'check'}
+                    size="0.8125rem"
+                  />
+                  <span className="min-w-0 flex-1 truncate text-(--ui-text-secondary)">
+                    <span className="font-medium text-(--ui-text-primary)">@{event.member || '—'}</span> {event.kind}
+                    {(event as { count?: number }).count && (event as { count?: number }).count! > 1
+                      ? ` ×${(event as { count?: number }).count}`
+                      : ''}
+                    {(event as { reason?: string }).reason ? ` — ${(event as { reason?: string }).reason}` : ''}
+                  </span>
+                  <span className="shrink-0 text-10 tabular-nums text-(--ui-text-secondary)">
+                    {relativeTime(event.at || 0)}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
+        ) : null}
+        {view === 'tasks' ? (
+          <SessionActivityPanel
+            bot={bot}
+            onRetrySessions={() => void sessionsQuery.refetch()}
+            owner={owner}
+            sessions={(sessionsQuery.data || []) as PanelSessionSource[]}
+            sessionsError={Boolean(sessionsQuery.error)}
+            sessionsLoading={sessionsQuery.isLoading}
+          />
         ) : null}
         {view === 'scheduled' ? (
           <div className="flex min-h-full flex-col px-1.5 py-1.5">
@@ -762,7 +608,10 @@ const selected = useValue($selectedBot)
               <div aria-busy="true" className="grid flex-1 content-start gap-2 px-2 py-2" data-slot="bot-panel-loading">
                 <div aria-hidden="true" className="h-8 animate-pulse rounded-md bg-(--ui-control-active-background)" />
                 <div aria-hidden="true" className="h-8 animate-pulse rounded-md bg-(--ui-control-active-background)" />
-                <div aria-hidden="true" className="h-8 w-3/4 animate-pulse rounded-md bg-(--ui-control-active-background)" />
+                <div
+                  aria-hidden="true"
+                  className="h-8 w-3/4 animate-pulse rounded-md bg-(--ui-control-active-background)"
+                />
               </div>
             ) : error && !jobsView.all.length ? (
               <PanelEmpty
@@ -789,7 +638,12 @@ const selected = useValue($selectedBot)
             ) : (
               <div className="grid gap-0.5">
                 {jobs.map(job => (
-                  <RoutineRow job={job} key={job.job_id} onOpen={opened => setDetailJobId(opened.job_id)} owner={owner} />
+                  <RoutineRow
+                    job={job}
+                    key={job.job_id}
+                    onOpen={opened => setDetailJobId(opened.job_id)}
+                    owner={owner}
+                  />
                 ))}
               </div>
             )}
@@ -860,13 +714,7 @@ const selected = useValue($selectedBot)
           </Button>
         </div>
       </div>
-      {owner ? (
-        <EditProfileDialog
-          bot={editing}
-          onClose={() => setEditing(null)}
-          open={Boolean(editing)}
-        />
-      ) : null}
+      {owner ? <EditProfileDialog bot={editing} onClose={() => setEditing(null)} open={Boolean(editing)} /> : null}
     </div>
   )
 }

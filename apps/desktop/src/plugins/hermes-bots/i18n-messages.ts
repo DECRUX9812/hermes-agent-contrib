@@ -4,7 +4,41 @@
 
 import { type CanonicalGroupMessages } from './canonical-group-locales'
 
+/** Strings for the per-session activity feed. */
+export type SessionActivityMessages = {
+  title: string
+  pickSession: string
+  noSessions: string
+  noSessionsHint: string
+  emptyTitle: string
+  emptyHint: string
+  loading: string
+  failed: string
+  retry: string
+  loadOlder: string
+  count: (count: number) => string
+  updated: string
+  running: string
+  succeeded: string
+  failedStatus: string
+  cancelled: string
+  expired: string
+  waiting: string
+  approvalTitle: string
+  approvalHint: string
+  answer: string
+  answering: string
+  approvalApproved: string
+  approvalDenied: string
+  approvalExpired: string
+  openChat: string
+  explaining: string
+  explainBody: string
+  sessionsLabel: string
+}
+
 export type BotsMessages = {
+  sessionActivity: SessionActivityMessages
   canonical: { [K in keyof CanonicalGroupMessages]: string }
   /** Left rail: the bot + group-chat roster. */
   editor: {

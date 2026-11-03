@@ -144,31 +144,34 @@ def _env_profile_name() -> str:
     return ""
 
 
-def _live_profile_home(session_key: str) -> tuple[str, str]:
-    """Profile home recorded for a live gateway session, via the registry.
+def _live_session(session_key: str) -> tuple[str, str, str]:
+    """``(profile_home, session_id, reason)`` for a live gateway session.
 
     ``tui_gateway`` is a gateway package: absent in CLI-only installs and in unit
     tests, so this is optional-by-design and reports why it could not answer.
+    The runtime id matters for session-scoped views: the hook payload carries a
+    session *key*, while the Desktop selects rows by the registry's session id.
     """
     if not session_key:
-        return "", "no session key to look up"
+        return "", "", "no session key to look up"
     try:
         from tui_gateway.session_registry import _find_live_session_by_key
     except Exception as exc:
-        return "", f"session registry unavailable: {exc.__class__.__name__}"
+        return "", "", f"session registry unavailable: {exc.__class__.__name__}"
     try:
         found = _find_live_session_by_key(session_key)
     except Exception as exc:
-        return "", f"session registry lookup failed: {exc.__class__.__name__}"
+        return "", "", f"session registry lookup failed: {exc.__class__.__name__}"
     if not found:
-        return "", "no live session for this key"
-    _sid, session = found
+        return "", "", "no live session for this key"
+    sid, session = found
     home = _clean((session or {}).get("profile_home"))
     if not home:
         # A record without a profile home IS the launch profile (registry contract).
         launch = _launch_profile_home()
-        return (str(launch) if launch else "", "") if launch else ("", "live session has no profile home")
-    return home, ""
+        return ((str(launch) if launch else ""), _clean(sid), "") if launch \
+            else ("", _clean(sid), "live session has no profile home")
+    return home, _clean(sid), ""
 
 
 def _bot_title(home: str) -> tuple[str, str]:
@@ -240,9 +243,13 @@ def resolve_bot_context(
     resolved_home = _clean(profile_home)
     source = "explicit" if (resolved_profile or resolved_home) else ""
 
-    if not resolved_home and key:
-        home, why = _live_profile_home(key)
-        if home:
+    if key:
+        home, live_sid, why = _live_session(key)
+        if live_sid and not sid:
+            # The registry's runtime id is what live UI events are tagged with;
+            # carrying it here keeps session-scoped listings addressable.
+            sid = live_sid
+        if home and not resolved_home:
             resolved_home, source = home, source or "live_session"
             if not resolved_profile:
                 # The session record is authoritative for which profile this
@@ -251,7 +258,7 @@ def resolve_bot_context(
                 if name:
                     resolved_profile = name
                     source = "live_session"
-        elif why:
+        elif why and not home:
             degraded.append(f"live_session: {why}")
 
     if not resolved_home:

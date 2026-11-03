@@ -46,6 +46,7 @@ const { $selectedBot } = await import('./bot-state')
 const { $botMeta } = await import('./data')
 const { $groupChats, $groupClarify } = await import('./group-chat')
 const { BotContextPanel } = await import('./bot-context-panel')
+const { clearSessionActivity } = await import('./session-activity')
 
 /** The SDK store the panel's owner ladder reads. */
 const $focused = host.state.focusedSessionOwner as unknown as ReturnType<typeof atom>
@@ -87,7 +88,18 @@ function renderPanel() {
 
 beforeEach(() => {
   vi.clearAllMocks()
-  request.mockResolvedValue({ jobs, scoped: 'research' })
+  clearSessionActivity()
+  request.mockImplementation(async (method: string) => {
+    if (method === 'session.history') {
+      return { messages: [] }
+    }
+
+    if (method === 'bot_context.activities') {
+      return { activities: [] }
+    }
+
+    return { jobs, scoped: 'research' }
+  })
   listPersistedSessions.mockResolvedValue({ limit: 25, offset: 0, sessions: [], total: 0 })
   openSession.mockResolvedValue(undefined)
   $lastRoster.set([])
@@ -103,32 +115,75 @@ afterEach(() => {
 })
 
 describe('bot context panel', () => {
-  it('paints the agent header, toolbar, and a day-grouped tasks timeline', async () => {
+  it('paints one session at a time and switches the whole feed', async () => {
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [
+        {
+          id: 'sess-new',
+          last_active: Math.floor((NOW - 30_000) / 1000),
+          resolved_id: 'rt-new',
+          title: 'Release check'
+        },
+        {
+          id: 'sess-old',
+          last_active: Math.floor((NOW - 3_600_000) / 1000),
+          resolved_id: 'rt-old',
+          title: 'Nightly audit'
+        }
+      ],
+      total: 2
+    })
+    request.mockImplementation(async (method: string, params: Record<string, unknown>) => {
+      if (method === 'session.history') {
+        const session = String(params.session_id)
+
+        return {
+          messages: [
+            {
+              context: session === 'sess-new' ? 'npm run release' : 'tail -f audit.log',
+              name: session === 'sess-new' ? 'terminal' : 'fetch',
+              role: 'tool',
+              timestamp: Math.floor(NOW / 1000) - (session === 'sess-new' ? 20 : 4000),
+              tool_call_id: session === 'sess-new' ? 'new-1' : 'old-1'
+            }
+          ]
+        }
+      }
+
+      if (method === 'bot_context.activities') {
+        return { activities: [] }
+      }
+
+      return { jobs, scoped: 'research' }
+    })
+
     renderPanel()
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
 
-    // Header: the bot's own name, not the pane title.
+    // Header and toolbar stay: the session selector lives inside Activity.
     expect(await screen.findByText('Research')).toBeTruthy()
 
-    // Toolbar: all four views.
     for (const tab of ['Activity', 'Scheduled', 'History']) {
       expect(screen.getByText(tab)).toBeTruthy()
     }
 
-    // Timeline: routine runs grouped under day dividers with counts.
-    const days = await screen.findAllByTestId('panel-day')
-    expect(days.map(day => day.textContent)).toEqual(['Today', 'Yesterday'])
-    expect(screen.getByText('Morning brief')).toBeTruthy()
-    expect(screen.getByText('Nightly audit')).toBeTruthy()
-    expect(screen.getByText('gateway timeout')).toBeTruthy()
-    // Footer: the way back into the conversation.
-    expect(screen.getByText(/Open chat/)).toBeTruthy()
+    // Newest session selected; only ITS tool row is on screen.
+    expect(await screen.findByText('npm run release')).toBeTruthy()
+    expect(screen.queryByText('tail -f audit.log')).toBeNull()
+    expect(screen.getByText('Release check')).toBeTruthy()
+
+    // Switching sessions replaces the feed rather than appending to it.
+    fireEvent.click(screen.getByText('Nightly audit'))
+    expect(await screen.findByText('tail -f audit.log')).toBeTruthy()
+    expect(screen.queryByText('npm run release')).toBeNull()
   })
 
   it('keeps the full routines list one tab over', async () => {
     renderPanel()
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
-    await screen.findByText('Morning brief')
+    await screen.findByText('Activity')
 
     fireEvent.click(screen.getByText('Scheduled'))
 
@@ -157,8 +212,18 @@ describe('bot context panel', () => {
       limit: 25,
       offset: 0,
       sessions: [
-        { id: 'sess-a', last_active: Math.floor((NOW - 60_000) / 1000), message_count: 4, title: 'Rail layout options' },
-        { id: 'sess-b', last_active: Math.floor((NOW - 3_600_000) / 1000), message_count: 9, title: 'Q3 planning notes' },
+        {
+          id: 'sess-a',
+          last_active: Math.floor((NOW - 60_000) / 1000),
+          message_count: 4,
+          title: 'Rail layout options'
+        },
+        {
+          id: 'sess-b',
+          last_active: Math.floor((NOW - 3_600_000) / 1000),
+          message_count: 9,
+          title: 'Q3 planning notes'
+        },
         { id: 'sess-c', last_active: Math.floor((NOW - 90_000_000) / 1000), message_count: 1, title: 'Old thread' }
       ],
       total: 3
@@ -204,32 +269,58 @@ describe('bot context panel', () => {
     fireEvent.change(screen.getByLabelText('Bot goal'), { target: { value: 'Ship the release' } })
     fireEvent.submit(screen.getByLabelText('Bot goal').closest('form')!)
 
-    await vi.waitFor(() => expect($botMeta.get()['research::local']?.goal ?? $botMeta.get()['research']?.goal).toBe('Ship the release'))
+    await vi.waitFor(() =>
+      expect($botMeta.get()['research::local']?.goal ?? $botMeta.get()['research']?.goal).toBe('Ship the release')
+    )
   })
 
-  it('dismisses a needs-you prompt inline', async () => {
-    $groupClarify.set({
-      'room:req1': {
-        at: Date.now(),
-        group: 'Ops',
-        kind: 'approval',
-        member: 'research',
-        choices: [],
-        memberKey: 'research',
-        question: 'Deploy the fix?',
-        requestId: 'req1',
-        thread: 't1'
-      }
+  it('renders an approval in the session feed and answers it there', async () => {
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [
+        { id: 'sess-a', last_active: Math.floor((NOW - 60_000) / 1000), resolved_id: 'rt-a', title: 'Deploy' }
+      ],
+      total: 1
     })
+    request.mockImplementation(async (method: string) => {
+      if (method === 'session.history') {
+        return { messages: [] }
+      }
+
+      if (method === 'bot_context.activities') {
+        return {
+          activities: [
+            {
+              activity_id: 'req-approval',
+              command: 'rm -rf /tmp/build',
+              description: 'Delete the stale build directory',
+              choices: ['once', 'deny'],
+              kind: 'command',
+              requested_at: Math.floor(NOW / 1000),
+              session: { id: 'sess-a' },
+              status: 'pending'
+            }
+          ]
+        }
+      }
+
+      return { jobs: [], scoped: 'research' }
+    })
+
     renderPanel()
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
 
-    expect(await screen.findByText(/Deploy the fix/)).toBeTruthy()
+    expect(await screen.findByText('Approval needed')).toBeTruthy()
+    fireEvent.click(screen.getByText('Approval needed'))
+    expect((await screen.findAllByText('Delete the stale build directory')).length).toBeGreaterThan(0)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Dismiss' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Answer once' }))
 
-    expect(screen.queryByText(/Deploy the fix/)).toBeNull()
-    expect(Object.keys($groupClarify.get())).toHaveLength(0)
+    await vi.waitFor(() => {
+      expect(request.mock.calls.some(call => call[0] === 'bot_context.respond')).toBe(true)
+    })
+    expect(await screen.findByText('Approved')).toBeTruthy()
   })
 
   it('shows a running-round strip with an inline Stop that halts the room', async () => {
@@ -262,17 +353,31 @@ describe('bot context panel', () => {
     expect(await screen.findByText(/unreachable right now/i)).toBeTruthy()
   })
 
-  // The activity view used to be routines-only: a bot you actually talk to —
-  // the normal case — had zero scheduled jobs and therefore an empty panel
-  // that said "No completed runs yet" forever, even with 50 conversations on
-  // disk. Conversations are the other half of "activity".
-  it('lists the bot’s own conversations as activity when nothing is scheduled', async () => {
-    request.mockResolvedValue({ jobs: [], scoped: 'research' })
+  // A bot used the normal way — chatting — must still have a reachable list of
+  // what it did, even with zero scheduled jobs. The History tab is that list;
+  // the Activity tab is the per-session feed.
+  it('lists the bot’s own conversations on the History tab when nothing is scheduled', async () => {
+    request.mockImplementation(async (method: string) => {
+      if (method === 'session.history') {
+        return { messages: [] }
+      }
+
+      if (method === 'bot_context.activities') {
+        return { activities: [] }
+      }
+
+      return { jobs: [], scoped: 'research' }
+    })
     listPersistedSessions.mockResolvedValue({
       limit: 25,
       offset: 0,
       sessions: [
-        { id: 'sess-today', last_active: Math.floor((NOW - 30_000) / 1000), message_count: 12, title: 'Rail layout options' },
+        {
+          id: 'sess-today',
+          last_active: Math.floor((NOW - 30_000) / 1000),
+          message_count: 12,
+          title: 'Rail layout options'
+        },
         { id: 'sess-yesterday', last_active: Math.floor((NOW - 86400000) / 1000), message_count: 1, title: 'Q3 notes' }
       ],
       total: 2
@@ -280,17 +385,14 @@ describe('bot context panel', () => {
 
     renderPanel()
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+    await screen.findByText('Activity')
+    fireEvent.click(screen.getByText('History'))
 
     expect(await screen.findByText('Rail layout options')).toBeTruthy()
     expect(screen.getByText('Q3 notes')).toBeTruthy()
     // Counts are singular/plural aware, not "1 messages".
     expect(screen.getByText('12 messages')).toBeTruthy()
     expect(screen.getByText('1 message')).toBeTruthy()
-
-    // Day grouping still applies, and the empty state is gone.
-    const days = await screen.findAllByTestId('panel-day')
-    expect(days.map(day => day.textContent)).toEqual(['Today', 'Yesterday'])
-    expect(screen.queryByTestId('panel-empty-live')).toBeNull()
 
     // The panel asked the bot's OWN profile, not the active one.
     expect(listPersistedSessions.mock.calls[0][1]).toMatchObject({ profile: 'research' })
@@ -301,12 +403,21 @@ describe('bot context panel', () => {
     listPersistedSessions.mockResolvedValue({
       limit: 25,
       offset: 0,
-      sessions: [{ id: 'sess-today', last_active: Math.floor((NOW - 60_000) / 1000), message_count: 3, title: 'Rail layout options' }],
+      sessions: [
+        {
+          id: 'sess-today',
+          last_active: Math.floor((NOW - 60_000) / 1000),
+          message_count: 3,
+          title: 'Rail layout options'
+        }
+      ],
       total: 1
     })
 
     renderPanel()
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+    await screen.findByText('Activity')
+    fireEvent.click(screen.getByText('History'))
 
     fireEvent.click(await screen.findByText('Rail layout options'))
 
@@ -315,14 +426,57 @@ describe('bot context panel', () => {
     expect(openSession.mock.calls[0][1]).toMatchObject({ profile: 'research', intent: 'tab' })
   })
 
-  it('offers a way out when there is genuinely nothing to show', async () => {
-    request.mockResolvedValue({ jobs: [], scoped: 'research' })
+  it('offers an honest empty state when the bot has no sessions', async () => {
+    request.mockImplementation(async (method: string) => {
+      if (method === 'session.history') {
+        return { messages: [] }
+      }
+
+      return { jobs: [], scoped: 'research' }
+    })
 
     renderPanel()
     act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
 
-    expect(await screen.findByText(/Runs and conversations for this bot appear here/)).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'New cron' })).toBeTruthy()
+    expect(await screen.findByText('No sessions yet')).toBeTruthy()
+    expect(screen.getByText(/Start a chat with this bot/)).toBeTruthy()
+  })
+
+  it('surfaces a session-list failure with a retry instead of an empty feed', async () => {
+    listPersistedSessions.mockRejectedValue(new Error('gateway offline'))
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText('Session activity')).toBeTruthy()
+    expect(screen.getByText('Could not read this session’s activity.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy()
+  })
+
+  it('surfaces a history failure for the selected session', async () => {
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [{ id: 'sess-a', last_active: Math.floor(NOW / 1000), title: 'Release check' }],
+      total: 1
+    })
+    request.mockImplementation(async (method: string) => {
+      if (method === 'session.history') {
+        throw new Error('history unavailable')
+      }
+
+      if (method === 'bot_context.activities') {
+        return { activities: [] }
+      }
+
+      return { jobs: [], scoped: 'research' }
+    })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText('Could not read this session’s activity.')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeTruthy()
   })
 
   // The footer used to print relativeTime() alone, so it read "now" — a word

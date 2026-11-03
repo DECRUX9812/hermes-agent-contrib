@@ -26,7 +26,10 @@ import importlib
 import importlib.util
 import json
 import os
+import shutil
+import subprocess
 import sys
+import textwrap
 import types
 from pathlib import Path
 
@@ -151,6 +154,15 @@ def _payload(session_key="sess-1", request_id="req-1", **extra):
     return payload
 
 
+def _stock_payload(session_key="sess-1", **extra):
+    """The real gateway hook payload on stock Nous main: no ``request_id``."""
+    payload = {"command": "rm -rf /var/tmp/x", "description": "delete files",
+               "pattern_key": "rm", "pattern_keys": ["rm"], "session_key": session_key,
+               "surface": "gateway"}
+    payload.update(extra)
+    return payload
+
+
 def _bot_context(plugin, home: Path, *, session_key="sess-1", session_id="sid-1"):
     return plugin.resolve_bot_context(
         profile_home=str(home), session_key=session_key, session_id=session_id, surface="gateway"
@@ -164,7 +176,7 @@ class TestRegistration:
 
         manifest = parse_manifest_file(PLUGIN_DIR / "plugin.yaml", PLUGIN_DIR, "bundled", "")
         assert manifest.name == "bot-context"
-        assert manifest.version == "0.1.0"
+        assert manifest.version == "0.2.0"
         assert set(manifest.provides_tools) == {
             "bot_context_resolve", "bot_context_activities",
             "bot_context_respond", "bot_context_history",
@@ -248,6 +260,9 @@ class TestContext:
         assert ctx.profile == "atlas"
         assert ctx.profile_source == "live_session"
         assert ctx.bot_title == "Atlas"
+        # The registry's runtime id is what live UI events carry, so it must
+        # travel with the context even though the hook only supplied a key.
+        assert ctx.session_id == "sid-9"
 
     def test_live_session_beats_a_process_wide_profile_env(self, plugin, bot_home, monkeypatch):
         """The gateway exports the launch profile name; only the session record knows better."""
@@ -462,17 +477,24 @@ class TestFailures:
     def _track(self, ctx, *args, **kwargs):
         ctx.fire("pre_approval_request", *args, **kwargs)
 
-    def test_malformed_payload_without_request_id_is_dropped(self, plugin):
+    def test_local_cli_prompt_without_a_gateway_entry_is_visible_but_not_remote(self, plugin):
+        """Stock CLI hooks have no request_id and no queue: show the row, never fake an answer."""
         ctx = FakeCtx()
         plugin.register(ctx)
         payload = _payload()
         payload.pop("request_id")
+        payload["surface"] = "cli"
         ctx.fire("pre_approval_request", **payload)
 
-        assert ctx.call("bot_context_activities", {})["count"] == 0
-        dropped = plugin._ledger(ctx).dropped
-        assert dropped and dropped[-1]["reason"] == "malformed"
-        assert dropped[-1]["field"] == "request_id"
+        rows = ctx.call("bot_context_activities", {})["activities"]
+        assert len(rows) == 1
+        assert rows[0]["activity_id"].startswith("local:")
+        assert rows[0]["answerable"] is False
+        assert rows[0]["source"] == "local"
+
+        body = ctx.call("bot_context_respond",
+                        {"request_id": rows[0]["activity_id"], "choice": "once"})
+        assert body["ok"] is False and body["code"] == "local_only"
 
     def test_non_string_command_is_dropped_with_the_field_named(self, plugin):
         ctx = FakeCtx()
@@ -685,6 +707,352 @@ class TestPermissions:
         body = ctx.call("bot_context_respond", {"request_id": "req-1", "choice": "once"})
         assert body["ok"] is False and body["code"] == "insufficient_permission"
         assert ctx.call("bot_context_activities", {})["count"] == 1  # still pending
+
+
+# ── stock-host compatibility and session isolation ──────────────────────────
+class TestStockHostCompatibility:
+    """Stock Nous main does not put ``request_id`` on the approval hook payload.
+
+    The fork's core branch did. These tests use the stock shape, so the plugin
+    must discover the id from the live queue rather than depend on a patched
+    host.
+    """
+
+    def test_hook_without_request_id_discovers_the_live_queue_entry(self, plugin, bot_home, monkeypatch):
+        import tui_gateway.session_registry as registry
+        monkeypatch.setattr(registry, "_find_live_session_by_key",
+                            lambda key: ("sid-1", {"profile_home": str(bot_home)}))
+        entry = _queue("sess-1", request_id="host-req-9")
+
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        ctx.fire("pre_approval_request", **_stock_payload())
+
+        rows = ctx.call("bot_context_activities", {})["activities"]
+        assert len(rows) == 1
+        assert rows[0]["activity_id"] == "host-req-9"
+        assert rows[0]["answerable"] is True
+        assert rows[0]["source"] == "gateway"
+
+        body = ctx.call("bot_context_respond", {"request_id": "host-req-9", "choice": "once"})
+        assert body["ok"] is True
+        assert entry.result == "once"
+
+    def test_explicit_request_id_is_still_trusted(self, plugin, bot_home, monkeypatch):
+        import tui_gateway.session_registry as registry
+        monkeypatch.setattr(registry, "_find_live_session_by_key",
+                            lambda key: ("sid-1", {"profile_home": str(bot_home)}))
+        _queue("sess-1", request_id="host-req-9")
+
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        payload = _stock_payload()
+        payload["request_id"] = "explicit-id"
+        ctx.fire("pre_approval_request", **payload)
+
+        assert ctx.call("bot_context_activities", {})["activities"][0]["activity_id"] == "explicit-id"
+
+    def test_activities_are_filtered_by_session(self, plugin, bot_home, monkeypatch):
+        import tui_gateway.session_registry as registry
+        monkeypatch.setattr(registry, "_find_live_session_by_key",
+                            lambda key: ("sid-1", {"profile_home": str(bot_home)}))
+        _queue("sess-1", request_id="req-1")
+        _queue("sess-2", request_id="req-2", command="git push --force")
+
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        ctx.fire("pre_approval_request", **_stock_payload("sess-1"))
+        ctx.fire("pre_approval_request", **_stock_payload("sess-2", command="git push --force"))
+
+        only_one = ctx.call("bot_context_activities", {"session_key": "sess-1"})
+        assert [row["activity_id"] for row in only_one["activities"]] == ["req-1"]
+        assert only_one["count"] == 1
+
+        other = ctx.call("bot_context_activities", {"session_key": "sess-2"})
+        assert [row["activity_id"] for row in other["activities"]] == ["req-2"]
+
+    def test_sessions_summary_keeps_sessions_separate(self, plugin, bot_home, monkeypatch):
+        import tui_gateway.session_registry as registry
+        monkeypatch.setattr(registry, "_find_live_session_by_key",
+                            lambda key: ("sid-1", {"profile_home": str(bot_home)}))
+        _queue("sess-1", request_id="req-1")
+        _queue("sess-2", request_id="req-2", command="git push --force")
+
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        ctx.fire("pre_approval_request", **_stock_payload("sess-1"))
+        ctx.fire("pre_approval_request", **_stock_payload("sess-2", command="git push --force"))
+
+        body = ctx.call("bot_context_activities", {})
+        keys = {row["session_key"] for row in body["sessions"]}
+        assert keys == {"sess-1", "sess-2"}
+
+    def test_session_end_by_key_settles_its_activities(self, plugin, bot_home, monkeypatch):
+        import tui_gateway.session_registry as registry
+        monkeypatch.setattr(registry, "_find_live_session_by_key",
+                            lambda key: ("sid-1", {"profile_home": str(bot_home)}))
+        _queue("sess-1", request_id="req-1")
+        _queue("sess-2", request_id="req-2", command="git push --force")
+
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        ctx.fire("pre_approval_request", **_stock_payload("sess-1"))
+        ctx.fire("pre_approval_request", **_stock_payload("sess-2", command="git push --force"))
+        ctx.fire("on_session_end", session_key="sess-1")
+
+        remaining = ctx.call("bot_context_activities", {})["activities"]
+        assert [row["activity_id"] for row in remaining] == ["req-2"]
+
+
+# ── portability: settings, rebinding, clean install ─────────────────────────
+class TestPortableSettings:
+    def test_missing_optional_settings_use_the_safe_defaults(self, plugin):
+        ctx = FakeCtx()
+        settings = plugin._settings(ctx)
+        assert settings == {
+            "answer_scope": "user",
+            "allow_permanent": False,
+            "max_pending": 200,
+            "retention_days": 3.0,
+            "approval_ttl_seconds": 3600.0,
+        }
+
+    def test_malformed_settings_fall_back_instead_of_raising(self, plugin):
+        ctx = FakeCtx({"max_pending": "lots", "retention_days": "forever",
+                       "approval_ttl_seconds": [], "allow_permanent_choices": "maybe"})
+        settings = plugin._settings(ctx)
+        assert settings["max_pending"] == 200
+        assert settings["retention_days"] == 3.0
+        assert settings["approval_ttl_seconds"] == 3600.0
+        assert settings["allow_permanent"] is False
+
+    def test_existing_user_config_is_read_by_the_standalone_cli(self, plugin, monkeypatch):
+        import hermes_cli.config as config_mod
+
+        monkeypatch.setattr(config_mod, "load_config_readonly", lambda: {
+            "plugins": {"entries": {"bot-context": {"settings": {
+                "answer_scope": "same_profile",
+                "allow_permanent_choices": True,
+                "max_pending": 7,
+            }}}}
+        })
+        settings = plugin._config_settings()
+        assert settings["answer_scope"] == "same_profile"
+        assert settings["allow_permanent_choices"] is True
+        assert settings["max_pending"] == 7
+
+    def test_env_override_is_cli_only_and_documented(self, plugin, monkeypatch):
+        import hermes_cli.config as config_mod
+        monkeypatch.setattr(config_mod, "load_config_readonly", dict)
+        monkeypatch.setenv("HERMES_BOT_CONTEXT_ANSWER_SCOPE", "any")
+        monkeypatch.setenv("HERMES_BOT_CONTEXT_ALLOW_PERMANENT", "1")
+        settings = plugin._config_settings()
+        assert settings["answer_scope"] == "any"
+        assert settings["allow_permanent_choices"] is True
+
+    def test_settings_apply_without_a_restart(self, plugin):
+        ctx = FakeCtx({"max_pending": 1})
+        plugin.register(ctx)
+        ledger = plugin._ledger(ctx)
+        assert ledger.diagnostics()["max_pending"] == 1
+
+        ctx.settings["max_pending"] = 5
+        again = plugin._ledger(ctx)
+        assert again is ledger
+        assert again.diagnostics()["max_pending"] == 5
+
+    def test_a_profile_switch_rebinds_the_store_and_drops_other_profiles(self, plugin, bot_home, monkeypatch):
+        import tui_gateway.session_registry as registry
+        monkeypatch.setattr(registry, "_find_live_session_by_key",
+                            lambda key: ("sid-1", {"profile_home": str(bot_home)}))
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        _queue("sess-1", request_id="req-1")
+        ctx.fire("pre_approval_request", **_stock_payload("sess-1"))
+        assert ctx.call("bot_context_activities", {})["count"] == 1
+
+        other = Path(os.environ["HERMES_HOME"]).parent / "other-home"
+        other.mkdir()
+        monkeypatch.setenv("HERMES_HOME", str(other))
+        assert ctx.call("bot_context_activities", {})["count"] == 0
+        assert plugin._ledger(ctx).store_path.startswith(str(other))
+
+
+class TestGatewayRpcSurface:
+    def test_methods_install_and_read_one_session(self, plugin, bot_home, monkeypatch):
+        import tui_gateway.session_registry as registry
+        monkeypatch.setattr(registry, "_find_live_session_by_key",
+                            lambda key: ("sid-1", {"profile_home": str(bot_home)}))
+        _queue("sess-1", request_id="req-1")
+
+        class Server:
+            def __init__(self):
+                self.methods = {}
+
+            def register_method(self, name, fn):
+                self.methods[name] = fn
+
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        server = Server()
+        plugin.rpc.install(server, ctx)
+        assert set(server.methods) == set(plugin.rpc.METHODS)
+
+        ctx.fire("pre_approval_request", **_stock_payload("sess-1"))
+        listed = server.methods["bot_context.activities"](1, {"session_key": "sess-1"})
+        assert listed["result"]["count"] == 1
+        sessions = server.methods["bot_context.sessions"](2, {})
+        assert sessions["result"]["sessions"][0]["session_key"] == "sess-1"
+
+    def test_deferred_install_is_safe_without_a_gateway(self, plugin):
+        if "tui_gateway.server" in sys.modules:
+            pytest.skip("another test already imported the gateway server")
+        ctx = FakeCtx()
+        finders = [f for f in sys.meta_path if isinstance(f, plugin.rpc._AfterServerImport)]
+        try:
+            # No tui_gateway.server imported in this process: arming must not raise.
+            plugin.rpc.install_when_available(ctx)
+            assert any(isinstance(f, plugin.rpc._AfterServerImport) for f in sys.meta_path)
+        finally:
+            for finder in [f for f in sys.meta_path if isinstance(f, plugin.rpc._AfterServerImport)]:
+                sys.meta_path.remove(finder)
+            for finder in finders:
+                sys.meta_path.insert(0, finder)
+
+
+def _run_in_clean_home(script: str, *, source_root: Path, extra_env: dict | None = None,
+                       config_text: str | None = None) -> dict:
+    """Run a small script in a fresh HERMES_HOME with the plugin installed as a user plugin."""
+    import tempfile
+
+    with tempfile.TemporaryDirectory() as td:
+        home = Path(td) / "hermes"
+        home.mkdir()
+        (home / "plugins").mkdir()
+        shutil.copytree(source_root, home / "plugins" / "bot-context")
+        (home / "config.yaml").write_text(
+            config_text or "plugins:\n  enabled: [bot-context]\n", encoding="utf-8")
+        env = dict(os.environ)
+        env.update({
+            "HERMES_HOME": str(home),
+            "HERMES_CONFIG": str(home / "config.yaml"),
+            "PYTHONPATH": str(source_root.parents[1]),
+            "PYTHONDONTWRITEBYTECODE": "1",
+        })
+        if extra_env:
+            env.update(extra_env)
+        proc = subprocess.run(
+            [sys.executable, "-c", textwrap.dedent(script)],
+            cwd=td, env=env, capture_output=True, text=True, timeout=120, check=False,
+        )
+        assert proc.returncode == 0, proc.stderr
+        return json.loads(proc.stdout.strip().splitlines()[-1])
+
+
+class TestCleanInstallAndSharedPath:
+    def test_clean_install_loads_as_a_user_plugin(self):
+        result = _run_in_clean_home(
+            """
+            import json
+            from hermes_cli import plugins as p
+            m = p.PluginManager()
+            m.discover_and_load()
+            row = m._plugins.get("bot-context")
+            print(json.dumps({
+                "source": row.manifest.source if row else None,
+                "enabled": bool(row and row.enabled),
+                "tools": sorted(getattr(row, "tools_registered", [])),
+                "hooks": sorted(getattr(row, "hooks_registered", [])),
+                "error": row.error if row else "not found",
+            }))
+            """,
+            source_root=PLUGIN_DIR,
+        )
+        assert result["source"] == "user"
+        assert result["enabled"] is True
+        assert set(result["tools"]) == {
+            "bot_context_resolve", "bot_context_activities",
+            "bot_context_respond", "bot_context_history",
+        }
+        assert {"pre_approval_request", "post_approval_response", "on_session_end"} <= set(result["hooks"])
+
+    def test_clean_install_with_no_optional_settings(self):
+        result = _run_in_clean_home(
+            """
+            import json
+            from hermes_cli import plugins as p
+            m = p.PluginManager()
+            m.discover_and_load()
+            mod = m._plugins["bot-context"].module
+            print(json.dumps({"settings": mod._config_settings()}))
+            """,
+            source_root=PLUGIN_DIR,
+        )
+        assert result["settings"] == {}
+
+    def test_clean_install_reads_an_existing_user_configuration(self):
+        result = _run_in_clean_home(
+            """
+            import json
+            from hermes_cli import plugins as p
+            m = p.PluginManager()
+            m.discover_and_load()
+            mod = m._plugins["bot-context"].module
+            print(json.dumps({"settings": mod._config_settings()}))
+            """,
+            source_root=PLUGIN_DIR,
+            config_text=(
+                "plugins:\n"
+                "  enabled: [bot-context]\n"
+                "  entries:\n"
+                "    bot-context:\n"
+                "      settings:\n"
+                "        answer_scope: same_profile\n"
+                "        max_pending: 7\n"
+            ),
+        )
+        assert result["settings"]["answer_scope"] == "same_profile"
+        assert result["settings"]["max_pending"] == 7
+
+    def test_plugin_runs_against_a_stock_nous_main_checkout(self):
+        """The shared path: no fork core patch, no branch checkout, no local edits.
+
+        ``HERMES_STOCK_CHECKOUT`` names an unmodified Nous main worktree. When it
+        is absent the test is skipped rather than silently passing against the
+        fork.
+        """
+        stock = Path(os.environ.get("HERMES_STOCK_CHECKOUT", str(Path.home() / "Code" / "hermes-nous-main")))
+        if not (stock / "hermes_cli" / "plugins.py").is_file():
+            pytest.skip(f"stock Nous main checkout not available at {stock}")
+        result = _run_in_clean_home(
+            """
+            import json
+            from hermes_cli import plugins as p
+            m = p.PluginManager()
+            m.discover_and_load()
+            row = m._plugins["bot-context"]
+            print(json.dumps({
+                "source": row.manifest.source,
+                "enabled": bool(row.enabled),
+                "error": row.error,
+                "core": p.__file__,
+            }))
+            """,
+            source_root=PLUGIN_DIR,
+            extra_env={"PYTHONPATH": str(stock)},
+        )
+        assert result["enabled"] is True, result
+        assert result["error"] in (None, ""), result
+        assert str(stock) in result["core"]
+
+    def test_no_fork_or_branch_paths_remain_in_the_plugin(self):
+        forbidden = ("overlay/core-patches", "hermes-overlay-core", "/home/decrux", "DECRUX9812")
+        for path in sorted(PLUGIN_DIR.rglob("*")):
+            if not path.is_file() or path.suffix not in {".py", ".yaml", ".md"}:
+                continue
+            text = path.read_text(encoding="utf-8")
+            for needle in forbidden:
+                assert needle not in text, f"{needle!r} leaked into {path.name}"
 
 
 # ── backward compatibility ──────────────────────────────────────────────────

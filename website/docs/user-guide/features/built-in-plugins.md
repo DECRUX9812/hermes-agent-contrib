@@ -120,8 +120,9 @@ Auto-tracks and removes ephemeral files created during sessions — test scripts
 ### bot-context
 
 The Bot Mode context panel shows what one *attached* bot is doing and can answer
-the approval card in front of it. This plugin makes that a host capability, so a
-bot's approval can be found and answered by id instead of by attachment.
+the approval card in front of it. This plugin makes that a host capability, so an
+approval can be found and answered by id instead of by attachment — including
+from a stock Nous main install with no core patch.
 
 | Piece | Behaviour |
 |---|---|
@@ -129,13 +130,18 @@ bot's approval can be found and answered by id instead of by attachment.
 | `post_approval_response` | Settle the activity with the decision the host recorded, whichever surface answered |
 | `on_session_end` | Settle anything still pending for that session as expired — no ghost rows |
 | `bot_context_resolve` | Context for a tracked approval id, an explicit session, or the calling session |
-| `bot_context_activities` | What is waiting, with the choices the host will actually accept and a `legacy` projection matching the Desktop group-chat prompt shape |
+| `bot_context_activities` | What is waiting, with the choices the host will actually accept, a `sessions` summary, and a `legacy` projection matching the Desktop group-chat prompt shape. Filter by `session_key`/`session_id` |
 | `bot_context_respond` | Answer with `once`, `session`, `always` or `deny` through `resolve_gateway_approval` |
 | `bot_context_history` | Settled decisions, newest first |
 
 ```bash
 hermes plugins enable bot-context
 ```
+
+The Desktop Bot Mode activity tab selects one session at a time and shows that
+session's tool calls and approvals in order; switching sessions switches the
+whole feed. See `docs/BOTMODE-SESSIONS.md` for the data model, event path, UI
+states and edge cases.
 
 ```
 /bot-context                        # pending activity
@@ -155,8 +161,13 @@ process cannot answer one; the index only covers prompts raised while the plugin
 was loaded; room membership is not re-verified (the `answer_scope` gate is).
 Failures come back as stable codes — `unknown_activity`, `already_settled`,
 `missing_context`, `insufficient_permission`, `invalid_choice`, `not_pending`,
-`resolution_failed`, `host_unavailable` — and never touch the prompt. Full
-detail, including the compatibility contract, is in the plugin's `README.md`.
+`local_only`, `resolution_failed`, `host_unavailable` — and never touch the
+prompt. `local_only` means the prompt belongs to an interactive CLI session and
+must be answered in that terminal; it is still listed so it is not invisible.
+On stock Hermes the hook payload has no `request_id`, so the plugin discovers it
+from the live gateway queue; no patched core is required. Full detail, including
+the compatibility contract and the optional `bot_context.*` RPC surface, is in
+the plugin's `README.md`.
 
 ### security-guidance
 
