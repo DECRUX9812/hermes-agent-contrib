@@ -55,6 +55,7 @@ import { openBotSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
 import { botConnectionRoute, botRosterMeta } from './routing'
 import { ScreenHero } from './screen-hero'
+import { openBotScreen } from './screen-open'
 import { useScreenPortalState } from './screen-portal'
 import { $sessionActivity } from './session-activity'
 import { SessionActivityPanel } from './session-activity-panel'
@@ -233,19 +234,54 @@ function RoomRail({ group }: { group: string }) {
 function BotScreen({
   bot,
   meta,
-  text
+  panelText,
+  screenText
 }: {
   bot: RosterRow
   meta: Parameters<typeof botAppearance>[1]
-  text: BotsText['panel']
+  panelText: BotsText['panel']
+  screenText: BotsText['screen']
 }) {
   const { tone } = useScreenPortalState(bot)
 
-  if (tone === 'unsupported' || tone === 'unavailable') {
-    return <PanelEmpty description={text.screenUnavailable} icon="device-desktop" title={text.computer} />
+  if (tone === 'live' || tone === 'human' || tone === 'other') {
+    return <ScreenHero bot={bot} meta={meta} />
   }
 
-  return <ScreenHero bot={bot} meta={meta} />
+  const stopped = tone === 'off'
+  const missing = tone === 'missing'
+  const title = stopped ? screenText.stoppedTitle : missing ? screenText.notInstalledTitle : screenText.title
+
+  const body = stopped
+    ? screenText.stoppedBody
+    : missing
+      ? screenText.notInstalledBody
+      : tone === 'unsupported' || tone === 'unavailable'
+        ? panelText.screenUnavailable
+        : screenText.heroConnecting
+
+  const action = stopped ? screenText.heroStart : missing ? screenText.install : screenText.takeOver
+  const actionable = tone !== 'unsupported' && tone !== 'unavailable'
+
+  return (
+    <div
+      className="grid gap-3 rounded-xl border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/55 p-4"
+      data-testid="bot-screen-state"
+    >
+      <span className="grid size-10 place-items-center rounded-xl bg-(--ui-inline-code-background) text-(--ui-text-secondary)">
+        <Codicon name="device-desktop" size="1.1rem" />
+      </span>
+      <div className="grid gap-1">
+        <div className="text-sm font-semibold text-(--ui-text-primary)">{title}</div>
+        <p className="text-11 leading-relaxed text-(--ui-text-secondary)">{body}</p>
+      </div>
+      {actionable ? (
+        <Button className="justify-self-start" onClick={() => openBotScreen(bot, meta)} size="sm" variant="secondary">
+          {action}
+        </Button>
+      ) : null}
+    </div>
+  )
 }
 
 export function BotContextPanel() {
@@ -662,7 +698,7 @@ export function BotContextPanel() {
             <div className="mb-2 flex items-center justify-between">
               <span className="ui-section-label">{p.computer}</span>
             </div>
-            <BotScreen bot={owner} meta={meta} text={p} />
+            <BotScreen bot={owner} meta={meta} panelText={p} screenText={b.screen} />
           </div>
         ) : null}
         {view === 'tasks' ? (
