@@ -64,8 +64,9 @@ The repo ships these bundled plugins under `plugins/`. All are opt-in — enable
 | `image_gen/xai` | image backend | xAI `grok-2-image` backend |
 | `hermes-achievements` | dashboard tab | Steam-style collectible badges generated from your real Hermes session history |
 | `kanban/dashboard` | dashboard tab | Kanban board UI for the multi-agent dispatcher — tasks, comments, fan-out, board switching. See [Kanban Multi-Agent](./kanban.md). |
+| `bot-context` | hooks + tools + slash command | Bot Mode context and activity approvals: resolve the bot behind an approval, list what each bot is blocked on, and answer through the host's own queue |
 
-Memory providers (`plugins/memory/*`) and context engines (`plugins/context_engine/*`) are listed separately on [Memory Providers](./memory-providers.md) — they're managed through `hermes memory` and `hermes plugins` respectively. The full per-plugin detail for the two long-running hooks-based plugins follows.
+Memory providers (`plugins/memory/*`) and context engines (`plugins/context_engine/*`) are listed separately on [Memory Providers](./memory-providers.md) — they're managed through `hermes memory` and `hermes plugins` respectively. Per-plugin detail follows.
 
 ### disk-cleanup
 
@@ -115,6 +116,47 @@ Auto-tracks and removes ephemeral files created during sessions — test scripts
 **Enabling:** `hermes plugins enable disk-cleanup` (or check the box in `hermes plugins`).
 
 **Disabling again:** `hermes plugins disable disk-cleanup`.
+
+### bot-context
+
+The Bot Mode context panel shows what one *attached* bot is doing and can answer
+the approval card in front of it. This plugin makes that a host capability, so a
+bot's approval can be found and answered by id instead of by attachment.
+
+| Piece | Behaviour |
+|---|---|
+| `pre_approval_request` | Index the approval the host is about to wait on, with resolved context: profile, Bot Mode title, session, hosted room, surface |
+| `post_approval_response` | Settle the activity with the decision the host recorded, whichever surface answered |
+| `on_session_end` | Settle anything still pending for that session as expired — no ghost rows |
+| `bot_context_resolve` | Context for a tracked approval id, an explicit session, or the calling session |
+| `bot_context_activities` | What is waiting, with the choices the host will actually accept and a `legacy` projection matching the Desktop group-chat prompt shape |
+| `bot_context_respond` | Answer with `once`, `session`, `always` or `deny` through `resolve_gateway_approval` |
+| `bot_context_history` | Settled decisions, newest first |
+
+```bash
+hermes plugins enable bot-context
+```
+
+```
+/bot-context                        # pending activity
+/bot-context approve <request-id>   # answer with 'once'
+/bot-context deny <request-id> [reason]
+/bot-context history
+```
+
+**Settings** (`plugins.entries.bot-context.settings`): `answer_scope` (`user` by
+default — only the operator's own launch profile, and never a bot answering its
+own blocked action; `same_profile` and `any` loosen that deliberately),
+`allow_permanent_choices` (`false` — no `session`/`always` from a plugin-driven
+answer unless you opt in), `max_pending`, `retention_days`, `approval_ttl_seconds`.
+
+**Limits worth knowing:** approvals are process-local, so a plugin in another
+process cannot answer one; the index only covers prompts raised while the plugin
+was loaded; room membership is not re-verified (the `answer_scope` gate is).
+Failures come back as stable codes — `unknown_activity`, `already_settled`,
+`missing_context`, `insufficient_permission`, `invalid_choice`, `not_pending`,
+`resolution_failed`, `host_unavailable` — and never touch the prompt. Full
+detail, including the compatibility contract, is in the plugin's `README.md`.
 
 ### security-guidance
 

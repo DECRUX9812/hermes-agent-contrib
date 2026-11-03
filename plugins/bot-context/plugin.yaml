@@ -1,0 +1,50 @@
+name: bot-context
+version: 0.1.0
+manifest_version: 2
+kind: standalone
+description: "Bot Mode context and activity approvals: resolve the bot profile, title, session and hosted room behind an approval, index what each bot is blocked on, and answer through the host's own approval queue."
+author: NousResearch
+license: MIT
+platforms:
+  - linux
+  - macos
+  - windows
+provides_tools:
+  - bot_context_resolve
+  - bot_context_activities
+  - bot_context_respond
+  - bot_context_history
+provides_hooks:
+  - pre_approval_request
+  - post_approval_response
+  - on_session_end
+external_dependencies: []
+config_schema:
+  answer_scope:
+    type: str
+    default: user
+    description: >-
+      Who may answer a tracked activity. "user" (default) allows only the operator's own launch
+      profile, and never a bot answering its own activity; "same_profile" also allows any session
+      inside the target bot's profile (unattended automation); "any" allows any session in the
+      process (multi-bot orchestration) and disables the self-approval guard.
+  allow_permanent_choices:
+    type: bool
+    default: false
+    description: >-
+      Offer "session"/"always" scopes. Off by default: a plugin-driven approval should not be able
+      to add a permanent allowlist entry unless the operator asked for that.
+  max_pending:
+    type: int
+    default: 200
+    description: "Hard cap on tracked pending activities; the oldest is dropped (and logged) past it."
+  retention_days:
+    type: number
+    default: 3
+    description: "Age at which an unanswered activity is settled as expired instead of listed."
+  approval_ttl_seconds:
+    type: number
+    default: 3600
+    description: >-
+      How long an unanswered activity is listed as pending before the sweep settles it as expired.
+      The host's own approvals.timeout is still the authority on whether the prompt is alive.
