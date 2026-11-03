@@ -175,7 +175,7 @@ describe('bot context panel', () => {
     expect(screen.getByText('Release check')).toBeTruthy()
 
     // Switching sessions replaces the feed rather than appending to it.
-    fireEvent.click(screen.getByText('Nightly audit'))
+    fireEvent.click(screen.getByRole('option', { name: /Nightly audit/ }))
     expect(await screen.findByText('tail -f audit.log')).toBeTruthy()
     expect(screen.queryByText('npm run release')).toBeNull()
   })
@@ -272,6 +272,58 @@ describe('bot context panel', () => {
     await vi.waitFor(() =>
       expect($botMeta.get()['research::local']?.goal ?? $botMeta.get()['research']?.goal).toBe('Ship the release')
     )
+  })
+
+  it('shows a clear approval history for the selected session', async () => {
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [{ id: 'sess-a', last_active: Math.floor(NOW / 1000), resolved_id: 'rt-a', title: 'Release check' }],
+      total: 1
+    })
+    request.mockImplementation(async (method: string) => {
+      if (method === 'session.history') {
+        return { messages: [] }
+      }
+
+      if (method === 'bot_context.activities') {
+        return { activities: [] }
+      }
+
+      if (method === 'bot_context.history') {
+        return {
+          decisions: [
+            {
+              activity_id: 'req-1',
+              command: 'npm publish',
+              description: 'Publish the package',
+              settled_at: Math.floor(NOW / 1000) - 60,
+              settled_choice: 'once',
+              status: 'approved'
+            },
+            {
+              activity_id: 'req-2',
+              command: 'git push --force',
+              description: 'Force push',
+              settled_at: Math.floor(NOW / 1000) - 120,
+              settled_choice: 'deny',
+              status: 'denied'
+            }
+          ]
+        }
+      }
+
+      return { jobs: [], scoped: 'research' }
+    })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText('Approval history')).toBeTruthy()
+    expect(await screen.findByText('npm publish')).toBeTruthy()
+    expect(screen.getByText('git push --force')).toBeTruthy()
+    expect(screen.getAllByText(/Approved/).length).toBeGreaterThan(0)
+    expect(screen.getAllByText(/Denied/).length).toBeGreaterThan(0)
   })
 
   it('renders an approval in the session feed and answers it there', async () => {

@@ -26,7 +26,7 @@ import {
   useQuery,
   useValue
 } from '@hermes/plugin-sdk'
-import { useEffect, useMemo, useState } from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 
 import { $groupClarify } from './group-chat'
 import { answerGroupClarify } from './group-turns'
@@ -46,7 +46,7 @@ import {
   settledApprovalActivity,
   timestampMs
 } from './session-activity'
-import type { RosterRow } from './types'
+import type { RosterRow, RoutineJob } from './types'
 
 interface SessionOption {
   id: string
@@ -173,6 +173,49 @@ function StatusBadge({
   )
 }
 
+function CollapsibleSection({
+  children,
+  count,
+  defaultOpen = true,
+  icon,
+  title
+}: {
+  children: ReactNode
+  count?: number
+  defaultOpen?: boolean
+  icon?: string
+  title: string
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+
+  return (
+    <section className="min-w-0" data-testid="session-section">
+      <button
+        aria-expanded={open}
+        className="flex min-h-8 w-full items-center gap-1.5 rounded-md px-2 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)"
+        onClick={() => setOpen(current => !current)}
+        type="button"
+      >
+        <Codicon
+          className={cn('shrink-0 text-(--ui-text-quaternary) transition-transform duration-200', open && 'rotate-90')}
+          name="chevron-right"
+          size="0.7rem"
+        />
+        {icon ? <Codicon className="shrink-0 text-(--ui-text-tertiary)" name={icon} size="0.8rem" /> : null}
+        <span className="min-w-0 flex-1 truncate text-11 font-semibold text-(--ui-text-primary)">{title}</span>
+        {count ? (
+          <span className="shrink-0 rounded-full bg-(--ui-inline-code-background) px-1.5 py-0.5 text-10 tabular-nums text-(--ui-text-secondary)">
+            {count}
+          </span>
+        ) : null}
+      </button>
+      <div className="session-collapse" data-open={open}>
+        <div className="min-h-0 overflow-hidden">{children}</div>
+      </div>
+    </section>
+  )
+}
+
 function ApprovalCard({
   activity,
   bot,
@@ -209,15 +252,12 @@ function ApprovalCard({
 
   return (
     <div
-      className="mt-2 grid gap-2 rounded-lg border border-(--ui-icon-attention)/35 bg-(--ui-icon-attention)/8 px-2.5 py-2"
+      className="mt-2 grid gap-2 rounded-xl border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/55 px-3 py-2.5"
       data-testid="session-approval"
     >
       <div className="flex min-w-0 items-start gap-2">
         <Codicon className="mt-0.5 shrink-0 text-(--ui-icon-attention)" name="shield" size="0.9375rem" />
         <div className="min-w-0 flex-1">
-          <div className="text-xs font-semibold text-(--ui-text-primary)">
-            {approval.kind === 'clarify' ? s.approvalTitle : s.approvalTitle}
-          </div>
           <div className="text-11 leading-snug text-(--ui-text-secondary)">
             {approval.description || approval.command}
           </div>
@@ -320,7 +360,7 @@ function ActivityRow({
       </button>
       {expanded ? (
         <div className="px-9 pb-2">
-          {activity.detail ? (
+          {activity.detail && !activity.approval ? (
             <pre className="max-h-64 overflow-auto rounded-md bg-(--ui-inline-code-background) px-2 py-1.5 font-mono text-10 leading-relaxed whitespace-pre-wrap [overflow-wrap:anywhere] text-(--ui-text-secondary)">
               {activity.detail}
             </pre>
@@ -344,6 +384,8 @@ function ActivityRow({
 
 export function SessionActivityPanel({
   bot,
+  jobs,
+  onOpenScheduled,
   owner,
   sessions,
   sessionsError,
@@ -351,6 +393,8 @@ export function SessionActivityPanel({
   onRetrySessions
 }: {
   bot: string
+  jobs?: RoutineJob[]
+  onOpenScheduled?: () => void
   owner: RosterRow
   sessions: SessionOption[]
   sessionsError: boolean
@@ -425,6 +469,26 @@ export function SessionActivityPanel({
     queryKey: ['bot-session-approvals', bot, selectedId],
     refetchInterval: 15000,
     retry: false
+  })
+
+  const approvalLog = useQuery({
+    enabled: Boolean(selectedId),
+    queryFn: async () => {
+      try {
+        const body = await host.request<{ decisions?: Array<Record<string, unknown>> }>('bot_context.history', {
+          profile: bot,
+          session_id: resolvedId,
+          limit: 20
+        })
+
+        return Array.isArray(body?.decisions) ? body.decisions : []
+      } catch {
+        return []
+      }
+    },
+    queryKey: ['bot-session-approval-history', bot, selectedId],
+    retry: false,
+    staleTime: 15000
   })
 
   // Persisted tool rows → one item per call, oldest first.
@@ -709,6 +773,10 @@ export function SessionActivityPanel({
 
   return (
     <div className="grid min-w-0 gap-1.5" data-testid="session-activity">
+      <style>{`
+        .session-collapse { display: grid; grid-template-rows: 0fr; opacity: 0; transition: grid-template-rows .3s ease-out, opacity .3s ease-out; }
+        .session-collapse[data-open="true"] { grid-template-rows: 1fr; opacity: 1; }
+      `}</style>
       <div className="mx-2 rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/50 px-2 py-1.5">
         <button
           aria-expanded={explainOpen}
@@ -731,14 +799,8 @@ export function SessionActivityPanel({
         ) : null}
       </div>
 
-      <div className="px-2">
-        <div className="flex items-baseline justify-between gap-2">
-          <span className="text-10 font-semibold uppercase tracking-wider text-(--ui-text-tertiary)">
-            {s.sessionsLabel}
-          </span>
-          <span className="text-10 text-(--ui-text-tertiary)">{s.pickSession}</span>
-        </div>
-        <div aria-label={s.sessionsLabel} className="mt-1 flex gap-1 overflow-x-auto pb-1" role="listbox">
+      <CollapsibleSection count={ordered.length} icon="comment-discussion" title={s.sessionsLabel}>
+        <div aria-label={s.sessionsLabel} className="flex gap-1 overflow-x-auto px-2 pb-1" role="listbox">
           {ordered.map(session => {
             const active = session.id === selectedId
             const title = String(session.title || session.id)
@@ -747,7 +809,7 @@ export function SessionActivityPanel({
               <button
                 aria-selected={active}
                 className={cn(
-                  'flex min-w-28 max-w-44 shrink-0 flex-col items-start gap-0.5 rounded-md border px-2 py-1 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)',
+                  'flex min-w-28 max-w-44 shrink-0 flex-col items-start gap-0.5 rounded-lg border px-2.5 py-1.5 text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)',
                   active
                     ? 'border-(--ui-accent)/40 bg-(--ui-accent)/10'
                     : 'border-(--ui-stroke-tertiary) hover:bg-(--chrome-action-hover)'
@@ -765,7 +827,7 @@ export function SessionActivityPanel({
             )
           })}
         </div>
-      </div>
+      </CollapsibleSection>
 
       <div className="flex items-center justify-between gap-2 px-2">
         <span className="text-10 text-(--ui-text-tertiary)">{s.count(page.total)}</span>
@@ -802,13 +864,7 @@ export function SessionActivityPanel({
       ) : (
         <div className="px-1">
           {groups.map(group => (
-            <div key={group.at}>
-              <div className="flex items-baseline gap-1.5 px-2 pt-2">
-                <span className="text-10 font-semibold uppercase tracking-wider text-(--ui-text-tertiary)">
-                  {dayLabel(group.at)}
-                </span>
-                <span className="text-10 text-(--ui-text-tertiary)">{s.count(group.items.length)}</span>
-              </div>
+            <CollapsibleSection count={group.items.length} icon="calendar" key={group.at} title={dayLabel(group.at)}>
               <ul className="grid gap-0.5">
                 {group.items.map(activity => (
                   <ActivityRow
@@ -825,7 +881,7 @@ export function SessionActivityPanel({
                   />
                 ))}
               </ul>
-            </div>
+            </CollapsibleSection>
           ))}
           {page.hasMore ? (
             <div className="flex justify-center py-2">
@@ -836,6 +892,82 @@ export function SessionActivityPanel({
           ) : null}
         </div>
       )}
+
+      <CollapsibleSection
+        count={approvalLog.data?.length || 0}
+        defaultOpen={Boolean(approvalLog.data?.length)}
+        icon="history"
+        title={s.approvalHistory}
+      >
+        {approvalLog.data?.length ? (
+          <ul className="grid gap-0.5 px-1 pb-1" data-testid="approval-history">
+            {approvalLog.data.map(row => {
+              const requestId = String(row.activity_id || '')
+              const status = String(row.status || '')
+              const approved = status === 'approved'
+              const denied = status === 'denied'
+              const at = timestampMs(row.settled_at) || Date.now()
+
+              return (
+                <li
+                  className="flex min-w-0 items-start gap-2 rounded-md px-2 py-1.5 hover:bg-(--chrome-action-hover)"
+                  key={requestId || `${row.command}-${at}`}
+                >
+                  <Codicon
+                    className={cn(
+                      'mt-0.5 shrink-0',
+                      approved ? 'text-(--ui-green)' : denied ? 'text-destructive' : 'text-(--ui-text-quaternary)'
+                    )}
+                    name={approved ? 'pass' : denied ? 'error' : 'clock'}
+                    size="0.8rem"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="line-clamp-1 text-11 font-medium text-(--ui-text-primary)">
+                      {String(row.command || row.description || requestId)}
+                    </span>
+                    <span className="text-10 text-(--ui-text-tertiary)">
+                      {approved ? s.approvalApproved : denied ? s.approvalDenied : s.approvalExpired}
+                      {' · '}
+                      {relativeTime(at)}
+                    </span>
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+        ) : (
+          <p className="px-3 pb-2 text-10 text-(--ui-text-tertiary)">{s.approvalHistoryEmpty}</p>
+        )}
+      </CollapsibleSection>
+
+      {jobs?.length ? (
+        <CollapsibleSection count={jobs.length} icon="watch" title={s.scheduledTasks}>
+          <ul className="grid gap-0.5 px-1 pb-1">
+            {jobs.slice(0, 3).map(job => {
+              const next = job.next_run_at ? Date.parse(job.next_run_at) : Number.NaN
+
+              return (
+                <li className="flex min-w-0 items-center gap-2 rounded-md px-2 py-1.5" key={job.job_id}>
+                  <Codicon className="shrink-0 text-(--ui-text-tertiary)" name="calendar" size="0.8rem" />
+                  <span className="min-w-0 flex-1 truncate text-11 text-(--ui-text-primary)">
+                    {String(job.name || job.job_id).replace(/^\[bot:[^\]]+\]\s*/, '')}
+                  </span>
+                  <span className="shrink-0 text-10 tabular-nums text-(--ui-text-tertiary)">
+                    {Number.isFinite(next) ? relativeTime(next) : String(job.schedule || '')}
+                  </span>
+                </li>
+              )
+            })}
+          </ul>
+          {onOpenScheduled ? (
+            <div className="px-2 pb-2 pt-1">
+              <Button onClick={onOpenScheduled} size="xs" variant="ghost">
+                {s.seeAll}
+              </Button>
+            </div>
+          ) : null}
+        </CollapsibleSection>
+      ) : null}
     </div>
   )
 }

@@ -46,7 +46,7 @@ import {
 import { $botMeta, $lastRoster, botRosterKey, saveBotMeta } from './data'
 import { EditProfileDialog } from './edit-profile-dialog'
 import { $groupActivity } from './group-activity'
-import { $groupChats } from './group-chat'
+import { $groupChats, $groupClarify } from './group-chat'
 import { $activeGroupMemberKeys } from './group-presence'
 import { stopGroupThread } from './group-rounds'
 import { type BotsText, useBots } from './i18n'
@@ -55,6 +55,8 @@ import { openBotSession } from './recent-session'
 import { openRosterBot } from './roster-actions'
 import { botConnectionRoute, botRosterMeta } from './routing'
 import { ScreenHero } from './screen-hero'
+import { useScreenPortalState } from './screen-portal'
+import { $sessionActivity } from './session-activity'
 import { SessionActivityPanel } from './session-activity-panel'
 import { ID } from './shared'
 import type { RosterRow, RoutineJob } from './types'
@@ -224,6 +226,19 @@ function RoomRail({ group }: { group: string }) {
   )
 }
 
+/** Only a live/controlled screen earns the big preview. A stopped or
+ *  unknown screen used to paint an empty black rectangle at the top of the
+ *  rail; the compact hero below already says what the bot is doing. */
+function LiveScreenHero({ bot, meta }: { bot: RosterRow; meta: Parameters<typeof botAppearance>[1] }) {
+  const { tone } = useScreenPortalState(bot)
+
+  if (tone !== 'live' && tone !== 'human' && tone !== 'other') {
+    return null
+  }
+
+  return <ScreenHero bot={bot} meta={meta} />
+}
+
 export function BotContextPanel() {
   const [editing, setEditing] = useState<null | RosterRow>(null)
   const selected = useValue($selectedBot)
@@ -241,6 +256,8 @@ export function BotContextPanel() {
   const owner = resolveRoutineOwner(useValue($lastRoster), focusedOwner, selected)
   const bot = String(owner?.name || focusedOwner?.name || 'default').trim() || 'default'
   const allMeta = useValue($botMeta)
+  const activityStore = useValue($sessionActivity)
+  const groupPrompts = useValue($groupClarify)
   const meta = owner ? botRosterMeta(owner, allMeta) : null
   const { color, image, shape } = botAppearance(bot, meta)
   const b = useBots()
@@ -391,6 +408,32 @@ export function BotContextPanel() {
     setCreateOpen(true)
   }
 
+  // The avatar's mood and the line under it follow what THIS bot is doing
+  // right now, across the sessions the panel has already loaded. A pending
+  // approval outranks a running tool: the bot is waiting on the operator, not
+  // on itself.
+  const botActivity = Object.entries(activityStore)
+    .filter(([key]) => key.startsWith(`${bot}::`))
+    .flatMap(([, items]) => items)
+
+  const running = botActivity.find(item => item.status === 'running')
+
+  const waitingCount = Math.max(
+    botActivity.filter(item => item.status === 'waiting' || item.status === 'pending').length,
+    Object.values(groupPrompts).some(prompt => prompt?.member === bot && prompt.kind === 'approval') ? 1 : 0
+  )
+
+  const waiting = waitingCount > 0
+
+  const currentTask = running
+    ? `${p.workingNow} · ${running.title}`
+    : waiting
+      ? `${waitingCount} approval${waitingCount === 1 ? '' : 's'} waiting`
+      : ''
+
+  const mood = waiting ? 'think' : working || running ? 'work' : 'idle'
+  const statusLine = currentTask || statusText
+
   if (focusedRoom) {
     return <RoomRail group={focusedRoom} />
   }
@@ -399,40 +442,69 @@ export function BotContextPanel() {
     <div className="flex h-full flex-col">
       {owner ? (
         <div className="px-3 pt-3">
-          <ScreenHero bot={owner} meta={meta} />
+          <LiveScreenHero bot={owner} meta={meta} />
         </div>
       ) : null}
-      <div className="flex flex-col items-center px-4 pt-4 text-center">
-        <BotFace color={avatarColor(color, bot)} image={image} name={bot} shape={shape} size={56} />
-        <div className="mt-2 max-w-full truncate text-sm font-semibold text-(--ui-text-primary)">
+      <div className="flex flex-col items-center px-4 pb-1 pt-6 text-center">
+        <div className="relative">
+          <span
+            aria-hidden="true"
+            className={cn(
+              'absolute -inset-2.5 rounded-full bg-gradient-to-br via-transparent blur-md',
+              waiting
+                ? 'from-(--ui-icon-attention)/22 to-(--ui-icon-attention)/8'
+                : working || running
+                  ? 'from-(--ui-green)/20 to-(--ui-green)/8'
+                  : 'from-(--ui-accent)/18 to-(--ui-accent)/8'
+            )}
+          />
+          <BotFace color={avatarColor(color, bot)} image={image} mood={mood} name={bot} shape={shape} size={76} />
+          {owner ? (
+            <Tip label={b.bot.editTitle}>
+              <Button
+                aria-label={b.bot.editTitle}
+                className="absolute -bottom-1 -right-1 size-7 rounded-full border border-(--ui-stroke-secondary) bg-(--ui-chat-bubble-background) shadow-sm hover:bg-(--chrome-action-hover)"
+                onClick={() => setEditing(owner)}
+                size="icon-xs"
+                variant="ghost"
+              >
+                <Codicon className="text-(--ui-text-secondary)" name="symbol-color" size="0.8rem" />
+              </Button>
+            </Tip>
+          ) : null}
+        </div>
+        <div className="mt-3 max-w-full truncate text-base font-semibold leading-tight text-(--ui-text-primary)">
           {displayName({ name: bot }, meta)}
         </div>
-        <div className="mt-0.5 flex min-w-0 items-center">
+        <div className="mt-1 flex min-w-0 max-w-full items-center">
           <span
+            aria-live="polite"
             className={cn(
-              'inline-flex max-w-full items-center gap-1.5 rounded-full px-2 py-0.5 text-11 font-medium',
-              working
-                ? 'border border-(--ui-green)/25 bg-(--ui-green)/12 text-(--ui-green)'
-                : reachable
-                  ? 'border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay) text-(--ui-text-secondary)'
-                  : 'border border-destructive/25 bg-destructive/10 text-destructive'
+              'inline-flex max-w-full items-center gap-1.5 rounded-full px-2.5 py-1 text-11 font-medium',
+              waiting
+                ? 'border border-(--ui-stroke-tertiary) bg-(--ui-icon-attention)/10 text-(--ui-text-primary)'
+                : working || running
+                  ? 'border border-(--ui-green)/25 bg-(--ui-green)/12 text-(--ui-green)'
+                  : reachable
+                    ? 'border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay) text-(--ui-text-secondary)'
+                    : 'border border-destructive/25 bg-destructive/10 text-destructive'
             )}
           >
-            {working ? (
+            {working || running ? (
               <span aria-hidden="true" className="relative flex size-1.5 shrink-0">
-                <span className="absolute inline-flex size-full animate-ping rounded-full bg-(--ui-green) opacity-70" />
-                <span className="relative inline-flex size-1.5 rounded-full bg-(--ui-green)" />
+                <span className="absolute inline-flex size-full animate-ping rounded-full bg-current opacity-60" />
+                <span className="relative inline-flex size-1.5 rounded-full bg-current" />
               </span>
             ) : (
               <span
                 aria-hidden="true"
                 className={cn(
                   'size-1.5 shrink-0 rounded-full',
-                  reachable ? 'bg-(--ui-text-quaternary)' : 'bg-destructive/70'
+                  waiting ? 'bg-(--ui-icon-attention)' : reachable ? 'bg-(--ui-text-quaternary)' : 'bg-destructive/70'
                 )}
               />
             )}
-            <span className="truncate">{statusText}</span>
+            <span className="truncate">{statusLine}</span>
           </span>
         </div>
       </div>
@@ -583,6 +655,8 @@ export function BotContextPanel() {
         {view === 'tasks' ? (
           <SessionActivityPanel
             bot={bot}
+            jobs={jobs}
+            onOpenScheduled={() => setView('scheduled')}
             onRetrySessions={() => void sessionsQuery.refetch()}
             owner={owner}
             sessions={(sessionsQuery.data || []) as PanelSessionSource[]}

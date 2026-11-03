@@ -26,6 +26,11 @@ export type SessionActivityMessages = {
   waiting: string
   approvalTitle: string
   approvalHint: string
+  approvalHistory: string
+  approvalHistoryEmpty: string
+  pending: string
+  scheduledTasks: string
+  seeAll: string
   answer: string
   answering: string
   approvalApproved: string
