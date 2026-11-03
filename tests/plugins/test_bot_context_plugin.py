@@ -176,13 +176,13 @@ class TestRegistration:
 
         manifest = parse_manifest_file(PLUGIN_DIR / "plugin.yaml", PLUGIN_DIR, "bundled", "")
         assert manifest.name == "bot-context"
-        assert manifest.version == "0.2.0"
+        assert manifest.version == "0.2.1"
         assert set(manifest.provides_tools) == {
             "bot_context_resolve", "bot_context_activities",
-            "bot_context_respond", "bot_context_history",
+            "bot_context_respond", "bot_context_history", "bot_context_subagents",
         }
-        assert {"pre_approval_request", "post_approval_response", "on_session_end"} <= set(
-            manifest.provides_hooks)
+        assert {"pre_approval_request", "post_approval_response", "on_session_end",
+                "subagent_start", "subagent_stop"} <= set(manifest.provides_hooks)
         assert "answer_scope" in (manifest.config_schema or {})
         assert manifest.config_schema["answer_scope"]["default"] == "user"
 
@@ -191,13 +191,15 @@ class TestRegistration:
         plugin.register(ctx)
 
         assert set(ctx.tools) == {"bot_context_resolve", "bot_context_activities",
-                                  "bot_context_respond", "bot_context_history"}
+                                  "bot_context_respond", "bot_context_history",
+                                  "bot_context_subagents"}
         assert all(spec["toolset"] == "bot_context" for spec in ctx.tools.values())
         for name, spec in ctx.tools.items():
             assert spec["schema"]["name"] == name
             assert spec["schema"]["description"]
             assert spec["schema"]["parameters"]["type"] == "object"
-        assert set(ctx.hooks) == {"pre_approval_request", "post_approval_response", "on_session_end"}
+        assert set(ctx.hooks) == {"pre_approval_request", "post_approval_response", "on_session_end",
+                                  "subagent_start", "subagent_stop"}
         assert "bot-context" in ctx.commands
         assert "bot-context" in ctx.cli
 
@@ -804,6 +806,87 @@ class TestStockHostCompatibility:
         assert [row["activity_id"] for row in remaining] == ["req-2"]
 
 
+class TestSubagents:
+    def test_start_and_stop_keep_the_receipt_under_its_parent_session(self, plugin):
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        ctx.fire(
+            "subagent_start",
+            parent_session_id="sess-1",
+            parent_turn_id="turn-1",
+            child_subagent_id="sa-1",
+            child_session_id="child-1",
+            child_goal="Research the API contract",
+            child_role="leaf",
+        )
+        ctx.fire(
+            "subagent_stop",
+            parent_session_id="sess-1",
+            child_session_id="child-1",
+            child_status="completed",
+            child_summary="Read the OpenAPI file and found two endpoints.",
+            duration_ms=1200,
+            tool_call_history=[
+                {"tool_name": "read_file", "targets": {"path": "docs/openapi.yaml"}, "status": "ok"},
+                {"tool_name": "grep", "targets": {"pattern": "v2/orders"}, "status": "ok"},
+            ],
+        )
+
+        body = ctx.call("bot_context_subagents", {"session_id": "sess-1"})
+        assert body["count"] == 1
+        row = body["subagents"][0]
+        assert row["goal"] == "Research the API contract"
+        assert row["status"] == "succeeded"
+        assert row["summary"].startswith("Read the OpenAPI")
+        assert [step["tool"] for step in row["tool_calls"]] == ["read_file", "grep"]
+        assert row["duration_ms"] == 1200
+        # Another parent session sees none of it.
+        assert ctx.call("bot_context_subagents", {"session_id": "sess-2"})["count"] == 0
+
+    def test_stop_without_start_is_still_a_receipt(self, plugin):
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        ctx.fire(
+            "subagent_stop",
+            parent_session_id="sess-1",
+            child_session_id="child-9",
+            child_status="failed",
+            child_summary="Timed out after 60s",
+            duration_ms=60000,
+        )
+        row = ctx.call("bot_context_subagents", {"session_id": "sess-1"})["subagents"][0]
+        assert row["status"] == "failed"
+        assert row["summary"] == "Timed out after 60s"
+
+    def test_session_end_cancels_running_children(self, plugin):
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        ctx.fire("subagent_start", parent_session_id="sess-1", child_subagent_id="sa-1",
+                 child_session_id="child-1", child_goal="Still working")
+        ctx.fire("on_session_end", session_key="sess-1")
+        row = ctx.call("bot_context_subagents", {"session_id": "sess-1"})["subagents"][0]
+        assert row["status"] == "cancelled"
+        assert "session ended" in row["error"]
+
+    def test_rpc_lists_subagents_for_one_parent(self, plugin):
+        class Server:
+            def __init__(self):
+                self.methods = {}
+
+            def register_method(self, name, fn):
+                self.methods[name] = fn
+
+        ctx = FakeCtx()
+        plugin.register(ctx)
+        server = Server()
+        plugin.rpc.install(server, ctx)
+        ctx.fire("subagent_start", parent_session_id="sess-1", child_subagent_id="sa-1",
+                 child_session_id="child-1", child_goal="Check logs")
+        body = server.methods["bot_context.subagents"](1, {"session_id": "sess-1"})
+        assert body["result"]["count"] == 1
+        assert body["result"]["subagents"][0]["goal"] == "Check logs"
+
+
 # ── portability: settings, rebinding, clean install ─────────────────────────
 class TestPortableSettings:
     def test_missing_optional_settings_use_the_safe_defaults(self, plugin):
@@ -972,7 +1055,7 @@ class TestCleanInstallAndSharedPath:
         assert result["enabled"] is True
         assert set(result["tools"]) == {
             "bot_context_resolve", "bot_context_activities",
-            "bot_context_respond", "bot_context_history",
+            "bot_context_respond", "bot_context_history", "bot_context_subagents",
         }
         assert {"pre_approval_request", "post_approval_response", "on_session_end"} <= set(result["hooks"])
 

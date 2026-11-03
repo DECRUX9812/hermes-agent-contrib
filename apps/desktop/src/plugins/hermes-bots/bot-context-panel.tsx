@@ -61,12 +61,13 @@ import { SessionActivityPanel } from './session-activity-panel'
 import { ID } from './shared'
 import type { RosterRow, RoutineJob } from './types'
 
-type PanelView = 'history' | 'scheduled' | 'tasks'
+type PanelView = 'bot' | 'history' | 'scheduled' | 'tasks'
 
 // Module-level so the tab icons keep a stable component identity across renders.
 const TASKS_ICON = codiconIcon('list-tree')
 const SCHEDULED_ICON = codiconIcon('clock')
 const HISTORY_ICON = codiconIcon('history')
+const BOT_ICON = codiconIcon('device-desktop')
 
 /** A timeline row. Two kinds share the timeline because they are the two
  *  things a bot actually does: a scheduled routine fires, and a conversation
@@ -226,14 +227,22 @@ function RoomRail({ group }: { group: string }) {
   )
 }
 
-/** Only a live/controlled screen earns the big preview. A stopped or
- *  unknown screen used to paint an empty black rectangle at the top of the
- *  rail; the compact hero below already says what the bot is doing. */
-function LiveScreenHero({ bot, meta }: { bot: RosterRow; meta: Parameters<typeof botAppearance>[1] }) {
+/** The computer lives in its own tab: stopped/not-installed states get the
+ *  honest ScreenHero placeholder, unsupported builds get a one-line empty
+ *  state instead of a dead black box. */
+function BotScreen({
+  bot,
+  meta,
+  text
+}: {
+  bot: RosterRow
+  meta: Parameters<typeof botAppearance>[1]
+  text: BotsText['panel']
+}) {
   const { tone } = useScreenPortalState(bot)
 
-  if (tone !== 'live' && tone !== 'human' && tone !== 'other') {
-    return null
+  if (tone === 'unsupported' || tone === 'unavailable') {
+    return <PanelEmpty description={text.screenUnavailable} icon="device-desktop" title={text.computer} />
   }
 
   return <ScreenHero bot={bot} meta={meta} />
@@ -440,11 +449,6 @@ export function BotContextPanel() {
 
   return (
     <div className="flex h-full flex-col">
-      {owner ? (
-        <div className="px-3 pt-3">
-          <LiveScreenHero bot={owner} meta={meta} />
-        </div>
-      ) : null}
       <div className="flex flex-col items-center px-4 pb-1 pt-6 text-center">
         <div className="relative">
           <span
@@ -515,7 +519,8 @@ export function BotContextPanel() {
           options={[
             { icon: TASKS_ICON, id: 'tasks', label: p.activity },
             { icon: SCHEDULED_ICON, id: 'scheduled', label: p.scheduled },
-            { icon: HISTORY_ICON, id: 'history', label: p.history }
+            { icon: HISTORY_ICON, id: 'history', label: p.history },
+            { icon: BOT_ICON, id: 'bot', label: p.bot }
           ]}
           value={view}
         />
@@ -650,6 +655,14 @@ export function BotContextPanel() {
                 </li>
               ))}
             </ul>
+          </div>
+        ) : null}
+        {view === 'bot' ? (
+          <div className="px-3 pb-3 pt-3" data-testid="bot-screen-tab">
+            <div className="mb-2 flex items-center justify-between">
+              <span className="ui-section-label">{p.computer}</span>
+            </div>
+            <BotScreen bot={owner} meta={meta} text={p} />
           </div>
         ) : null}
         {view === 'tasks' ? (

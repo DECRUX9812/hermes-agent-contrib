@@ -31,6 +31,7 @@ export type SessionActivityMessages = {
   pending: string
   scheduledTasks: string
   seeAll: string
+  subagents: string
   answer: string
   answering: string
   approvalApproved: string
@@ -564,6 +565,9 @@ export type BotsMessages = {
     tasks: string
     scheduled: string
     history: string
+    bot: string
+    computer: string
+    screenUnavailable: string
     saved: string
     now: string
     today: string
@@ -608,5 +612,4 @@ export type BotsMessages = {
     title: string
     body: string
   }
-
 }

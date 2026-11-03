@@ -29,6 +29,7 @@ METHODS = (
     "bot_context.resolve",
     "bot_context.respond",
     "bot_context.sessions",
+    "bot_context.subagents",
 )
 
 _installed: set[int] = set()
@@ -78,6 +79,12 @@ def handle_respond(rid: Any, params: Any, ctx) -> dict[str, Any]:
     return _json_result(rid, _handle_respond(ctx, _params(params)))
 
 
+def handle_subagents(rid: Any, params: Any, ctx) -> dict[str, Any]:
+    from . import _handle_subagents
+
+    return _json_result(rid, _handle_subagents(ctx, _params(params)))
+
+
 def handle_sessions(rid: Any, params: Any, ctx) -> dict[str, Any]:
     from . import _ledger, _settings
 
@@ -102,6 +109,7 @@ _HANDLERS = {
     "bot_context.resolve": handle_resolve,
     "bot_context.respond": handle_respond,
     "bot_context.sessions": handle_sessions,
+    "bot_context.subagents": handle_subagents,
 }
 
 

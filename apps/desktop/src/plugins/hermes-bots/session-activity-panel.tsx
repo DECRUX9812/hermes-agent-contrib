@@ -23,6 +23,7 @@ import {
   host,
   PanelEmpty,
   relativeTime,
+  useI18n,
   useQuery,
   useValue
 } from '@hermes/plugin-sdk'
@@ -382,6 +383,159 @@ function ActivityRow({
   )
 }
 
+interface SubagentStep {
+  input_bytes?: null | number
+  output_bytes?: null | number
+  status?: string
+  targets?: Record<string, string>
+  tool?: string
+}
+
+interface SubagentRow {
+  duration_ms?: null | number
+  goal: string
+  role?: string
+  session_id?: string
+  started_at: number
+  status: string
+  stopped_at?: null | number
+  subagent_id: string
+  summary?: string
+  tool_calls?: SubagentStep[]
+}
+
+function subagentStatus(status: string, a: ReturnType<typeof useI18n>['t']['agents']) {
+  switch (status) {
+    case 'succeeded':
+      return { glyph: 'pass', label: a.done, tone: 'text-(--ui-green)' }
+
+    case 'failed':
+      return { glyph: 'error', label: a.failed, tone: 'text-destructive' }
+
+    case 'cancelled':
+      return { glyph: 'debug-stop', label: a.failed, tone: 'text-(--ui-text-tertiary)' }
+
+    case 'queued':
+      return { glyph: 'watch', label: a.queued, tone: 'text-(--ui-icon-attention)' }
+
+    default:
+      return { glyph: 'sync', label: a.running, tone: 'text-(--ui-accent)' }
+  }
+}
+
+function stepLabel(step: SubagentStep): string {
+  const tool = String(step.tool || 'tool')
+    .split('_')
+    .filter(Boolean)
+    .join(' ')
+
+  const targets = Object.values(step.targets || {})
+    .filter(Boolean)
+    .join(' · ')
+
+  return targets ? `${tool} · ${targets}` : tool
+}
+
+function shortMs(ms: null | number | undefined): string {
+  if (!ms || ms < 0) {
+    return ''
+  }
+
+  const seconds = Math.round(ms / 1000)
+
+  return seconds < 60 ? `${seconds}s` : `${Math.floor(seconds / 60)}m ${seconds % 60}s`
+}
+
+function SubagentCard({ agent }: { agent: SubagentRow }) {
+  const { t } = useI18n()
+  const a = t.agents
+  const [open, setOpen] = useState(false)
+  const status = subagentStatus(agent.status, a)
+
+  const duration =
+    agent.duration_ms ?? (agent.stopped_at && agent.started_at ? (agent.stopped_at - agent.started_at) * 1000 : null)
+
+  const steps = agent.tool_calls || []
+
+  return (
+    <li
+      className="rounded-lg border border-(--ui-stroke-tertiary) bg-(--ui-surface-overlay)/35"
+      data-testid="subagent-row"
+    >
+      <button
+        aria-expanded={open}
+        className="flex w-full min-w-0 items-start gap-2 rounded-lg px-2 py-2 text-left transition-colors hover:bg-(--chrome-action-hover) focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)"
+        onClick={() => setOpen(current => !current)}
+        type="button"
+      >
+        <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center">
+          {agent.status === 'running' ? (
+            <GlyphSpinner className="text-(--ui-accent)" spinner="breathe" />
+          ) : (
+            <Codicon className={status.tone} name={status.glyph} size="0.8rem" />
+          )}
+        </span>
+        <span className="min-w-0 flex-1">
+          <span className="line-clamp-2 block text-11 font-medium leading-snug text-(--ui-text-primary)">
+            {agent.goal || agent.subagent_id}
+          </span>
+          {agent.summary ? (
+            <span className="mt-0.5 line-clamp-2 block text-10 leading-relaxed text-(--ui-text-tertiary)">
+              {agent.summary}
+            </span>
+          ) : null}
+          <span className="mt-1 flex flex-wrap items-center gap-1.5 text-10 text-(--ui-text-tertiary)">
+            <span className={status.tone}>{status.label}</span>
+            {agent.role ? (
+              <span className="rounded bg-(--ui-inline-code-background) px-1 py-px">{agent.role}</span>
+            ) : null}
+            {steps.length ? <span>{a.toolsCount(steps.length)}</span> : null}
+            {duration ? <span>{shortMs(duration)}</span> : null}
+          </span>
+        </span>
+        <Codicon
+          className={cn('mt-0.5 shrink-0 text-(--ui-text-quaternary) transition-transform', open && 'rotate-90')}
+          name="chevron-right"
+          size="0.75rem"
+        />
+      </button>
+      {open ? (
+        <div className="grid gap-2 border-t border-(--ui-stroke-tertiary) px-3 py-2" data-testid="subagent-detail">
+          {agent.summary ? (
+            <p className="text-11 leading-relaxed text-(--ui-text-secondary)">{agent.summary}</p>
+          ) : (
+            <p className="text-11 text-(--ui-text-tertiary)">{a.waitingActivity}</p>
+          )}
+          {steps.length ? (
+            <ol className="grid gap-1 border-l border-(--ui-stroke-tertiary) pl-2.5">
+              {steps.map((step, index) => {
+                const failed = step.status === 'error' || step.status === 'failed'
+
+                return (
+                  <li className="flex min-w-0 items-start gap-1.5 text-10" key={`${step.tool}-${index}`}>
+                    <Codicon
+                      className={
+                        failed ? 'mt-px shrink-0 text-destructive' : 'mt-px shrink-0 text-(--ui-text-tertiary)'
+                      }
+                      name={failed ? 'error' : 'pass'}
+                      size="0.65rem"
+                    />
+                    <span className="min-w-0 truncate text-(--ui-text-secondary)">{stepLabel(step)}</span>
+                  </li>
+                )
+              })}
+            </ol>
+          ) : null}
+          <div className="flex flex-wrap gap-2 text-10 text-(--ui-text-tertiary)">
+            {agent.session_id ? <span className="font-mono">{agent.session_id.slice(0, 12)}</span> : null}
+            {a.filesCount((agent.tool_calls || []).length)}
+          </div>
+        </div>
+      ) : null}
+    </li>
+  )
+}
+
 export function SessionActivityPanel({
   bot,
   jobs,
@@ -489,6 +643,25 @@ export function SessionActivityPanel({
     queryKey: ['bot-session-approval-history', bot, selectedId],
     retry: false,
     staleTime: 15000
+  })
+
+  const subagents = useQuery({
+    enabled: Boolean(selectedId),
+    queryFn: async () => {
+      try {
+        const body = await host.request<{ subagents?: SubagentRow[] }>('bot_context.subagents', {
+          session_id: runtimeId || resolvedId
+        })
+
+        return Array.isArray(body?.subagents) ? body.subagents : []
+      } catch {
+        return []
+      }
+    },
+    queryKey: ['bot-session-subagents', bot, selectedId, runtimeId],
+    refetchInterval: 5000,
+    retry: false,
+    staleTime: 2000
   })
 
   // Persisted tool rows → one item per call, oldest first.
@@ -939,6 +1112,16 @@ export function SessionActivityPanel({
           <p className="px-3 pb-2 text-10 text-(--ui-text-tertiary)">{s.approvalHistoryEmpty}</p>
         )}
       </CollapsibleSection>
+
+      {subagents.data?.length ? (
+        <CollapsibleSection count={subagents.data.length} icon="organization" title={s.subagents}>
+          <ul className="grid gap-1 px-1 pb-1">
+            {subagents.data.map(agent => (
+              <SubagentCard agent={agent} key={agent.subagent_id} />
+            ))}
+          </ul>
+        </CollapsibleSection>
+      ) : null}
 
       {jobs?.length ? (
         <CollapsibleSection count={jobs.length} icon="watch" title={s.scheduledTasks}>

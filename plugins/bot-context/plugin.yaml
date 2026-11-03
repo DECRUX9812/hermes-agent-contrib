@@ -1,5 +1,5 @@
 name: bot-context
-version: 0.2.0
+version: 0.2.1
 manifest_version: 2
 kind: standalone
 description: "Bot Mode session activity and approvals: resolve the bot profile, title, session and hosted room behind an approval, list what each session is blocked on, and answer through the host's own approval queue."
@@ -14,10 +14,13 @@ provides_tools:
   - bot_context_activities
   - bot_context_respond
   - bot_context_history
+  - bot_context_subagents
 provides_hooks:
   - pre_approval_request
   - post_approval_response
   - on_session_end
+  - subagent_start
+  - subagent_stop
 external_dependencies: []
 config_schema:
   answer_scope:

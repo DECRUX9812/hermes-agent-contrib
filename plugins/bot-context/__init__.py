@@ -47,6 +47,7 @@ from .activities import (
 )
 from .context import BotContext, resolve_bot_context
 from .ledger import Ledger, _data_dir
+from .subagents import SubagentLedger
 
 logger = logging.getLogger("plugins.bot-context")
 
@@ -56,6 +57,8 @@ DEFAULT_APPROVAL_TTL_SECONDS = 3600.0
 
 _LEDGER: Ledger | None = None
 _LEDGER_LOCK = threading.Lock()
+_SUBAGENTS: SubagentLedger | None = None
+_SUBAGENTS_LOCK = threading.Lock()
 
 
 # ── settings ────────────────────────────────────────────────────────────────
@@ -174,13 +177,25 @@ def _ledger(ctx) -> Ledger:
         return _LEDGER
 
 
+def _subagents() -> SubagentLedger:
+    """One process-local subagent index; children are process-local by nature."""
+    global _SUBAGENTS
+    with _SUBAGENTS_LOCK:
+        if _SUBAGENTS is None:
+            _SUBAGENTS = SubagentLedger()
+        return _SUBAGENTS
+
+
 def _reset_state_for_tests() -> None:
-    """Drop the module-level ledger (tests only; the host never calls this)."""
-    global _LEDGER
-    with _LEDGER_LOCK:
+    """Drop the module-level ledgers (tests only; the host never calls this)."""
+    global _LEDGER, _SUBAGENTS
+    with _LEDGER_LOCK, _SUBAGENTS_LOCK:
         if _LEDGER is not None:
             _LEDGER.reset()
         _LEDGER = None
+        if _SUBAGENTS is not None:
+            _SUBAGENTS.reset()
+        _SUBAGENTS = None
 
 
 # ── hooks ───────────────────────────────────────────────────────────────────
@@ -214,6 +229,22 @@ def _on_pre_approval_request(ctx, **payload: Any) -> None:
         logger.debug("bot-context: pre_approval_request handler failed", exc_info=True)
 
 
+def _on_subagent_start(ctx, **payload: Any) -> None:
+    """Index one child of a bot session; never blocks the delegation."""
+    try:
+        _subagents().start(payload)
+    except Exception:  # pragma: no cover - observer hook must stay silent
+        logger.debug("bot-context: subagent_start handler failed", exc_info=True)
+
+
+def _on_subagent_stop(ctx, **payload: Any) -> None:
+    """Keep the child's receipt (summary, status, tool steps) under its parent."""
+    try:
+        _subagents().stop(payload)
+    except Exception:  # pragma: no cover - observer hook must stay silent
+        logger.debug("bot-context: subagent_stop handler failed", exc_info=True)
+
+
 def _on_post_approval_response(ctx, **payload: Any) -> None:
     """Settle the activity the host just resolved (by any surface)."""
     try:
@@ -236,6 +267,7 @@ def _on_session_end(ctx, **payload: Any) -> None:
             if matches:
                 ledger.settle(activity.activity_id, status=STATUS_EXPIRED, by="session_end",
                               note="the session ended before the approval was answered")
+        _subagents().finish_session(session_id or session_key)
     except Exception:  # pragma: no cover - defensive
         logger.debug("bot-context: on_session_end handler failed", exc_info=True)
 
@@ -375,6 +407,17 @@ def _handle_history(ctx, params: Mapping[str, Any], **_: Any) -> str:
     })
 
 
+def _handle_subagents(ctx, params: Mapping[str, Any], **_: Any) -> str:
+    parent = str(params.get("parent_session_id") or params.get("session_id") or "").strip()
+    rows = _subagents().list(parent_session_id=parent or None)
+    return _json({
+        "ok": True,
+        "count": len(rows),
+        "subagents": [row.to_dict() for row in rows],
+        "parent_session_id": parent or None,
+    })
+
+
 _TOOLS = (
     (
         "bot_context_resolve",
@@ -446,6 +489,20 @@ _TOOLS = (
             "additionalProperties": False,
         },
         _handle_history,
+    ),
+    (
+        "bot_context_subagents",
+        "List the subagents Hermes delegated inside one bot session, with their status, summary "
+        "and tool-call history. Scoped to that parent session; never mixes sessions.",
+        {
+            "type": "object",
+            "properties": {
+                "session_id": {"type": "string", "description": "Parent session id."},
+                "parent_session_id": {"type": "string", "description": "Alias for session_id."},
+            },
+            "additionalProperties": False,
+        },
+        _handle_subagents,
     ),
 )
 
@@ -578,6 +635,8 @@ def register(ctx) -> None:
     ctx.register_hook("pre_approval_request", lambda **kw: _on_pre_approval_request(ctx, **kw))
     ctx.register_hook("post_approval_response", lambda **kw: _on_post_approval_response(ctx, **kw))
     ctx.register_hook("on_session_end", lambda **kw: _on_session_end(ctx, **kw))
+    ctx.register_hook("subagent_start", lambda **kw: _on_subagent_start(ctx, **kw))
+    ctx.register_hook("subagent_stop", lambda **kw: _on_subagent_stop(ctx, **kw))
 
     ctx.register_command("bot-context", lambda raw_args="": _slash_command(ctx, raw_args),
                          description="Bot activity approvals: list, approve, deny, history",

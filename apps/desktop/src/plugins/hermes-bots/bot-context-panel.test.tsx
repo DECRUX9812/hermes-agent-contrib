@@ -165,7 +165,7 @@ describe('bot context panel', () => {
     // Header and toolbar stay: the session selector lives inside Activity.
     expect(await screen.findByText('Research')).toBeTruthy()
 
-    for (const tab of ['Activity', 'Scheduled', 'History']) {
+    for (const tab of ['Activity', 'Scheduled', 'History', 'Bot']) {
       expect(screen.getByText(tab)).toBeTruthy()
     }
 
@@ -178,6 +178,17 @@ describe('bot context panel', () => {
     fireEvent.click(screen.getByRole('option', { name: /Nightly audit/ }))
     expect(await screen.findByText('tail -f audit.log')).toBeTruthy()
     expect(screen.queryByText('npm run release')).toBeNull()
+  })
+
+  it('keeps the bot computer in its own Bot tab', async () => {
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+    await screen.findByText('Activity')
+
+    fireEvent.click(screen.getByText('Bot'))
+
+    expect(await screen.findByTestId('bot-screen-tab')).toBeTruthy()
+    expect(screen.getByText('Computer')).toBeTruthy()
   })
 
   it('keeps the full routines list one tab over', async () => {
@@ -272,6 +283,55 @@ describe('bot context panel', () => {
     await vi.waitFor(() =>
       expect($botMeta.get()['research::local']?.goal ?? $botMeta.get()['research']?.goal).toBe('Ship the release')
     )
+  })
+
+  it('lists a session’s subagents with summary and expandable steps', async () => {
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [{ id: 'sess-a', last_active: Math.floor(NOW / 1000), resolved_id: 'rt-a', title: 'Release check' }],
+      total: 1
+    })
+    request.mockImplementation(async (method: string) => {
+      if (method === 'session.history') {
+        return { messages: [] }
+      }
+
+      if (method === 'bot_context.activities' || method === 'bot_context.history') {
+        return method === 'bot_context.activities' ? { activities: [] } : { decisions: [] }
+      }
+
+      if (method === 'bot_context.subagents') {
+        return {
+          count: 1,
+          subagents: [
+            {
+              duration_ms: 1200,
+              goal: 'Research the API contract',
+              role: 'leaf',
+              session_id: 'child-1',
+              started_at: Math.floor(NOW / 1000) - 120,
+              status: 'succeeded',
+              subagent_id: 'sa-1',
+              summary: 'Read the OpenAPI file and found two endpoints.',
+              tool_calls: [{ status: 'ok', targets: { path: 'docs/openapi.yaml' }, tool: 'read_file' }]
+            }
+          ]
+        }
+      }
+
+      return { jobs: [], scoped: 'research' }
+    })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText('Subagents')).toBeTruthy()
+    expect(await screen.findByText('Research the API contract')).toBeTruthy()
+    expect(screen.getByText('Read the OpenAPI file and found two endpoints.')).toBeTruthy()
+
+    fireEvent.click(screen.getByText('Research the API contract'))
+    expect(await screen.findByText(/read file · docs\/openapi.yaml/)).toBeTruthy()
   })
 
   it('shows a clear approval history for the selected session', async () => {

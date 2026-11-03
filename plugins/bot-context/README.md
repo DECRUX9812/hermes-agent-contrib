@@ -88,6 +88,7 @@ hermes bot-context status      # settings, store path, pending count
 | `bot_context_activities` | What bots are blocked on: profile, title, session, room, the choices the host will accept, and a `legacy` projection in the Desktop group-chat wire shape. Pass `session_key` or `session_id` to list one session only; the response also carries a `sessions` summary. |
 | `bot_context_respond` | Answer one activity — `once`, `session`, `always` or `deny` — through the host queue. |
 | `bot_context_history` | Settled decisions, newest first, one row per activity. |
+| `bot_context_subagents` | Subagents delegated inside one parent session: status, summary, duration, role and their tool-call steps. |
 
 In-session slash command:
 
@@ -102,6 +103,13 @@ In-session slash command:
 hearing "denied".
 
 ## Session isolation
+
+The desktop rail also has a **Bot** tab: the bot's Computer/Screen lives there
+with its stopped/live state and the same take-over affordance as before, instead
+of a black placeholder pinned above the activity feed. Subagents are listed
+under the selected session with their goal, status, summary and expandable
+tool steps.
+
 
 An activity belongs to exactly one session. `bot_context_activities` accepts
 `session_key` or `session_id`; `bot_context_history` accepts the same filters;
