@@ -39,6 +39,7 @@ import {
   activityFor,
   activityFromHistory,
   activityFromToolEvent,
+  activityKey,
   approvalFromPrompt,
   decideInSession,
   groupByDay,
@@ -354,6 +355,14 @@ function ActivityRow({
               {activity.summary}
             </span>
           ) : null}
+          {activity.status === 'running' ? (
+            <span
+              aria-hidden="true"
+              className="mt-1 block h-0.5 overflow-hidden rounded-full bg-(--ui-inline-code-background)"
+            >
+              <span className="block h-full w-1/3 animate-pulse rounded-full bg-(--ui-accent) motion-reduce:animate-none" />
+            </span>
+          ) : null}
         </span>
         <span className="flex shrink-0 flex-col items-end gap-0.5 text-10 tabular-nums text-(--ui-text-tertiary)">
           <span>{relativeTime(activity.startedAt)}</span>
@@ -598,6 +607,7 @@ export function SessionActivityPanel({
   const s = b.sessionActivity!
   const [selectedId, setSelectedId] = useState('')
   const [limit, setLimit] = useState(20)
+  const [statusFilter, setStatusFilter] = useState<'all' | 'failed' | 'running' | 'waiting'>('all')
   const [expandedId, setExpandedId] = useState<null | string>(null)
   const [answering, setAnswering] = useState<null | string>(null)
   const [answerError, setAnswerError] = useState<null | string>(null)
@@ -625,6 +635,7 @@ export function SessionActivityPanel({
     setLimit(20)
     setExpandedId(null)
     setAnswerError(null)
+    setStatusFilter('all')
   }, [selectedId])
 
   const selected = ordered.find(session => session.id === selectedId) || null
@@ -885,8 +896,20 @@ export function SessionActivityPanel({
   }, [approvals.data, bot, resolvedId, runtimeId, selectedId])
 
   const activityStore = useValue($sessionActivity)
-  const page = activityFor(activityStore, { profile: bot, sessionId: selectedId }, limit)
-  const counts = activityCounts(page.items)
+  const ref = { profile: bot, sessionId: selectedId }
+  const sessionRows = activityFor(activityStore, ref, 100_000).items
+
+  const filtered =
+    statusFilter === 'all'
+      ? sessionRows
+      : sessionRows.filter(activity =>
+          statusFilter === 'waiting'
+            ? activity.status === 'waiting' || activity.status === 'pending'
+            : activity.status === statusFilter
+        )
+
+  const page = activityFor({ [activityKey(ref)]: filtered }, ref, limit)
+  const counts = activityCounts(sessionRows)
   const reachable = owner.sourceReachable !== false && !owner.ghost && !owner.sourceMissing
 
   const answer = async (activity: SessionActivity, choice: string) => {
@@ -1048,6 +1071,42 @@ export function SessionActivityPanel({
           {counts.waiting ? <StatusBadge status="waiting" text={s} /> : null}
           {counts.failed ? <StatusBadge status="failed" text={s} /> : null}
         </span>
+      </div>
+      <div aria-label={s.title} className="flex gap-1 overflow-x-auto px-2" role="group">
+        {(
+          [
+            [
+              'all',
+              s.all,
+              counts.running +
+                counts.waiting +
+                counts.failed +
+                (sessionRows.length - counts.running - counts.waiting - counts.failed)
+            ],
+            ['running', s.running, counts.running],
+            ['waiting', s.waiting, counts.waiting],
+            ['failed', s.failedStatus, counts.failed]
+          ] as const
+        ).map(([id, label, count]) => (
+          <button
+            aria-pressed={statusFilter === id}
+            className={cn(
+              'shrink-0 rounded-full border px-2 py-0.5 text-10 font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-(--ui-accent)',
+              statusFilter === id
+                ? 'border-(--ui-accent)/40 bg-(--ui-accent)/10 text-(--ui-text-primary)'
+                : 'border-(--ui-stroke-tertiary) text-(--ui-text-tertiary) hover:bg-(--chrome-action-hover)'
+            )}
+            key={id}
+            onClick={() => {
+              setStatusFilter(id)
+              setLimit(20)
+            }}
+            type="button"
+          >
+            {label}
+            {count ? <span className="ml-1 tabular-nums">{count}</span> : null}
+          </button>
+        ))}
       </div>
 
       {history.isLoading && !page.total ? (

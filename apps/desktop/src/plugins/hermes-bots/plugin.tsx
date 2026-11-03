@@ -22,12 +22,15 @@ import {
   host,
   LocalizedTabTitle,
   PALETTE_AREA,
+  ROUTES_AREA,
+  SIDEBAR_NAV_AREA,
   SIDEBAR_PROFILE_GROUP_HEADER_AREA,
   translateNow
 } from '@hermes/plugin-sdk'
 import type { ChatEmptyProps, PluginContext, ProfileGroupRoute } from '@hermes/plugin-sdk'
 
 import { startFaceClock, stopFaceClock } from './avatar'
+import { BotContextMode } from './bot-context-mode'
 import { BotContextPanel } from './bot-context-panel'
 import { BotModeBoundary } from './bot-mode-boundary'
 import {
@@ -486,6 +489,35 @@ export default {
         }
       },
       render: () => <BotsPane />
+    })
+
+    // Bot Context mode — the unified bots + sessions doorway. A page, not a
+    // pane: it is the navigation surface for every bot and its sessions, with
+    // the context rail beside it.
+    ctx.register({
+      id: 'bot-context-mode',
+      area: ROUTES_AREA,
+      data: { path: '/bot-context' },
+      title: 'Bot Context',
+      render: () => <BotContextMode />
+    })
+
+    ctx.register({
+      id: 'bot-context-nav',
+      area: SIDEBAR_NAV_AREA,
+      order: 14,
+      data: { codicon: 'hubot', label: 'Bot Context', path: '/bot-context' }
+    })
+
+    ctx.register({
+      id: 'bot-context-open',
+      area: PALETTE_AREA,
+      data: {
+        id: 'hermes-bots.bot-context',
+        label: 'Bot Context',
+        keywords: ['bot', 'context', 'sessions', 'subagents', 'approvals'],
+        run: () => host.navigate('/bot-context')
+      }
     })
 
     // Routines — its OWN tiling pane splitting the workspace's right edge

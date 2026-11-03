@@ -33,6 +33,7 @@ export type SessionActivityMessages = {
   seeAll: string
   subagents: string
   showDetails: string
+  all: string
   hideDetails: string
   answer: string
   answering: string
@@ -45,7 +46,20 @@ export type SessionActivityMessages = {
   sessionsLabel: string
 }
 
+export type BotContextModeMessages = {
+  title: string
+  heading: string
+  openBotMode: string
+  searchLabel: string
+  searchPlaceholder: string
+  noMatch: (query: string) => string
+  noSessions: string
+  introTitle: string
+  introBody: string
+}
+
 export type BotsMessages = {
+  mode: BotContextModeMessages
   sessionActivity: SessionActivityMessages
   canonical: { [K in keyof CanonicalGroupMessages]: string }
   /** Left rail: the bot + group-chat roster. */

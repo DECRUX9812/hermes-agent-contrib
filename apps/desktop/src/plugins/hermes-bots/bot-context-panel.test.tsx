@@ -270,7 +270,7 @@ describe('bot context panel', () => {
     expect(screen.getByText('Launch kit now uses Hook 3 everywhere, synced to ~/Code.')).toBeTruthy()
     expect(screen.queryByText(/todo/i)).toBeNull()
     expect(screen.queryByText(/memory/i)).toBeNull()
-    expect(screen.queryByText('Failed')).toBeNull()
+    expect(screen.queryByText('Failed', { selector: 'span' })).toBeNull()
     expect(screen.queryByText('read_file')).toBeNull()
 
     fireEvent.click(screen.getByText('Update the launch kit'))
@@ -383,6 +383,60 @@ describe('bot context panel', () => {
     await vi.waitFor(() =>
       expect($botMeta.get()['research::local']?.goal ?? $botMeta.get()['research']?.goal).toBe('Ship the release')
     )
+  })
+
+  it('filters the activity feed by status without changing the session', async () => {
+    listPersistedSessions.mockResolvedValue({
+      limit: 25,
+      offset: 0,
+      sessions: [{ id: 'sess-a', last_active: Math.floor(NOW / 1000), resolved_id: 'rt-a', title: 'Release check' }],
+      total: 1
+    })
+    request.mockImplementation(async (method: string) => {
+      if (method === 'session.history') {
+        return {
+          messages: [
+            { role: 'user', text: 'Publish the package', timestamp: Math.floor(NOW / 1000) - 60 },
+            {
+              context: 'npm publish',
+              error: 'permission denied',
+              name: 'terminal',
+              role: 'tool',
+              timestamp: Math.floor(NOW / 1000) - 50
+            },
+            { role: 'assistant', text: 'Publish failed: permission denied.', timestamp: Math.floor(NOW / 1000) - 40 },
+            { role: 'user', text: 'Run the checks', timestamp: Math.floor(NOW / 1000) - 30 },
+            { context: 'npm test', name: 'terminal', role: 'tool', timestamp: Math.floor(NOW / 1000) - 20 },
+            { role: 'assistant', text: 'Checks passed.', timestamp: Math.floor(NOW / 1000) - 10 }
+          ]
+        }
+      }
+
+      if (method === 'bot_context.activities') {
+        return { activities: [] }
+      }
+
+      if (method === 'bot_context.history') {
+        return { decisions: [] }
+      }
+
+      if (method === 'bot_context.subagents') {
+        return { subagents: [] }
+      }
+
+      return { jobs: [], scoped: 'research' }
+    })
+
+    renderPanel()
+    act(() => $lastRoster.set([{ connectionId: 'local', name: 'research' }]))
+
+    expect(await screen.findByText('Publish the package')).toBeTruthy()
+    expect(screen.getByText('Run the checks')).toBeTruthy()
+
+    fireEvent.click(screen.getByRole('button', { name: /^Failed/ }))
+
+    expect(await screen.findByText('Publish the package')).toBeTruthy()
+    expect(screen.queryByText('Run the checks')).toBeNull()
   })
 
   it('lists a session’s subagents with summary and expandable steps', async () => {

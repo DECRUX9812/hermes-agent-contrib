@@ -38,6 +38,18 @@ import { type BotsMessages } from './i18n-messages'
 import { getPluginCtx } from './shared'
 
 const en: BotsMessages = {
+  mode: {
+    title: 'Bot Context',
+    heading: 'Bots & sessions',
+    openBotMode: 'Open Bot Mode',
+    searchLabel: 'Search bots and sessions',
+    searchPlaceholder: 'Search a bot or session',
+    noMatch: query => `No bots or sessions match “${query}”.`,
+    noSessions: 'No sessions yet',
+    introTitle: 'One mode for bots and their sessions',
+    introBody:
+      'Pick a bot or a session. The context rail on the right follows it — avatar, activity, subagents, approvals and the Bot screen tab.'
+  },
   sessionActivity: {
     title: 'Session activity',
     pickSession: 'Choose a session',
@@ -70,6 +82,7 @@ const en: BotsMessages = {
     scheduledTasks: 'Scheduled tasks',
     subagents: 'Subagents',
     showDetails: 'Show technical details',
+    all: 'All',
     hideDetails: 'Hide technical details',
     seeAll: 'See all',
     openChat: 'Open chat',
@@ -605,6 +618,18 @@ const en: BotsMessages = {
 }
 
 const ja: BotsMessages = {
+  mode: {
+    title: 'Bot Context',
+    heading: 'ボットとセッション',
+    openBotMode: 'Bot Mode を開く',
+    searchLabel: 'ボットとセッションを検索',
+    searchPlaceholder: 'ボットまたはセッションを検索',
+    noMatch: query => `「${query}」に一致するボットやセッションはありません。`,
+    noSessions: 'セッションはまだありません',
+    introTitle: 'ボットとセッションのためのモード',
+    introBody:
+      'ボットまたはセッションを選択してください。右側のコンテキストレールが、アバター、アクティビティ、サブエージェント、承認、Bot 画面タブを表示します。'
+  },
   sessionActivity: {
     title: 'セッションのアクティビティ',
     pickSession: 'セッションを選択',
@@ -637,6 +662,7 @@ const ja: BotsMessages = {
     scheduledTasks: 'スケジュールされたタスク',
     subagents: 'サブエージェント',
     showDetails: '技術的な詳細を表示',
+    all: 'すべて',
     hideDetails: '技術的な詳細を隠す',
     seeAll: 'すべて見る',
     openChat: 'チャットを開く',
@@ -1175,6 +1201,17 @@ const ja: BotsMessages = {
 }
 
 const zh: BotsMessages = {
+  mode: {
+    title: 'Bot Context',
+    heading: '机器人与会话',
+    openBotMode: '打开 Bot Mode',
+    searchLabel: '搜索机器人和会话',
+    searchPlaceholder: '搜索机器人或会话',
+    noMatch: query => `没有匹配“${query}”的机器人或会话。`,
+    noSessions: '还没有会话',
+    introTitle: '机器人与会话的统一模式',
+    introBody: '选择一个机器人或会话。右侧上下文栏会显示头像、活动、子代理、审批和机器人屏幕标签。'
+  },
   sessionActivity: {
     title: '会话活动',
     pickSession: '选择会话',
@@ -1207,6 +1244,7 @@ const zh: BotsMessages = {
     scheduledTasks: '计划任务',
     subagents: '子代理',
     showDetails: '显示技术细节',
+    all: '全部',
     hideDetails: '隐藏技术细节',
     seeAll: '查看全部',
     openChat: '打开聊天',
@@ -1724,6 +1762,17 @@ const zh: BotsMessages = {
 }
 
 const zhHant: BotsMessages = {
+  mode: {
+    title: 'Bot Context',
+    heading: '機器人與工作階段',
+    openBotMode: '開啟 Bot Mode',
+    searchLabel: '搜尋機器人與工作階段',
+    searchPlaceholder: '搜尋機器人或工作階段',
+    noMatch: query => `沒有符合「${query}」的機器人或工作階段。`,
+    noSessions: '尚無工作階段',
+    introTitle: '機器人與工作階段的統一模式',
+    introBody: '選擇一個機器人或工作階段。右側內容欄會顯示頭像、活動、子代理、核准和機器人螢幕標籤。'
+  },
   sessionActivity: {
     title: '工作階段活動',
     pickSession: '選擇工作階段',
@@ -1756,6 +1805,7 @@ const zhHant: BotsMessages = {
     scheduledTasks: '排程任務',
     subagents: '子代理',
     showDetails: '顯示技術細節',
+    all: '全部',
     hideDetails: '隱藏技術細節',
     seeAll: '查看全部',
     openChat: '開啟聊天',

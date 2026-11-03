@@ -827,6 +827,9 @@ export function BotContextPanel() {
             truncates. Without shrink-0 the buttons compressed first, so the
             footer read "Open chat …" — a label clipped by its own row. */}
         <div className="flex shrink-0 items-center gap-1">
+          <Button onClick={() => host.navigate('/bot-context')} size="sm" variant="ghost">
+            {b.mode.title}
+          </Button>
           {owner ? (
             <Button onClick={() => setEditing(owner)} size="sm" variant="ghost">
               {b.bot.editMenu}
