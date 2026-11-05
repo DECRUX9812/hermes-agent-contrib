@@ -10,10 +10,20 @@ description: >-
   can), a per-rail power budget with wire gauge and a fuse that never exceeds its
   wire, an ESP32 pin map that refuses strapping and flash pins, firmware generated
   from that same map, and a priced BOM with SKUs, mass, print time and per-part STL
-  packs split to fit your printer bed. The board track designs a controller board
-  with placements, solder verdicts and a fab/assembly pack (BOM + centroid + spec).
-  Every headline number opens into the formula that made it, any change can be
-  compared before/after, and a build code carries the whole design in one line.
+  packs split to fit your printer bed. Before you print anything, the test bench
+  drives it: WASD/gamepad/touch teleop for wheels, IK arms, legged gait and
+  grippers, joints slewing at real servo speeds with stall, thermal cutoff and
+  battery sag, traction on hardwood to wet ice, porch stairs, a living-room
+  course, and AUTO certification scoring every maneuver — with a break→fix line
+  when something fails. DFM runs on the exact triangles the STL pack ships:
+  overhang needs support, narrow footprints want a brim, and servo lead runs are
+  measured joint-to-home so extension leads land in the BOM before they are
+  needed. Exports include per-part STL, a named-body 3MF for the slicer bed,
+  OpenSCAD modules, URDF/MJCF, BOM CSV, CPL and firmware. The board track
+  designs a controller board with placements, solder verdicts and a
+  fab/assembly pack (BOM + centroid + spec). Every headline number opens into
+  the formula that made it, any change can be compared before/after, and a
+  build code carries the whole design in one line.
   Ten archetypes from a sensor node to a metre-scale gantry. Deterministic and
   fully offline — every number is computed, never narrated. Two agent tools
   (rigforge_build, rigforge_state) queue a build and read the spec back, plus
