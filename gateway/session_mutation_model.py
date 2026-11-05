@@ -30,12 +30,17 @@ def _current_route(authority, live, old):
     from gateway.session_policy import profile_read_scope
     from hermes_cli.auth import AuthError
     with profile_read_scope(old, authority):
-        config = old.config(authority)
+        try:
+            config = old.config(authority)
+        except RuntimeStoreError as exc:
+            if exc.reason != 'launch_credentials_unavailable':
+                raise
+            config = old.config(authority, secrets=False)
         block = config.get('model') or {}
         try:
             model, runtime = authority.runner._resolve_session_agent_runtime(
                 source=live.source, session_key=live.route, fallback=False)
-        except AuthError:
+        except Exception:
             return config, _Route(block.get('provider') or '', old.current_model(authority) or '',
                                   block.get('base_url') or '', '')
     return config, _Route(block.get('provider') or runtime.get('provider') or '', model or '',
@@ -75,7 +80,7 @@ async def prepare_model(authority, live, payload, prepared):
         authority, live, payload, prepared['snapshot'], current, result)
     if refusal is not None:
         return refusal
-    frozen = old.config()
+    frozen = old.config(secrets=False)
     # The committed selection freezes the ONE picked endpoint (its key stays a private secret).
     provider_secrets, retired, moved = ({}, (), {}) if old.follows_profile else _freeze_selected_provider(
         resolution, frozen, result.target_provider)
@@ -125,7 +130,12 @@ async def prepare_model(authority, live, payload, prepared):
         frozen['model'].pop('api_key_from', None)
     # Creation identity (request_json) remains immutable; runtime selection lives in the policy.
     policy = replace(old, model=result.new_model, config_json=json.dumps(frozen))
-    secrets = recover_config_secrets(authority, old) if old.config_secret_ref else {}
+    try:
+        secrets = recover_config_secrets(authority, old) if old.config_secret_ref else {}
+    except RuntimeStoreError as exc:
+        if exc.reason != 'launch_credentials_unavailable':
+            raise
+        secrets = {}
     # The picked entry's private subtree is replaced whole: a key or header its current declaration
     # withdrew must not follow it to the new endpoint.
     # An unrelated entry the pick displaced carries its own secrets to its new index.

@@ -31,11 +31,13 @@ def _route_paths(policy):
     """Secret paths the session's own route authenticates with: its ``model:`` block, a direct alias's
     key (``api_key_from``) and the one ``providers:`` / ``custom_providers:`` entry the runtime's own
     named-provider selection routes its provider through."""
+    from hermes_cli.config import _SECRET_CONFIG_KEYS
     from hermes_cli.runtime_provider_custom import (custom_provider_config_path_for_url,
                                                     named_custom_provider_config_path)
     config = json.loads(policy.config_json)
     model = config.get('model') if isinstance(config.get('model'), dict) else {}
-    paths = {('model', key) for key in model}
+    _cred_keys = _SECRET_CONFIG_KEYS | {'key_env', 'api_key_env'}
+    paths = {('model', key) for key in model if str(key).lower() in _cred_keys}
     if isinstance(model.get('api_key_from'), list):
         paths.add(tuple(model['api_key_from']))
     provider = str(model.get('provider') or '')
@@ -45,8 +47,8 @@ def _route_paths(policy):
     else:
         selected = named_custom_provider_config_path(provider, config)
     entry = _defined(config, selected) if selected else _ABSENT
-    if isinstance(entry, dict):
-        paths |= {selected + (field,) for field in entry}
+    if selected and isinstance(entry, dict):
+        paths |= {selected + (field,) for field in entry if str(field).lower() in _cred_keys}
     return paths
 
 
@@ -278,6 +280,23 @@ def recover_config_secrets(authority, policy, skip=None):
             value = _defined(value, lookup)
             actual = None if value is _ABSENT else _fingerprint(value)
             if actual is None or not hmac.compare_digest(actual, fingerprint):
+                if value is _ABSENT and len(lookup) > 1:
+                    block = _defined(config, lookup[:-1])
+                    if isinstance(block, dict):
+                        field = str(lookup[-1]).lower()
+                        if field in ('api_key', 'apikey', 'key'):
+                            from hermes_cli.runtime_provider_custom import _key_env_secret
+                            resolved = _key_env_secret(block, 'recover_config_secrets')
+                            fp = _fingerprint(resolved) if resolved else None
+                            if fp and hmac.compare_digest(fp, fingerprint):
+                                values[tuple(path)] = resolved
+                                continue
+                        elif field in ('key_env', 'api_key_env'):
+                            inline = block.get('api_key') or block.get('apikey') or block.get('key')
+                            fp = _fingerprint(inline) if inline else None
+                            if fp and hmac.compare_digest(fp, fingerprint):
+                                values[tuple(path)] = inline
+                                continue
                 if route is None:
                     route = _route_paths(policy)
                 if tuple(path) in route:
