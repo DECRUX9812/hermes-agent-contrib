@@ -1,0 +1,76 @@
+name: hermes-notebook
+repo: https://github.com/DECRUX9812/hermes-plugin-notebook
+sha: "7350d798390cb12ae4c45842dddcfe7f73a311ce"
+version: "0.1.0"
+title: Hermes Notebook
+description: >-
+  NotebookLM-style notebooks for Hermes — full parity plus Hermes-native
+  extras. Gather sources (local files, PDFs, Office docs, web pages, YouTube
+  videos, pasted text, images described by vision, user notes), then ask
+  questions answered ONLY from those sources with [S1] citations mapped back
+  to source titles — with chat threads for follow-ups. Every source is
+  auto-labeled with topic tags + a one-line summary, duplicates are detected
+  by content hash, and notebook_suggest recommends questions, artifacts and
+  gaps. notebook_search does ranked full-text lookup; notebook_discover finds
+  candidate web sources; notebook_refresh re-pulls changed sources;
+  notebook_update/notebook_export/notebook_delete_source manage the notebook.
+  notebook_generate writes study artifacts — summary, briefing doc, study
+  guide, FAQ, timeline, mind map (markdown + Mermaid + JSON), flashcards
+  (markdown or Anki-importable CSV), quiz, slide deck (self-contained HTML)
+  and infographic (PNG). notebook_audio produces a two-host conversational
+  podcast overview and notebook_video a cinematic narrated mp4 (cinematic or
+  explainer style), both with transcripts. Ships a /notebook slash command,
+  a `hermes notebook` CLI, a bundled skill teaching grounded-research
+  workflow, and an auxiliary task slot for cheap labeling calls. All state
+  lives under $HERMES_HOME/plugin-data/hermes-notebook/ per profile.
+  Disclosure — notebook_add_source/ask/generate/audio/suggest make host-owned
+  LLM calls through ctx.llm on the user's active model (labeling first tries
+  the plugin's auxiliary.notebook slot, then falls back); web pages go
+  through the built-in web_extract tool with a direct-fetch fallback that
+  refuses private-network addresses; notebook_discover uses the built-in
+  web_search tool; YouTube sources fetch public transcripts; audio/video
+  synthesis calls the edge-tts service; ffmpeg must be on PATH for
+  audio/video; infographic/slide rendering uses Pillow.
+maintainer: DECRUX9812
+tier: community
+category: tools
+requires_hermes: ">=0.22"
+docs_url: https://github.com/DECRUX9812/hermes-plugin-notebook/blob/7350d798390cb12ae4c45842dddcfe7f73a311ce/README.md
+readme: true
+image: https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/7350d798390cb12ae4c45842dddcfe7f73a311ce/assets/banner.png
+screenshots:
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/7350d798390cb12ae4c45842dddcfe7f73a311ce/assets/shot-01-video-title.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/7350d798390cb12ae4c45842dddcfe7f73a311ce/assets/shot-02-video-beat.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/7350d798390cb12ae4c45842dddcfe7f73a311ce/assets/shot-03-audio.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/7350d798390cb12ae4c45842dddcfe7f73a311ce/assets/shot-04-ask.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/7350d798390cb12ae4c45842dddcfe7f73a311ce/assets/shot-05-sources.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/7350d798390cb12ae4c45842dddcfe7f73a311ce/assets/shot-06-artifacts.png
+platforms: [linux, macos, windows]
+capabilities:
+  provides_tools:
+    - notebook_list
+    - notebook_create
+    - notebook_add_source
+    - notebook_ask
+    - notebook_generate
+    - notebook_audio
+    - notebook_video
+    - notebook_suggest
+    - notebook_search
+    - notebook_note
+    - notebook_refresh
+    - notebook_delete_source
+    - notebook_update
+    - notebook_export
+    - notebook_discover
+    - notebook_delete
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []
+known_issues:
+  - "Audio/video overviews synthesize per-segment with edge-tts (network required) and need ffmpeg on PATH (plus Pillow for video cards); a ~5-minute episode takes 1-3 minutes end to end."
+  - "Context is bounded: ask_context_chars (default 28000) and podcast_context_chars (default 42000) cap source text per call; very large notebooks rely on head+tail digests for generation."
+  - "PDF extraction needs the declared pypdf dependency; scanned/image-only PDFs have no text layer and are rejected with guidance."
+  - "YouTube sources need public captions (youtube-transcript-api); region-locked or caption-less videos fail with a clear error."
+  - "Source auto-labeling prefers the auxiliary.notebook slot (inherits compression by default) and falls back to the main model when the aux route returns non-JSON — labels are best-effort and never block ingestion."
+  - "Image sources are described by the vision-capable main model via ctx.llm; a text-only model config degrades to an extraction error, not a crash."
