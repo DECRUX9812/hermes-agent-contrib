@@ -1,6 +1,6 @@
 name: rigforge
 repo: https://github.com/DECRUX9812/rigforge-plugin
-sha: fd7486b
+sha: e4492ac
 title: Rigforge
 description: >-
   A build studio for robots, printed machines and controller boards, inside Hermes
@@ -40,6 +40,8 @@ description: >-
   spec-driven 'custom' archetype where the brief's nodes[]/joints[] IS the
   machine (any primitive on any joint chain, servos sized from measured
   gravity torque, IK/gantry teleop self-selected when the spec qualifies).
+  BOM electronics are modelled as placed parts — controllers, IMUs and
+  distance sensors sit where a real build would mount them.
   Deterministic and fully offline — every number is computed, never narrated.
   Two agent tools
   (rigforge_build, rigforge_state) queue a build and read the spec back, plus
