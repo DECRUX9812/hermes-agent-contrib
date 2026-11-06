@@ -1,6 +1,6 @@
 name: rigforge
 repo: https://github.com/DECRUX9812/rigforge-plugin
-sha: 128db5c
+sha: 5f921c5
 title: Rigforge
 description: >-
   A build studio for robots, printed machines and controller boards, inside Hermes
@@ -11,8 +11,10 @@ description: >-
   wire, an ESP32 pin map that refuses strapping and flash pins, firmware generated
   from that same map, and a priced BOM with SKUs, mass, print time and per-part STL
   packs split to fit your printer bed. Before you print anything, the test bench
-  drives it: WASD/gamepad/touch teleop for wheels, IK arms, legged gait and
-  grippers, joints slewing at real servo speeds with stall, thermal cutoff and
+  drives it: WASD/gamepad/touch teleop for wheels, IK arms, legged gait,
+  grippers and the gantry's three chained slide axes (portal/saddle/quill at
+  real belt and leadscrew speeds), joints slewing at real servo speeds with
+  stall, thermal cutoff and
   battery sag, traction on hardwood to wet ice, porch stairs, a living-room
   course, and AUTO certification scoring every maneuver — with a break→fix line
   when something fails — and every failure lands in the fixes panel as an
