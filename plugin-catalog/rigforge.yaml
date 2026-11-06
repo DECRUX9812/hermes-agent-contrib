@@ -1,6 +1,6 @@
 name: rigforge
 repo: https://github.com/DECRUX9812/rigforge-plugin
-sha: 5cd1fcb
+sha: 4439246
 title: Rigforge
 description: >-
   A build studio for robots, printed machines and controller boards, inside Hermes
@@ -53,13 +53,13 @@ tier: community
 category: desktop
 version: "1.2.0"
 docs_url: https://github.com/DECRUX9812/rigforge-plugin#readme
-image: https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/5cd1fcb54f2c041f25cdd3a2d223669989a649f7/docs/screenshots/hero.png
+image: https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/4439246ed20f80cf418883cec375859a1c2385c6/docs/screenshots/hero.png
 screenshots:
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/5cd1fcb54f2c041f25cdd3a2d223669989a649f7/docs/screenshots/quad.png
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/5cd1fcb54f2c041f25cdd3a2d223669989a649f7/docs/screenshots/gripper.png
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/5cd1fcb54f2c041f25cdd3a2d223669989a649f7/docs/screenshots/board.png
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/5cd1fcb54f2c041f25cdd3a2d223669989a649f7/docs/screenshots/audit.png
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/5cd1fcb54f2c041f25cdd3a2d223669989a649f7/docs/screenshots/compare.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/4439246ed20f80cf418883cec375859a1c2385c6/docs/screenshots/quad.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/4439246ed20f80cf418883cec375859a1c2385c6/docs/screenshots/gripper.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/4439246ed20f80cf418883cec375859a1c2385c6/docs/screenshots/board.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/4439246ed20f80cf418883cec375859a1c2385c6/docs/screenshots/audit.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/4439246ed20f80cf418883cec375859a1c2385c6/docs/screenshots/compare.png
 platforms:
   - linux
   - macos
