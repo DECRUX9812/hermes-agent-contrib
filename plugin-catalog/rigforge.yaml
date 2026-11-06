@@ -33,8 +33,12 @@ description: >-
   fab/assembly pack (BOM + centroid + spec). Every headline number opens into
   the formula that made it, any change can be compared before/after, and a
   build code carries the whole design in one line.
-  Ten archetypes from a sensor node to a metre-scale gantry. Deterministic and
-  fully offline — every number is computed, never narrated. Two agent tools
+  Ten preset archetypes from a sensor node to a metre-scale gantry — plus a
+  spec-driven 'custom' archetype where the brief's nodes[]/joints[] IS the
+  machine (any primitive on any joint chain, servos sized from measured
+  gravity torque, IK/gantry teleop self-selected when the spec qualifies).
+  Deterministic and fully offline — every number is computed, never narrated.
+  Two agent tools
   (rigforge_build, rigforge_state) queue a build and read the spec back, plus
   rigforge_prices for live supplier pricing; a ::rigforge{...} transcript directive
   turns a chat line into a "load into studio" card. Desktop page plus agent tools;
