@@ -15,11 +15,18 @@ description: >-
   grippers, joints slewing at real servo speeds with stall, thermal cutoff and
   battery sag, traction on hardwood to wet ice, porch stairs, a living-room
   course, and AUTO certification scoring every maneuver — with a break→fix line
-  when something fails. DFM runs on the exact triangles the STL pack ships:
-  overhang needs support, narrow footprints want a brim, and servo lead runs are
-  measured joint-to-home so extension leads land in the BOM before they are
-  needed. Exports include per-part STL, a named-body 3MF for the slicer bed,
-  OpenSCAD modules, URDF/MJCF, BOM CSV, CPL and firmware. The board track
+  when something fails — and every failure lands in the fixes panel as an
+  applyable patch where the mechanism is real. Named pose presets (stow,
+  carry, wave, prowl) IK onto the live machine, and a joint-load heat overlay
+  colours each pivot by measured load/stall. DFM runs on the exact triangles
+  the STL pack ships: bed-fit, honest plate packing with per-plate 3MFs and a
+  part→plate map, overhang needs support, narrow footprints want a brim, wall
+  thickness is raycast-measured, and servo lead runs are measured
+  joint-to-home so extension leads land in the BOM before they are needed.
+  Exports cover every downstream tool: per-part STL packs with a measured
+  build README, plate-ready 3MFs, glTF for engines, STEP solids for
+  Fusion/SolidWorks, OpenSCAD modules, URDF/MJCF for simulators, BOM/CPL
+  CSVs, spec markdown and JSON, build codes and firmware. The board track
   designs a controller board with placements, solder verdicts and a
   fab/assembly pack (BOM + centroid + spec). Every headline number opens into
   the formula that made it, any change can be compared before/after, and a
