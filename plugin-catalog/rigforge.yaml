@@ -1,6 +1,6 @@
 name: rigforge
 repo: https://github.com/DECRUX9812/rigforge-plugin
-sha: 8aeb9c4
+sha: 2cd8d81
 title: Rigforge
 description: >-
   A build studio for robots, printed machines and controller boards, inside Hermes
@@ -23,8 +23,10 @@ description: >-
   colours each pivot by measured load/stall. DFM runs on the exact triangles
   the STL pack ships: bed-fit, honest plate packing with per-plate 3MFs and a
   part→plate map, overhang needs support, narrow footprints want a brim, wall
-  thickness is raycast-measured, and servo lead runs are measured
-  joint-to-home so extension leads land in the BOM before they are needed.
+  thickness is raycast-measured, printed parts that would occupy the same
+  volume at assembly are flagged before you print, and servo lead runs are
+  measured joint-to-home so extension leads land in the BOM before they are
+  needed.
   Exports cover every downstream tool: per-part STL packs with a measured
   build README, plate-ready 3MFs, glTF for engines, STEP solids for
   Fusion/SolidWorks, OpenSCAD modules, URDF/MJCF for simulators, BOM/CPL
