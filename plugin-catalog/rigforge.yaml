@@ -1,6 +1,6 @@
 name: rigforge
 repo: https://github.com/DECRUX9812/rigforge-plugin
-sha: d9b3c45
+sha: fc301bc0ac4f05c643d121b1e1ca773fb0040102
 title: Rigforge
 description: >-
   A build studio for robots, printed machines and controller boards, inside Hermes
@@ -53,13 +53,13 @@ tier: community
 category: desktop
 version: "1.2.0"
 docs_url: https://github.com/DECRUX9812/rigforge-plugin#readme
-image: https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/d9b3c45c1f15308bcb6ba34e8e4df3dff7c07d8e/docs/screenshots/hero.png
+image: https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/fc301bc0ac4f05c643d121b1e1ca773fb0040102/docs/screenshots/hero.png
 screenshots:
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/d9b3c45c1f15308bcb6ba34e8e4df3dff7c07d8e/docs/screenshots/quad.png
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/d9b3c45c1f15308bcb6ba34e8e4df3dff7c07d8e/docs/screenshots/gripper.png
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/d9b3c45c1f15308bcb6ba34e8e4df3dff7c07d8e/docs/screenshots/board.png
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/d9b3c45c1f15308bcb6ba34e8e4df3dff7c07d8e/docs/screenshots/audit.png
-  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/d9b3c45c1f15308bcb6ba34e8e4df3dff7c07d8e/docs/screenshots/compare.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/fc301bc0ac4f05c643d121b1e1ca773fb0040102/docs/screenshots/quad.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/fc301bc0ac4f05c643d121b1e1ca773fb0040102/docs/screenshots/gripper.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/fc301bc0ac4f05c643d121b1e1ca773fb0040102/docs/screenshots/board.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/fc301bc0ac4f05c643d121b1e1ca773fb0040102/docs/screenshots/audit.png
+  - https://raw.githubusercontent.com/DECRUX9812/rigforge-plugin/fc301bc0ac4f05c643d121b1e1ca773fb0040102/docs/screenshots/compare.png
 platforms:
   - linux
   - macos
