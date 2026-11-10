@@ -1,0 +1,37 @@
+name: delayclaim
+repo: https://github.com/DECRUX9812/hermes-plugin-delayclaim
+sha: 7b47b51c19e09dbf323f591446d55abeab09c773
+title: Delayclaim
+description: 'EU261/UK261 flight compensation, computed and tracked. Given the route, the scheduled and actual
+  arrival and the party size, delayclaim measures the great-circle distance from a bundled offline table of
+  7,918 airports (connections summed, Article 7(1)), applies the Article 7 distance band (EUR 250/400/600, or
+  GBP 220/350/520), the three-hour Sturgeon threshold, the fourteen-day cancellation window and the
+  extraordinary-circumstances defence, and returns the amount per passenger and for the party with the
+  articles it relied on. It then drafts the formal claim letter and keeps a local case file with the
+  enforcement follow-up and the two-year limitation date. The engine is deterministic and offline: the verdict
+  is computed, never narrated, so the same flight always produces the same figure. Six tools, no hooks,
+  middleware or env vars. Disclosure — no network calls, no Python dependencies and no subprocess: it reads
+  its own bundled airport and country tables, writes drafts and case rows under plugin-data/delayclaim/, and
+  sends nothing to an airline; you review and send the letter yourself.'
+maintainer: DECRUX9812
+tier: community
+category: tools
+requires_hermes: ">=0.22"
+version: "1.0.0"
+docs_url: https://github.com/DECRUX9812/hermes-plugin-delayclaim#readme
+image: https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-delayclaim/7b47b51c19e09dbf323f591446d55abeab09c773/docs/screenshots/hero.png
+platforms:
+  - linux
+  - macos
+  - windows
+capabilities:
+  provides_tools:
+    - delayclaim_assess
+    - delayclaim_letter
+    - delayclaim_case_open
+    - delayclaim_case_update
+    - delayclaim_case_list
+    - delayclaim_airport
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []
