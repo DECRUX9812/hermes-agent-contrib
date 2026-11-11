@@ -1,0 +1,91 @@
+# Catalog entry draft — copy to plugin-catalog/hermes-notebook.yaml in a
+# hermes-agent PR at competition submission time.
+#
+# BEFORE SUBMITTING: replace the sha below with the full 40-char SHA of the
+# plugin repo commit you want catalog installs to check out, and rewrite every
+# raw.githubusercontent URL to use the same SHA:
+#   cd hermes-plugin-notebook && git rev-parse HEAD
+# The pinned commit must contain the final code AND the screenshots — anything
+# committed after the pin is NOT what users install or see.
+
+name: hermes-notebook
+repo: https://github.com/DECRUX9812/hermes-plugin-notebook
+sha: "187849b78c098e31fa06423a2e4b3963f52ff57e"
+version: "2.0.0"
+title: Hermes Notebook
+category: desktop
+description: >-
+  A research studio inside Hermes Desktop: sources in, cited answers and
+  studio artifacts out. Add files, PDFs, Office docs, EPUB, images, audio and
+  video recordings (Whisper), web pages, YouTube and pasted text, or find
+  sources on the web without leaving the page; every source is auto-labelled
+  and deduplicated on ingest. Ask in as many named threads as you like —
+  answers come only from the sources, with stable [S1] citations that carry
+  the passage they were built from, and every answer shows its cost receipt.
+  Tensions audits where the sources disagree — quoted conflicts with a
+  measured independence count (8 sources, 7 independent) plus a stable-ground
+  consensus. Studio outputs: audio overviews in four formats (two-host, real
+  waveform + transcript), narrated video overviews, mind maps, flashcards,
+  quizzes, real .pptx slide decks, .xlsx/.csv data tables, briefing docs,
+  timelines — and infographics that verify every printed figure against its
+  cited source and show a Checked panel of what was verified, re-cited and
+  dropped. Study mode schedules reviews with SM-2 spaced repetition. Agent
+  half: 19 tools (list/create/add_source/ask/generate/audio/video/suggest/
+  search/note/refresh/delete_source/update/export/discover/study/tensions/
+  threads/delete), a /notebook slash command, a hermes notebook CLI, a bundled
+  skill and an auxiliary.notebook slot for cheap labelling + history
+  compaction. Backend routes under /api/plugins/hermes-notebook/ including
+  /progress + /cancel for long jobs. Disclosure — add_source/ask/generate/
+  audio/video/suggest/tensions make host-owned LLM calls through ctx.llm on
+  the user's active model (verified on small local and mid-size hosted
+  models); web pages go through web_extract with a direct-fetch fallback that
+  refuses private-network addresses; discover uses the host web_search or an
+  EXA/TAVILY key; YouTube sources fetch public transcripts; audio/video
+  synthesis calls edge-tts (ffmpeg on PATH, Pillow for cards); agent actions
+  route through the host MCP gate; read-only in-memory SQL for data tables;
+  long jobs are cooperatively cancellable; no shell commands issued.
+maintainer: DECRUX9812
+tier: community
+requires_hermes: ">=0.22"
+docs_url: https://github.com/DECRUX9812/hermes-plugin-notebook/blob/187849b78c098e31fa06423a2e4b3963f52ff57e/README.md
+readme: true
+image: https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/187849b78c098e31fa06423a2e4b3963f52ff57e/assets/banner.png
+screenshots:
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/187849b78c098e31fa06423a2e4b3963f52ff57e/assets/shot-01-studio.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/187849b78c098e31fa06423a2e4b3963f52ff57e/assets/shot-02-tensions.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/187849b78c098e31fa06423a2e4b3963f52ff57e/assets/shot-03-infographic.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/187849b78c098e31fa06423a2e4b3963f52ff57e/assets/shot-04-audio.png
+  - https://raw.githubusercontent.com/DECRUX9812/hermes-plugin-notebook/187849b78c098e31fa06423a2e4b3963f52ff57e/assets/shot-05-study.png
+platforms: [linux, macos, windows]
+capabilities:
+  provides_tools:
+    - notebook_list
+    - notebook_create
+    - notebook_add_source
+    - notebook_ask
+    - notebook_generate
+    - notebook_audio
+    - notebook_video
+    - notebook_suggest
+    - notebook_search
+    - notebook_note
+    - notebook_refresh
+    - notebook_delete_source
+    - notebook_update
+    - notebook_export
+    - notebook_discover
+    - notebook_delete
+    - notebook_study
+    - notebook_tensions
+    - notebook_threads
+  provides_hooks: []
+  provides_middleware: []
+  requires_env: []
+known_issues:
+  - "The desktop half needs the agent half enabled in the same profile: the page renders from /api/plugins/hermes-notebook/state, and Ask/Generate answer 503 with an explicit sentence until the plugin is registered in that gateway (enable it, restart the gateway, reload the window)."
+  - "Audio/video overviews synthesize per-segment with edge-tts (network required) and need ffmpeg on PATH (plus Pillow for video cards); a ~5-minute episode takes 1-3 minutes end to end."
+  - "Context is bounded: ask_context_chars (default 16000) and podcast_context_chars (default 42000) cap source text per call; very large notebooks rely on head+tail digests for generation."
+  - "PDF extraction needs the declared pypdf dependency; scanned/image-only PDFs have no text layer and are rejected with guidance."
+  - "YouTube sources need public captions (youtube-transcript-api); region-locked or caption-less videos fail with a clear error."
+  - "Source auto-labeling prefers the auxiliary.notebook slot (inherits compression by default) and falls back to the main model when the aux route returns non-JSON — labels are best-effort and never block ingestion. Sources written straight to disk wear no labels until /label runs."
+  - "Image sources are described by the vision-capable main model via ctx.llm; a text-only model config degrades to an extraction error, not a crash."
